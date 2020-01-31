@@ -1,0 +1,410 @@
+[
+  {
+    "nodes" : [
+      {
+        "nodes" : [
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{195, 510}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "ammonia_production",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Ammonia Production",
+              "uuid" : "EDE3F0CC-B41A-4201-A443-0E020B3289C9",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Ammonia_Production",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{39, 321}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "hybridize",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Hybridize",
+              "uuid" : "BF056672-0463-4CDB-A051-E26D7067FAFE",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Hybridize",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{195, 415.33333333333331}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "gamete_production",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Gamete Production",
+              "uuid" : "EDE3F0CC-B41A-4201-A443-0E020B3289C9",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Gamete_Production",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{39, 415.33333333333331}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "fluid_production",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Fluid Production",
+              "uuid" : "EDE3F0CC-B41A-4201-A443-0E020B3289C9",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Fluid_Production",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{39, 510}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "glucose_production",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Glucose Production",
+              "uuid" : "EDE3F0CC-B41A-4201-A443-0E020B3289C9",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Glucose_Production",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{195, 321}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "body_percentages",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Body Percentages",
+              "uuid" : "EDE3F0CC-B41A-4201-A443-0E020B3289C9",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Body_Percentages",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{40.333333333333329, 13.666666666666666}, {155, 175}}",
+            "class" : "Label",
+            "attributes" : {
+              "flex" : "LRTB",
+              "font_size" : 16,
+              "frame" : "{{45, 144}, {150, 32}}",
+              "uuid" : "CF866DD1-F6D1-4C36-9728-41B4FF2ACDF0",
+              "class" : "Label",
+              "alignment" : "left",
+              "text" : "Data",
+              "number_of_lines" : 9,
+              "name" : "data",
+              "font_name" : "Courier"
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{195, 13.666666666666666}, {150, 175}}",
+            "class" : "Label",
+            "attributes" : {
+              "flex" : "LRTB",
+              "font_size" : 16,
+              "frame" : "{{45, 144}, {150, 32}}",
+              "uuid" : "78E3A5CD-682A-4E16-88F4-217C9A107CAB",
+              "class" : "Label",
+              "alignment" : "left",
+              "text" : "Sizes",
+              "number_of_lines" : 9,
+              "name" : "sizes",
+              "font_name" : "Courier"
+            },
+            "selected" : false
+          }
+        ],
+        "frame" : "{{0, 0}, {384, 576}}",
+        "class" : "View",
+        "attributes" : {
+          "frame" : "{{70, 110}, {100, 100}}",
+          "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+          "class" : "View",
+          "name" : "HybridsView",
+          "uuid" : "5D864E5D-FEA3-414D-A04A-70EA5322D33D"
+        },
+        "selected" : true
+      },
+      {
+        "nodes" : [
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{195, 321}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "cheese_production",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Cheese Production",
+              "uuid" : "EDE3F0CC-B41A-4201-A443-0E020B3289C9",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Cheese_Production",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{40.333333333333329, 13.666666666666666}, {155, 175}}",
+            "class" : "Label",
+            "attributes" : {
+              "flex" : "LRTB",
+              "font_size" : 16,
+              "frame" : "{{45, 144}, {150, 32}}",
+              "uuid" : "CF866DD1-F6D1-4C36-9728-41B4FF2ACDF0",
+              "class" : "Label",
+              "alignment" : "left",
+              "text" : "Data",
+              "number_of_lines" : 9,
+              "name" : "data",
+              "font_name" : "Courier"
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{195, 13.666666666666666}, {150, 175}}",
+            "class" : "Label",
+            "attributes" : {
+              "flex" : "LRTB",
+              "font_size" : 16,
+              "frame" : "{{45, 144}, {150, 32}}",
+              "uuid" : "78E3A5CD-682A-4E16-88F4-217C9A107CAB",
+              "class" : "Label",
+              "alignment" : "left",
+              "text" : "Sizes",
+              "number_of_lines" : 9,
+              "name" : "sizes",
+              "font_name" : "Courier"
+            },
+            "selected" : false
+          }
+        ],
+        "frame" : "{{0, 0}, {384, 576}}",
+        "class" : "View",
+        "attributes" : {
+          "frame" : "{{70, 110}, {100, 100}}",
+          "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+          "class" : "View",
+          "name" : "AphorismsView",
+          "uuid" : "2C683CFE-5DED-4600-8548-3DCD06068BA5"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{104, 37.666666666666664}, {150, 31.999999999999993}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "select_hybrids",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Hybrids",
+              "uuid" : "D22C5E9A-BC04-4133-8043-9161E02F3132",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Select_Hybrids",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{104, 170}, {150, 32}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "select_aphorisms",
+              "border_width" : 1,
+              "flex" : "LRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Aphorisms",
+              "uuid" : "3984FC6F-460F-4FCA-ABD9-F846A34B5E20",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Select_Aphorisms",
+              "font_size" : 15
+            },
+            "selected" : false
+          }
+        ],
+        "frame" : "{{0, 0}, {384, 576}}",
+        "class" : "View",
+        "attributes" : {
+          "flex" : "LRTB",
+          "font_name" : "<System>",
+          "frame" : "{{0, 0}, {240, 320}}",
+          "class" : "View",
+          "uuid" : "05B15DBB-BF7F-4D98-945D-802FAB6DF248",
+          "alignment" : "center",
+          "text" : "120",
+          "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+          "font_size" : 18,
+          "name" : "SelectView"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{72, 36}, {240, 57.333333333333329}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "select_person",
+              "border_width" : 1,
+              "flex" : "WHLRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Select Person",
+              "uuid" : "D22C5E9A-BC04-4133-8043-9161E02F3132",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Select_Person",
+              "font_size" : 15
+            },
+            "selected" : true
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{72, 162}, {240, 57.333333333333314}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "add_person",
+              "border_width" : 1,
+              "flex" : "WHLRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Add Person",
+              "uuid" : "D22C5E9A-BC04-4133-8043-9161E02F3132",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Add_Person",
+              "font_size" : 15
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{72, 288}, {240, 57.333333333333314}}",
+            "class" : "Button",
+            "attributes" : {
+              "action" : "delete_person",
+              "border_width" : 1,
+              "flex" : "WHLRTB",
+              "frame" : "{{80, 104}, {150, 32}}",
+              "title" : "Delete Person",
+              "uuid" : "3984FC6F-460F-4FCA-ABD9-F846A34B5E20",
+              "class" : "Button",
+              "corner_radius" : 5,
+              "border_color" : "RGBA(0.882075,0.882075,0.882075,1.000000)",
+              "name" : "Delete_Person",
+              "font_size" : 15
+            },
+            "selected" : false
+          }
+        ],
+        "frame" : "{{0, 0}, {384, 576}}",
+        "class" : "View",
+        "attributes" : {
+          "frame" : "{{70, 110}, {100, 100}}",
+          "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+          "class" : "View",
+          "name" : "MainView",
+          "uuid" : "37E40810-BB0C-4A39-A1AC-1F2BB18F8CF9"
+        },
+        "selected" : false
+      }
+    ],
+    "frame" : "{{0, 0}, {320, 480}}",
+    "class" : "View",
+    "attributes" : {
+      "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+      "enabled" : true,
+      "tint_color" : "RGBA(0.000000,0.478000,1.000000,1.000000)",
+      "name" : "Main",
+      "border_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+      "flex" : ""
+    },
+    "selected" : false
+  }
+]

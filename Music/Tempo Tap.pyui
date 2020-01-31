@@ -1,0 +1,205 @@
+[
+  {
+    "nodes" : [
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{0, 0}, {384, 576}}",
+        "class" : "View",
+        "attributes" : {
+          "flex" : "WH",
+          "frame" : "{{142, 238}, {100, 100}}",
+          "background_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+          "class" : "View",
+          "name" : "background",
+          "uuid" : "FBFD319D-6ABC-462B-B548-CCA6600B2077"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{142, 5}, {100, 40}}",
+            "class" : "Button",
+            "attributes" : {
+              "uuid" : "EC92CA16-8A90-40F4-8477-3669B6A76A20",
+              "flex" : "WLRTB",
+              "corner_radius" : 5,
+              "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+              "frame" : "{{80, 104}, {80, 32}}",
+              "tint_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+              "border_width" : 1,
+              "border_color" : "RGBA(0.205544,0.364419,0.662309,1.000000)",
+              "title" : "Tap",
+              "action" : "calculate_tempo",
+              "class" : "Button",
+              "name" : "tempo_tap",
+              "font_size" : 18
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{115, 70.333333333333329}, {150, 50}}",
+            "class" : "Label",
+            "attributes" : {
+              "uuid" : "3DC9773C-C35D-420E-ADD0-8A176865084D",
+              "font_size" : 18,
+              "corner_radius" : 5,
+              "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+              "frame" : "{{45, 104}, {150, 32}}",
+              "border_color" : "RGBA(0.203922,0.364706,0.662745,1.000000)",
+              "border_width" : 1,
+              "number_of_lines" : 2,
+              "alignment" : "center",
+              "text" : "",
+              "text_color" : "RGBA(0.095861,0.095861,0.095861,1.000000)",
+              "alpha" : 1,
+              "font_name" : "<System>",
+              "class" : "Label",
+              "name" : "tempo",
+              "flex" : "WLRTB"
+            },
+            "selected" : true
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{115, 136}, {150, 50}}",
+            "class" : "Label",
+            "attributes" : {
+              "uuid" : "7A6637F8-7569-4FF1-B811-E17C667DB5AC",
+              "font_size" : 18,
+              "corner_radius" : 5,
+              "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+              "frame" : "{{45, 104}, {150, 32}}",
+              "border_color" : "RGBA(0.203922,0.364706,0.662745,1.000000)",
+              "border_width" : 1,
+              "number_of_lines" : 2,
+              "alignment" : "center",
+              "text" : "",
+              "text_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+              "font_name" : "<System>",
+              "class" : "Label",
+              "name" : "measures",
+              "flex" : "WLRTB"
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{142, 205}, {100, 40}}",
+            "class" : "Button",
+            "attributes" : {
+              "uuid" : "CC8AAEA9-F50D-4C8D-BD25-0F89094BD079",
+              "flex" : "WLRTB",
+              "corner_radius" : 5,
+              "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+              "frame" : "{{80, 104}, {80, 32}}",
+              "tint_color" : "RGBA(0.030501,0.030501,0.030501,1.000000)",
+              "border_width" : 1,
+              "border_color" : "RGBA(0.203922,0.364706,0.662745,1.000000)",
+              "title" : "Reset",
+              "action" : "reset",
+              "class" : "Button",
+              "name" : "reset",
+              "font_size" : 18
+            },
+            "selected" : false
+          }
+        ],
+        "frame" : "{{0, 160}, {384, 274}}",
+        "class" : "View",
+        "attributes" : {
+          "border_width" : 0,
+          "action" : "calculate_tempo",
+          "alpha" : 1,
+          "frame" : "{{157, 286}, {100, 100}}",
+          "flex" : "WHTB",
+          "uuid" : "D8F189E6-AEB7-4412-84D3-D2B220EC453D",
+          "corner_radius" : 0,
+          "class" : "View",
+          "font_size" : 18,
+          "name" : "main"
+        },
+        "selected" : false
+      },
+      {
+        "nodes" : [
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{7, 4}, {283, 32}}",
+            "class" : "Label",
+            "attributes" : {
+              "flex" : "WTB",
+              "font_size" : 18,
+              "frame" : "{{45, 104}, {150, 32}}",
+              "uuid" : "3A9CFCB0-98B2-498A-AFE8-ED04613D229B",
+              "class" : "Label",
+              "alignment" : "center",
+              "text" : "4",
+              "name" : "time_sign",
+              "font_name" : "<System>"
+            },
+            "selected" : false
+          },
+          {
+            "nodes" : [
+
+            ],
+            "frame" : "{{7, 30}, {283, 34}}",
+            "class" : "Slider",
+            "attributes" : {
+              "action" : "slider",
+              "flex" : "WTB",
+              "continuous" : true,
+              "frame" : "{{20, 103}, {200, 34}}",
+              "uuid" : "339D3DD4-CEA4-44C4-A770-28E9D46CDBF1",
+              "class" : "Slider",
+              "value" : 0.5,
+              "name" : "time_sign"
+            },
+            "selected" : true
+          }
+        ],
+        "frame" : "{{45.333333333333314, 60}, {297, 70}}",
+        "class" : "View",
+        "attributes" : {
+          "flex" : "LRTB",
+          "font_name" : "<System>",
+          "frame" : "{{70, 70}, {100, 100}}",
+          "class" : "View",
+          "uuid" : "05B15DBB-BF7F-4D98-945D-802FAB6DF248",
+          "alignment" : "center",
+          "text" : "120",
+          "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+          "font_size" : 18,
+          "name" : "set_time"
+        },
+        "selected" : true
+      }
+    ],
+    "frame" : "{{0, 0}, {384, 576}}",
+    "class" : "View",
+    "attributes" : {
+      "name" : "Tempo Tap",
+      "enabled" : true,
+      "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+      "tint_color" : "RGBA(0.000000,0.478000,1.000000,1.000000)",
+      "border_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+      "flex" : ""
+    },
+    "selected" : false
+  }
+]

@@ -1,0 +1,33 @@
+[
+  {
+    "nodes" : [
+      {
+        "nodes" : [
+
+        ],
+        "frame" : "{{25, 110}, {200, 34}}",
+        "class" : "Slider",
+        "attributes" : {
+          "flex" : "W",
+          "continuous" : true,
+          "frame" : "{{20, 103}, {200, 34}}",
+          "uuid" : "36DFB28B-0B2A-421A-BA17-0426D860CC75",
+          "class" : "Slider",
+          "value" : 0.5,
+          "name" : "tempo"
+        },
+        "selected" : true
+      }
+    ],
+    "frame" : "{{0, 0}, {240, 240}}",
+    "class" : "View",
+    "attributes" : {
+      "enabled" : true,
+      "background_color" : "RGBA(1.000000,1.000000,1.000000,1.000000)",
+      "tint_color" : "RGBA(0.000000,0.478000,1.000000,1.000000)",
+      "border_color" : "RGBA(0.000000,0.000000,0.000000,1.000000)",
+      "flex" : ""
+    },
+    "selected" : false
+  }
+]
