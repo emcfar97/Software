@@ -32,8 +32,9 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
     while True:
         try:
             hrefs = [
-                (*href, SITE) for href in {(target.get('href'),) for target in 
-                html.findAll('a', class_='overlay', href=True)} - query
+                (target.get('href'), SITE) for target in 
+                html.findAll('a', class_='overlay', href=True)
+                if (target.get('href'),) not in query
                 ]
             break
         except sql.errors.OperationalError: continue
@@ -62,15 +63,13 @@ def page_handler(driver, hrefs):
         try:
             element = driver.find_element_by_class_name(view)
             ActionChains(driver).move_to_element(element).perform()
-            while True:
+            for _ in range(50):
                 try: driver.find_element_by_class_name(elment).click()
                 except ElementClickInterceptedException: break
-            image = driver.find_element_by_class_name('zoom-large').get_attribute('src')
-            tags = get_tags(driver, image)
-            tags, rating, exif = generate_tags(
-                TYPE, general=tags, custom=True, rating=True
-                )
+            else: continue
 
+            image = driver.find_element_by_class_name('zoom-large').get_attribute('src')
+            exif, = generate_tags(TYPE)
             hasher.update(requests.get(image).content)
             ext = image.split('.')[-1]
             name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}')
@@ -86,11 +85,6 @@ def page_handler(driver, hrefs):
                 
                 name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.mp4')
                 with open(name, 'wb') as file: file.write(data) 
-                # tags = get_tags(driver, name)
-                # tags, rating, exif = generate_tags(
-                #     TYPE, general=tags, custom=True, rating=True
-                #     )
-                tags = rating = None
 
             except:
                 try:
@@ -101,23 +95,20 @@ def page_handler(driver, hrefs):
                         name = f'404 - {href}'
                 except: continue
             
-        hash = save_image(name, image, exif, 1)
+        hash = None if name.startswith('404') else save_image(name, image, exif, 1)
+        # hash = save_image(name, image, 1)
         if name.endswith('.png'): name = name.replace('.png', '.jpg')
         
         while True:
             try:
-                CURSOR.execute(UPDATE[0], (
-                    name, f" {tags} ", rating, image, hash, 0, href)
-                    )
+                CURSOR.execute(UPDATE[0], (name, image, hash, 0, href))
                 DATAB.commit()
                 break
             except sql.errors.OperationalError: continue
             except sql.errors.IntegrityError:
                 name, ext = name.split('.')
                 name = f'{name}1.{ext}'
-                CURSOR.execute(UPDATE[0], (
-                    name, f" {tags} ", rating, image, hash, 0, href)
-                    )
+                CURSOR.execute(UPDATE[0], (name, image, hash, 0, href))
                 DATAB.commit()
                 break
     

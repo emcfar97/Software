@@ -9,7 +9,7 @@ DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
-CURSOR = DATAB.cursor()
+CURSOR = DATAB.cursor(buffered=True)
 
 def main(driver, paths, sankaku=0, gelbooru=0):
     
@@ -17,12 +17,12 @@ def main(driver, paths, sankaku=0, gelbooru=0):
     size = len(paths)
     limit = get_limit(driver)
 
-    for num, (path, src,) in enumerate(paths):
+    for num, (path, href, src, site,) in enumerate(paths):
         progress(size, num, 'favorites')
         
         try:
             driver.get('http://iqdb.org/')
-            if src is None: 
+            if src is None:
                 driver.find_element_by_xpath('//*[@id="file"]').send_keys(path)
             else:
                 driver.find_element_by_xpath('//*[@id="url"]').send_keys(src)
@@ -52,9 +52,8 @@ def main(driver, paths, sankaku=0, gelbooru=0):
             
             saved = False
             if not targets:
-                # site = path.split('\\')[7]
-                # if ((sankaku < limit and site != 'pixiv') or (gelbooru < 50 and site == 'pixiv')) and not path.endswith(('.gif', '.webm', '.mp4')):
-                #     saved, type_ = upload(driver, path, site)  
+                # if (sankaku < limit or gelbooru < 50) and not path.endswith(('.gif', '.webm', '.mp4')):
+                #     saved, type_ = upload(driver, path, href, src, site)  
                 #     if type_: sankaku += 1
                 #     else: gelbooru += 1
                 pass
@@ -76,7 +75,7 @@ def main(driver, paths, sankaku=0, gelbooru=0):
                 saved = True
                             
             if saved:
-                os.remove(path)
+                if src is None: os.remove(path)
                 CURSOR.execute(UPDATE[4], (1, 1, path))
 
             DATAB.commit()
@@ -101,83 +100,67 @@ def main(driver, paths, sankaku=0, gelbooru=0):
             
     progress(size, size, 'favorites')
      
-def upload(driver, path, site):
+def upload(driver, path, href, src, site):
 
-    CURSOR.execute(SELECT[6], (path,))
-    href, src = CURSOR.fetchone()
     if site == 'foundry':
         artist = href.split('/')[3]
         href = f'http://www.hentai-foundry.com{href}'
+    elif site == 'furaffinity':
+        artist = src.split('/')[4]
+        href = f'https://www.furaffinity.net{href}'
     elif site == 'twitter':
         artist = href.split('/')[0]
         href = f'https://twitter.com{href}'
-    elif site == 'furaffinity':
-        artist = href.split('/')[2]
-        href = f'https://www.furaffinity.net{href}'
     elif site == 'pixiv':
         artist = path.split('\\')[-1].split('-')[0].strip()
         if href is None:
             href = f"/artworks/{path.split('-')[-1].strip().split('_')[0]}"
         href = f'https://www.pixiv.net{href}'
-    if artist in artists_dict:
-        if artists_dict[artist]: artist = artists_dict[artist]
-        else: return False, 0
+    try: artist, site = artists_dict[artist]
+    except KeyError: return False, 0
 
-    driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
-    driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(path)
-    driver.find_element_by_xpath('//body/div/div/div/form/button').click()    
-    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-    tags = [
-        tag.text for group in html.findAll('tbody') 
-        for tag in group.findAll(href=True)
-        ]
-    if not tags: return False, None
-    if 'comic' in tags: return False, None
-    general, rating = generate_tags(exif=False, general=tags, rating=True)
-    if len(tags) < 10: tags.append('tagme')
-    tags = ' '.join(set(tags + general + [artist]))
-    image = tempfile.TemporaryFile(BytesIO(requests.get(src)))
-    
-    if site in ('pixiv'):
-        driver.get('https://gelbooru.com/index.php?page=post&s=add')
-        driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[1]').send_keys(path)
-        driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[2]').send_keys(href)
-        driver.find_element_by_xpath('//*[@id="tags"]').send_keys(tags)
+    with tempfile.NamedTemporaryFile(suffix='.jpg') as temp:
         
-        if rating == 'erotic':
-            driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[4]').click()
-        elif rating == 'questionable':
-            driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[5]').click()
-        else:
-            driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[6]').click()
-
-        driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[7]').click()
-        driver.find_element_by_partial_link_text('Add to favorites').click()
+        temp.write(bytes(requests.get(src).content)) 
+        tags = get_tags(driver, temp.name)
+        if not tags or 'comic' in tags: return False, 0
+        general, rating = generate_tags(general=tags, rating=True, exif=False)
+        if len(tags) < 10: tags.append('tagme')
+        tags = ' '.join(set(tags + general + [artist]))
         
-        return True, 0
-
-    else: 
-        driver.get('https://chan.sankakucomplex.com/post/upload')
-        driver.find_element_by_xpath('//*[@id="post_file"]').send_keys(path)
-        driver.find_element_by_xpath('//*[@id="post_source"]').send_keys(href)
-        driver.find_element_by_xpath('//*[@id="post_tags"]').send_keys(tags)
-        
-        if rating == 'erotic':
-            driver.find_element_by_xpath('//*[@id="post_rating_explicit"]').click()
-        elif rating == 'questionable':
-            driver.find_element_by_xpath('//*[@id="post_rating_questionable"]').click()
-        else:
-            driver.find_element_by_xpath('//*[@id="post_rating_safe"]').click()
-        
-        try:
-            driver.find_element_by_xpath('//body/div[4]/div[1]/form/div/table/tfoot/tr/td[2]/input').click()
-        except ElementClickInterceptedException:
-            driver.find_element_by_xpath('//*[@id="post_tags"]').click()
+        if site:
+            driver.get('https://chan.sankakucomplex.com/post/upload')
+            driver.find_element_by_xpath('//*[@id="post_file"]').send_keys(temp.name)
+            driver.find_element_by_xpath('//*[@id="post_source"]').send_keys(href)
+            driver.find_element_by_xpath('//*[@id="post_tags"]').send_keys(tags)
             driver.find_element_by_tag_name('html').send_keys(Keys.ESCAPE)
+            driver.find_element_by_xpath(f'//*[@id="post_rating_{rating}"]').click()
+            
+            # try:
             driver.find_element_by_xpath('//body/div[4]/div[1]/form/div/table/tfoot/tr/td[2]/input').click()
-        driver.find_element_by_xpath('//*[@title="Add to favorites"]').click()
-    
-        return True, 1
+            # except ElementClickInterceptedException:
+            #     driver.find_element_by_xpath('//*[@id="post_tags"]').click()
+            #     driver.find_element_by_tag_name('html').send_keys(Keys.ESCAPE)
+            #     driver.find_element_by_xpath('//body/div[4]/div[1]/form/div/table/tfoot/tr/td[2]/input').click()
+            driver.find_element_by_xpath('//*[@title="Add to favorites"]').click()
+        
+        else: 
+            driver.get('https://gelbooru.com/index.php?page=post&s=add')
+            driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[1]').send_keys(temp.name)
+            driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[2]').send_keys(href)
+            driver.find_element_by_xpath('//*[@id="tags"]').send_keys(tags)
+            
+            if rating == 'erotic':
+                driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[4]').click()
+            elif rating == 'questionable':
+                driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[5]').click()
+            else:
+                driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[6]').click()
+
+            driver.find_element_by_xpath('//body/div[4]/div[4]/form/input[7]').click()
+            driver.find_element_by_partial_link_text('Add to favorites').click()
+        
+        return True, site
 
 def get_limit(driver):
     
@@ -254,11 +237,11 @@ def setup():
     data.close()
     DATAB.commit()
     try:
-        driver = get_driver(headless=True)
+        driver = get_driver(True)
         login(driver, 'gelbooru')
         login(driver, 'sankaku')
         CURSOR.execute(SELECT[4])
-        main(driver, CURSOR.fetchall())
+        main(driver, CURSOR.fetchmany(1000))
         driver.close()
     except WebDriverException:
         if input(f'Favorites: Browser closed\nContinue? ').lower() in 'yes':

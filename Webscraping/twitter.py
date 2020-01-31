@@ -101,7 +101,6 @@ def page_handler(driver, hrefs):
             hash = save_image(name, image, exif)
             if name.endswith('.png'): name = name.replace('.png', '.jpg')
 
-
             if len(images) == 1: 
                 while True:
                     try:
@@ -157,7 +156,7 @@ def xpath_soup(element):
 def setup(initial=True):
     
     try:
-        driver = get_driver(headless=True)
+        driver = get_driver(True)
         login(driver, SITE)
         if initial: initialize(driver)
         CURSOR.execute(SELECT[3], (SITE,))

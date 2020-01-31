@@ -27,8 +27,9 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
     while True:
         try:
             hrefs = [
-                (*href, SITE) for href in {(target.get('href'),) for target in 
-                html.findAll('a', id=re.compile(r'p\d+'), href=True)} - query
+                (target.get('href'), SITE) for target in 
+                html.findAll('a', id=re.compile(r'p\d+'), href=True)
+                if (target.get('href'),) not in query
                 ]
             break
         except sql.errors.OperationalError: continue

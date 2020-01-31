@@ -22,12 +22,11 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    'SELECT path, src FROM favorites WHERE NOT (checked OR ISNULL(path))',
+    'SELECT path, href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
     '''
         SELECT REPLACE(save_name, "E:", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "E:", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
-        ''', 
-    'SELECT href, src FROM favorites WHERE path=%s'
+        ''',
     ]
 INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
@@ -35,7 +34,8 @@ INSERT = [
     'INSERT IGNORE INTO favorites(path, href, site) VALUES(%s, %s, %s)'
     ]
 UPDATE = [
-    'UPDATE imageData SET path=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+    'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+    # 'UPDATE imageData SET path=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     'UPDATE favorites SET path=%s, hash=%s, src=%s WHERE href=%s',
     'REPLACE INTO imageData(path,hash,href,site) VALUES(%s,%s,%s,%s)',
     'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
@@ -44,11 +44,11 @@ UPDATE = [
 if __file__.startswith(('e:\\', 'e:/')):
     
     PATH = PATH.replace('C:', 'E:')
-    SELECT[4] = 'SELECT REPLACE(path, "C:", "E:"), src FROM favorites WHERE NOT (checked OR ISNULL(path))'
-    SELECT[6] = 'SELECT href, src FROM favorites WHERE path=REPLACE(%s, "E:", "C:")'
+    SELECT[4] = 'SELECT REPLACE(path, "C:", "E:"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))'
     INSERT[2] = 'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "E:", "C:"), %s, %s)'
     UPDATE = [
-        'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"),tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+        'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
+        # 'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
         'UPDATE favorites SET path=REPLACE(%s, "E:", "C:"), hash=%s, src=%s WHERE href=%s',
         'REPLACE INTO imageData(path,hash,href,site) VALUES(%s,%s,%s,%s)',
         'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
@@ -140,6 +140,7 @@ artists_dict = {
     'AkaShiaアカシア': ['', None],
     'akchu': ['akchu', None],
     'AME_雨': ['', None],
+    'aomori': ['aomori', 1],
     'AQUA': ['', None],
     'Arctic char': ['tabata_hisayuki', None],
     'Arcticchar': ['tabata_hisayuki', None],
@@ -174,6 +175,7 @@ artists_dict = {
     'hews': ['', None],
     'Hisasi': ['', None],
     'ICHIGAIN(一概)': ['', None],
+    'iskra': ['iskra', 1],
     'ittla': ['ittla', 1],
     'JADF@jadf_': ['', None],
     'jcm2': ['', None],
@@ -539,12 +541,20 @@ def login(driver, site, type_=0):
     elif site == 'twitter':
 
         driver.get('https://twitter.com/login')
+        element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'  
         while driver.current_url == 'https://twitter.com/login':
-            element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'            
-            driver.find_element_by_xpath(element.format(1)).send_keys(EMAIL)
-            time.sleep(.75)
-            driver.find_element_by_xpath(element.format(2)).send_keys(PASS)
-            driver.find_element_by_xpath(element.format(2)).send_keys(Keys.RETURN)
+            try:  
+                driver.find_element_by_xpath(element.format(1)).send_keys(EMAIL)
+                time.sleep(.75)
+                driver.find_element_by_xpath(element.format(2)).send_keys(PASS)
+                driver.find_element_by_xpath(element.format(2)).send_keys(Keys.RETURN)
+
+            except:
+                driver.find_element_by_name('session[username_or_email]').send_keys(EMAIL)
+                time.sleep(.75)
+                driver.find_element_by_name('session[password]').send_keys(PASS)
+                driver.find_element_by_name('session[password]').send_keys(Keys.RETURN)
+            
             time.sleep(2)
 
     elif site == 'posespace':

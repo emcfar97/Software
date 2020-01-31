@@ -176,7 +176,7 @@ paths = [
     r'C:\Users\Emc11\Downloads'
     ]
     
-for path in paths: insert_files(path)
+for path in paths: save_images(path)
 
 print("Done")
 

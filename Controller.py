@@ -4,10 +4,10 @@ from Webscraping import flickr, foundry, furaffinity, gelbooru, sankaku, posespa
 def erotica3():
 
     # process = subprocess.Popen([
-    #     r'Webscraping\PixivUtil\PixivUtil2.exe',
-    #     '-s', '6', 'y', '0', '7', '-x'
-    #     #              start end  stop
-    #     ])
+        # r'Webscraping\PixivUtil\PixivUtil2.exe',
+        # '-s', '6', 'y', '0', '7', '-x'
+        # #              start end  stop
+        # ])
     threads = [
         # threading.Thread(target=webscrapers),
         # threading.Thread(target=process.wait)
@@ -37,8 +37,8 @@ def webscrapers():
         print(f'Twitter: {error}')
 
 threads = [
-    threading.Thread(target=erotica3),
     # threading.Thread(target=flickr.setup),
+    threading.Thread(target=erotica3),
     # threading.Thread(target=posespace.setup)
     ]
 for thread in threads: thread.start()

@@ -28,10 +28,9 @@ def initialize(driver, url='?tags=fav%3Achairekakia', query=0):
         while True:
             try: 
                 hrefs = [
-                    (*href, SITE) for href in 
-                    {(target.get('href'),) for target in 
+                    (target.get('href'), SITE) for target in 
                     html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
-                    } - query
+                    if (target.get('href'),) not in query
                     ]
                 break
             except sql.errors.OperationalError: continue
@@ -80,7 +79,6 @@ def page_handler(driver, hrefs):
         name = join(PATH, 'エラティカ 三', image.split('/')[-1].split('?e=')[0])
         hash = save_image(name, image, exif, 1)
         if name.endswith('.png'): name = name.replace('.png', '.jpg')
-
 
         while True:
             try:
