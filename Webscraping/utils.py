@@ -602,7 +602,7 @@ def save_image(name, image, exif, save=0):
     elif name.endswith(('.gif','.webm', '.mp4')):
         
         data = requests.get(image).content
-        if name.endswith('.gif'): img = Image.open(data)
+        if name.endswith('.gif'): img = Image.open(BytesIO(data))
         else: hash_ = None
         if save:
             with open(name, 'wb') as file: file.write(data)
