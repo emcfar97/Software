@@ -3,12 +3,9 @@ import ffmpeg
 from os import remove, listdir
 from os.path import join, exists
 
-source = r'C:\Users\Emc11\Videos\Captures'
-dest = r'C:\Users\Emc11\Dropbox\Videos\Speedpaints'
-
-if __file__.startswith(('e:\\', 'e:/')):
-    source = source.replace('C:', 'E:')
-    dest = dest.replace('C:', 'E:')
+root = __file__[:2].upper()
+source = rf'{root}\Users\Emc11\Videos\Captures'
+dest = rf'{root}\Users\Emc11\Dropbox\Videos\Captures'
 
 while True:
     user_input = input(
@@ -71,6 +68,6 @@ while True:
         url = input('Enter url: ')
         name = f'{url.split("/")[3]}.mp4'
         ffmpeg.input(url).output(
-            rf'C:\Users\Emc11\Downloads\{name}').run()
+            rf'{root}\Users\Emc11\Downloads\{name}').run()
         
     elif user_input == '5': break

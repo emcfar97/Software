@@ -8,8 +8,9 @@ from selenium.webdriver.support.ui import Select
 
 SUM = 0
 EXT = 'webm', 'webp', 'mp4'
-PATH = r'C:\Users\Emc11\Downloads'
-DEST = r'C:\Users\Emc11\Dropbox\Pictures\4.Reference\3.Gifs'
+root = __file__.split('\\')[0].upper()
+PATH = rf'{root}\Users\Emc11\Downloads'
+DEST = rf'{root}\Users\Emc11\Dropbox\Pictures\4.Reference\3.Gifs'
 
 if __file__.startswith(('e:\\', 'e:/')):
 
