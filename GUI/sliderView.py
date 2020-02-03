@@ -83,8 +83,8 @@ class Slideshow(QMainWindow):
                 
             self.label.setMovie(QMovie())
             self.label.setPixmap(QPixmap())
-            self.stack.setCurrentIndex(1)
             self.video.update(path)
+            self.stack.setCurrentIndex(1)
   
     def keyPressEvent(self, sender):
 
@@ -103,6 +103,7 @@ class Slideshow(QMainWindow):
     def closeEvent(self, sender):
     
         self.video.player.stop()
+        # self.parent.fullscreen = False
         self.close()
 
 class videoPlayer(QVideoWidget):
@@ -166,6 +167,7 @@ class videoPlayer(QVideoWidget):
 
     def mediaStatusChanged(self, status):
         
+        if not self.parent().currentIndex(): return
         if status == QMediaPlayer.StoppedState: self.player.play()
     
     def wheelEvent(self, sender):

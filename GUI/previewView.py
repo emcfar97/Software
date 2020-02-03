@@ -135,6 +135,7 @@ class Countdown(QLabel):
                 self.timer.start(1000)  
                 
             else:
+                self.timer.stop()
                 null = QPixmap(), QMovie()
                 parent.label.setPixmap(null[0])
                 parent.label.setMovie(null[1])

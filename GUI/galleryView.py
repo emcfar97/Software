@@ -53,7 +53,7 @@ class Gallery(QWidget):
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=5000):
+    def populate(self, sender=None, limit=4000):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
@@ -128,6 +128,7 @@ class Gallery(QWidget):
                 ribbon.m_artist.clear()
                 ribbon.m_stars.clear()
                 ribbon.m_rating.clear()
+                ribbon.m_type.clear()
         
 class Ribbon(QWidget):
      
@@ -239,6 +240,10 @@ class Ribbon(QWidget):
                 connect='return'
                 )
             self.select.insertRow(1, 'Time:', self.time)
+            # self.setTabOrder(self.time, type)
+            # self.setTabOrder(self.time, rating)
+            # self.setTabOrder(self.time, self.order)
+            # self.setTabOrder(self.time, self.stars)
            
     def get_tags(self, query='', ops={'and':None, 'or':1, 'not':0}):
         

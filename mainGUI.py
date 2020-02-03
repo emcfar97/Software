@@ -98,6 +98,7 @@ class ManageData(QMainWindow):
         
         super().__init__(parent)
         self.setWindowTitle('Manage Data')
+        self.fullscreen = False
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
@@ -158,7 +159,7 @@ class ManageData(QMainWindow):
     def delete_records(self, sender=None):
         
         gallery = gallery = [
-            thumb.data(Qt.UserRole)[0] for thumb in 
+            (thumb.data(Qt.UserRole),) for thumb in 
             self.gallery.images.selectedIndexes()
             ]
         CURSOR.executemany(DELETE, gallery)
@@ -185,7 +186,8 @@ class ManageData(QMainWindow):
 
         if key_press == Qt.Key_Delete: self.delete_records()
         if key_press == Qt.Key_Return: self.gallery.edit_wrapper()
-        # elif key_press == Qt.Key_Escape: self.close()
+        elif key_press == Qt.Key_Escape and not self.fullscreen: self.close()
+        else: self.fullscreen = False
         
     def closeEvent(self, sender):
 
@@ -240,7 +242,15 @@ class GestureDraw(QMainWindow):
    
     def keyPressEvent(self, sender):
         
-        if sender.key() == Qt.Key_Escape: 
+        key_press = sender.key()
+
+        if key_press == Qt.Key_Return:
+
+            if not self.stack.currentIndex():
+                
+                self.start_session()
+
+        elif key_press == Qt.Key_Escape:
 
             if self.stack.currentIndex():
             

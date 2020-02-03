@@ -1,8 +1,9 @@
 import textwrap
 from . import *
 from PyQt5.QtCore import QAbstractTableModel, QVariant, QModelIndex, QItemSelectionModel
-from PyQt5.QtWidgets import QAbstractScrollArea, QAbstractItemView
+from PyQt5.QtWidgets import QAbstractScrollArea, QAbstractItemView, QAction, QMenu
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
+from PyQt5.QtGui import QCursor
 
 def open_database():
      
@@ -29,6 +30,7 @@ class imageView(QTableView):
         self.verticalHeader().hide() 
 
         self.doubleClicked.connect(self.open_slideshow)
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.setSizeAdjustPolicy(
@@ -52,10 +54,11 @@ class imageView(QTableView):
         select, deselect = select.indexes(), deselect.indexes()
         
         if parent.windowTitle() == 'Manage Data':
-            image = select[0].data(Qt.UserRole) if select else None
+            if not select:
+                index = self.selectedIndexes()
+                image = index[-1].data(Qt.UserRole) if index else None
+            else: image = select[0].data(Qt.UserRole)
             parent.preview.show_image(image)
-            # image = select if select else self.selectedIndexes()
-            # parent.preview.show_image(image[0].data(Qt.UserRole))
         
         self.parent().status.modify(
             self.total(), len(self.selectedIndexes())
@@ -65,11 +68,30 @@ class imageView(QTableView):
 
         parent = self.parent().parent()
 
-        if parent.windowTitle() == 'Manage Data':
-
+        if parent.windowTitle() == 'Manage Data' and not parent.fullscreen:
+            
+            parent.fullscreen = True
             parent.open_slideshow(
                 (index.row() * 5) + index.column()
                 )
+    
+    def contextMenuEvent(self, sender):
+        
+        self.menu = QMenu(self)
+
+        sort = QAction('Sort by', self)
+        sort.triggered.connect(lambda: print('sort by'))
+        self.menu.addAction(sort)
+
+        copy = QAction('Copy', self)
+        copy.triggered.connect(lambda: print('copy'))
+        self.menu.addAction(copy)
+
+        properties = QAction('Properties', self)
+        properties.triggered.connect(lambda: print('properties'))
+        self.menu.addAction(properties)
+
+        self.menu.popup(QCursor.pos())
 
 class Model(QAbstractTableModel):
 
@@ -77,7 +99,7 @@ class Model(QAbstractTableModel):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
-        self.size = int(width * .1899)
+        self.size = int(width * .1888)
         self.images = []
         self.rowsLoaded = 0
 
@@ -120,7 +142,7 @@ class Model(QAbstractTableModel):
         elif role == Qt.ToolTipRole:
             
             tag, art, rat, sta, = self.images[ind][1:]
-            tags = self.wrapper.wrap(f'{tag.strip()}')
+            tags = self.wrapper.wrap(f'{tag}'.strip())
             rest = self.wrapper.wrap(
                 f'Artist: {art} Rating: {rat} Stars: {sta}'
                 )
