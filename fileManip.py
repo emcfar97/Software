@@ -168,7 +168,7 @@ def insert_files(path):
             #     custom=True, rating=True, exif=False
             #     )
 
-        CURSOR.execute(INSERT, (dest, f" {' '.join(tags)} ", rating, 0))
+        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, 0))
         shutil.move(file, dest)
         DATAB.commit()
 
@@ -176,7 +176,7 @@ paths = [
     r'C:\Users\Emc11\Downloads'
     ]
     
-for path in paths: save_images(path)
+for path in paths: insert_files(path)
 
 print("Done")
 
