@@ -16,14 +16,14 @@ class Preview(QWidget):
         if self.type == 'Manage Data':
             self.setGeometry(
                 int(size.width() // 2), 0, 
-                int(size.width() // 2), size.height()
+                int(size.width() // 2), size.height() - 15
                 )
             self.setStyleSheet('background: white')
             
         elif self.type == 'Gesture Draw':
             self.setGeometry(
                 0, 0, 
-                size.width(), size.height()
+                size.width(), size.height() - 15
                 ) 
             self.setStyleSheet('background: black')
     

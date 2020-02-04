@@ -53,7 +53,7 @@ class Gallery(QWidget):
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=4000):
+    def populate(self, sender=None, limit=2500):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
@@ -255,10 +255,12 @@ class Ribbon(QWidget):
 
                 if token.lower() in ops:
                     op = ops[token.lower()]
-                    if op is None: query += f'+{string.pop()} '
-                    else:
-                        if op: query += f'{string.pop()} '
-                        else: query += f'-{string.pop()} '
+                    try:
+                        if op is None: query += f'+{string.pop()} '
+                        else:
+                            if op: query += f'{string.pop()} '
+                            else: query += f'-{string.pop()} '
+                    except IndexError: continue
                 else: 
                     if token == '-': pass
                     elif token.startswith('-'): query += f'{token} '

@@ -1,9 +1,9 @@
 import ffmpeg
 # from ffprobe import FFProbe
-from os import remove, listdir
+from os import remove, listdir, getcwd
 from os.path import join, exists
 
-root = __file__[:2].upper()
+root = getcwd()[:2].upper()
 source = rf'{root}\Users\Emc11\Videos\Captures'
 dest = rf'{root}\Users\Emc11\Dropbox\Videos\Captures'
 
