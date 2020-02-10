@@ -133,10 +133,10 @@ def insert_files(path):
             r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
             f'{hasher.hexdigest()}.jpg'
             )
+        tags = get_tags(driver, file)
 
         if file.lower().endswith(('jpg', 'jpeg')):
 
-            tags = get_tags(driver, file)
             tags, rating, exif = generate_tags(
                 type='Erotica 2', general=tags, 
                 custom=True, rating=True, exif=True
@@ -145,30 +145,12 @@ def insert_files(path):
 
         elif file.lower().endswith(('.gif', '.webm', '.mp4')): continue
     
-            # temp_dir = tempfile.TemporaryDirectory()
-            # vidcap = cv2.VideoCapture(file)
-            # success, frame = vidcap.read()
+            tags, rating = generate_tags(
+                type='Erotica 2', general=tags, 
+                custom=True, rating=True, exif=False
+                )
 
-            # while success:
-
-            #     temp = tempfile.mkstemp(dir=temp_dir.name, suffix='.jpg')
-            #     with open(temp[-1], 'wb') as temp: 
-            #         temp.write(cv2.imencode('.jpg', frame)[-1]) 
-            #     success, frame = vidcap.read() 
-            
-            # for image in os.listdir(temp_dir.name)[::5]:
-
-            #     image = join(temp_dir.name, image)
-            #     tags.update(get_tags(driver, image))
-
-            # temp_dir.cleanup()
-
-            # tags, rating = generate_tags(
-            #     type='Erotica 2', general=tags, 
-            #     custom=True, rating=True, exif=False
-            #     )
-
-        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, 0))
+        CURSOR.execute(INSERT, (dest, f"{tags}", rating, 0))
         shutil.move(file, dest)
         DATAB.commit()
 
