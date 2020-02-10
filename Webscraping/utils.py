@@ -1,4 +1,4 @@
-import imagehash, sys, ast, piexif, time, bs4, requests, re
+import imagehash, os, sys, ast, piexif, time, bs4, requests, re, cv2, tempfile, random
 from PIL import Image
 from io import BytesIO
 from os.path import join
@@ -514,7 +514,31 @@ def login(driver, site, type_=0):
             driver.find_element_by_id('login-password').send_keys(PASS)
             driver.find_element_by_id('login-password').send_keys(Keys.RETURN)
             time.sleep(2.5)
-    
+
+    if site == 'metart':
+
+        driver.get('https://www.metarthunter.com/members/')
+        driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
+        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('SchooL1@')
+        while driver.current_url == 'https://www.metarthunter.com/members/': 
+            time.sleep(2)
+            
+    if site == 'femjoy':
+
+        driver.get('https://www.femjoyhunter.com/members/')
+        driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
+        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('SchooL1@')
+        while driver.current_url == 'https://www.femjoyhunter.com/members/': 
+            time.sleep(2)
+            
+    if site == 'elitebabes':
+
+        driver.get('https://www.elitebabes.com/members/')
+        driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
+        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('Cxbvmr6ckh6p')
+        while driver.current_url == 'https://www.elitebabes.com/members/': 
+            time.sleep(2)
+
     elif site== 'gelbooru':
 
         driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
@@ -626,16 +650,47 @@ def progress(size, left, site, length=20):
 
 def get_tags(driver, path):
 
-    driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
-    driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(path)
-    driver.find_element_by_xpath('//body/div/div/div/form/button').click()
+    tags = set()
 
-    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-    tags = [
-        tag.text for tag in 
-        html.find('tbody').findAll(href=True)
-        ]
-    return tags
+    if path.endswith(('jpeg', 'jpg', 'png')):
+
+        paths = [path]
+    
+    else:
+        
+        temp_dir = tempfile.TemporaryDirectory()
+        vidcap = cv2.VideoCapture(path)
+        success, frame = vidcap.read()
+ 
+        while success:
+            
+            paths = []
+            temp = tempfile.mkstemp(dir=temp_dir.name, suffix='.jpg')
+            with open(temp[-1], 'wb') as temp: 
+                temp.write(cv2.imencode('.jpg', frame)[-1])
+                paths.append(temp.name)
+            success, frame = vidcap.read() 
+
+        paths = random.choices(paths, k=100)
+        
+    for path in paths:
+
+        driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
+        driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(path)
+        driver.find_element_by_xpath('//body/div/div/div/form/button').click()
+
+        while True:
+            html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+            try:
+                tag = [
+                    tag.text for tag in 
+                    html.find('tbody').findAll(href=True)
+                    ]
+                break
+            except: continue
+        tags.update(tag)
+    
+    return list(tags)
 
 def generate_tags(
     type=None,artists=[],metadata=[],general=[],custom=[],rating=[],exif=True
@@ -668,6 +723,7 @@ def generate_tags(
             key for key, val in rating_dict.items() 
             if evaluate(sum(tags,[]) + general, val)
             ]
+    tags = [' '.join(set(sum(tags, []) + general)), rating] if tags else []
     if exif:
 
         zeroth_ifd = {
@@ -679,11 +735,10 @@ def generate_tags(
                 ]
             }
         exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
-        tags = [' '.join(set(sum(tags, []) + general)), rating] if tags else []
+        
         try: tags += [piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})]
         except: return
-    
-    return tags + [rating] if (rating and not exif) else tags
+    return tags
 
 def evaluate(tags, search):
     
