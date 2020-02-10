@@ -12,6 +12,10 @@ TYPE = {
     'Photo': 'NOT type',
     'Illus': 'type',
     }
+ORDER = {
+    'Ascending': 'ASC',
+    'Descending': 'DESC'
+    }
 
 class Gallery(QWidget):
      
@@ -59,10 +63,15 @@ class Gallery(QWidget):
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
         
         images = self.images
-        CURSOR.execute(SELECT)
+        try: 
+            CURSOR.execute(SELECT)
+            selection = CURSOR.fetchall()
+        except: selection = []
+
         images.clearSelection()
         images.table.rowsLoaded = 0
-        images.table.images = CURSOR.fetchall()
+        images.table.images = selection
+        images.table.rows = images.total() // 5 
         images.table.layoutChanged.emit()
         images.resizeRowsToContents()
         images.resizeColumnsToContents()
@@ -84,7 +93,7 @@ class Gallery(QWidget):
     def get_filter(self):
 
         values = [
-            'NOT ISNULL(path)',
+            'NOT (ISNULL(path) OR path LIKE "_0_%")',
             self.ribbon.get_rating(),
             self.ribbon.get_type(),
             self.ribbon.get_tags(),
@@ -103,33 +112,6 @@ class Gallery(QWidget):
             query = ' AND '.join([i for i in values if i])
             return query + ' ORDER BY RAND()'
 
-    def edit_wrapper(self):
-
-        if self.type == 'Manage Data':
-
-            ribbon = self.ribbon
-            tags = ribbon.m_tags.get()
-            artist = ribbon.m_artist.get()
-            stars = int(ribbon.m_stars.get()) if ribbon.m_stars.get() else 0
-            rating = ribbon.m_rating.get()
-            type = ribbon.m_type.get()[:5]
-
-            gallery = [
-                (thumb.data(Qt.UserRole),) for thumb in 
-                self.images.selectedIndexes()
-                ]
-
-            if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
-                self.parent().change_records(
-                    gallery, [tags, artist, stars, rating, type]
-                    )
-            
-                ribbon.m_tags.clear()
-                ribbon.m_artist.clear()
-                ribbon.m_stars.clear()
-                ribbon.m_rating.clear()
-                ribbon.m_type.clear()
-        
 class Ribbon(QWidget):
      
     def __init__(self, parent):
@@ -149,105 +131,45 @@ class Ribbon(QWidget):
         self.select.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
         self.layout.addLayout(self.select)
         
-        self.tags = Widget(
-            'entry', signal=self.parent().populate, 
-            connect='edit'
-            )
+        self.tags = QLineEdit(self)
+        self.tags.textEdited.connect(self.parent().populate)
+        # self.tags = Widget(
+        #     'entry', signal=self.parent().populate, 
+        #     connect='edit'
+        #     )
         self.stars = Widget(
             'combo-entry', signal=self.parent().populate,
             values=['', '>', '>=', '==', '<=', '<']
             )
-        self.order = Widget(
-            'combo-combo', values=[
-            ['', 'Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'], 
-            ['', 'Asc', 'Desc']]
-            )
-        self.rating = QButtonGroup()
-        self.type = QButtonGroup()
 
         self.select.addRow('Search:', self.tags)
         self.select.addRow('Stars:', self.stars)
-        self.select.addRow('Order by:', self.order)
         
-        rating = QHBoxLayout()
-        rating.setAlignment(Qt.AlignLeft)
-        rating.setSpacing(5)
-        for text in ['Explicit', 'Questionable', 'Safe']:
-            radio = QRadioButton(text)
-            self.rating.addButton(radio)
-            rating.addWidget(radio)
-        else: 
-            radio.setChecked(True)
-            self.rating.buttonClicked.connect(self.parent().populate)
-        self.select.addRow(rating)
-        
-        type = QHBoxLayout()
-        type.setAlignment(Qt.AlignLeft)
-        type.setSpacing(5)
-        for text in ['All', 'Photo', 'Illus']:
-            radio = QRadioButton(text)
-            self.type.addButton(radio)
-            type.addWidget(radio)
-        else: 
-            radio.setChecked(True)
-            self.type.buttonClicked.connect(self.parent().populate)
-        self.select.addRow(type)
-         
         if self.parent().type == 'Manage Data':
+            self.tags.returnPressed.connect(self.parent().populate)
             
-            self.tags.modify(
-                signal=self.parent().populate, 
-                connect='return'
-                )
+            # self.tags.modify(
+            #     signal=self.parent().populate, 
+            #     connect='return'
+            #     )
             
-            self.update = QFormLayout()
-            self.update.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
-            self.layout.addLayout(self.update)
-             
-            self.m_tags = Widget(
-                'combo-entry', values=['', 'Add', 'Remove'], 
-                signal=self.parent().edit_wrapper
-                )
-            self.m_artist = Widget(
-                'combo-entry', values=['', 'Add', 'Remove'], 
-                signal=self.parent().edit_wrapper
-                )
-            self.m_stars = Widget(
-                'entry', signal=self.parent().edit_wrapper, 
-                connect='return'
-                )
-            self.m_rating =  Widget(
-                'combo', values=['', 'Safe', 'Questionable', 'Explicit']
-                )
-            self.m_type =  Widget(
-                'combo', values=['', 'Photograph', 'Illustration']
-                )
-             
-            self.update.addRow('Tags:', self.m_tags)
-            self.update.addRow('Artist:', self.m_artist)
-            self.update.addRow('Stars:', self.m_stars)
-            self.update.addRow('Rating:', self.m_rating)
-            self.update.addRow('Type:', self.m_type)
-         
         else:
+            self.tags.returnPressed.connect(self.parent().parent().start_session)
 
-            self.tags.modify(
-                signal=self.parent().parent().start_session, 
-                connect='return'
-                )
+            # self.tags.modify(
+            #     signal=self.parent().parent().start_session, 
+            #     connect='return'
+            #     )
             self.time = Widget(
                 'entry', signal=self.parent().parent().start_session,
                 connect='return'
                 )
             self.select.insertRow(1, 'Time:', self.time)
-            # self.setTabOrder(self.time, type)
-            # self.setTabOrder(self.time, rating)
-            # self.setTabOrder(self.time, self.order)
-            # self.setTabOrder(self.time, self.stars)
            
     def get_tags(self, query='', ops={'and':None, 'or':1, 'not':0}):
         
-        string = self.tags.get().split()[::-1]
+        string = self.tags.text().split()[::-1]
+        # string = self.tags.get().split()[::-1]
         if string and string != ['-']:
 
             while string:
@@ -276,21 +198,23 @@ class Ribbon(QWidget):
     
     def get_rating(self):
 
-        rating = self.rating.checkedButton()
+        rating = self.rating.checkedAction()
         return RATING[rating.text()]
 
     def get_type(self):
 
-        type = self.type.checkedButton()
+        type = self.type.checkedAction()
         return TYPE[type.text()]
     
     def get_order(self):
         
-        column, order = self.order.get()
+        order = self.order
+        column = order[0].checkedAction().text()
+        order = order[1].checkedAction().text()
         
         if column: 
             column = 'RAND()' if column == 'Random' else column
-            return f' ORDER BY {column} {order}'
+            return f' ORDER BY {column} {ORDER[order]}'
         return ' ORDER BY rowid'
        
 class StatusBar(QLabel):

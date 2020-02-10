@@ -3,10 +3,8 @@ from os import remove
 
 from GUI import galleryView, previewView, sliderView, mainView, trainView
 from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, Qt
-from GUI import CURSOR, DATAB, EDIT, MODIFY, DELETE
+from GUI import CURSOR, DATAB, EDIT, MODIFY, DELETE, NEZUMI
 
-NEZUMI = r'C:\Program Files (x86)\Lazy Nezumi Pro\LazyNezumiPro.exe'
-    
 class App(QMainWindow):
     
     def __init__(self):
@@ -98,9 +96,10 @@ class ManageData(QMainWindow):
         
         super().__init__(parent)
         self.setWindowTitle('Manage Data')
-        self.fullscreen = False
+        self.slideshow = False
         self.configure_gui()
         self.create_widgets()
+        self.gallery.populate()
         self.showMaximized()
 
     def configure_gui(self):
@@ -127,24 +126,24 @@ class ManageData(QMainWindow):
         self.gallery.setParent(self)
         self.preview.setParent(self)
         
-    def change_records(self, gallery, values, type_={'Photo':0, 'Illus':1}):
+    def change_records(self, gallery, *args, type_={'Photo':0, 'Illus':1}):
         
         parameters = []
-        tags, artists, stars, rating, type = values
+        tags, artists, stars, rating, type = args
 
-        for edits, col in zip([tags, artists], ['tags', 'artist']):
+        # for edits, col in zip([tags, artists], ['tags', 'artist']):
             
-            if edits[1]:
+        #     if edits[1]:
                 
-                for num, (path,) in enumerate(gallery):
+        #         for num, (path,) in enumerate(gallery):
                     
-                    CURSOR.execute(EDIT.format(col), (path,))
-                    string, = CURSOR.fetchone()
-                    old, new = {*string.split()}, {edits[1]}
-                    new = old | new if edits[0] == 'Add' else old - new
-                    gallery[num] = f" {' '.join(new)} ", path
+        #             CURSOR.execute(EDIT.format(col), (path,))
+        #             string, = CURSOR.fetchone()
+        #             old, new = {*string.split()}, {edits[1]}
+        #             new = old | new if edits[0] == 'Add' else old - new
+        #             gallery[num] = f" {' '.join(new)} ", path
                     
-                parameters.append(f'{col}=%s')
+        #         parameters.append(f'{col}=%s')
 
         if stars: parameters.append(f'stars={stars}')
         if rating: parameters.append(f'rating="{rating}"')
@@ -159,7 +158,7 @@ class ManageData(QMainWindow):
     def delete_records(self, sender=None):
         
         gallery = gallery = [
-            (thumb.data(Qt.UserRole),) for thumb in 
+            (index.data(Qt.UserRole),) for index in 
             self.gallery.images.selectedIndexes()
             ]
         CURSOR.executemany(DELETE, gallery)
@@ -171,13 +170,8 @@ class ManageData(QMainWindow):
     def open_slideshow(self, index):
         
         gallery = [
-            thumb[0] for thumb in 
-            self.gallery.images.table.images
+            index[0] for index in self.gallery.images.table.images
             ]
-            #  if index is None else [
-            # thumb.data()[0] for thumb in 
-            # self.gallery.images.selectedIndexes()
-            # ]
         self.slideshow = sliderView.Slideshow(self, gallery, index)
     
     def keyPressEvent(self, sender):
@@ -185,9 +179,9 @@ class ManageData(QMainWindow):
         key_press = sender.key()
 
         if key_press == Qt.Key_Delete: self.delete_records()
-        if key_press == Qt.Key_Return: self.gallery.edit_wrapper()
-        elif key_press == Qt.Key_Escape and not self.fullscreen: self.close()
-        else: self.fullscreen = False
+        # if key_press == Qt.Key_Return: self.gallery.edit_wrapper()
+        elif key_press == Qt.Key_Escape and not self.slideshow: self.close()
+        else: self.slideshow = False
         
     def closeEvent(self, sender):
 
@@ -202,6 +196,7 @@ class GestureDraw(QMainWindow):
         self.setWindowTitle('Gesture Draw')
         self.configure_gui()
         self.create_widgets()
+        self.gallery.populate()
         self.show()
         Popen([NEZUMI])
 

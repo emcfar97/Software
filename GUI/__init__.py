@@ -12,11 +12,13 @@ DATAB = sql.connect(
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
 CURSOR = DATAB.cursor(buffered=True)
-BASE = 'SELECT path, tags, artist, rating, stars FROM imageData WHERE'
+BASE = 'SELECT path, tags, artist, stars, rating, type FROM imageData WHERE'
 UPDATE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=%s'
 MODIFY = 'UPDATE imageData SET {} WHERE path=%s'
 EDIT = 'SELECT {} FROM imageData WHERE path=%s'
 DELETE = 'DELETE FROM imageData WHERE path=%s'
+NEZUMI = r'C:\Program Files (x86)\Lazy Nezumi Pro\LazyNezumiPro.exe'
+
 if __file__.startswith(('e:\\','e:/')):
 
     BASE = BASE.replace('path','REPLACE(path, "C:", "E:")')

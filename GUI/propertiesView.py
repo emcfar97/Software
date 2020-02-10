@@ -1,46 +1,108 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QWidget, QFormLayout, QVBoxLayout, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 from PyQt5.QtCore import Qt
 
 class Properties(QMainWindow):
 
-    def __init__(self, parent): 
+    def __init__(self, parent):
         
         super().__init__(parent)
         self.setWindowTitle('Properties')
         self.configure_gui()
         self.create_widgets()
-        self.show()
 
     def configure_gui(self): 
         
-         
-        self.layout = QFormLayout()
-        self.layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
-        self.setLayout(self.layout)
-
-        resolution = Qapp.desktop().screenGeometry()
-        self.setGeometry(
-            resolution.width() * .3, resolution.height() * .3, 
-            resolution.width() * .25,  resolution.height() * .5
-            )  
-
-    def create_widgets(self): 
+        self.center = QWidget()
+        self.layout = QVBoxLayout()
+        self.setCentralWidget(self.center)
+        self.center.setLayout(self.layout)
         
-        # self.details = QFormLayout()
-        # self.details.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
-        # self.layout.addLayout(self.details)
+        size = self.parent().size()
+        self.setGeometry(
+            size.width() * .3, size.height() * .3, 
+            size.width() * .25,  size.height() * .5
+            )  
+        
+    def create_widgets(self): 
 
-        self.layout.addRow('Title', QLineEdit(self))
-        self.layout.addRow('Tags',  QLineEdit(self))
-        self.layout.addRow('Artist',  QLineEdit(self))
-        self.layout.addRow('Stars',  QLineEdit(self))
-        self.layout.addRow('Rating',  QLineEdit(self))
-        self.layout.addRow('Type',  QLineEdit(self))
+        self.path = QLineEdit(self)
+        self.tags = QLineEdit(self)
+        self.artist = QLineEdit(self)
+        self.stars = QComboBox(self)
+        self.rating = QComboBox(self)
+        self.type = QComboBox(self)
+        
+        self.path.setDisabled(True)
+        self.stars.addItems(['', '1', '2', '3', '4', '5'])
+        self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
+        self.type.addItems(['', 'Photograph', 'Illustration'])
+        
+        self.form = QFormLayout()
+        self.form.addRow('Path', self.path)
+        self.form.addRow('Tags',  self.tags)
+        self.form.addRow('Artist',  self.artist)
+        self.form.addRow('Stars',  self.stars)
+        self.form.addRow('Rating',  self.rating)
+        self.form.addRow('Type',  self.type)
+        self.layout.addLayout(self.form)
 
-if __name__ == '__main__':
+        horizontal = QHBoxLayout()
+        horizontal.setAlignment(Qt.AlignRight)
+        for text in ['OK', 'Cancel', 'Apply']:
+            option = QPushButton(text)
+            if text in ['OK', 'Apply']:
+                option.clicked.connect(self.output)
+            else: option.clicked.connect(self.close)
+            horizontal.addWidget(option)
+        else: option.setEnabled(False)
+        self.layout.addLayout(horizontal)
     
-    Qapp = QApplication([])
-    
-    app = Properties(None)
+        self.path.textEdited.connect(lambda: option.setEnabled(True))
+        self.tags.textEdited.connect(lambda: option.setEnabled(True))
+        self.artist.textEdited.connect(lambda: option.setEnabled(True))
+        self.stars.activated.connect(lambda: option.setEnabled(True))
+        self.rating.activated.connect(lambda: option.setEnabled(True))
+        self.type.activated.connect(lambda: option.setEnabled(True))
 
-    Qapp.exec_()
+    def display(self, indexes):
+        
+        self.indexes = indexes
+        data = [i.data(1000) for i in self.indexes]
+        paths = set.intersection(*[i[0] for i in data])
+        tags = set.intersection(*[i[1] for i in data])
+        artist = set.intersection(*[i[2] for i in data])
+        stars = set.intersection(*[i[3] for i in data])
+        rating = set.intersection(*[i[4] for i in data])
+        type = set.intersection(*[i[5] for i in data])
+
+        if paths: self.path.setText(paths.pop())
+        if tags: self.tags.setText(' '.join(tags))
+        if artist: self.artist.setText(' '.join(artist))
+        if stars: self.stars.setCurrentIndex(int(stars.pop()))
+        if rating: self.rating.setCurrentText(rating.pop().capitalize())
+        if type: self.type.setCurrentIndex(type.pop() + 1)
+        self.show()
+
+    def output(self, sender):
+
+        gallery = [
+            (index.data(Qt.UserRole),) for index in self.indexes
+            ]
+        tags = self.tags.text()
+        artist = self.artist.text()
+        stars = int(self.stars.currentText()) if self.stars.currentText() else 0
+        rating = self.rating.currentText()
+        type = self.type.currentText()[:5]
+
+        if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
+            self.parent().change_records(
+                gallery, tags, artist, stars, rating, type
+                )
+
+        self.hide()
+        self.path.clear()
+        self.tags.clear()
+        self.artist.clear()
+        self.stars.setCurrentIndex(0)
+        self.rating.setCurrentIndex(0)
+        self.type.setCurrentIndex(0)
