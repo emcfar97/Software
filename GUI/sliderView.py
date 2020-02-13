@@ -53,7 +53,7 @@ class Slideshow(QMainWindow):
     
     def show_image(self, path):
     
-        width, height = self.width(), self.height()
+        width, height = self.parent.width(), self.parent.height()
             
         if path.endswith(('.jpg', '.jpeg', '.png')):
             

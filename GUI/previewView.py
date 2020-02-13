@@ -23,7 +23,7 @@ class Preview(QWidget):
         elif self.type == 'Gesture Draw':
             self.setGeometry(
                 0, 0, 
-                size.width(), size.height() - 15
+                size.width(), size.height() - 20
                 ) 
             self.setStyleSheet('background: black')
     
