@@ -3,12 +3,13 @@ from PyQt5.QtCore import Qt
 
 class Properties(QMainWindow):
 
-    def __init__(self, parent):
+    def __init__(self, parent, indexes):
         
         super().__init__(parent)
         self.setWindowTitle('Properties')
         self.configure_gui()
         self.create_widgets()
+        self.display(indexes)
 
     def configure_gui(self): 
         
@@ -99,10 +100,4 @@ class Properties(QMainWindow):
                 gallery, tags, artist, stars, rating, type
                 )
 
-        self.hide()
-        self.path.clear()
-        self.tags.clear()
-        self.artist.clear()
-        self.stars.setCurrentIndex(0)
-        self.rating.setCurrentIndex(0)
-        self.type.setCurrentIndex(0)
+        self.close()

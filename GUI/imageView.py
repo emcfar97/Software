@@ -132,7 +132,7 @@ class imageView(QTableView):
             menu.addSeparator()
             menu.addAction(
                 QAction('Properties', menu, 
-                triggered=lambda: self.properties.display(self.selectedIndexes()))
+                triggered=lambda: Properties(parent, self.selectedIndexes()))
                 )
         except AttributeError: pass
 
