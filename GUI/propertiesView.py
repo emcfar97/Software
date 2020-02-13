@@ -96,7 +96,7 @@ class Properties(QMainWindow):
         type = self.type.currentText()[:5]
 
         if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
-            self.parent().change_records(
+            self.parent().parent().change_records(
                 gallery, tags, artist, stars, rating, type
                 )
 
