@@ -15,10 +15,12 @@
     #     )
     # model.save(r'Machine Learning\Master\medium.h5')
 
+
 import os, shutil, hashlib, imagehash
 from os.path import join, isdir
 import mysql.connector as sql
 from PIL import Image
+from selenium.common.exceptions import WebDriverException
 from Webscraping.utils import get_driver, get_tags, generate_tags
 
 DATAB = sql.connect(
@@ -26,7 +28,7 @@ DATAB = sql.connect(
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
 CURSOR = DATAB.cursor() 
-INSERT = 'INSERT INTO imageData(path, tags, rating, hash, type) VALUES(%s, %s, %s, %s, 0)'
+INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(%s, %s, %s, %s, 0)'
 
 hasher = hashlib.md5()
 driver = get_driver(True)
@@ -54,18 +56,22 @@ for root, dirs, files in os.walk(path):
         if file.endswith('ini'): continue
         file = join(root, file)
         try: tags = get_tags(driver, file)
-        except PermissionError:
-            pass
-        except Exception as error:
-            continue
-        tags, rating = generate_tags('Erotica 2', general=tags, custom=True, rating=True, exif=False)
-        tag = root.split('\\')[-1]
-        if tag in paths: tags += paths[tag]
+        except WebDriverException: continue
+        except: continue
 
-        img = Image.open(file)
-        img.thumbnail([32, 32])
-        img = img.convert('L')
-        hash = f'{imagehash.dhash(img)}'
+        tag = root.split('\\')[-1]
+        if tag in paths and paths[tag] not in tags: 
+            tags.append(paths[tag])
+        tags, rating = generate_tags(
+            'Erotica 2', general=tags, custom=True, rating=True, exif=False
+            )
+
+        if file.endswith('gif'):
+            img = Image.open(file)
+            img.thumbnail([32, 32])
+            img = img.convert('L')
+            hash = f'{imagehash.dhash(img)}'
+        else: hash = None
 
         with open(file, 'rb') as file: 
             hasher.update(file.read())
@@ -73,3 +79,4 @@ for root, dirs, files in os.walk(path):
         shutil.move(file.name, name)
         CURSOR.execute(INSERT, (name, tags, rating, hash))
         DATAB.commit()
+

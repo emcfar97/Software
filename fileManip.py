@@ -1,16 +1,17 @@
-import os, shutil, piexif, json, requests, hashlib, cv2
+import os, shutil, piexif, json, requests, hashlib, imagehash
 from os.path import join, isfile, splitext
 from io import BytesIO
 from PIL import Image
 from Webscraping.utils import get_driver, get_tags, generate_tags, bs4
 import mysql.connector as sql
+from selenium.common.exceptions import WebDriverException
 
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
 CURSOR = DATAB.cursor()
-INSERT = 'INSERT INTO imageData(path, tags, rating, type) VALUES(%s, %s, %s, %s)'
+INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(%s, %s, %s, %s, 0)'
 
 def rename(path):
     
@@ -129,11 +130,15 @@ def insert_files(path):
         file = join(path, file)
         if not isfile(file) or file.endswith(('.ini', 'lnk')): continue
         with open(file, 'rb') as data: hasher.update(data.read())
+        head, ext = splitext(file)
         dest = join(
             r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
-            f'{hasher.hexdigest()}.jpg'
+            f'{hasher.hexdigest()}{ext}'
             )
-        tags = get_tags(driver, file)
+        
+        try: tags = get_tags(driver, file)
+        except WebDriverException: continue
+        except: continue
 
         if file.lower().endswith(('jpg', 'jpeg')):
 
@@ -141,16 +146,22 @@ def insert_files(path):
                 type='Erotica 2', general=tags, 
                 custom=True, rating=True, exif=True
                 )
-            Image.open(file).save(file, exif=exif)
+            img = Image.open(file)
+            copy = img.copy()
+            copy.thumbnail([32, 32])
+            copy = copy.convert('L')
+            hash = f'{imagehash.dhash(copy)}'
+            img.save(file, exif=exif)
 
-        elif file.lower().endswith(('.gif', '.webm', '.mp4')): continue
+        elif file.lower().endswith(('.gif', '.webm', '.mp4')): 
     
             tags, rating = generate_tags(
                 type='Erotica 2', general=tags, 
                 custom=True, rating=True, exif=False
                 )
+            hash = None
 
-        CURSOR.execute(INSERT, (dest, f"{tags}", rating, 0))
+        CURSOR.execute(INSERT, (dest, f"{tags}", rating, hash))
         shutil.move(file, dest)
         DATAB.commit()
 
@@ -161,4 +172,3 @@ paths = [
 for path in paths: insert_files(path)
 
 print("Done")
-

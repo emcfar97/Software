@@ -1,4 +1,4 @@
-import imagehash, os, sys, ast, piexif, time, bs4, requests, re, cv2, tempfile, random
+import imagehash, os, sys, ast, piexif, time, bs4, requests, re, cv2, tempfile
 from PIL import Image
 from io import BytesIO
 from os.path import join
@@ -651,27 +651,29 @@ def progress(size, left, site, length=20):
 def get_tags(driver, path):
 
     tags = set()
+    paths = []
+    flag = False
 
-    if path.endswith(('jpeg', 'jpg', 'png')):
-
-        paths = [path]
+    if path.endswith(('jpeg', 'jpg', 'png')): paths.append(path)
     
     else:
         
+        flag = True
         temp_dir = tempfile.TemporaryDirectory()
         vidcap = cv2.VideoCapture(path)
         success, frame = vidcap.read()
  
         while success:
             
-            paths = []
-            temp = tempfile.mkstemp(dir=temp_dir.name, suffix='.jpg')
-            with open(temp[-1], 'wb') as temp: 
-                temp.write(cv2.imencode('.jpg', frame)[-1])
-                paths.append(temp.name)
-            success, frame = vidcap.read() 
+            try:
+                temp = tempfile.mkstemp(dir=temp_dir.name, suffix='.jpg')
+                with open(temp[-1], 'wb') as img: 
+                    img.write(cv2.imencode('.jpg', frame)[-1])
+                    paths.append(img.name)
+            except PermissionError: pass
+            success, frame = vidcap.read()
 
-        paths = random.choices(paths, k=100)
+        else: paths = paths[::5]
         
     for path in paths:
 
@@ -687,15 +689,23 @@ def get_tags(driver, path):
                     html.find('tbody').findAll(href=True)
                     ]
                 break
-            except: continue
+            except AttributeError: continue
         tags.update(tag)
     
+    if flag: 
+        while True:
+            try: 
+                temp_dir.cleanup()
+                break
+            except Exception as error:
+                file = open(error.filename)
+                file.close()
     return list(tags)
 
 def generate_tags(
     type=None,artists=[],metadata=[],general=[],custom=[],rating=[],exif=True
     ):
-
+    
     tags = []
     type = 'Erotica 2' if 'photo' in general else type
 
@@ -725,10 +735,10 @@ def generate_tags(
             ]
     tags = [' '.join(set(sum(tags, []) + general)), rating] if tags else []
     if exif:
-
+        
         zeroth_ifd = {
             piexif.ImageIFD.XPKeywords: [
-                byte for char in '; '.join(sum(tags,[]))for byte in[ord(char),0]
+                byte for char in tags[0].replace(' ', '; ')for byte in[ord(char),0]
                 ],
             piexif.ImageIFD.XPAuthor: [
                 byte for char in '; '.join(artists) for byte in [ord(char), 0]
