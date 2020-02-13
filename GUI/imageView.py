@@ -24,7 +24,6 @@ class imageView(QTableView):
 
         super().__init__(parent)
         self.menu = self.create_menu()
-        self.properties = Properties(self.parent().parent())
         self.table = Model(self, parent.width())   
         self.setModel(self.table)
         self.horizontalHeader().hide()      
