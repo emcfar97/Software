@@ -41,6 +41,8 @@ paths = {
     "Dance":"dance",
     "Exercise":"exercise",
     "Fellatio":"fellatio",
+    'Girl on top': 'cow_girl',
+    'Guy on top': 'missionary',
     "Lactation":"lactation",
     "Masturbation":"masturbation",
     "Penetration":"insertion",
@@ -50,7 +52,7 @@ paths = {
 
 for root, dirs, files in os.walk(path):
 
-    if root.endswith('Videos'): continue
+    if root.endswith(('Videos', 'No Sex', 'Not Nude', 'Special')): continue
     for file in files: 
         
         if file.endswith('ini'): continue

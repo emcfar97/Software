@@ -681,18 +681,17 @@ def get_tags(driver, path):
         driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(path)
         driver.find_element_by_xpath('//body/div/div/div/form/button').click()
 
-        while True:
+        for _ in range(50):
             html = bs4.BeautifulSoup(driver.page_source, 'lxml')
             try:
-                tag = [
-                    tag.text for tag in 
-                    html.find('tbody').findAll(href=True)
-                    ]
+                tags.update([
+                    tag.text for tag in html.find('tbody').findAll(href=True)
+                    ])
                 break
-            except AttributeError: continue
-        tags.update(tag)
+            except AttributeError: 
+                if not (_ % 10): driver.refresh()
     
-    if flag: 
+    if flag:
         while True:
             try: 
                 temp_dir.cleanup()

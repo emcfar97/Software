@@ -1,5 +1,5 @@
 import os, shutil, piexif, json, requests, hashlib, imagehash
-from os.path import join, isfile, splitext
+from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
 from Webscraping.utils import get_driver, get_tags, generate_tags, bs4
@@ -135,6 +135,8 @@ def insert_files(path):
             r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
             f'{hasher.hexdigest()}{ext}'
             )
+        
+        if exists(dest):continue
         
         try: tags = get_tags(driver, file)
         except WebDriverException: continue
