@@ -96,9 +96,9 @@ class ManageData(QMainWindow):
         
         super().__init__(parent)
         self.setWindowTitle('Manage Data')
-        self.slideshow = False
         self.configure_gui()
         self.create_widgets()
+        self.slideshow = sliderView.Slideshow(self)
         self.gallery.populate()
         self.showMaximized()
 
@@ -166,22 +166,13 @@ class ManageData(QMainWindow):
         DATAB.commit()
         self.preview.show_image(None)
         self.gallery.populate()
-
-    def open_slideshow(self, index):
-        
-        gallery = [
-            index[0] for index in self.gallery.images.table.images
-            ]
-        self.slideshow = sliderView.Slideshow(self, gallery, index)
     
     def keyPressEvent(self, sender):
 
         key_press = sender.key()
 
         if key_press == Qt.Key_Delete: self.delete_records()
-        # if key_press == Qt.Key_Return: self.gallery.edit_wrapper()
-        elif key_press == Qt.Key_Escape and not self.slideshow: self.close()
-        else: self.slideshow = False
+        elif key_press == Qt.Key_Escape: self.close()
         
     def closeEvent(self, sender):
 

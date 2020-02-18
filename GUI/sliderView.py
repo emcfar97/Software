@@ -5,15 +5,12 @@ from . import *
 
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent, gallery, index):
+    def __init__(self, parent):
         
         super().__init__()
         self.parent = parent
-        self.index = index
-        self.gallery = gallery
         self.configure_gui()
         self.create_widgets()
-        self.showFullScreen()
     
     def configure_gui(self):
         
@@ -21,10 +18,11 @@ class Slideshow(QMainWindow):
         self.setCentralWidget(self.stack)
 
         resolution = self.parent.size()
+        self.dimensions = resolution.width(),  resolution.height()
         self.setGeometry(
             0, 0, 
             resolution.width(),  resolution.height()
-            )
+            ) 
         self.setStyleSheet('background: black')
           
     def create_widgets(self):
@@ -35,7 +33,6 @@ class Slideshow(QMainWindow):
         self.stack.addWidget(self.label)
         self.stack.addWidget(self.video)
         
-        self.move(0)
         self.setMouseTracking(True)
         self.label.setMouseTracking(True)
         self.video.setMouseTracking(True)
@@ -45,15 +42,22 @@ class Slideshow(QMainWindow):
         self.timer.timeout.connect(
             lambda: self.setCursor(Qt.BlankCursor)
             )               
-                
+
+    def update(self, gallery, index):
+
+        self.gallery = gallery
+        self.index = index
+        self.move(0)
+        self.showFullScreen()
+
     def move(self, delta):
         
         self.index = (self.index + delta) % len(self.gallery)
-        self.show_image(self.gallery[self.index])
+        self.show_image(self.gallery[self.index][0])
     
     def show_image(self, path):
-    
-        width, height = self.parent.width(), self.parent.height()
+        
+        width, height = self.dimensions
             
         if path.endswith(('.jpg', '.jpeg', '.png')):
             
@@ -67,15 +71,19 @@ class Slideshow(QMainWindow):
             
             self.label.setPixmap(QPixmap())
             wid, hei = Image.open(path).size
-            ratio = wid / hei         
-            width, height = (
+            ratio = wid / hei
+
+            # dimensions = (width, width / ratio), (height * ratio, height)
+            # if hei < wid: dimensions = dimensions[1]
+            # else: dimensions = dimensions[0]      
+            dimensions = (
                 (width, width / ratio) 
-                if wid > hei else 
+                if wid < hei else 
                 (height * ratio, height)
                 )
             
             movie = QMovie(path)
-            movie.setScaledSize(QSize(width, height))
+            movie.setScaledSize(QSize(*dimensions))
             self.label.setMovie(movie)
             movie.start()
         
@@ -85,6 +93,8 @@ class Slideshow(QMainWindow):
             self.label.setPixmap(QPixmap())
             self.video.update(path)
             self.stack.setCurrentIndex(1)
+        
+        print(self.dimensions)
   
     def keyPressEvent(self, sender):
 
@@ -92,7 +102,10 @@ class Slideshow(QMainWindow):
             
         if key_press == Qt.Key_Right: self.move(+1)
         elif key_press == Qt.Key_Left: self.move(-1)        
-        elif key_press == Qt.Key_Escape: self.close()
+        elif key_press == Qt.Key_Escape: 
+            
+            self.video.player.stop()
+            self.hide()
             
     def mouseMoveEvent(self, sender):
         
@@ -100,12 +113,6 @@ class Slideshow(QMainWindow):
         self.setCursor(Qt.ArrowCursor)
         self.timer.start(1500)
     
-    def closeEvent(self, sender):
-    
-        self.video.player.stop()
-        # self.parent.fullscreen = False
-        self.close()
-
 class videoPlayer(QVideoWidget):
 
     def __init__(self, parent):

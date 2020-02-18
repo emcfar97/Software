@@ -107,7 +107,7 @@ class Gallery(QWidget):
 
         else:
             values.append('path LIKE "%.jp%g"')
-            values.append('date_used <= Now() - INTERVAL 1 MONTH')
+            values.append('date_used <= Now() - INTERVAL 2 MONTH')
 
             query = ' AND '.join([i for i in values if i])
             return query + ' ORDER BY RAND()'

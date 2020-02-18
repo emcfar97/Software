@@ -61,11 +61,10 @@ class imageView(QTableView):
 
         parent = self.parent().parent()
 
-        if parent.windowTitle() == 'Manage Data' and not parent.slideshow:
+        if parent.windowTitle() == 'Manage Data':
             
-            parent.slideshow = True
-            parent.open_slideshow(
-                (index.row() * 5) + index.column()
+            parent.slideshow.update(
+                self.table.images, (index.row() * 5) + index.column()
                 )
     
     def create_menu(self):
