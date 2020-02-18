@@ -52,8 +52,8 @@ def page_handler(driver, hrefs):
         driver.get(f'https://www.furaffinity.net{href}')
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
 
-        artist = html.findAll('a', href=re.compile('/user/+'), id=False)[1].text
-        exif, = generate_tags(TYPE, [artist.lower()])
+        artist = html.find('a', href=re.compile('/user/+(?!chairekakia)'), id=False).get('href')
+        x, y, exif, = generate_tags(TYPE, [artist.split('/')[2].lower()])
         image = f'https:{html.find("a", href=re.compile("//d.+")).get("href")}'
         
         name = image.split('/')[-1].split('.')[1:]
@@ -62,7 +62,6 @@ def page_handler(driver, hrefs):
         hash = save_image(name, image, exif)
         if name.endswith('.png'): name = name.replace('.png', '.jpg')
 
-        
         while True:
             try:
                 CURSOR.execute(UPDATE[1], (name, hash, image, href))

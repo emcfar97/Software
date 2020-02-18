@@ -1,4 +1,5 @@
 import imagehash, os, sys, ast, piexif, time, bs4, requests, re, cv2, tempfile
+from math import log
 from PIL import Image
 from io import BytesIO
 from os.path import join
@@ -60,6 +61,8 @@ metadata_dict = {
     'monochrome':'monochrome', 
     'sketch': 'sketch',
     'lineart': 'lineart',
+    'animated':'animated',
+    'audio':'audio',
     'uncensored': 'uncensored',
     'censored': 'censored'
     }
@@ -651,10 +654,10 @@ def progress(size, left, site, length=20):
 def get_tags(driver, path):
 
     tags = set()
-    paths = []
+    frames = []
     flag = False
 
-    if path.endswith(('jpeg', 'jpg', 'png')): paths.append(path)
+    if path.endswith(('jpeg', 'jpg', 'png')): frames.append(path)
     
     else:
         
@@ -669,16 +672,18 @@ def get_tags(driver, path):
                 temp = tempfile.mkstemp(dir=temp_dir.name, suffix='.jpg')
                 with open(temp[-1], 'wb') as img: 
                     img.write(cv2.imencode('.jpg', frame)[-1])
-                    paths.append(img.name)
+                    frames.append(img.name)
             except PermissionError: pass
             success, frame = vidcap.read()
 
-        else: paths = paths[::5]
+        else: 
+            step = round(60 * log((len(frames) * .0005) + 1) + 1)
+            frames = frames[::step]
         
-    for path in paths:
+    for frame in frames:
 
         driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
-        driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(path)
+        driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(frame)
         driver.find_element_by_xpath('//body/div/div/div/form/button').click()
 
         for _ in range(50):
@@ -732,12 +737,13 @@ def generate_tags(
             key for key, val in rating_dict.items() 
             if evaluate(sum(tags,[]) + general, val)
             ]
-    tags = [' '.join(set(sum(tags, []) + general)), rating] if tags else []
     if exif:
         
+        tags = set(sum(tags, []) + general)
+        custom = tags.copy() | {rating}
         zeroth_ifd = {
             piexif.ImageIFD.XPKeywords: [
-                byte for char in tags[0].replace(' ', '; ')for byte in[ord(char),0]
+                byte for char in '; '.join(custom) for byte in [ord(char), 0]
                 ],
             piexif.ImageIFD.XPAuthor: [
                 byte for char in '; '.join(artists) for byte in [ord(char), 0]
@@ -745,8 +751,12 @@ def generate_tags(
             }
         exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
         
-        try: tags += [piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})]
-        except: return
+        tags = [
+            ' '.join(tags), rating, 
+            piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})
+            ]
+
+    else: tags = ' '.join(set(sum(tags, []) + general)), rating
     return tags
 
 def evaluate(tags, search):

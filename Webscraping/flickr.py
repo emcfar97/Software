@@ -69,7 +69,14 @@ def page_handler(driver, hrefs):
             else: continue
 
             image = driver.find_element_by_class_name('zoom-large').get_attribute('src')
-            exif, = generate_tags(TYPE)
+            
+            try: tags = get_tags(driver, image)
+            except WebDriverException: continue
+            except: continue
+            tags, rating, exif = generate_tags(
+                type='Erotica 2', general=tags, 
+                custom=True, rating=True, exif=True
+                )
             hasher.update(requests.get(image).content)
             ext = image.split('.')[-1]
             name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}')
@@ -83,6 +90,14 @@ def page_handler(driver, hrefs):
                 data = requests.get(image).content
                 hasher.update(data)
                 
+                try: tags = get_tags(driver, data)
+                except WebDriverException: continue
+                except: continue
+                tags, rating = generate_tags(
+                    type='Erotica 2', general=tags, 
+                    custom=True, rating=True, exif=False
+                    )
+                    
                 name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.mp4')
                 with open(name, 'wb') as file: file.write(data) 
 
@@ -91,24 +106,29 @@ def page_handler(driver, hrefs):
                     status = driver.find_element_by_class_name('statusCode')
                     if status.text == '404': 
                         exif = None
+                        tags = ''
+                        rating = None
                         image = None
                         name = f'404 - {href}'
                 except: continue
             
         hash = None if name.startswith('404') else save_image(name, image, exif, 1)
-        # hash = save_image(name, image, 1)
         if name.endswith('.png'): name = name.replace('.png', '.jpg')
         
         while True:
             try:
-                CURSOR.execute(UPDATE[0], (name, image, hash, 0, href))
+                CURSOR.execute(UPDATE[3], (
+                    name, None, f" {tags} ", rating, image, hash, 0, href)
+                    )
                 DATAB.commit()
                 break
             except sql.errors.OperationalError: continue
             except sql.errors.IntegrityError:
                 name, ext = name.split('.')
                 name = f'{name}1.{ext}'
-                CURSOR.execute(UPDATE[0], (name, image, hash, 0, href))
+                CURSOR.execute(UPDATE[3], (
+                    name, None, f" {tags} ", rating, image, hash, 0, href)
+                    )
                 DATAB.commit()
                 break
     

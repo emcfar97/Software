@@ -11079,3 +11079,706 @@ PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en
 2020-02-07 00:13:27,453 - PixivUtil20191221 - INFO -  done.
 2020-02-07 00:13:31,788 - PixivUtil20191221 - INFO - EXIT: 9005
 2020-02-07 00:13:31,789 - PixivUtil20191221 - INFO - ###############################################################
+2020-02-13 21:15:41,471 - PixivUtil20191221 - INFO - ###############################################################
+2020-02-13 21:15:41,471 - PixivUtil20191221 - INFO - Starting with argument: [Webscraping\PixivUtil\PixivUtil2.exe -s 6 y 0 7 -x].
+2020-02-13 21:15:41,503 - PixivUtil20191221 - INFO - Setting log level to: DEBUG
+2020-02-13 21:15:41,503 - PixivUtil20191221 - INFO - No default cookie jar available, creating... 
+2020-02-13 21:15:41,772 - PixivUtil20191221 - INFO - New version available: ('20200125', ' - Happy CNY 2020!')
+2020-02-13 21:15:41,772 - PixivUtil20191221 - INFO - Using custom DB Path: C:\Users\Emc11\Dropbox\Software\Webscraping\PixivUtil\Data.sqlite
+2020-02-13 21:15:41,788 - PixivUtil20191221 - INFO - Only process members where the last update is >= 14 days ago
+2020-02-13 21:15:41,789 - PixivUtil20191221 - INFO - Using Username: emc1130@hotmail.com
+2020-02-13 21:15:41,789 - PixivUtil20191221 - INFO - Trying to log in with saved cookie
+2020-02-13 21:15:44,601 - PixivUtil20191221 - INFO - Logging in, return url: https://www.pixiv.net/
+2020-02-13 21:15:44,602 - PixivUtil20191221 - INFO - Login successful.
+2020-02-13 21:15:44,603 - PixivUtil20191221 - INFO - Logged in using cookie
+2020-02-13 21:15:44,604 - PixivUtil20191221 - INFO - My User Id: 13370024.
+2020-02-13 21:15:44,606 - PixivUtil20191221 - INFO - Premium User: False.
+2020-02-13 21:15:44,606 - PixivUtil20191221 - INFO - Locale = /en
+2020-02-13 21:15:44,606 - PixivUtil20191221 - INFO - User's Image Bookmark mode.
+2020-02-13 21:15:44,607 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 0
+2020-02-13 21:15:44,608 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=0
+2020-02-13 21:15:47,917 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 1
+2020-02-13 21:15:47,933 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=1
+2020-02-13 21:15:51,300 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 2
+2020-02-13 21:15:51,301 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=2
+2020-02-13 21:15:53,496 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 3
+2020-02-13 21:15:53,520 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=3
+2020-02-13 21:15:55,223 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 4
+2020-02-13 21:15:55,296 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=4
+2020-02-13 21:15:57,347 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 5
+2020-02-13 21:15:57,349 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=5
+2020-02-13 21:15:58,851 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 6
+2020-02-13 21:15:58,852 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=6
+2020-02-13 21:16:01,554 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 7
+2020-02-13 21:16:01,556 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=7
+2020-02-13 21:16:04,093 - PixivUtil20191221 - INFO - Importing user's bookmarked image from page 0
+2020-02-13 21:16:04,205 - PixivUtil20191221 - INFO - Source URL: https://www.pixiv.net/bookmark.php?p=0&rest=hide
+2020-02-13 21:16:05,271 - PixivUtil20191221 - INFO - Found 160 image(s).
+2020-02-13 21:16:05,364 - PixivUtil20191221 - DEBUG - Getting image page: 79466393
+2020-02-13 21:16:07,369 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:16:08,101 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79466393
+2020-02-13 21:16:10,183 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p0.jpg
+2020-02-13 21:16:10,399 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p0.jpg
+2020-02-13 21:16:10,648 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:11,783 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:14,114 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:14,117 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p1.jpg
+2020-02-13 21:16:14,118 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p1.jpg
+2020-02-13 21:16:14,264 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:15,256 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:17,951 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:18,242 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p2.jpg
+2020-02-13 21:16:18,832 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p2.jpg
+2020-02-13 21:16:19,315 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:20,249 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:23,367 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:23,961 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p3.jpg
+2020-02-13 21:16:24,168 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p3.jpg
+2020-02-13 21:16:24,364 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:25,314 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:27,761 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:28,260 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p4.jpg
+2020-02-13 21:16:28,507 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p4.jpg
+2020-02-13 21:16:28,931 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:29,876 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:32,373 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:32,821 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p5.jpg
+2020-02-13 21:16:32,824 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p5.jpg
+2020-02-13 21:16:33,281 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:34,184 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:36,596 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:36,808 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p6.jpg
+2020-02-13 21:16:36,811 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p6.jpg
+2020-02-13 21:16:36,813 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:37,827 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:40,348 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:40,578 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p7.jpg
+2020-02-13 21:16:40,792 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p7.jpg
+2020-02-13 21:16:41,023 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:42,209 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:44,687 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:44,910 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p8.jpg
+2020-02-13 21:16:44,940 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p8.jpg
+2020-02-13 21:16:45,177 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:46,084 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:48,669 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:48,676 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p9.jpg
+2020-02-13 21:16:48,678 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p9.jpg
+2020-02-13 21:16:49,280 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:50,341 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:52,835 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:16:53,004 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p10.jpg
+2020-02-13 21:16:53,236 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Cian yo - 79466393_p10.jpg
+2020-02-13 21:16:53,911 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:54,821 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466393
+2020-02-13 21:16:59,399 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:02,367 - PixivUtil20191221 - DEBUG - Getting image page: 79466971
+2020-02-13 21:17:04,372 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:17:05,205 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79466971
+2020-02-13 21:17:07,074 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ささきあきら - 79466971_p0.png
+2020-02-13 21:17:07,076 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ささきあきら - 79466971_p0.png
+2020-02-13 21:17:07,174 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466971
+2020-02-13 21:17:08,055 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79466971
+2020-02-13 21:17:13,022 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:13,924 - PixivUtil20191221 - DEBUG - Getting image page: 79454780
+2020-02-13 21:17:15,712 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:17:16,554 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79454780
+2020-02-13 21:17:18,181 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\紅茶味覺 - 79454780_p0.jpg
+2020-02-13 21:17:18,313 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\紅茶味覺 - 79454780_p0.jpg
+2020-02-13 21:17:18,516 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79454780
+2020-02-13 21:17:19,398 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79454780
+2020-02-13 21:17:22,466 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:23,011 - PixivUtil20191221 - DEBUG - Getting image page: 79453411
+2020-02-13 21:17:24,737 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:17:25,339 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79453411
+2020-02-13 21:17:28,104 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p0.jpg
+2020-02-13 21:17:28,105 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p0.jpg
+2020-02-13 21:17:28,285 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:29,209 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:30,768 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:30,771 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p1.jpg
+2020-02-13 21:17:30,918 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p1.jpg
+2020-02-13 21:17:30,922 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:31,748 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:33,264 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:33,267 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p2.jpg
+2020-02-13 21:17:33,269 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p2.jpg
+2020-02-13 21:17:33,410 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:34,220 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:35,651 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:35,655 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p3.jpg
+2020-02-13 21:17:35,659 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p3.jpg
+2020-02-13 21:17:35,969 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:36,728 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:38,214 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:38,219 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p4.jpg
+2020-02-13 21:17:38,220 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p4.jpg
+2020-02-13 21:17:38,224 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:39,035 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:40,463 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:40,465 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p5.jpg
+2020-02-13 21:17:40,467 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p5.jpg
+2020-02-13 21:17:40,631 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:41,388 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:42,872 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:42,874 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p6.jpg
+2020-02-13 21:17:42,876 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p6.jpg
+2020-02-13 21:17:42,880 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:43,666 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:45,425 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:46,347 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p7.jpg
+2020-02-13 21:17:46,481 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p7.jpg
+2020-02-13 21:17:46,695 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:47,723 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:50,117 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:50,405 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p8.jpg
+2020-02-13 21:17:50,425 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p8.jpg
+2020-02-13 21:17:51,277 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:52,325 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:54,062 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:54,279 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p9.jpg
+2020-02-13 21:17:54,281 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\めいさむ - 79453411_p9.jpg
+2020-02-13 21:17:54,605 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:55,401 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79453411
+2020-02-13 21:17:56,697 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:17:57,716 - PixivUtil20191221 - DEBUG - Getting image page: 79451627
+2020-02-13 21:17:59,511 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:18:00,350 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79451627
+2020-02-13 21:18:02,231 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Crescentia - 79451627_p0.png
+2020-02-13 21:18:02,236 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Crescentia - 79451627_p0.png
+2020-02-13 21:18:02,377 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79451627
+2020-02-13 21:18:03,139 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79451627
+2020-02-13 21:18:05,658 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:18:06,539 - PixivUtil20191221 - DEBUG - Getting image page: 79450794
+2020-02-13 21:18:08,679 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:18:12,927 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79450794
+2020-02-13 21:18:14,891 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79450794_p0.png
+2020-02-13 21:18:14,892 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79450794_p0.png
+2020-02-13 21:18:14,895 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79450794
+2020-02-13 21:18:15,963 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79450794
+2020-02-13 21:18:19,163 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:18:19,191 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79450794_p1.png
+2020-02-13 21:18:19,192 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79450794_p1.png
+2020-02-13 21:18:19,320 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79450794
+2020-02-13 21:18:20,227 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79450794
+2020-02-13 21:18:23,625 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:18:24,308 - PixivUtil20191221 - DEBUG - Getting image page: 79432359
+2020-02-13 21:18:26,226 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:18:28,108 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79432359
+2020-02-13 21:18:29,982 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\jcm2 - 79432359_p0.jpg
+2020-02-13 21:18:30,399 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\jcm2 - 79432359_p0.jpg
+2020-02-13 21:18:31,007 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79432359
+2020-02-13 21:18:31,863 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79432359
+2020-02-13 21:18:35,787 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:18:36,558 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\jcm2 - 79432359_p1.jpg
+2020-02-13 21:18:36,795 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\jcm2 - 79432359_p1.jpg
+2020-02-13 21:18:37,169 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79432359
+2020-02-13 21:18:38,373 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79432359
+2020-02-13 21:18:40,990 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:18:42,864 - PixivUtil20191221 - DEBUG - Getting image page: 79434351
+2020-02-13 21:18:44,623 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:18:45,561 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79434351
+2020-02-13 21:18:47,501 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\liveforthefunk - 79434351_p0.png
+2020-02-13 21:18:47,502 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\liveforthefunk - 79434351_p0.png
+2020-02-13 21:18:47,506 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79434351
+2020-02-13 21:18:48,255 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79434351
+2020-02-13 21:18:53,396 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:18:53,400 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\liveforthefunk - 79434351_p1.png
+2020-02-13 21:18:53,407 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\liveforthefunk - 79434351_p1.png
+2020-02-13 21:18:53,538 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79434351
+2020-02-13 21:18:54,311 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79434351
+2020-02-13 21:19:00,591 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:19:00,599 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\liveforthefunk - 79434351_p2.png
+2020-02-13 21:19:00,617 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\liveforthefunk - 79434351_p2.png
+2020-02-13 21:19:01,514 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79434351
+2020-02-13 21:19:02,334 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79434351
+2020-02-13 21:19:16,991 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:19:19,488 - PixivUtil20191221 - DEBUG - Getting image page: 79435117
+2020-02-13 21:19:21,295 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:19:22,046 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79435117
+2020-02-13 21:19:26,191 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ratatatat74 - 79435117_p0.jpg
+2020-02-13 21:19:26,861 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ratatatat74 - 79435117_p0.jpg
+2020-02-13 21:19:27,038 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79435117
+2020-02-13 21:19:27,826 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79435117
+2020-02-13 21:19:31,818 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:19:33,689 - PixivUtil20191221 - DEBUG - Getting image page: 79435882
+2020-02-13 21:19:35,684 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:19:37,107 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79435882
+2020-02-13 21:19:39,409 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\kajin - 79435882_p0.jpg
+2020-02-13 21:19:39,410 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\kajin - 79435882_p0.jpg
+2020-02-13 21:19:39,554 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79435882
+2020-02-13 21:19:40,443 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79435882
+2020-02-13 21:19:42,343 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:19:42,919 - PixivUtil20191221 - DEBUG - Getting image page: 79442825
+2020-02-13 21:19:45,020 - PixivUtil20191221 - ERROR - Giving up image_id (medium): 79442825
+2020-02-13 21:19:45,022 - PixivUtil20191221 - ERROR - Traceback (most recent call last):
+  File "PixivBrowserFactory.pyc", line 194, in getPixivPage
+  File "PixivBrowserFactory.pyc", line 160, in open_with_retry
+  File "mechanize\_mechanize.pyc", line 253, in open
+  File "mechanize\_mechanize.pyc", line 309, in _mech_open
+mechanize._response.get_seek_wrapper_class.<locals>.httperror_seek_wrapper: HTTP Error 404: Not Found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "PixivUtil2.py", line 657, in process_image
+  File "PixivBrowserFactory.pyc", line 403, in getImagePage
+  File "PixivBrowserFactory.pyc", line 203, in getPixivPage
+PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+
+2020-02-13 21:19:45,025 - PixivUtil20191221 - ERROR - Image ID (79442825): 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+2020-02-13 21:19:45,026 - PixivUtil20191221 - ERROR - Traceback (most recent call last):
+  File "PixivBrowserFactory.pyc", line 194, in getPixivPage
+  File "PixivBrowserFactory.pyc", line 160, in open_with_retry
+  File "mechanize\_mechanize.pyc", line 253, in open
+  File "mechanize\_mechanize.pyc", line 309, in _mech_open
+mechanize._response.get_seek_wrapper_class.<locals>.httperror_seek_wrapper: HTTP Error 404: Not Found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "PixivUtil2.py", line 657, in process_image
+  File "PixivBrowserFactory.pyc", line 403, in getImagePage
+  File "PixivBrowserFactory.pyc", line 203, in getPixivPage
+PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+
+2020-02-13 21:19:45,030 - PixivUtil20191221 - ERROR - Stack Trace: (<class 'PixivException.PixivException'>, PixivException('Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found'), <traceback object at 0x0855D1C8>)
+2020-02-13 21:19:45,044 - PixivUtil20191221 - ERROR - Traceback (most recent call last):
+  File "PixivBrowserFactory.pyc", line 194, in getPixivPage
+  File "PixivBrowserFactory.pyc", line 160, in open_with_retry
+  File "mechanize\_mechanize.pyc", line 253, in open
+  File "mechanize\_mechanize.pyc", line 309, in _mech_open
+mechanize._response.get_seek_wrapper_class.<locals>.httperror_seek_wrapper: HTTP Error 404: Not Found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "PixivUtil2.py", line 657, in process_image
+  File "PixivBrowserFactory.pyc", line 403, in getImagePage
+  File "PixivBrowserFactory.pyc", line 203, in getPixivPage
+PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+
+2020-02-13 21:19:45,602 - PixivUtil20191221 - DEBUG - Getting image page: 79439809
+2020-02-13 21:19:47,647 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:19:48,081 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79439809
+2020-02-13 21:19:50,043 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Fishine _ 魚生 - 79439809_p0.png
+2020-02-13 21:19:50,347 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Fishine _ 魚生 - 79439809_p0.png
+2020-02-13 21:19:50,497 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79439809
+2020-02-13 21:19:51,371 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79439809
+2020-02-13 21:19:53,676 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:19:55,872 - PixivUtil20191221 - DEBUG - Getting image page: 79437228
+2020-02-13 21:19:57,683 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:19:58,403 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79437228
+2020-02-13 21:20:00,215 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p0.jpg
+2020-02-13 21:20:00,412 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p0.jpg
+2020-02-13 21:20:00,797 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:01,670 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:05,270 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:20:05,272 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p1.jpg
+2020-02-13 21:20:05,377 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p1.jpg
+2020-02-13 21:20:05,572 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:06,491 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:11,151 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:20:11,590 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p2.jpg
+2020-02-13 21:20:11,779 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p2.jpg
+2020-02-13 21:20:11,930 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:12,875 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:20,442 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:20:20,612 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p3.jpg
+2020-02-13 21:20:20,812 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょん吉 - 79437228_p3.jpg
+2020-02-13 21:20:20,967 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:21,781 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79437228
+2020-02-13 21:20:23,782 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:20:25,730 - PixivUtil20191221 - DEBUG - Getting image page: 79444774
+2020-02-13 21:20:27,691 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:20:28,212 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79444774
+2020-02-13 21:20:30,102 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\rtil - 79444774_p0.png
+2020-02-13 21:20:30,249 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\rtil - 79444774_p0.png
+2020-02-13 21:20:30,398 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79444774
+2020-02-13 21:20:31,335 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79444774
+2020-02-13 21:20:34,319 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:20:36,539 - PixivUtil20191221 - DEBUG - Getting image page: 79444893
+2020-02-13 21:20:38,355 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:20:39,126 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79444893
+2020-02-13 21:20:40,465 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\rtil - 79444893_p0.png
+2020-02-13 21:20:40,472 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\rtil - 79444893_p0.png
+2020-02-13 21:20:40,683 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79444893
+2020-02-13 21:20:41,473 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79444893
+2020-02-13 21:20:47,559 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:20:49,057 - PixivUtil20191221 - DEBUG - Getting image page: 79447394
+2020-02-13 21:20:50,802 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:20:51,763 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79447394
+2020-02-13 21:20:53,621 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p0.jpg
+2020-02-13 21:20:53,896 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p0.jpg
+2020-02-13 21:20:54,075 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:20:54,907 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:01,444 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:01,588 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p1.jpg
+2020-02-13 21:21:01,594 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p1.jpg
+2020-02-13 21:21:01,710 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:02,470 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:07,844 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:08,197 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p2.jpg
+2020-02-13 21:21:08,208 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p2.jpg
+2020-02-13 21:21:08,434 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:09,200 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:16,606 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:16,835 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p3.jpg
+2020-02-13 21:21:16,837 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p3.jpg
+2020-02-13 21:21:17,388 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:18,224 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:22,279 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:22,746 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p4.jpg
+2020-02-13 21:21:23,088 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p4.jpg
+2020-02-13 21:21:23,468 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:24,209 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:28,292 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:28,571 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p5.jpg
+2020-02-13 21:21:28,933 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p5.jpg
+2020-02-13 21:21:30,187 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:31,037 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:35,745 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:35,949 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p6.jpg
+2020-02-13 21:21:35,986 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\JJuneジュン - 79447394_p6.jpg
+2020-02-13 21:21:36,594 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:37,380 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447394
+2020-02-13 21:21:40,875 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:21:42,184 - PixivUtil20191221 - DEBUG - Getting image page: 79447785
+2020-02-13 21:21:43,910 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:21:45,042 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79447785
+2020-02-13 21:21:46,765 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぁぁぁぁ - 79447785_p0.png
+2020-02-13 21:21:46,767 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぁぁぁぁ - 79447785_p0.png
+2020-02-13 21:21:46,773 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447785
+2020-02-13 21:21:47,653 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79447785
+2020-02-13 21:22:00,738 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:22:02,507 - PixivUtil20191221 - DEBUG - Getting image page: 79408810
+2020-02-13 21:22:06,134 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:22:06,629 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79408810
+2020-02-13 21:22:13,567 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79408810_p0.png
+2020-02-13 21:22:13,569 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79408810_p0.png
+2020-02-13 21:22:13,573 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79408810
+2020-02-13 21:22:14,463 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79408810
+2020-02-13 21:22:32,500 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:22:32,504 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79408810_p1.png
+2020-02-13 21:22:32,506 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79408810_p1.png
+2020-02-13 21:22:32,512 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79408810
+2020-02-13 21:22:33,383 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79408810
+2020-02-13 21:22:46,133 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:22:48,154 - PixivUtil20191221 - DEBUG - Getting image page: 79420636
+2020-02-13 21:22:49,938 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:22:50,756 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79420636
+2020-02-13 21:22:52,652 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょんぴょん丸 - 79420636_p0.jpg
+2020-02-13 21:22:52,653 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぴょんぴょん丸 - 79420636_p0.jpg
+2020-02-13 21:22:52,656 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79420636
+2020-02-13 21:22:53,531 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79420636
+2020-02-13 21:22:55,668 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:22:55,967 - PixivUtil20191221 - DEBUG - Getting image page: 79421700
+2020-02-13 21:22:57,709 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:22:58,434 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79421700
+2020-02-13 21:23:00,668 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぺぺ - 79421700_p0.jpg
+2020-02-13 21:23:00,671 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぺぺ - 79421700_p0.jpg
+2020-02-13 21:23:00,779 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79421700
+2020-02-13 21:23:01,541 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79421700
+2020-02-13 21:23:03,367 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:23:16,894 - PixivUtil20191221 - DEBUG - Getting image page: 79442825
+2020-02-13 21:23:18,609 - PixivUtil20191221 - ERROR - Giving up image_id (medium): 79442825
+2020-02-13 21:23:18,611 - PixivUtil20191221 - ERROR - Traceback (most recent call last):
+  File "PixivBrowserFactory.pyc", line 194, in getPixivPage
+  File "PixivBrowserFactory.pyc", line 160, in open_with_retry
+  File "mechanize\_mechanize.pyc", line 253, in open
+  File "mechanize\_mechanize.pyc", line 309, in _mech_open
+mechanize._response.get_seek_wrapper_class.<locals>.httperror_seek_wrapper: HTTP Error 404: Not Found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "PixivUtil2.py", line 657, in process_image
+  File "PixivBrowserFactory.pyc", line 403, in getImagePage
+  File "PixivBrowserFactory.pyc", line 203, in getPixivPage
+PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+
+2020-02-13 21:23:18,612 - PixivUtil20191221 - ERROR - Image ID (79442825): 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+2020-02-13 21:23:18,614 - PixivUtil20191221 - ERROR - Traceback (most recent call last):
+  File "PixivBrowserFactory.pyc", line 194, in getPixivPage
+  File "PixivBrowserFactory.pyc", line 160, in open_with_retry
+  File "mechanize\_mechanize.pyc", line 253, in open
+  File "mechanize\_mechanize.pyc", line 309, in _mech_open
+mechanize._response.get_seek_wrapper_class.<locals>.httperror_seek_wrapper: HTTP Error 404: Not Found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "PixivUtil2.py", line 657, in process_image
+  File "PixivBrowserFactory.pyc", line 403, in getImagePage
+  File "PixivBrowserFactory.pyc", line 203, in getPixivPage
+PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+
+2020-02-13 21:23:18,615 - PixivUtil20191221 - ERROR - Stack Trace: (<class 'PixivException.PixivException'>, PixivException('Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found'), <traceback object at 0x08577EE8>)
+2020-02-13 21:23:18,616 - PixivUtil20191221 - ERROR - Traceback (most recent call last):
+  File "PixivBrowserFactory.pyc", line 194, in getPixivPage
+  File "PixivBrowserFactory.pyc", line 160, in open_with_retry
+  File "mechanize\_mechanize.pyc", line 253, in open
+  File "mechanize\_mechanize.pyc", line 309, in _mech_open
+mechanize._response.get_seek_wrapper_class.<locals>.httperror_seek_wrapper: HTTP Error 404: Not Found
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "PixivUtil2.py", line 657, in process_image
+  File "PixivBrowserFactory.pyc", line 403, in getImagePage
+  File "PixivBrowserFactory.pyc", line 203, in getPixivPage
+PixivException.PixivException: 9005 Failed to get page: https://www.pixiv.net/en/artworks/79442825 => HTTP Error 404: Not Found, hasDumpPage=N, pageData=None
+
+2020-02-13 21:23:28,038 - PixivUtil20191221 - DEBUG - Getting image page: 79410292
+2020-02-13 21:23:29,756 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:23:30,378 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79410292
+2020-02-13 21:23:31,505 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Crescentia - 79410292_p0.png
+2020-02-13 21:23:31,511 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Crescentia - 79410292_p0.png
+2020-02-13 21:23:31,513 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79410292
+2020-02-13 21:23:32,351 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79410292
+2020-02-13 21:23:40,606 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:23:41,187 - PixivUtil20191221 - DEBUG - Getting image page: 79409857
+2020-02-13 21:23:42,997 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:23:43,275 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79409857
+2020-02-13 21:23:45,203 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79409857_p0.png
+2020-02-13 21:23:45,464 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79409857_p0.png
+2020-02-13 21:23:45,585 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79409857
+2020-02-13 21:23:46,418 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79409857
+2020-02-13 21:23:53,699 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:23:55,697 - PixivUtil20191221 - DEBUG - Getting image page: 79423672
+2020-02-13 21:23:57,631 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:23:59,609 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79423672
+2020-02-13 21:24:01,923 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\BOW - 79423672_p0.png
+2020-02-13 21:24:01,925 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\BOW - 79423672_p0.png
+2020-02-13 21:24:02,130 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79423672
+2020-02-13 21:24:02,931 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79423672
+2020-02-13 21:24:07,086 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:24:07,979 - PixivUtil20191221 - DEBUG - Getting image page: 79425313
+2020-02-13 21:24:09,869 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:24:10,493 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79425313
+2020-02-13 21:24:12,371 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p0.jpg
+2020-02-13 21:24:12,373 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p0.jpg
+2020-02-13 21:24:12,487 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:13,520 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:15,665 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:24:15,667 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p1.jpg
+2020-02-13 21:24:15,668 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p1.jpg
+2020-02-13 21:24:15,671 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:16,563 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:19,060 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:24:19,063 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p2.jpg
+2020-02-13 21:24:19,065 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p2.jpg
+2020-02-13 21:24:19,067 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:19,906 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:28,035 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:24:28,038 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p3.jpg
+2020-02-13 21:24:28,040 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\てだいん - 79425313_p3.jpg
+2020-02-13 21:24:28,044 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:28,875 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79425313
+2020-02-13 21:24:31,390 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:24:33,270 - PixivUtil20191221 - DEBUG - Getting image page: 79428788
+2020-02-13 21:24:35,218 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:24:36,638 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79428788
+2020-02-13 21:24:38,267 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Zheng - 79428788_p0.png
+2020-02-13 21:24:38,271 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Zheng - 79428788_p0.png
+2020-02-13 21:24:38,348 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79428788
+2020-02-13 21:24:39,173 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79428788
+2020-02-13 21:24:48,075 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:24:50,280 - PixivUtil20191221 - DEBUG - Getting image page: 79401134
+2020-02-13 21:24:52,048 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:24:52,637 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79401134
+2020-02-13 21:24:53,976 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79401134_p0.png
+2020-02-13 21:24:54,126 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\brekkist - 79401134_p0.png
+2020-02-13 21:24:54,131 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79401134
+2020-02-13 21:24:54,985 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79401134
+2020-02-13 21:25:02,885 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:25:04,274 - PixivUtil20191221 - DEBUG - Getting image page: 79366671
+2020-02-13 21:25:06,218 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:25:07,424 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79366671
+2020-02-13 21:25:08,493 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\BOW - 79366671_p0.png
+2020-02-13 21:25:08,495 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\BOW - 79366671_p0.png
+2020-02-13 21:25:08,635 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79366671
+2020-02-13 21:25:09,989 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79366671
+2020-02-13 21:25:21,037 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:25:21,557 - PixivUtil20191221 - DEBUG - Getting image page: 79367100
+2020-02-13 21:25:23,669 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:25:25,835 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79367100
+2020-02-13 21:25:27,232 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79367100_p0.png
+2020-02-13 21:25:27,237 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79367100_p0.png
+2020-02-13 21:25:27,379 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79367100
+2020-02-13 21:25:28,233 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79367100
+2020-02-13 21:25:35,911 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:25:35,913 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79367100_p1.png
+2020-02-13 21:25:35,915 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ボリス - 79367100_p1.png
+2020-02-13 21:25:35,917 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79367100
+2020-02-13 21:25:36,847 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79367100
+2020-02-13 21:25:45,110 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:25:46,925 - PixivUtil20191221 - DEBUG - Getting image page: 79372240
+2020-02-13 21:25:51,147 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:25:51,442 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79372240
+2020-02-13 21:25:53,201 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぷぅ崎ぷぅ奈＠4日目西め16b - 79372240_p0.jpg
+2020-02-13 21:25:53,202 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ぷぅ崎ぷぅ奈＠4日目西め16b - 79372240_p0.jpg
+2020-02-13 21:25:53,205 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79372240
+2020-02-13 21:25:54,034 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79372240
+2020-02-13 21:26:01,071 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:26:03,095 - PixivUtil20191221 - DEBUG - Getting image page: 79375673
+2020-02-13 21:26:04,846 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:26:05,815 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79375673
+2020-02-13 21:26:07,761 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\♣3 - 79375673_p0.jpg
+2020-02-13 21:26:07,762 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\♣3 - 79375673_p0.jpg
+2020-02-13 21:26:07,765 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79375673
+2020-02-13 21:26:08,598 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79375673
+2020-02-13 21:26:13,690 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:26:13,692 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\♣3 - 79375673_p1.jpg
+2020-02-13 21:26:13,695 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\♣3 - 79375673_p1.jpg
+2020-02-13 21:26:13,841 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79375673
+2020-02-13 21:26:14,598 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79375673
+2020-02-13 21:26:19,111 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:26:19,313 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\♣3 - 79375673_p2.jpg
+2020-02-13 21:26:19,314 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\♣3 - 79375673_p2.jpg
+2020-02-13 21:26:19,483 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79375673
+2020-02-13 21:26:20,300 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79375673
+2020-02-13 21:26:24,734 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:26:27,018 - PixivUtil20191221 - DEBUG - Getting image page: 55958474
+2020-02-13 21:26:28,651 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:26:29,110 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=55958474
+2020-02-13 21:26:33,019 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 55958474_p0.jpg
+2020-02-13 21:26:33,023 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 55958474_p0.jpg
+2020-02-13 21:26:33,033 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/55958474
+2020-02-13 21:26:35,038 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/55958474
+2020-02-13 21:26:53,322 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:26:53,324 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 55958474_p1.jpg
+2020-02-13 21:26:53,326 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 55958474_p1.jpg
+2020-02-13 21:26:53,330 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/55958474
+2020-02-13 21:26:54,108 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/55958474
+2020-02-13 21:27:03,055 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:27:03,528 - PixivUtil20191221 - DEBUG - Getting image page: 57405528
+2020-02-13 21:27:10,013 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:27:10,353 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=57405528
+2020-02-13 21:27:11,460 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 57405528_p0.jpg
+2020-02-13 21:27:11,462 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 57405528_p0.jpg
+2020-02-13 21:27:11,468 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/57405528
+2020-02-13 21:27:12,491 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/57405528
+2020-02-13 21:27:36,913 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:27:39,072 - PixivUtil20191221 - DEBUG - Getting image page: 56680367
+2020-02-13 21:27:40,953 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:27:41,617 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=56680367
+2020-02-13 21:27:43,126 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 56680367_p0.jpg
+2020-02-13 21:27:43,127 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 56680367_p0.jpg
+2020-02-13 21:27:43,136 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/56680367
+2020-02-13 21:27:44,152 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/56680367
+2020-02-13 21:27:58,334 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:27:59,980 - PixivUtil20191221 - DEBUG - Getting image page: 56428891
+2020-02-13 21:28:02,137 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:28:02,651 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=56428891
+2020-02-13 21:28:04,659 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 56428891_p0.jpg
+2020-02-13 21:28:04,665 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 56428891_p0.jpg
+2020-02-13 21:28:04,797 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/56428891
+2020-02-13 21:28:05,971 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/56428891
+2020-02-13 21:28:15,842 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:28:17,294 - PixivUtil20191221 - DEBUG - Getting image page: 59943464
+2020-02-13 21:28:21,093 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:28:21,487 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=59943464
+2020-02-13 21:28:24,691 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 59943464_p0.jpg
+2020-02-13 21:28:24,693 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 59943464_p0.jpg
+2020-02-13 21:28:24,695 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/59943464
+2020-02-13 21:28:25,810 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/59943464
+2020-02-13 21:28:51,769 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:28:53,578 - PixivUtil20191221 - DEBUG - Getting image page: 59851643
+2020-02-13 21:28:57,079 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:28:57,536 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=59851643
+2020-02-13 21:28:58,510 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 59851643_p0.png
+2020-02-13 21:28:58,518 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 59851643_p0.png
+2020-02-13 21:28:58,720 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/59851643
+2020-02-13 21:28:59,632 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/59851643
+2020-02-13 21:29:41,520 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:29:41,522 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 59851643_p1.png
+2020-02-13 21:29:41,526 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 59851643_p1.png
+2020-02-13 21:29:41,633 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/59851643
+2020-02-13 21:29:42,403 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/59851643
+2020-02-13 21:30:09,385 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:30:09,710 - PixivUtil20191221 - DEBUG - Getting image page: 61352472
+2020-02-13 21:30:11,463 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:30:11,800 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=61352472
+2020-02-13 21:30:12,892 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 61352472_p0.png
+2020-02-13 21:30:12,892 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 61352472_p0.png
+2020-02-13 21:30:12,896 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/61352472
+2020-02-13 21:30:13,654 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/61352472
+2020-02-13 21:30:29,251 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:30:29,276 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 61352472_p1.png
+2020-02-13 21:30:29,288 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 61352472_p1.png
+2020-02-13 21:30:29,573 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/61352472
+2020-02-13 21:30:30,504 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/61352472
+2020-02-13 21:30:37,311 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:30:39,218 - PixivUtil20191221 - DEBUG - Getting image page: 76872943
+2020-02-13 21:30:40,987 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:30:41,372 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=76872943
+2020-02-13 21:30:43,499 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 76872943_p0.jpg
+2020-02-13 21:30:43,625 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 76872943_p0.jpg
+2020-02-13 21:30:43,764 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/76872943
+2020-02-13 21:30:44,539 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/76872943
+2020-02-13 21:30:58,795 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:30:58,798 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 76872943_p1.jpg
+2020-02-13 21:30:58,817 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\alicecrazy - 76872943_p1.jpg
+2020-02-13 21:30:58,930 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/76872943
+2020-02-13 21:30:59,769 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/76872943
+2020-02-13 21:31:07,008 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:31:08,208 - PixivUtil20191221 - DEBUG - Getting image page: 79343537
+2020-02-13 21:31:10,495 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:31:11,510 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79343537
+2020-02-13 21:31:12,407 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Zheng - 79343537_p0.png
+2020-02-13 21:31:12,520 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\Zheng - 79343537_p0.png
+2020-02-13 21:31:12,635 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79343537
+2020-02-13 21:31:13,504 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79343537
+2020-02-13 21:31:16,647 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:31:17,344 - PixivUtil20191221 - DEBUG - Getting image page: 79344417
+2020-02-13 21:31:19,128 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:31:19,729 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79344417
+2020-02-13 21:31:21,451 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ittla - 79344417_p0.png
+2020-02-13 21:31:21,452 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\ittla - 79344417_p0.png
+2020-02-13 21:31:21,586 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79344417
+2020-02-13 21:31:22,328 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79344417
+2020-02-13 21:31:38,512 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:31:40,139 - PixivUtil20191221 - DEBUG - Getting image page: 79347252
+2020-02-13 21:31:41,932 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:31:42,387 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79347252
+2020-02-13 21:31:43,394 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\rtil - 79347252_p0.png
+2020-02-13 21:31:43,395 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\rtil - 79347252_p0.png
+2020-02-13 21:31:43,397 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79347252
+2020-02-13 21:31:44,332 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79347252
+2020-02-13 21:31:53,555 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:31:54,324 - PixivUtil20191221 - DEBUG - Getting image page: 79358289
+2020-02-13 21:31:56,097 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:31:56,838 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79358289
+2020-02-13 21:31:59,162 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\伊翁(イオン) - 79358289_p0.png
+2020-02-13 21:31:59,273 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\伊翁(イオン) - 79358289_p0.png
+2020-02-13 21:31:59,372 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79358289
+2020-02-13 21:32:00,210 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79358289
+2020-02-13 21:32:04,722 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:32:04,724 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\伊翁(イオン) - 79358289_p1.png
+2020-02-13 21:32:04,726 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\伊翁(イオン) - 79358289_p1.png
+2020-02-13 21:32:04,728 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79358289
+2020-02-13 21:32:05,630 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79358289
+2020-02-13 21:32:11,934 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:32:14,104 - PixivUtil20191221 - DEBUG - Getting image page: 79360982
+2020-02-13 21:32:16,272 - PixivUtil20191221 - DEBUG - New UI Mode
+2020-02-13 21:32:16,932 - PixivUtil20191221 - DEBUG - using webrpc: https://www.pixiv.net/rpc/get_work.php?id=79360982
+2020-02-13 21:32:18,855 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p0.jpg
+2020-02-13 21:32:18,856 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p0.jpg
+2020-02-13 21:32:18,859 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:19,756 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:24,454 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:32:24,455 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p1.jpg
+2020-02-13 21:32:24,456 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p1.jpg
+2020-02-13 21:32:24,519 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:25,448 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:27,954 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:32:27,955 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p2.jpg
+2020-02-13 21:32:27,959 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p2.jpg
+2020-02-13 21:32:28,049 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:28,866 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:34,583 - PixivUtil20191221 - INFO -  done.
+2020-02-13 21:32:34,586 - PixivUtil20191221 - DEBUG - Sanitized Filename: C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p3.jpg
+2020-02-13 21:32:34,588 - PixivUtil20191221 - INFO - Filename  : C:\Users\Emc11\Dropbox\Videos\ん\Images\pixiv\郁(いく) - 79360982_p3.jpg
+2020-02-13 21:32:34,686 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982
+2020-02-13 21:32:35,435 - PixivUtil20191221 - INFO - Using Referer: https://www.pixiv.net/artworks/79360982

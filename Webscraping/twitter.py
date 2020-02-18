@@ -60,7 +60,7 @@ def page_handler(driver, hrefs):
 
         driver.get(f'https://twitter.com{href}')
         artist = href.split('/')[1]
-        exif, = generate_tags(TYPE, [artist.lower()])
+        x, y, exif, = generate_tags(TYPE, [artist.lower()])
 
         for _ in range(3):
             try:

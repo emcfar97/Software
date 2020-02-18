@@ -56,7 +56,7 @@ def page_handler(driver, hrefs):
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
 
         artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
-        exif, = generate_tags(TYPE, [artist.lower()])
+        x, y, exif, = generate_tags(TYPE, [artist.lower()])
         image = f'http:{html.find(class_="center", src=True).get("src")}'
         name = join(
             PATH, 'Images', SITE, re.sub(
