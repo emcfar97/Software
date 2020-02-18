@@ -15,9 +15,8 @@
     #     )
     # model.save(r'Machine Learning\Master\medium.h5')
 
-
 import os, shutil, hashlib, imagehash
-from os.path import join, isdir
+from os.path import join, isdir, splitext
 import mysql.connector as sql
 from PIL import Image
 from selenium.common.exceptions import WebDriverException
@@ -28,6 +27,7 @@ DATAB = sql.connect(
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
 CURSOR = DATAB.cursor() 
+
 INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(%s, %s, %s, %s, 0)'
 
 hasher = hashlib.md5()
@@ -38,7 +38,7 @@ paths = {
     'Casual nudity': 'casual_nudity',
     "Cumming":"cum",
     "Cunnilingus":"cunnilingus",
-    "Dance":"dance",
+    "Dance":"dancing",
     "Exercise":"exercise",
     "Fellatio":"fellatio",
     'Girl on top': 'cow_girl',
@@ -75,9 +75,10 @@ for root, dirs, files in os.walk(path):
             hash = f'{imagehash.dhash(img)}'
         else: hash = None
 
+        head, ext = splitext(file)
         with open(file, 'rb') as file: 
             hasher.update(file.read())
-        name = join(dest, f'{hasher.hexdigest()}.gif')
+        name = join(dest, f'{hasher.hexdigest()}{ext}')
         shutil.move(file.name, name)
         CURSOR.execute(INSERT, (name, tags, rating, hash))
         DATAB.commit()
