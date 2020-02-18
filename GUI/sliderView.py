@@ -72,10 +72,7 @@ class Slideshow(QMainWindow):
             self.label.setPixmap(QPixmap())
             wid, hei = Image.open(path).size
             ratio = wid / hei
-
-            # dimensions = (width, width / ratio), (height * ratio, height)
-            # if hei < wid: dimensions = dimensions[1]
-            # else: dimensions = dimensions[0]      
+     
             dimensions = (
                 (width, width / ratio) 
                 if wid < hei else 
@@ -94,7 +91,7 @@ class Slideshow(QMainWindow):
             self.video.update(path)
             self.stack.setCurrentIndex(1)
         
-        print(self.dimensions)
+        # print(self.dimensions)
   
     def keyPressEvent(self, sender):
 
