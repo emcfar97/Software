@@ -163,7 +163,7 @@ def insert_files(path):
                 )
             hash = None
 
-        CURSOR.execute(INSERT, (dest, f"{tags}", rating, hash))
+        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash))
         shutil.move(file, dest)
         DATAB.commit()
 
