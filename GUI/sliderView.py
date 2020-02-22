@@ -17,11 +17,10 @@ class Slideshow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        resolution = self.parent.size()
-        self.dimensions = resolution.width(),  resolution.height()
+        resolution = self.parent.desktop().screenGeometry()
+        self.dimensions = resolution.width(),  resolution.height()+20
         self.setGeometry(
-            0, 0, 
-            resolution.width(),  resolution.height()
+            0, 0, *self.dimensions
             ) 
         self.setStyleSheet('background: black')
           
@@ -29,6 +28,7 @@ class Slideshow(QMainWindow):
         
         self.label = QLabel(self)
         self.video = videoPlayer(self)
+        self.label.setFixedSize(self.size())
         self.label.setAlignment(Qt.AlignCenter)
         self.stack.addWidget(self.label)
         self.stack.addWidget(self.video)
@@ -75,7 +75,7 @@ class Slideshow(QMainWindow):
      
             dimensions = (
                 (width, width / ratio) 
-                if wid < hei else 
+                if (width / ratio) <= height else 
                 (height * ratio, height)
                 )
             
@@ -91,8 +91,6 @@ class Slideshow(QMainWindow):
             self.video.update(path)
             self.stack.setCurrentIndex(1)
         
-        # print(self.dimensions)
-  
     def keyPressEvent(self, sender):
 
         key_press = sender.key()

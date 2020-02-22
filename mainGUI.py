@@ -1,4 +1,5 @@
 from subprocess import Popen
+from shutil import move
 from os import remove
 
 from GUI import galleryView, previewView, sliderView, mainView, trainView
@@ -98,7 +99,6 @@ class ManageData(QMainWindow):
         self.setWindowTitle('Manage Data')
         self.configure_gui()
         self.create_widgets()
-        self.slideshow = sliderView.Slideshow(self)
         self.gallery.populate()
         self.showMaximized()
 
@@ -117,6 +117,7 @@ class ManageData(QMainWindow):
 
     def create_widgets(self):
         
+        self.slideshow = sliderView.Slideshow(Qapp)
         self.gallery = galleryView.Gallery(self, self.windowTitle())
         self.preview = previewView.Preview(self, self.windowTitle())
 
@@ -131,23 +132,19 @@ class ManageData(QMainWindow):
         parameters = []
         tags, artists, stars, rating, type = args
 
-        # for edits, col in zip([tags, artists], ['tags', 'artist']):
-            
-        #     if edits[1]:
-                
-        #         for num, (path,) in enumerate(gallery):
-                    
-        #             CURSOR.execute(EDIT.format(col), (path,))
-        #             string, = CURSOR.fetchone()
-        #             old, new = {*string.split()}, {edits[1]}
-        #             new = old | new if edits[0] == 'Add' else old - new
-        #             gallery[num] = f" {' '.join(new)} ", path
-                    
-        #         parameters.append(f'{col}=%s')
+        if tags:
+
+            parameters.append(f'tags=CONCAT(tags, "{tags[0]} ")')
+            parameters.append(f'tags=REPLACE(tags, " {tags[1]} ", " ")')
+
+        if artists:
+
+            parameters.append(f'artist=CONCAT(artist, "{artists[0]} ")')
+            parameters.append(f'artist=REPLACE(artist, " {artists[1]} ", " ")')
 
         if stars: parameters.append(f'stars={stars}')
         if rating: parameters.append(f'rating="{rating}"')
-        if type: parameters.append(f'type="{type_[type]}"')
+        if type: parameters.append(f'type={type_[type]}')
 
         CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
         DATAB.commit()
@@ -215,7 +212,7 @@ class GestureDraw(QMainWindow):
             thumb.data(Qt.UserRole) for thumb in 
             self.gallery.images.selectedIndexes()
             ]
-        time = self.gallery.ribbon.time.get()
+        time = self.gallery.ribbon.time.text()
         
         if gallery and time:
             if ':' in time:

@@ -208,8 +208,8 @@ class Model(QAbstractTableModel):
             
             data = self.images[ind]
             path = {data[0]}
-            tags = {data[1]} if data[1] else set()
-            artist = {data[2]} if data[2] else set()
+            tags = set(data[1].split()) if data[1] else set()
+            artist = set(data[2].split()) if data[2] else set()
             stars = {data[3]}
             rating = {data[4]}
             type = {data[5]}

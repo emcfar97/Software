@@ -11,7 +11,7 @@ class Properties(QMainWindow):
         self.create_widgets()
         self.display(indexes)
 
-    def configure_gui(self): 
+    def configure_gui(self):
         
         self.center = QWidget()
         self.layout = QVBoxLayout()
@@ -21,10 +21,10 @@ class Properties(QMainWindow):
         size = self.parent().size()
         self.setGeometry(
             size.width() * .3, size.height() * .3, 
-            size.width() * .25,  size.height() * .5
+            size.width() * .45,  size.height() * .50
             )  
         
-    def create_widgets(self): 
+    def create_widgets(self):
 
         self.path = QLineEdit(self)
         self.tags = QLineEdit(self)
@@ -75,22 +75,24 @@ class Properties(QMainWindow):
         stars = set.intersection(*[i[3] for i in data])
         rating = set.intersection(*[i[4] for i in data])
         type = set.intersection(*[i[5] for i in data])
-
+        
         if paths: self.path.setText(paths.pop())
         if tags: self.tags.setText(' '.join(tags))
         if artist: self.artist.setText(' '.join(artist))
         if stars: self.stars.setCurrentIndex(int(stars.pop()))
         if rating: self.rating.setCurrentText(rating.pop().capitalize())
         if type: self.type.setCurrentIndex(type.pop() + 1)
-        self.show()
 
+        self.place = tags, artist
+        self.show()
+    
     def output(self, sender):
 
         gallery = [
             (index.data(Qt.UserRole),) for index in self.indexes
             ]
-        tags = self.tags.text()
-        artist = self.artist.text()
+        tags = self.valid(0)
+        artist = self.valid(1)
         stars = int(self.stars.currentText()) if self.stars.currentText() else 0
         rating = self.rating.currentText()
         type = self.type.currentText()[:5]
@@ -101,3 +103,15 @@ class Properties(QMainWindow):
                 )
 
         self.close()
+
+    def valid(self, type_):
+        
+        target = (
+            set(self.artist.text().split())
+            if type_ else 
+            set(self.tags.text().split())
+            )
+        insert = ' '.join(target - self.place[type_])
+        remove = ' '.join(self.place[type_] - target)
+
+        return (insert, remove) if any([insert, remove]) else tuple()

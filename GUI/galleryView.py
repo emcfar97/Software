@@ -127,49 +127,35 @@ class Ribbon(QWidget):
          
     def create_widgets(self):
         
+        parent = self.parent()
         self.select = QFormLayout()
         self.select.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
         self.layout.addLayout(self.select)
         
         self.tags = QLineEdit(self)
-        self.tags.textEdited.connect(self.parent().populate)
-        # self.tags = Widget(
-        #     'entry', signal=self.parent().populate, 
-        #     connect='edit'
-        #     )
+        self.tags.textEdited.connect(parent.populate)
         self.stars = Widget(
-            'combo-entry', signal=self.parent().populate,
+            'combo-entry', signal=parent.populate,
             values=['', '>', '>=', '==', '<=', '<']
             )
 
         self.select.addRow('Search:', self.tags)
         self.select.addRow('Stars:', self.stars)
         
-        if self.parent().type == 'Manage Data':
-            self.tags.returnPressed.connect(self.parent().populate)
-            
-            # self.tags.modify(
-            #     signal=self.parent().populate, 
-            #     connect='return'
-            #     )
+        if parent.type == 'Manage Data':
+            self.tags.returnPressed.connect(parent.populate)
             
         else:
-            self.tags.returnPressed.connect(self.parent().parent().start_session)
-
-            # self.tags.modify(
-            #     signal=self.parent().parent().start_session, 
-            #     connect='return'
-            #     )
-            self.time = Widget(
-                'entry', signal=self.parent().parent().start_session,
-                connect='return'
-                )
+            self.tags.returnPressed.connect(parent.parent().start_session)
+            
+            self.time = QLineEdit(self)
+            self.time.returnPressed.connect(parent.parent().start_session)
             self.select.insertRow(1, 'Time:', self.time)
            
     def get_tags(self, query='', ops={'and':None, 'or':1, 'not':0}):
         
         string = self.tags.text().split()[::-1]
-        # string = self.tags.get().split()[::-1]
+
         if string and string != ['-']:
 
             while string:
