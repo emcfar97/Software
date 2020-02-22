@@ -10,12 +10,6 @@ SUM = 0
 EXT = 'webm', 'webp', 'mp4'
 root = getcwd()[:2].upper()
 PATH = rf'{root}\Users\Emc11\Downloads'
-DEST = rf'{root}\Users\Emc11\Dropbox\Pictures\4.Reference\3.Gifs'
-
-if __file__.startswith(('e:\\', 'e:/')):
-
-    PATH = PATH.replace('C:', 'E:')
-    DEST = DEST.replace('C:', 'E:')
 
 def main(paths, lock=False):
 
@@ -23,7 +17,7 @@ def main(paths, lock=False):
     driver = get_driver(True)
     upload = '//body/div/div[4]/div[2]/form/fieldset/p[4]/input'
     
-    for path, dest in paths:
+    for path in paths:
         
         progress(size, SUM, 'Files')
         driver.get('https://ezgif.com/video-to-gif')
@@ -33,11 +27,12 @@ def main(paths, lock=False):
         if path.endswith('.webp'):
             driver.find_element_by_name('make-a-gif').click()
         else:
-            while True:
+            for _ in range(100):
                 try:
                     stats = driver.find_element_by_class_name('filestats')
                     break
                 except: pass
+            else: continue
             stats = stats.text.split(', ')[3].split(':')[2:]
             seconds = int(stats[0]) * 60 + int(stats[1])
             driver.find_element_by_name('end').clear()
@@ -49,22 +44,24 @@ def main(paths, lock=False):
                 fps.select_by_value(switch(seconds))
             driver.find_element_by_name('video-to-gif').click()
             
-        while True:
+        for _ in range(100):
             try:
                 driver.find_element_by_class_name('m-btn-optimize').click()
                 break
             except: pass
+        else: continue
         driver.find_element_by_name('optimize').click()
         image = '//body/div/div[3]/div[2]/div[2]/p[1]/img'
-        while True:
+        for _ in range(100):
             try:
                 image = driver.find_element_by_xpath(image)
                 break
             except: pass
+        else: continue
         
         html = BeautifulSoup(driver.page_source, 'lxml')
         image = html.find('img', src=True, alt='[optimize output image]')
-        with open(splitext(dest)[0] + '.gif', 'wb') as file:
+        with open(join(PATH, f'{splitext(path)[0]}.gif') , 'wb') as file:
             file.write(requests.get(f'https:{image.get("src")}').content)
         
         remove(path)
@@ -72,6 +69,7 @@ def main(paths, lock=False):
             lock.acquire()
             SUM += 1
             lock.release()
+        else: SUM += 1
         
     progress(size, SUM, 'Files')
     driver.close()
@@ -85,8 +83,9 @@ def switch(seconds):
     elif seconds <= 10:      return '25'
 
 paths = [
-    (join(PATH, path), join(DEST, path)) 
-    for path in listdir(PATH) if path.endswith(EXT)
+    join(PATH, path) 
+    for path in listdir(PATH) 
+    if path.endswith(EXT)
     ]
 
 lock = threading.Lock()
@@ -98,8 +97,10 @@ threads = [
     threading.Thread(
         target=main, 
         args=(
-            paths[i * num + min(i, div):(i+1) * num + min(i+1, div)], lock
-            ))
+            paths[i * num + min(i, div):(i+1) * num + min(i+1, div)], 
+            lock
+            )
+        )
     for i in range(thr)
     ]
 for thread in threads: thread.start()

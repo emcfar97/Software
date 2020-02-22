@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     driver = get_driver()#True)
     login(driver, SITE)
-    # initialize(driver)
+    initialize(driver)
 
     CURSOR.execute(SELECT[2], (SITE,))
     page_handler(driver, CURSOR.fetchall())

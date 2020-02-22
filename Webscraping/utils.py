@@ -668,12 +668,12 @@ def get_tags(driver, path):
  
         while success:
             
-            try:
-                temp = tempfile.mkstemp(dir=temp_dir.name, suffix='.jpg')
-                with open(temp[-1], 'wb') as img: 
-                    img.write(cv2.imencode('.jpg', frame)[-1])
-                    frames.append(img.name)
-            except PermissionError: pass
+            temp = join(
+                temp_dir.name, f'{next(tempfile._get_candidate_names())}.jpg'
+                )
+            with open(temp, 'wb') as img: 
+                img.write(cv2.imencode('.jpg', frame)[-1])
+                frames.append(img.name)
             success, frame = vidcap.read()
 
         else: 
@@ -696,14 +696,9 @@ def get_tags(driver, path):
             except AttributeError: 
                 if not (_ % 10): driver.refresh()
     
-    if flag:
-        while True:
-            try: 
-                temp_dir.cleanup()
-                break
-            except Exception as error:
-                file = open(error.filename)
-                file.close()
+    else:
+        if flag: temp_dir.cleanup()
+
     return list(tags)
 
 def generate_tags(
