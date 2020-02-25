@@ -104,7 +104,14 @@ def save_images(path):
                 
                 if name.endswith(('.jpg', '.jpeg')):
                     jpg = Image.open(BytesIO(requests.get(image).content))
-                    jpg.save(name)
+                    try: jpg.save(name)
+                    except OSError:
+                        name = name.replace('.png', '.jpg')
+                        png = Image.open(BytesIO(requests.get(image).content))
+                        png = png.convert('RGBA')
+                        background = Image.new('RGBA', png.size, (255,255,255))
+                        png = Image.alpha_composite(background, png)
+                        png.convert('RGB').save(name)
 
                 elif name.endswith('.png'):
                     name = name.replace('.png', '.jpg')
@@ -140,7 +147,6 @@ def insert_files(path):
         
         try: tags = get_tags(driver, file)
         except WebDriverException: continue
-        except: continue
 
         if file.lower().endswith(('jpg', 'jpeg')):
 
@@ -156,7 +162,10 @@ def insert_files(path):
             img.save(file, exif=exif)
 
         elif file.lower().endswith(('.gif', '.webm', '.mp4')): 
-    
+            
+            tags.append('animated')
+            if file.lower().endswith(('.webm', '.mp4')):
+                tags.append('audio')
             tags, rating = generate_tags(
                 type='Erotica 2', general=tags, 
                 custom=True, rating=True, exif=False
