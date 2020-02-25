@@ -85,7 +85,7 @@ class Slideshow(QMainWindow):
             movie.start()
         
         elif path.endswith(('.webm', '.mp4')):
-                
+            
             self.label.setMovie(QMovie())
             self.label.setPixmap(QPixmap())
             self.video.update(path)
@@ -99,6 +99,7 @@ class Slideshow(QMainWindow):
         elif key_press == Qt.Key_Left: self.move(-1)        
         elif key_press == Qt.Key_Escape: 
             
+            self.video.player.pause()
             self.video.player.stop()
             self.hide()
             
@@ -139,11 +140,11 @@ class videoPlayer(QVideoWidget):
             
         elif key_press == Qt.Key_End: self.player.setPosition(0)  
             
-        elif key_press == Qt.Key_Comma:
+        elif key_press == Qt.Key_Period:
             
             self.player.setPosition(self.player.position() + 5000)
             
-        elif key_press == Qt.Key_Period:
+        elif key_press == Qt.Key_Comma:
             
             self.player.setPosition(self.player.position() - 5000)
         
@@ -158,14 +159,20 @@ class videoPlayer(QVideoWidget):
         elif key_press == Qt.Key_Right:
             
             self.player.stop()
-            self.parent().parent().move(+1)
             self.parent().setCurrentIndex(0)
+            self.parent().parent().move(+1)
         
         elif key_press == Qt.Key_Left:
             
             self.player.stop()
-            self.parent().parent().move(-1) 
             self.parent().setCurrentIndex(0)
+            self.parent().parent().move(-1) 
+        
+        elif key_press == Qt.Key_Escape: 
+            
+            self.player.pause()
+            self.player.stop()
+            self.hide()
 
     def mediaStatusChanged(self, status):
         
