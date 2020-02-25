@@ -7,29 +7,109 @@
 ##
 ##############################################################################
 
+import random, math
+
+class Schedule():
+
+    def __init__(self, times, courses, instructors, rooms):
+
+        self.times = times
+        self.courses = courses
+        self.instructors = instructors
+        self.rooms = rooms
+        self.timeslots = []
+        self.choose()
+
+    def choose(self): 
+        
+        if self.timeslots: pass
+
+        else:
+            
+            for instructor, courses in self.instructors.items():
+                
+                for course in courses:
+
+                    pass
+
+    def fitness(self): pass
+
+class Timeslot():
+
+    def __init__(self, time, course, instructor, room):
+
+        self.time = time
+        self.course = course
+        self.instructor = instructor
+        self.room = room
+
+    def __repr__(self):
+
+        return f'{self.course}\n{self.time}\n{self.instructor}\n{self.room}\n'
+
+class Course():
+    
+    def __init__(self, course, enroll, section=''): 
+
+        self.course = course
+        self.enroll =  enroll
+        self.section = section
+    
+    def __repr__(self): return f'{self.course}{self.section} ({self.enroll})'
+
+class Instructor():
+    
+    def __init__(self, instructor, courses):
+
+        self.instructor = instructor
+        self.courses = courses
+
+    def __repr__(self): return f'{self.instructor} ({self.courses})'
+
+class Room():
+    
+    def __init__(self, room, capacity):
+
+        self.room = room
+        self.capacity = capacity
+
+    def __repr__(self): return f'{self.room} ({self.capacity})'
+
 courses = {
-    'CS 101A': 40,
-    'CS 101B': 25,
-    'CS 201A': 30,
-    'CS 201B': 30,
-    'CS 191A': 60,
-    'CS 191B': 20,
-    'CS 291B': 40,
-    'CS 291A': 20,
-    'CS 303': 50,
-    'CS 341': 40,
-    'CS 449': 55,
-    'CS 461': 40,
+    'CS 101A': Course('CS 101', 40, 'A'),
+    'CS 101B': Course('CS 101', 25, 'B'),
+    'CS 201A': Course('CS 201', 30, 'A'),
+    'CS 201B': Course('CS 201', 30, 'B'),
+    'CS 191A': Course('CS 191', 60, 'A'),
+    'CS 191B': Course('CS 191', 20, 'B'),
+    'CS 291B': Course('CS 291', 40, 'B'),
+    'CS 291A': Course('CS 291', 20, 'A'),
+    'CS 303': Course('CS 303', 50),
+    'CS 341': Course('CS 341', 40),
+    'CS 449': Course('CS 449', 55),
+    'CS 461': Course('CS 461', 40),
     }
 instructors = {
-    'Hare': ['CS 101', 'CS 201', 'CS 291', 'CS 303', 'CS 449', 'CS 461'],
-    'Bingham': ['CS 101', 'CS 201', 'CS 191', 'CS 291', 'CS 449'],
-    'Kuhail': ['CS 303', 'CS 341'],
-    'Mitchell': ['CS 191', 'CS 291', 'CS 303', 'CS 341'],
-    'Rao': ['CS 291', 'CS 303', 'CS 341', 'CS 461'],
-    'Staff': [],
+    'Hare': Instructor(
+        'Hare', [courses['CS 101A'], courses['CS 101B'], courses['CS 201A'], courses['CS 201B'], courses['CS 291A'], courses['CS 291B'], courses['CS 303'], courses['CS 449'], courses['CS 461']]
+        ),
+    'Bingham': Instructor(
+        'Bingham', [courses['CS 101A'], courses['CS 101B'], courses['CS 201A'], courses['CS 201B'], courses['CS 191A'], courses['CS 191B'], courses['CS 291A'], courses['CS 291B'], courses['CS 449']]
+        ),
+    'Kuhail': Instructor(
+        'Kuhail', [courses['CS 303'], courses['CS 341']]
+        ),
+    'Mitchell': Instructor(
+        'Mitchell', [courses['CS 191A'], courses['CS 191B'], courses['CS 291A'], courses['CS 291B'], courses['CS 303'], courses['CS 341']]
+        ),
+    'Rao': Instructor(
+        'Rao', [courses['CS 291A'], courses['CS 291B'], courses['CS 303'], courses['CS 341'], courses['CS 461']]
+        ),
+    'Staff': Instructor(
+        'Staff', [list(courses.values())]
+        ),
     }
-time = [
+times = [
     '10A', 
     '11A', 
     '12P', 
@@ -39,61 +119,27 @@ time = [
     '4P'
     ]
 rooms = {
-    'Haag 301': 70,
-    'Haag 206': 30,
-    'Royall 204': 70,
-    'Katz 209': 50,
-    'Flarsheim 310': 80,
-    'Flarsheim 260': 25,
-    'Bloch 0009': 30
+    'Haag 301': Room('Haag 301', 70),
+    'Haag 206': Room('Haag 206', 30),
+    'Royall 204': Room('Royall 204', 70),
+    'Katz 209': Room('Katz 209', 50),
+    'Flarsheim 310': Room('Flarsheim 310', 80),
+    'Flarsheim 260': Room('Flarsheim 260', 25),
+    'Bloch 0009': Room('Bloch 0009', 30)
     }
 
-def fitness(x):
+scheduler = Schedule(times, courses, instructors, rooms)
 
-    u ~ Uniform(0, 1, size = d)
-    y = sgn(u - 0.5) * T * ((1 + 1/T)**abs(2*u - 1) - 1.0)
+temperature = None
+current_state = None
 
-    xc = y * (upper - lower)
-    x_new = x_old + xc
+# while temperature >= 0:
 
-    c = n * exp(-n * quench)
-    T_new = T0 * exp(-c * k**quench)
+#     for i in range(1, max_iter):
 
-interval = (-10, 10)
+#         next_state = action_on(current_state)
+#         energy_delta = value(next_state) - value(current_state)
+#         if (energy_delta < 0) or (math.exp(-energy_delta / temperature) >= random.randint(0, 10)):
+#             current_state = next_state
 
-def f(x):
-    """ Function to minimize."""
-    return x ** 2
-
-def clip(x):
-    """ Force x to be in the interval."""
-    a, b = interval
-    return max(min(x, b), a)
-
-def random_start():
-    """ Random point in the interval."""
-    a, b = interval
-    return a + (b - a) * rn.random_sample()
-
-def cost_function(x):
-    """ Cost of x = f(x)."""
-    return f(x)
-
-def random_neighbour(x, fraction=1):
-    """Move a little bit x, from the left or the right."""
-    amplitude = (max(interval) - min(interval)) * fraction / 10
-    delta = (-amplitude/2.) + amplitude * rn.random_sample()
-    return clip(x + delta)
-
-def acceptance_probability(cost, new_cost, temperature):
-    if new_cost < cost:
-        # print("    - Acceptance probabilty = 1 as new_cost = {} < cost = {}...".format(new_cost, cost))
-        return 1
-    else:
-        p = np.exp(- (new_cost - cost) / temperature)
-        # print("    - Acceptance probabilty = {:.3g}...".format(p))
-        return p
-        
-def temperature(fraction):
-    """ Example of temperature dicreasing as the process goes on."""
-    return max(0.01, min(1, 1 - fraction))
+#     temperature = alpha * temperature
