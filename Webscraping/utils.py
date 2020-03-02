@@ -61,6 +61,7 @@ metadata_dict = {
     'monochrome':'monochrome', 
     'sketch': 'sketch',
     'lineart': 'lineart',
+    'screencap':'screencap',
     'animated':'animated',
     'audio':'audio',
     'uncensored': 'uncensored',
@@ -571,18 +572,18 @@ def login(driver, site, type_=0):
         element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'  
         while driver.current_url == 'https://twitter.com/login':
             try:  
-                driver.find_element_by_xpath(element.format(1)).send_keys(EMAIL)
-                time.sleep(.75)
-                driver.find_element_by_xpath(element.format(2)).send_keys(PASS)
-                driver.find_element_by_xpath(element.format(2)).send_keys(Keys.RETURN)
-
-            except:
                 driver.find_element_by_name('session[username_or_email]').send_keys(EMAIL)
                 time.sleep(.75)
                 driver.find_element_by_name('session[password]').send_keys(PASS)
                 driver.find_element_by_name('session[password]').send_keys(Keys.RETURN)
-            
-            time.sleep(2)
+                time.sleep(5)
+
+            except:
+                driver.find_element_by_xpath(element.format(1)).send_keys(EMAIL)
+                time.sleep(.75)
+                driver.find_element_by_xpath(element.format(2)).send_keys(PASS)
+                driver.find_element_by_xpath(element.format(2)).send_keys(Keys.RETURN)
+                time.sleep(3)
 
     elif site == 'posespace':
 
@@ -625,22 +626,32 @@ def save_image(name, image, exif, save=0):
                 Image.new('RGBA', img.size, (255, 255, 255)), img
                 )
             img.convert('RGB').save(name, exif=exif)
-    
+
     elif name.endswith(('.gif','.webm', '.mp4')):
         
         data = requests.get(image).content
         if name.endswith('.gif'): img = Image.open(BytesIO(data))
-        else: hash_ = None
+
         if save:
             with open(name, 'wb') as file: file.write(data)
+
+def get_hash(image):
         
-    if name.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+    if image.endswith(('.jpg', '.jpeg', '.png', '.gif')):
         
-        img.thumbnail([32, 32])
-        img = img.convert('L')
-        hash_ = f'{imagehash.dhash(img)}'
-        
-    return hash_
+        image = Image.open(image)
+    
+    elif image.endswith(('.mp4', '.webm')):
+
+        with cv2.VideoCapture(image) as vidcap: 
+
+            image = vidcap.read()[1]
+            image = Image.fromarray(cv2.imencode('.jpg', image))
+    
+    image.thumbnail([32, 32])
+    image = image.convert('L')
+
+    return f'{imagehash.dhash(image)}'
 
 def progress(size, left, site, length=20):
     
@@ -735,7 +746,7 @@ def generate_tags(
     if exif:
         
         tags = set(sum(tags, []) + general)
-        custom = tags.copy() | {rating}
+        custom = tags.copy() | set(rating)
         zeroth_ifd = {
             piexif.ImageIFD.XPKeywords: [
                 byte for char in '; '.join(custom) for byte in [ord(char), 0]

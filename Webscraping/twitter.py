@@ -66,9 +66,12 @@ def page_handler(driver, hrefs):
             try:
                 time.sleep(1)
                 html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-                images = html.findAll(href=re.compile(f'{href}/photo/.+'))
-                images[0].findAll(alt=True)[0]
-                images[-1].findAll(alt=True)[0]
+                images = html.findAll(
+                    src=re.compile('https://pbs.twimg.com/(card_img)|(media).+')
+                    )
+                z = images[0].get('src'), images[-1].get('src')
+                images[0].get('src')
+                images[-1].get('src')
             except IndexError:
                 time.sleep(1)
                 # for _ in range(3):
@@ -86,7 +89,7 @@ def page_handler(driver, hrefs):
             
         for image in images:
             try:
-                image = image.findAll(alt=True)[0].get('src').replace('small', 'large')
+                image = image.get('src').replace('small', 'large')
                 x = image.replace("?format=",".")
                 name = join(
                     PATH, 'Images', SITE, 
@@ -115,15 +118,16 @@ def page_handler(driver, hrefs):
                             break
                         except sql.errors.IntegrityError: break
                         
-            else: 
+            else:
                 while True:
                     try:
-                        CURSOR.execute(UPDATE[2], (name, hash, image, href,SITE))
+                        CURSOR.execute(UPDATE[2], (name, hash,image, href,SITE))
                         DATAB.commit()
                         break
                     except sql.errors.OperationalError: continue
         else: 
-            if len(images) > 1: 
+            if not images: continue
+            elif len(images) > 1: 
                 while True:
                     try:
                         CURSOR.execute(DELETE, (href,))
@@ -156,7 +160,7 @@ def xpath_soup(element):
 def setup(initial=True):
     
     try:
-        driver = get_driver(True)
+        driver = get_driver()#True)
         login(driver, SITE)
         if initial: initialize(driver)
         CURSOR.execute(SELECT[3], (SITE,))
