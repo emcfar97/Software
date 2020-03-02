@@ -17,10 +17,10 @@ class Slideshow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        resolution = self.parent.desktop().screenGeometry()
-        self.dimensions = resolution.width(),  resolution.height()+20
+        self.resolution = self.parent.width(), self.parent.height() + 15
         self.setGeometry(
-            0, 0, *self.dimensions
+            0, 0, 
+            *self.resolution
             ) 
         self.setStyleSheet('background: black')
           
@@ -57,7 +57,7 @@ class Slideshow(QMainWindow):
     
     def show_image(self, path):
         
-        width, height = self.dimensions
+        width, height = self.resolution
             
         if path.endswith(('.jpg', '.jpeg', '.png')):
             

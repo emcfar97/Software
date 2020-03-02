@@ -169,21 +169,25 @@ class Model(QAbstractTableModel):
     def columnCount(self, parent): return 5
 
     def data(self, index, role, type=0):
-
+        
         ind = (index.row() * 5) + index.column()
 
         if not index.isValid() or ind > len(self.images): return QVariant()
 
-        if role == Qt.DecorationRole:
+        if role == Qt.SizeHintRole: return QSize(self.size, self.size)
+        
+        elif role == Qt.DecorationRole:
     
             path = self.images[ind][0]
             if path.endswith(('.mp4', '.webm')):
                 
-                success, image = VideoCapture(path).read()
+                video_capture = VideoCapture(path)
+                success, image = video_capture.read()
                 image = QImage(
                     image.data, image.shape[1], image.shape[0], 
                     QImage.Format_RGB888
                     ).rgbSwapped()
+                video_capture.release()
                 
             else: image = QImage(path)
 
@@ -217,8 +221,6 @@ class Model(QAbstractTableModel):
             return path, tags, artist, stars, rating, type
 
         elif role == Qt.UserRole: return QVariant(self.images[ind][0])
-
-        elif role == Qt.SizeHintRole: return QSize(self.size, self.size)
 
         return QVariant()
    

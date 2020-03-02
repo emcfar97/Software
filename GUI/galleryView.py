@@ -63,15 +63,15 @@ class Gallery(QWidget):
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
         
         images = self.images
+        images.clearSelection()
+        images.table.rowsLoaded = 0
         try: 
             CURSOR.execute(SELECT)
             selection = CURSOR.fetchall()
         except: selection = []
 
-        images.clearSelection()
-        images.table.rowsLoaded = 0
         images.table.images = selection
-        images.table.rows = images.total() // 5 
+        images.table.rows = images.total() // 5
         images.table.layoutChanged.emit()
         images.resizeRowsToContents()
         images.resizeColumnsToContents()

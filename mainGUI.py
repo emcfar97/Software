@@ -117,7 +117,7 @@ class ManageData(QMainWindow):
 
     def create_widgets(self):
         
-        self.slideshow = sliderView.Slideshow(Qapp)
+        self.slideshow = sliderView.Slideshow(self)
         self.gallery = galleryView.Gallery(self, self.windowTitle())
         self.preview = previewView.Preview(self, self.windowTitle())
 
@@ -174,6 +174,7 @@ class ManageData(QMainWindow):
     def closeEvent(self, sender):
 
         self.close()
+        self.slideshow.close()
         self.parent().show()
  
 class GestureDraw(QMainWindow):
