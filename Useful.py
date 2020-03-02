@@ -52,6 +52,15 @@ def transpose(x):
     
     return [[x[j][i] for j in range(i)] for i, _ in enumerate(x)]
 
+def f(size=20, previous = None):
+    
+    for i in range(size):
+        
+        current = random.randint(1, 3)
+        if current != previous:
+            print(i, current)
+        previous = current
+
 def quest_28(p_vec, vel, acc, time):
         
     # position vector

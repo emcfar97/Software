@@ -89,7 +89,7 @@ def edit_properties(path):
                 shutil.move(file, path)
             except: pass
 
-def save_images(path):
+def extract_images(path):
 
     for file in [i for i in os.listdir(path) if i.endswith('.json')]:
         

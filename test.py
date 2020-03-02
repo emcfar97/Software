@@ -15,16 +15,3 @@
     #     )
     # model.save(r'Machine Learning\Master\medium.h5')
 
-import mysql.connector as sql
-
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor(buffered=True)
-
-ALTER = """ALTER TABLE `userdata`.`imagedata` 
-CHANGE COLUMN `rating` `rating` VARCHAR(14) NULL DEFAULT 'safe' ;"""
-CURSOR.execute(ALTER)
-DATAB.commit()
-print('Done')
