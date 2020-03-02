@@ -1,145 +1,345 @@
 ##############################################################################
 ##
 ## CS 461
-## Program #1
+## Program #2
+
 ## Ethan McFarland
 ## Em463@mail.umkc.edu
 ##
 ##############################################################################
 
-import random, math
+import random, math, csv, copy
 
-class Schedule():
+class Scheduler():
 
-    def __init__(self, times, courses, instructors, rooms):
+    def __init__(self, times, courses, instructors, rooms, timeslots=None):
 
         self.times = times
+        self.rooms = rooms
         self.courses = courses
         self.instructors = instructors
-        self.rooms = rooms
-        self.timeslots = []
-        self.choose()
 
-    def choose(self): 
-        
-        if self.timeslots: pass
-
+        if timeslots: 
+            self.timeslots = timeslots
         else:
+            self.timeslots = []
+
+            for room in rooms:
+
+                for time in times:
+
+                    course = random.choice(courses)
+                    instructor = random.choice(instructors)
+                    
+                    timeslot = Timeslot(room, time, course, instructor)
+                    room.timeslots[time] = timeslot
+                    self.timeslots.append(timeslot)
+        
+    def random_state(self):
+        
+        timeslots = copy.deepcopy(self.timeslots)
+        start, end = random.choices([i for i in range(len(timeslots))], k=2)
+        property = random.choice([0, 1, 2, 3])
+
+        if property == 0: 
+            timeslots[start].course, timeslots[end].course = timeslots[end].course, timeslots[start].course
+
+        elif property == 1: 
+            timeslots[start].instructor, timeslots[end].instructor = timeslots[end].instructor, timeslots[start].instructor
+
+        elif property == 2: 
+            timeslots[start].room, timeslots[end].room = timeslots[end].room, timeslots[start].room
+
+        elif property == 3: 
+            timeslots[start].time, timeslots[end].time = timeslots[end].time, timeslots[start].time
+
+        schedule = Scheduler(self.times, self.courses, self.instructors, self.rooms, timeslots)
+
+        return schedule
+    
+    def fitness(self, score=0):
+
+        instructors = {
+            instructor.name:0 for instructor in self.instructors
+            }
+
+        for room in rooms:
+
+            for timeslot in room.timeslots.values():
+
+                instructor = timeslot.instructor
+                course = timeslot.course
+
+                score += 3 if instructor.can_teach(course) and instructor.name != 'Staff' else 0
+                score += 1 if instructor.name == 'Staff' else 0
+
+                if room.has_capacity(course): 
+                    
+                    score += 5
+                    score += 2 if room.capacity <= (course.enrolled * 2) else 0
             
-            for instructor, courses in self.instructors.items():
+                instructors[instructor.name] += 1
+        
+        for courses in instructors.values():
+            score -= 5 * (courses - 4) if courses > 4 else 0
+        graduate = instructors['Rao'] + instructors['Mitchell']
+        non_graduate = instructors['Hare'] + instructors['Bingham']
+        score -= 10 if graduate > non_graduate else 0
+
+        for time in self.times:
+
+            instructors = {}
+            courses = self.find_all(time=time)
+            for course in courses:
+                instructor = course.instructor.name
+                instructors[instructor] = instructors.get(instructor, 0) + 1
                 
-                for course in courses:
+            for instructor, courses in instructors.items():
 
-                    pass
+                if instructor != 'Staff':
+                    score -= courses * 5 if courses != 1 else 0
 
-    def fitness(self): pass
+        cs_101 = self.find_all(course='CS 101')
+        cs_191 = self.find_all(course='CS 191')
+        for course in cs_101:
+
+            time = course.time
+            for course_ in cs_191:
+
+                if time == course_.time:
+
+                    score -= 15
+
+                elif time - course_.time == 1:
+
+                    score += 5
+                    if course.room == course_.room: 
+                        score += 5
+                    elif not (course.room == 'Katz' and course_.room == 'Katz'):
+                        score -= 3
+                    elif not (course.room == 'Bloch' and course_.room == 'Bloch'):
+                        score -= 3
+                    elif (course.room == 'Bloch' and course_.room == 'Katz') or (course.room == 'Katz' and course_.room == 'Bloch'):
+                        score -= 6
+ 
+        cs_201 = self.find_all(course='CS 201')
+        cs_291 = self.find_all(course='CS 291')
+        for course in cs_201:
+    
+            time = course.time
+            for course_ in cs_291:
+
+                if time == course_.time:
+
+                    score -= 15
+
+                elif time - course_.time == 1:
+
+                    score += 5
+                    if course.room == course_.room: 
+                        score += 5
+                    elif not (course.room == 'Katz' and course_.room == 'Katz'):
+                        score -= 3
+                    elif not (course.room == 'Bloch' and course_.room == 'Bloch'):
+                        score -= 3
+                    elif (course.room == 'Bloch' and course_.room == 'Katz') or (course.room == 'Katz' and course_.room == 'Bloch'):
+                        score -= 6
+        
+        return score
+
+    def find_all(self, **kwargs):
+
+        if 'course' in kwargs:
+
+            return [
+                timeslot for timeslot in self.timeslots
+                if timeslot.course == kwargs['course']
+                ]
+        
+        if 'time' in kwargs:
+            
+            return [
+                timeslot for timeslot in self.timeslots
+                if timeslot.time == kwargs['time']
+                ]
+
+    def output(self):
+
+        with open('Class Schedule.csv', 'w', newline='') as file:
+
+            writer = csv.writer(file, delimiter=',')
+            
+            for time in self.times:
+                
+                line = [time] + [timeslot for timeslot in self.find_all(time=time)]
+                writer.writerow(line)
 
 class Timeslot():
 
-    def __init__(self, time, course, instructor, room):
+    def __init__(self, room, time, course, instructor):
 
+        self.room = room
         self.time = time
         self.course = course
         self.instructor = instructor
-        self.room = room
 
     def __repr__(self):
 
-        return f'{self.course}\n{self.time}\n{self.instructor}\n{self.room}\n'
+        return f'{self.room}\n{self.course}\n{self.instructor}'
+
+    def __hash__(self): return self.time
+    
+    def __sub__(self, other): 
+        
+        return 12 - abs(self.time.hour - other.time.hour)
 
 class Course():
     
-    def __init__(self, course, enroll, section=''): 
+    def __init__(self, course, enrolled, section=''): 
 
         self.course = course
-        self.enroll =  enroll
+        self.enrolled =  enrolled
         self.section = section
     
-    def __repr__(self): return f'{self.course}{self.section} ({self.enroll})'
+    def __repr__(self): return f'{self.course}{self.section} ({self.enrolled})'
+
+    def __eq__(self, other):
+
+        return self.course == other
 
 class Instructor():
     
-    def __init__(self, instructor, courses):
+    def __init__(self, name, courses):
 
-        self.instructor = instructor
+        self.name = name
         self.courses = courses
 
-    def __repr__(self): return f'{self.instructor} ({self.courses})'
+    def __repr__(self): return f'{self.name}'
+
+    def can_teach(self, course):
+
+        return course in self.courses
 
 class Room():
     
     def __init__(self, room, capacity):
 
-        self.room = room
+        self.building, self.room = room.split()
         self.capacity = capacity
+        self.timeslots = {
+            Time('10A'): None, 
+            Time('11A'): None, 
+            Time('12P'): None, 
+            Time('1P'): None, 
+            Time('2P'): None, 
+            Time('3P'): None, 
+            Time('4P'): None
+            }
 
-    def __repr__(self): return f'{self.room} ({self.capacity})'
+    def __repr__(self): return f'{self.building} {self.room} ({self.capacity})'
 
-courses = {
-    'CS 101A': Course('CS 101', 40, 'A'),
-    'CS 101B': Course('CS 101', 25, 'B'),
-    'CS 201A': Course('CS 201', 30, 'A'),
-    'CS 201B': Course('CS 201', 30, 'B'),
-    'CS 191A': Course('CS 191', 60, 'A'),
-    'CS 191B': Course('CS 191', 20, 'B'),
-    'CS 291B': Course('CS 291', 40, 'B'),
-    'CS 291A': Course('CS 291', 20, 'A'),
-    'CS 303': Course('CS 303', 50),
-    'CS 341': Course('CS 341', 40),
-    'CS 449': Course('CS 449', 55),
-    'CS 461': Course('CS 461', 40),
-    }
-instructors = {
-    'Hare': Instructor(
-        'Hare', [courses['CS 101A'], courses['CS 101B'], courses['CS 201A'], courses['CS 201B'], courses['CS 291A'], courses['CS 291B'], courses['CS 303'], courses['CS 449'], courses['CS 461']]
-        ),
-    'Bingham': Instructor(
-        'Bingham', [courses['CS 101A'], courses['CS 101B'], courses['CS 201A'], courses['CS 201B'], courses['CS 191A'], courses['CS 191B'], courses['CS 291A'], courses['CS 291B'], courses['CS 449']]
-        ),
-    'Kuhail': Instructor(
-        'Kuhail', [courses['CS 303'], courses['CS 341']]
-        ),
-    'Mitchell': Instructor(
-        'Mitchell', [courses['CS 191A'], courses['CS 191B'], courses['CS 291A'], courses['CS 291B'], courses['CS 303'], courses['CS 341']]
-        ),
-    'Rao': Instructor(
-        'Rao', [courses['CS 291A'], courses['CS 291B'], courses['CS 303'], courses['CS 341'], courses['CS 461']]
-        ),
-    'Staff': Instructor(
-        'Staff', [list(courses.values())]
-        ),
-    }
-times = [
-    '10A', 
-    '11A', 
-    '12P', 
-    '1P', 
-    '2P', 
-    '3P', 
-    '4P'
+    def has_capacity(self, course): return course.enrolled <= self.capacity
+
+    def available(self, time): return time in self.timeslots
+
+class Time():
+
+    def __init__(self, time):
+
+        self.hour = int(time[:-1])
+        self.meridian = time[-1:]
+
+    def __repr__(self): return f'{self.hour}{self.meridian}'
+
+    def __hash__(self): return hash(self.__repr__())
+    
+    def __eq__(self, other):
+        
+        try:
+            return self.hour == other.hour and self.meridian == other.meridian
+        except AttributeError:
+            return self.__repr__() == other
+            
+    def __sub__(self, other): 
+        
+        return 12 - abs(self.hour - other.hour)
+
+courses = [
+    Course('CS 101', 40, 'A'),
+    Course('CS 101', 25, 'B'),
+    Course('CS 201', 30, 'A'),
+    Course('CS 201', 30, 'B'),
+    Course('CS 191', 60, 'A'),
+    Course('CS 191', 20, 'B'),
+    Course('CS 291', 20, 'A'),
+    Course('CS 291', 40, 'B'),
+    Course('CS 303', 50),
+    Course('CS 341', 40),
+    Course('CS 449', 55),
+    Course('CS 461', 40),
     ]
-rooms = {
-    'Haag 301': Room('Haag 301', 70),
-    'Haag 206': Room('Haag 206', 30),
-    'Royall 204': Room('Royall 204', 70),
-    'Katz 209': Room('Katz 209', 50),
-    'Flarsheim 310': Room('Flarsheim 310', 80),
-    'Flarsheim 260': Room('Flarsheim 260', 25),
-    'Bloch 0009': Room('Bloch 0009', 30)
-    }
+instructors = [
+    Instructor(
+        'Hare', [courses[0], courses[1], courses[2], courses[3], courses[6], courses[7], courses[8], courses[10], courses[11]]
+        ),
+    Instructor(
+        'Bingham', [courses[0], courses[1], courses[2], courses[3], courses[4], courses[7], courses[6], courses[7], courses[10]]
+        ),
+    Instructor(
+        'Kuhail', [courses[8], courses[9]]
+        ),
+    Instructor(
+        'Mitchell', [courses[4], courses[5], courses[6], courses[7], courses[8], courses[9]]
+        ),
+    Instructor(
+        'Rao', [courses[6], courses[7], courses[8], courses[9], courses[11]]
+        ),
+    Instructor(
+        'Staff', courses.copy()
+        )
+    ]
+times = [
+    Time('10A'), 
+    Time('11A'), 
+    Time('12P'), 
+    Time('1P'), 
+    Time('2P'), 
+    Time('3P'), 
+    Time('4P')
+    ]
+rooms = [
+    Room('Haag 301', 70),
+    Room('Haag 206', 30),
+    Room('Royall 204', 70),
+    Room('Katz 209', 50),
+    Room('Flarsheim 310', 80),
+    Room('Flarsheim 260', 25),
+    Room('Bloch 0009', 30)
+    ]
 
-scheduler = Schedule(times, courses, instructors, rooms)
+T = 1
+alpha = 0.9
+attempts = changes = 0
+schedule = Scheduler(times, courses, instructors, rooms)
+schedule.output()
 
-temperature = None
-current_state = None
+while attempts < 4000:
 
-# while temperature >= 0:
+    attempts += 1
+    new_schedule = schedule.random_state()
+    delta = new_schedule.fitness() - schedule.fitness()
 
-#     for i in range(1, max_iter):
+    if (delta < 0 or (math.exp(-delta / T) >= random.uniform(0, 1))):
+        schedule = new_schedule
+        changes += 1
 
-#         next_state = action_on(current_state)
-#         energy_delta = value(next_state) - value(current_state)
-#         if (energy_delta < 0) or (math.exp(-energy_delta / temperature) >= random.randint(0, 10)):
-#             current_state = next_state
+    if attempts == 4000 and changes == 400:
+        T = alpha * T
+        attempts = changes = 0
+    
+    elif attempts == 4000 and changes == 0:
 
-#     temperature = alpha * temperature
+        schedule.output()
+        break
+
+schedule.output()
