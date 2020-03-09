@@ -173,7 +173,9 @@ class Model(QAbstractTableModel):
         ind = (index.row() * 5) + index.column()
 
         if not index.isValid() or ind > len(self.images): return QVariant()
-
+        try: self.images[ind]
+        except IndexError: return QVariant()
+        
         if role == Qt.SizeHintRole: return QSize(self.size, self.size)
         
         elif role == Qt.DecorationRole:

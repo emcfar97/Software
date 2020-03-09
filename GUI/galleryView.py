@@ -61,6 +61,7 @@ class Gallery(QWidget):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
+        # SELECT = f'SELECT path, tags, artist, stars, rating, type FROM imageData WHERE NOT (ISNULL(path) OR path LIKE "_0_%") AND type AND MATCH(tags, artist) AGAINST("+animated " IN BOOLEAN MODE) ORDER BY Rowid DESC LIMIT {limit}'
         
         images = self.images
         images.clearSelection()
@@ -71,7 +72,7 @@ class Gallery(QWidget):
         except: selection = []
 
         images.table.images = selection
-        images.table.rows = images.total() // 5
+        images.table.rows = (images.total() // 5) + images.total() % 5
         images.table.layoutChanged.emit()
         images.resizeRowsToContents()
         images.resizeColumnsToContents()

@@ -17,7 +17,7 @@ class Slideshow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        self.resolution = self.parent.width(), self.parent.height() + 15
+        self.resolution = self.parent.width(), self.parent.height() + 30
         self.setGeometry(
             0, 0, 
             *self.resolution
@@ -114,6 +114,7 @@ class videoPlayer(QVideoWidget):
     def __init__(self, parent):
         
         super().__init__(parent)
+        self.replay = True
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self)
         self.player.stateChanged.connect(self.mediaStatusChanged) 
@@ -125,6 +126,7 @@ class videoPlayer(QVideoWidget):
             )
         self.player.setVolume(50)
         self.player.play()
+        self.replay = True
         self.setFocus()
 
     def keyPressEvent(self, sender):
@@ -158,26 +160,28 @@ class videoPlayer(QVideoWidget):
     
         elif key_press == Qt.Key_Right:
             
+            self.replay = False
             self.player.stop()
             self.parent().setCurrentIndex(0)
             self.parent().parent().move(+1)
         
         elif key_press == Qt.Key_Left:
             
+            self.replay = False
             self.player.stop()
             self.parent().setCurrentIndex(0)
             self.parent().parent().move(-1) 
         
         elif key_press == Qt.Key_Escape: 
             
-            self.player.pause()
+            self.replay = False
             self.player.stop()
             self.hide()
 
     def mediaStatusChanged(self, status):
         
-        if not self.parent().currentIndex(): return
-        if status == QMediaPlayer.StoppedState: self.player.play()
+        if self.replay and status == QMediaPlayer.StoppedState: 
+            self.player.play()
     
     def wheelEvent(self, sender):
         
