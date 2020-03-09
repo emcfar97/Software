@@ -29,10 +29,16 @@ def backup(drive, source=r'C:\Users\Emc11\Dropbox'):
                 *[
                     join(root, dir) for dir in dirs
                     if re.search(r'\D - \d', dir)
+                    and last_modified(
+                        join(source, root.replace(drive, ''), dir)
+                        )
                     ]
-                +[
+                + [
                     join(root, file) for file in files 
                     if re.search(r'\D - \d', file)
+                    and last_modified(
+                        join(source, root.replace(drive, ''), file)
+                        )
                     ]
                 ]
             if not targets: continue
@@ -43,7 +49,7 @@ def backup(drive, source=r'C:\Users\Emc11\Dropbox'):
             
             for key, val in targets.items():
                 key = sanitize(key)
-                if exists(key) and time_frame(key):
+                if exists(key):
                     val = get_version(val)
                     if isfile(key): copy(key, val)
                     else: copytree(
@@ -64,8 +70,12 @@ def sanitize(path):
     
     return path
     
-def time_frame(path):
-    modified = date.fromtimestamp(getmtime(path))
+def last_modified(path):
+
+    path = re.sub(r' - \d+', '', path)
+    try:
+        modified = date.fromtimestamp(getmtime(path))
+    except: return
     difference = date.today() - modified
 
     return difference.days <= 15

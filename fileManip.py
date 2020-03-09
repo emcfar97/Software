@@ -2,7 +2,7 @@ import os, shutil, piexif, json, requests, hashlib, imagehash
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
-from Webscraping.utils import get_driver, get_tags, generate_tags, bs4
+from Webscraping.utils import get_driver, get_hash, get_tags, generate_tags, bs4
 import mysql.connector as sql
 from selenium.common.exceptions import WebDriverException
 
@@ -89,7 +89,7 @@ def edit_properties(path):
                 shutil.move(file, path)
             except: pass
 
-def extract_images(path):
+def extract_files(path):
 
     for file in [i for i in os.listdir(path) if i.endswith('.json')]:
         
@@ -103,6 +103,7 @@ def extract_images(path):
                 name = join(path, title.split()[0])
                 
                 if name.endswith(('.jpg', '.jpeg')):
+
                     jpg = Image.open(BytesIO(requests.get(image).content))
                     try: jpg.save(name)
                     except OSError:
@@ -114,6 +115,7 @@ def extract_images(path):
                         png.convert('RGB').save(name)
 
                 elif name.endswith('.png'):
+
                     name = name.replace('.png', '.jpg')
                     png = Image.open(BytesIO(requests.get(image).content))
                     png = png.convert('RGBA')
@@ -122,6 +124,7 @@ def extract_images(path):
                     png.convert('RGB').save(name)
 
                 elif name.endswith(('.gif','.webm', 'mp4')):
+
                     with open(name, 'wb') as temp:
                         temp.write(requests.get(image).content)
         
@@ -154,12 +157,7 @@ def insert_files(path):
                 type='Erotica 2', general=tags, 
                 custom=True, rating=True, exif=True
                 )
-            img = Image.open(file)
-            copy = img.copy()
-            copy.thumbnail([32, 32])
-            copy = copy.convert('L')
-            hash = f'{imagehash.dhash(copy)}'
-            img.save(file, exif=exif)
+            Image.open(file).save(file, exif=exif)
 
         elif file.lower().endswith(('.gif', '.webm', '.mp4')): 
             
@@ -170,9 +168,8 @@ def insert_files(path):
                 type='Erotica 2', general=tags, 
                 custom=True, rating=True, exif=False
                 )
-            hash = None
 
-        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash))
+        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, get_hash(file)))
         shutil.move(file, dest)
         DATAB.commit()
 
