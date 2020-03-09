@@ -62,9 +62,7 @@ def page_handler(driver, hrefs):
             PATH, 'Images', SITE, re.sub(
             r'-\d+-', ' - ', image.split('/')[-1])
             )
-        hash = save_image(name, image, exif)
-        if name.endswith('.png'): name = name.replace('.png', '.jpg')
-
+        hash = get_hash(name) 
 
         while True:
             try:

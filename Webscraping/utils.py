@@ -1,8 +1,9 @@
-import imagehash, os, sys, ast, piexif, time, bs4, requests, re, cv2, tempfile
+import imagehash, os, sys, ast, piexif, time, bs4, requests, re, tempfile
 from math import log
 from PIL import Image
 from io import BytesIO
 from os.path import join
+from cv2 import VideoCapture, imencode
 import mysql.connector as sql
 
 RESIZE = [1320, 1000]
@@ -605,53 +606,6 @@ def login(driver, site, type_=0):
         driver.find_element_by_xpath('//*[@id="password"]').send_keys(passw)
         driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
         time.sleep(5)
-        
-def save_image(name, image, exif, save=0):
-    
-    if name.endswith(('.jpg', '.jpeg')):
-
-        img = Image.open(BytesIO(requests.get(image).content))
-        if save:
-            img.thumbnail(RESIZE)
-            img.save(name, exif=exif)
-        
-    elif name.endswith('.png'):
-
-        name = name.replace('.png', '.jpg')
-        img = Image.open(BytesIO(requests.get(image).content))
-        if save:
-            img.thumbnail(RESIZE)
-            img = img.convert('RGBA')
-            img = Image.alpha_composite(
-                Image.new('RGBA', img.size, (255, 255, 255)), img
-                )
-            img.convert('RGB').save(name, exif=exif)
-
-    elif name.endswith(('.gif','.webm', '.mp4')):
-        
-        data = requests.get(image).content
-        if name.endswith('.gif'): img = Image.open(BytesIO(data))
-
-        if save:
-            with open(name, 'wb') as file: file.write(data)
-
-def get_hash(image):
-        
-    if image.endswith(('.jpg', '.jpeg', '.png', '.gif')):
-        
-        image = Image.open(image)
-    
-    elif image.endswith(('.mp4', '.webm')):
-
-        with cv2.VideoCapture(image) as vidcap: 
-
-            image = vidcap.read()[1]
-            image = Image.fromarray(cv2.imencode('.jpg', image))
-    
-    image.thumbnail([32, 32])
-    image = image.convert('L')
-
-    return f'{imagehash.dhash(image)}'
 
 def progress(size, left, site, length=20):
     
@@ -661,6 +615,52 @@ def progress(size, left, site, length=20):
     print(f'{site}  —  {bar} {percent:03.0%} ({left}/{size})')
     sys.stdout.write("\033[F")
     if left == size: print()
+        
+def save_image(name, image, exif=None):
+    
+    if name.endswith(('.jpg', '.jpeg')):
+
+        img = Image.open(BytesIO(requests.get(image).content))
+        img.thumbnail(RESIZE)
+        if exif: img.save(name, exif=exif)
+        else: img.save(name)
+        
+    elif name.endswith('.png'):
+
+        name = name.replace('.png', '.jpg')
+        img = Image.open(BytesIO(requests.get(image).content))
+        img.thumbnail(RESIZE)
+        img = img.convert('RGBA')
+        img = Image.alpha_composite(
+            Image.new('RGBA', img.size, (255, 255, 255)), img
+            )
+        if exif: img.convert('RGB').save(name, exif=exif)
+        else: img.convert('RGB').save(name)
+
+    elif name.endswith(('.gif','.webm', '.mp4')):
+        
+        data = requests.get(image).content
+        with open(name, 'wb') as file: file.write(data)
+    
+    return name
+
+def get_hash(image):
+        
+    if image.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+        
+        image = Image.open(image)
+    
+    elif image.endswith(('.mp4', '.webm')):
+        
+        video_capture = VideoCapture(image)
+        image = video_capture.read()[1]
+        image = Image.fromarray(imencode('.jpg', image))
+        video_capture.release()
+    
+    image.thumbnail([32, 32])
+    image = image.convert('L')
+
+    return f'{imagehash.dhash(image)}'
 
 def get_tags(driver, path):
 
@@ -674,7 +674,7 @@ def get_tags(driver, path):
         
         flag = True
         temp_dir = tempfile.TemporaryDirectory()
-        vidcap = cv2.VideoCapture(path)
+        vidcap = VideoCapture(path)
         success, frame = vidcap.read()
  
         while success:
@@ -683,7 +683,7 @@ def get_tags(driver, path):
                 temp_dir.name, f'{next(tempfile._get_candidate_names())}.jpg'
                 )
             with open(temp, 'wb') as img: 
-                img.write(cv2.imencode('.jpg', frame)[-1])
+                img.write(imencode('.jpg', frame)[-1])
                 frames.append(img.name)
             success, frame = vidcap.read()
 
@@ -709,8 +709,10 @@ def get_tags(driver, path):
     
     else:
         if flag: temp_dir.cleanup()
-
-    return list(tags)
+        tags = list(tags)
+        tags.sort()
+    
+    return tags
 
 def generate_tags(
     type=None,artists=[],metadata=[],general=[],custom=[],rating=[],exif=True
@@ -757,12 +759,19 @@ def generate_tags(
             }
         exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
         
+        tags = list(tags)
+        tags.sort()
         tags = [
             ' '.join(tags), rating, 
             piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})
             ]
 
-    else: tags = ' '.join(set(sum(tags, []) + general)), rating
+    else: 
+
+        tags = list(set(sum(tags, []) + general))
+        tags.sort()
+        tags = ' '.join(tags), rating
+        
     return tags
 
 def evaluate(tags, search):

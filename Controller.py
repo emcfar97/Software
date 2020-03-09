@@ -38,7 +38,7 @@ def webscrapers():
 
 threads = [
     threading.Thread(target=flickr.setup),
-    threading.Thread(target=erotica3),
+    # threading.Thread(target=erotica3),
     # threading.Thread(target=posespace.setup)
     ]
 for thread in threads: thread.start()

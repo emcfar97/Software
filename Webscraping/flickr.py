@@ -71,7 +71,15 @@ def page_handler(driver, hrefs):
             image = driver.find_element_by_class_name('zoom-large').get_attribute('src')
             hasher.update(requests.get(image).content)
             ext = image.split('.')[-1]
-            name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}')
+            name = save_image(
+                join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}'), image
+                )
+            tags = get_tags(driver, name)
+            tags, rating, exif = generate_tags(
+                type='Erotica 2', general=tags, 
+                custom=True, rating=True
+                )
+            save_image(name, image, exif)
 
         except:
             try:
@@ -79,32 +87,37 @@ def page_handler(driver, hrefs):
                     '//*[@id="video_1_html5_api"]'
                     )
                 image = video.get_attribute('src')
+                ext = image.split('.')[-1]
                 data = requests.get(image).content
-                hasher.update(data)
-                
-                    
-                name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.mp4')
+                hasher.update(requests.get(image).content)
                 with open(name, 'wb') as file: file.write(data) 
+                ext = image.split('.')[-1]
+                name = save_image(
+                    join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}'), image
+                    )
+                tags = get_tags(driver, name)
+                tags, rating = generate_tags(
+                    type='Erotica 2', general=tags, 
+                    custom=True, rating=True, exif=False
+                    )
 
             except:
                 try:
                     status = driver.find_element_by_class_name('statusCode')
-                    if status.text == '404': 
-                        exif = None
-                        tags = ''
-                        rating = None
-                        image = None
-                        name = f'404 - {href}'
+                    if status.text == '404':
+                        while True:
+                            try:
+                                CURSOR.execute(UPDATE[3], (
+                                    f'404 - {href}', None, None, 
+                                    None, None, None, 0, href)
+                                    )
+                                DATAB.commit()
+                                break
+                            except: continue
+                        continue
                 except: continue
             
-        hash = None if name.startswith('404') else save_image(name, image, exif, 1)
-        if name.endswith('.png'): name = name.replace('.png', '.jpg')
-        if image:
-            tags = get_tags(driver, name)
-            tags, rating, exif = generate_tags(
-                type='Erotica 2', general=tags, 
-                custom=True, rating=True
-                )
+        hash = get_hash(name) 
 
         while True:
             try:

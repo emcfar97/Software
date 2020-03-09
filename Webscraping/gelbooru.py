@@ -75,9 +75,10 @@ def page_handler(driver, hrefs):
             )
         image = driver.find_element_by_link_text('Original image')
         image = image.get_attribute('href')
-        name = join(PATH, 'エラティカ 三', image.split('/')[-1])
-        hash = save_image(name, image, exif, 1)
-        if name.endswith('.png'): name = name.replace('.png', '.jpg')
+        name = save_image(
+            join(PATH, 'エラティカ 三', image.split('/')[-1]), image, exif
+            )
+        hash = get_hash(name) 
         
         while True:
             try:

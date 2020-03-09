@@ -62,6 +62,7 @@ def page_handler(driver, hrefs):
             time.sleep(60)
             driver.get(f'https://chan.sankakucomplex.com{href}')        
             html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+
         artists = [
             '_'.join(artist.text.split(' ')[:-2]) for artist in 
             html.findAll(class_='tag-type-artist')
@@ -74,11 +75,14 @@ def page_handler(driver, hrefs):
             '_'.join(tag.text.split(' ')[:-2]) for tag in 
             html.findAll(class_='tag-type-medium')
             ]
-        tags, rating, exif = generate_tags(TYPE, artists, metadata, tags, True, True)
+        tags, rating, exif = generate_tags(
+            TYPE, artists, metadata, tags, True, True
+            )
         image = f'https:{html.find(id="highres", href=True).get("href")}'
-        name = join(PATH, 'エラティカ 三', image.split('/')[-1].split('?e=')[0])
-        hash = save_image(name, image, exif, 1)
-        if name.endswith('.png'): name = name.replace('.png', '.jpg')
+        name = save_image(
+            join(PATH, 'エラティカ 三', image.split('/')[-1].split('?e=')[0]), image, exif
+            )
+        hash = get_hash(name) 
 
         while True:
             try:

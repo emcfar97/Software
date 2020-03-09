@@ -60,9 +60,10 @@ def page_handler(driver, hrefs):
             exif, = generate_tags(TYPE)
             hasher.update(requests.get(image).content)
             ext = image.split('.')[-1]
-            name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}')
-            hash = else save_image(name, image, exif, 1)
-            if name.endswith('.png'): name = name.replace('.png', '.jpg')
+            name = save_image(
+                join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}'), image, exif
+                )
+            hash = get_hash(name) 
             
             while True:
                 try:

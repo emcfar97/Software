@@ -41,26 +41,27 @@ def page_handler(driver, hrefs):
 
     for num, (href,) in enumerate(hrefs):
         progress(size, num, SITE)
-        model = href[:-2]
 
-        href_a = f'{url}{href}contacta.jpg'
-        href_b = f'{url}{href}contactb.jpg'
-
-        image_a = Image.open(BytesIO(requests.get(href_a).content))
-        image_b = Image.open(BytesIO(requests.get(href_b).content))
+        image_a = Image.open(
+            BytesIO(requests.get(f'{url}{href}contacta.jpg').content)
+            )
+        image_b = Image.open(
+            BytesIO(requests.get(f'{url}{href}contactb.jpg').content)
+            )
 
         image = Image.new('RGB', (image_a.width, image_a.height+image_b.height))
         image.paste(image_a)
         image.paste(image_b, (0, image_a.height))
 
-        name = join(r'C:\Users\Emc11\Downloads\test', f'{href}.gif')
-        image.save(name)
-        # name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.gif')
+        image.save(join(r'C:\Users\Emc11\Downloads\test', f'{href}.gif'))
 
         continue
+        name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.gif')
+        hash = get_hash(name)
+
         while True:
             try:
-                CURSOR.execute(UPDATE[3], (name, model, hash, image, href))
+                CURSOR.execute(UPDATE[3], (name, href[:-2], hash, image, href))
                 DATAB.commit()
                 break
             except sql.errors.OperationalError: continue
