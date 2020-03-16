@@ -8,7 +8,7 @@ from os.path import join, isdir
 path = 'Machine Learning'
 source = r'C:\Users\Emc11\Dropbox\Pictures\4.Reference\5.Machine Learning\Medium\Medium.tgz'
 class_names = [
-    'Photography', 'Illustrations', '3-Dimensional'
+    'Photograph', 'Illustration', '3-Dimensional'
     ]
 medium_data = keras.utils.get_file(
     origin=source, fname='medium_photos', untar=True

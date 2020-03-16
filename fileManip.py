@@ -1,4 +1,4 @@
-import os, shutil, piexif, json, requests, hashlib, imagehash
+mport os, shutil, piexif, json, requests, hashlib, imagehash
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
@@ -99,6 +99,8 @@ def extract_files(path):
             for url in val.values():
                 
                 image = url['url']
+                if url['url'] == 'about:blank':
+                    image = f'https://{url["title"]}'
                 title = url['title'].split('/')[-1]
                 name = join(path, title.split()[0])
                 
@@ -134,11 +136,13 @@ def insert_files(path):
 
     driver = get_driver(True)
     hasher = hashlib.md5()
+    ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
 
     for file in os.listdir(path):
         
         file = join(path, file)
-        if not isfile(file) or file.endswith(('.ini', 'lnk')): continue
+        if not (file.lower().endswith(ext) and isfile(file)): continue
+
         with open(file, 'rb') as data: hasher.update(data.read())
         head, ext = splitext(file)
         dest = join(
@@ -146,7 +150,9 @@ def insert_files(path):
             f'{hasher.hexdigest()}{ext}'
             )
         
-        if exists(dest):continue
+        if exists(dest): 
+            os.remove(file)
+            continue
         
         try: tags = get_tags(driver, file)
         except WebDriverException: continue
@@ -169,7 +175,9 @@ def insert_files(path):
                 custom=True, rating=True, exif=False
                 )
 
-        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, get_hash(file)))
+        hash_ = get_hash(file.lower())
+
+        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash_))
         shutil.move(file, dest)
         DATAB.commit()
 
@@ -177,6 +185,6 @@ paths = [
     r'C:\Users\Emc11\Downloads'
     ]
     
-for path in paths: insert_files(path)
+for path in paths: extract_files(path)
 
-print("Done")
+print('Done')
