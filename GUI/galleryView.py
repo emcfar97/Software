@@ -72,7 +72,7 @@ class Gallery(QWidget):
         except: selection = []
 
         images.table.images = selection
-        images.table.rows = (images.total() // 5) + images.total() % 5
+        images.table.rows = (images.total() // 5) + bool(images.total() % 5)
         images.table.layoutChanged.emit()
         images.resizeRowsToContents()
         images.resizeColumnsToContents()
@@ -176,7 +176,7 @@ class Ribbon(QWidget):
                     else: query += f'+{token} '
 
             if query:
-                return f'MATCH(tags, artist) AGAINST("{query}" IN BOOLEAN MODE)'
+                return f'MATCH(tags, artist) AGAINST(" qwd {query}" IN BOOLEAN MODE)'
 
     def get_star(self):
         

@@ -16,19 +16,17 @@ class Slideshow(QMainWindow):
         
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
+        resolution = self.parent.size()
 
-        self.resolution = self.parent.width(), self.parent.height() + 30
         self.setGeometry(
-            0, 0, 
-            *self.resolution
-            ) 
+            0, 0, resolution.width(),  resolution.height()
+            )
         self.setStyleSheet('background: black')
           
     def create_widgets(self):
         
         self.label = QLabel(self)
         self.video = videoPlayer(self)
-        self.label.setFixedSize(self.size())
         self.label.setAlignment(Qt.AlignCenter)
         self.stack.addWidget(self.label)
         self.stack.addWidget(self.video)
@@ -57,8 +55,8 @@ class Slideshow(QMainWindow):
     
     def show_image(self, path):
         
-        width, height = self.resolution
-            
+        width, height = self.width(), self.height()
+        
         if path.endswith(('.jpg', '.jpeg', '.png')):
             
             self.label.setMovie(QMovie())

@@ -160,9 +160,7 @@ class Model(QAbstractTableModel):
 
     def flags(self, index):
         
-        return (
-            Qt.ItemIsEnabled | Qt.ItemIsSelectable# | Qt.ItemIsUserCheckable
-            )
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
     def rowCount(self, parent): return self.rows    
 
@@ -204,7 +202,7 @@ class Model(QAbstractTableModel):
             
             tag, art, sta, rat, typ, = self.images[ind][1:]
             typ = 'Illustration' if typ else 'Photograph'
-            tags = self.wrapper.wrap(f'{tag}'.strip())
+            tags = self.wrapper.wrap(f'{tag}'.strip().replace('qwd', ''))
             rest = self.wrapper.wrap(
                 f'Artist: {art} Rating: {rat} Stars: {sta} {typ}'
                 )

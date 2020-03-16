@@ -34,6 +34,8 @@ class Properties(QMainWindow):
         self.type = QComboBox(self)
         
         self.path.setDisabled(True)
+        self.tags.returnPressed.connect(self.output)
+        self.artist.returnPressed.connect(self.output)
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration'])
@@ -86,32 +88,38 @@ class Properties(QMainWindow):
         self.place = tags, artist
         self.show()
     
-    def output(self, sender):
+    def output(self, sender=None):
 
         gallery = [
             (index.data(Qt.UserRole),) for index in self.indexes
             ]
-        tags = self.valid(0)
-        artist = self.valid(1)
+        tags = self.validate(0)
+        artist = self.validate(1)
         stars = int(self.stars.currentText()) if self.stars.currentText() else 0
         rating = self.rating.currentText()
-        type = self.type.currentText()[:5]
+        type = self.type.currentIndex()
 
         if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
             self.parent().parent().change_records(
-                gallery, tags, artist, stars, rating, type
+                gallery, tags, artist, stars, rating, type - 1
                 )
 
         self.close()
 
-    def valid(self, type_):
+    def validate(self, type_):
         
         target = (
             set(self.artist.text().split())
             if type_ else 
             set(self.tags.text().split())
             )
-        insert = ' '.join(target - self.place[type_])
-        remove = ' '.join(self.place[type_] - target)
+        insert = target - self.place[type_]
+        remove = self.place[type_] - target
 
         return (insert, remove) if any([insert, remove]) else tuple()
+    
+    def type_validation(self):
+
+        type = self.type.currentIndex() - 1
+
+        return [type] if type >= 0 else None

@@ -1,6 +1,6 @@
-from subprocess import Popen
-from shutil import move
 from os import remove
+from shutil import move
+from subprocess import Popen
 
 from GUI import galleryView, previewView, sliderView, mainView, trainView
 from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, Qt
@@ -20,6 +20,7 @@ class App(QMainWindow):
         
         resolution = Qapp.desktop().screenGeometry()
         width, height = resolution.width(),  resolution.height()
+
         self.setGeometry(
             int(width * .34), int(height * .29),
             int(width * .35), int(height * .48)
@@ -57,9 +58,7 @@ class App(QMainWindow):
         self.options[title](self)
         self.hide()
 
-    def closeEvent(self, sender): 
-        
-        DATAB.close()
+    def closeEvent(self, sender): DATAB.close()
  
 class Option(QWidget):
 
@@ -127,26 +126,39 @@ class ManageData(QMainWindow):
         self.gallery.setParent(self)
         self.preview.setParent(self)
         
-    def change_records(self, gallery, *args, type_={'Photo':0, 'Illus':1}):
+    def change_records(self, gallery, *args):
         
         parameters = []
         tags, artists, stars, rating, type = args
 
         if tags:
-
-            parameters.append(f'tags=CONCAT(tags, "{tags[0]} ")')
-            parameters.append(f'tags=REPLACE(tags, " {tags[1]} ", " ")')
+            for tag in tags[0]:
+                parameters.append(f'tags=CONCAT(tags, "{tag} ")')
+            for tag in tags[1]:
+                parameters.append(f'tags=REPLACE(tags, " {tag} ", " ")')
 
         if artists:
-
-            parameters.append(f'artist=CONCAT(artist, "{artists[0]} ")')
-            parameters.append(f'artist=REPLACE(artist, " {artists[1]} ", " ")')
+            for artist in artists[0]:
+                parameters.append(f'artist=CONCAT(artist, "{artist} ")')
+            for artist in artists[1]:
+                parameters.append(f'artist=REPLACE(artist, " {artist} ", " ")')
 
         if stars: parameters.append(f'stars={stars}')
         if rating: parameters.append(f'rating="{rating}"')
-        if type: parameters.append(f'type={type_[type]}')
+        if type in [0, 1]: parameters.append(f'type={type}')
 
         CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
+        #
+            # if type:
+            #     type, = type
+            #     CURSOR.execute(MODIFY.format(
+            #             ', '.join(f'path=REPLACE(path, "{type_[not type]}", "{type_[type]}")')
+            #             ), gallery
+            #         )
+            #     for image, in gallery:
+            #         print(image.replace(
+            #             type_[not type], type_[type]
+            #             ))
         DATAB.commit()
         
         self.preview.show_image(None)
