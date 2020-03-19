@@ -34,8 +34,8 @@ class Properties(QMainWindow):
         self.type = QComboBox(self)
         
         self.path.setDisabled(True)
-        self.tags.returnPressed.connect(self.output)
-        self.artist.returnPressed.connect(self.output)
+        # self.tags.returnPressed.connect(self.output)
+        # self.artist.returnPressed.connect(self.output)
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration'])
@@ -123,3 +123,11 @@ class Properties(QMainWindow):
         type = self.type.currentIndex() - 1
 
         return [type] if type >= 0 else None
+
+    def keyPressEvent(self, sender):
+        
+        key_press = sender.key()
+
+        if key_press == Qt.Key_Return: self.output()
+        
+        if key_press == Qt.Key_Escape: self.close()

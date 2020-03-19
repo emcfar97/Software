@@ -211,7 +211,7 @@ class Model(QAbstractTableModel):
         elif role == 1000: 
             
             data = self.images[ind]
-            path = {data[0]}
+            path = {data[0]} if data[0] else set()
             tags = set(data[1].split()) if data[1] else set()
             artist = set(data[2].split()) if data[2] else set()
             stars = {data[3]}

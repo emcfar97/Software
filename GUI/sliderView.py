@@ -115,14 +115,14 @@ class videoPlayer(QVideoWidget):
         self.replay = True
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self)
-        self.player.stateChanged.connect(self.mediaStatusChanged) 
+        self.player.stateChanged.connect(self.mediaStatusChanged)
+        self.player.setVolume(50) 
 
     def update(self, path):
 
         self.player.setMedia(
             QMediaContent(QUrl.fromLocalFile(path))
             )
-        self.player.setVolume(50)
         self.player.play()
         self.replay = True
         self.setFocus()
