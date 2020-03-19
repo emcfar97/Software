@@ -1,4 +1,4 @@
-mport os, shutil, piexif, json, requests, hashlib, imagehash
+import os, shutil, piexif, json, requests, hashlib, imagehash
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
@@ -93,7 +93,8 @@ def extract_files(path):
 
     for file in [i for i in os.listdir(path) if i.endswith('.json')]:
         
-        window = json.load(open(join(path, file)))[0]['windows']
+        file = join(path, file)
+        window = json.load(open(file))[0]['windows']
 
         for val in window.values():
             for url in val.values():
@@ -106,8 +107,13 @@ def extract_files(path):
                 
                 if name.endswith(('.jpg', '.jpeg')):
 
-                    jpg = Image.open(BytesIO(requests.get(image).content))
-                    try: jpg.save(name)
+                    try: 
+                        jpg = Image.open(BytesIO(requests.get(image).content))
+                        jpg.save(name)
+
+                    except requests.exceptions.SSLError:
+                        print(f'Error at {image}')
+
                     except OSError:
                         name = name.replace('.png', '.jpg')
                         png = Image.open(BytesIO(requests.get(image).content))
@@ -130,7 +136,7 @@ def extract_files(path):
                     with open(name, 'wb') as temp:
                         temp.write(requests.get(image).content)
         
-        os.remove(join(path, file))
+        os.remove(file)
 
 def insert_files(path):
 
@@ -185,6 +191,6 @@ paths = [
     r'C:\Users\Emc11\Downloads'
     ]
     
-for path in paths: extract_files(path)
+for path in paths: insert_files(path)
 
 print('Done')

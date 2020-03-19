@@ -15,16 +15,15 @@
     #     )
     # model.save(r'Machine Learning\Master\medium.h5')
 
-import os, shutil, cv2
+import os, shutil
 from os.path import splitext, join, exists
 import mysql.connector as sql
-from Webscraping.utils import get_tags, generate_tags, get_driver
 
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor(buffered=True)
+# DATAB = sql.connect(
+#     user='root', password='SchooL1@', database='userData', 
+#     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
+#     )
+# CURSOR = DATAB.cursor(buffered=True)
 
 path = r'C:\Users\Emc11\Downloads\Katawa Shoujo'
 dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
@@ -73,19 +72,3 @@ sprites = {}
     #                 char = 'rin'
                 
     #             sprites[char][pose].append(expr)
- 
-SELECT = 'SELECT path FROM imageData WHERE ISNULL(tags) AND NOT path LIKE "_0_ %"'
-UPDATE = 'UPDATE imageData SET tags=%s WHERE path=%s'
-driver = get_driver()
-
-CURSOR.execute(SELECT)
-
-for path, in CURSOR.fetchall():
-
-    try:
-        tags = get_tags(driver, path)
-        tags = generate_tags(general=tags, custom=True)
-        CURSOR.execute(UPDATE, (tags, path))
-    except: driver.close()
-
-DATAB.commit()

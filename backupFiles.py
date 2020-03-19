@@ -2,106 +2,60 @@ import os, re
 from datetime import date
 from win32api import GetLogicalDriveStrings
 from shutil import copy, copytree, ignore_patterns
-from os.path import join, getmtime, exists, isfile, splitext
+from os.path import join, getmtime, isfile, dirname, splitext
 
-SPECIAL = [
-    'Aesdh',
-    'Aphorisms on Love',
-    'Gnosis',
-    'Hybrids',
-    'Zanzonshobu', 
-    'The Ice Cream Man',
-    'Eavesdropper Diary', 
-    'Manuke Shounen',
-    'Monster Behaviorist', 
-    'Monster Prankster',
-    'Nevermore',
-    'Novel Ideas'
-    ]
-
-def backup(drive, source=r'C:\Users\Emc11\Dropbox'):
-    
-    print(drive)
-
-    for root, dirs, files in os.walk(drive):
-        if 'System Volume Information' not in root:
-            targets = [
-                *[
-                    join(root, dir) for dir in dirs
-                    if re.search(r'\D - \d', dir)
-                    and last_modified(
-                        join(source, root.replace(drive, ''), dir)
-                        )
-                    ]
-                + [
-                    join(root, file) for file in files 
-                    if re.search(r'\D - \d', file)
-                    and last_modified(
-                        join(source, root.replace(drive, ''), file)
-                        )
-                    ]
-                ]
-            if not targets: continue
-            targets = {
-                re.sub(r'[A-Z]:',source,re.sub(r' - \d+','',target)):
-                re.sub(r' - \d+', '', target) for target in targets
-                }
-            
-            for key, val in targets.items():
-                key = sanitize(key)
-                if exists(key):
-                    val = get_version(val)
-                    if isfile(key): copy(key, val)
-                    else: copytree(
-                        key, val, ignore=ignore_patterns('*Reference')
-                        )
-                    print(f'\t{key}')     
-
-def sanitize(path):
-
-    if path.endswith('.doc'): path += 'x'
-    
-    for string in SPECIAL:
-        if string in path:
-            if path.endswith('.scriv'):
-                path = path.replace('{}\\'.format(string), '')
-            else: path = path.replace(f'{string}\\', '')
-            break
-    
-    return path
-    
 def last_modified(path):
 
-    path = re.sub(r' - \d+', '', path)
-    try:
-        modified = date.fromtimestamp(getmtime(path))
+    try: modified = date.fromtimestamp(getmtime(path))
     except: return
     difference = date.today() - modified
 
     return difference.days <= 15
 
-def get_version(path, num=1):
+def get_version(paths):
 
-    # name changes
-    if 'Aesdh' in path: num = 35
-    elif 'Gnosis' in path: num = 30
-    elif 'Hybrids' in path: num = 32
-    elif 'Manuke' in path: num = 14
-    elif 'Cream' in path: num = 11
-    elif 'Novel' in path: num = 7
-    elif 'Manip' in path: num = 3
+    latest = max(
+        paths, key=lambda path: 
+        int(re.search(' [0-9]+', path).group()[1:])
+        )
+    version = int(re.search(' [0-9]+', latest).group()[1:])
 
-    comp = splitext(path)
-    path = f'{comp[0]} - {num}{comp[1]}'
+    return re.sub(' [0-9]+', f' {version + 1}', latest)
 
-    while exists(path):
-        num += 1
-        path = f'{comp[0]} - {num}{comp[1]}'
-
-    return path
-
+root = os.getcwd()[:3].upper()
+source = rf'{root}Users\Emc11\Dropbox'
 drives = GetLogicalDriveStrings().split('\000')[:-1]
-drives.remove('E:\\' if 'E:' in __file__ else 'C:\\')
-for drive in drives: backup(drive)
+drives.remove(root)
+
+for drive in drives:
+    
+    print(drive)
+
+    for root, dirs, files in os.walk(drive):
+
+        targets = {}
+        
+        for path in dirs + files:
+            
+            dropbox = re.sub(
+                r' - \d+', '', join(root.replace(drive[:-1], source), path)
+                )
+            if dropbox.endswith('scriv'):
+                
+                head, ext = splitext(dropbox)
+                dropbox = dirname(head) + ext
+
+            if re.search(r'\D - \d', path) and last_modified(dropbox):
+                
+                targets[dropbox] = targets.get(dropbox, []) + [join(root, path)]
+
+        for key, val in targets.items():
+
+            val = get_version(val)
+
+            if isfile(key): copy(key, val)
+            else: copytree(key, val, ignore=ignore_patterns('*Reference'))
+
+            print(f'\t{val}') 
 
 print('Done')
