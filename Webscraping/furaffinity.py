@@ -53,13 +53,12 @@ def page_handler(driver, hrefs):
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
 
         artist = html.find('a', href=re.compile('/user/+(?!chairekakia)'), id=False).get('href')
-        x, y, exif, = generate_tags(TYPE, [artist.split('/')[2].lower()])
         image = f'https:{html.find("a", href=re.compile("//d.+")).get("href")}'
         
         name = image.split('/')[-1].split('.')[1:]
         name[0] = re.sub(r'_\d+_-_', ' - ', name[0])
         name = join(PATH, 'Images', SITE, ".".join(name))
-        hash = get_hash(name) 
+        hash = get_hash(image) 
 
         while True:
             try:
@@ -82,10 +81,13 @@ def setup(initial=True):
         if initial: initialize(driver)
         CURSOR.execute(SELECT[3], (SITE,))
         page_handler(driver, CURSOR.fetchall())
-        driver.close()
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
             setup(False)
+    except Exception as error:
+        print(f'{SITE}: {error}')
+        
+    driver.close()
     DATAB.close()
 
 if __name__ == '__main__':

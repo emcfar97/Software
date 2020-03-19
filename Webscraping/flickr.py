@@ -118,7 +118,7 @@ def page_handler(driver, hrefs):
                 except: continue
             
         hash = get_hash(name) 
-
+        
         while True:
             try:
                 CURSOR.execute(UPDATE[3], (
@@ -146,10 +146,13 @@ def setup(initial=True):
         if initial: initialize(driver)
         CURSOR.execute(SELECT[2],(SITE,))
         page_handler(driver, CURSOR.fetchall())
-        driver.close()
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes': 
             setup(False)
+    except Exception as error:
+        print(f'{SITE}: {error}')
+        
+    driver.close()
     DATAB.close()
 
 if __name__ == '__main__':

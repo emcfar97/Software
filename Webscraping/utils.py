@@ -3,7 +3,7 @@ from math import log
 from PIL import Image
 from io import BytesIO
 from os.path import join
-from cv2 import VideoCapture, imencode
+from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 import mysql.connector as sql
 
 RESIZE = [1320, 1000]
@@ -33,11 +33,11 @@ SELECT = [
 INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
-    'INSERT IGNORE INTO favorites(path, href, site) VALUES(%s, %s, %s)'
+    'INSERT IGNORE INTO favorites(path, href, site) VALUES(%s, %s, %s)',
+    'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, "twitter")'
     ]
 UPDATE = [
     'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-    # 'UPDATE imageData SET path=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     'UPDATE favorites SET path=%s, hash=%s, src=%s WHERE href=%s',
     'REPLACE INTO imageData(path,hash,href,site) VALUES(%s,%s,%s,%s)',
     'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
@@ -66,7 +66,9 @@ metadata_dict = {
     'animated':'animated',
     'audio':'audio',
     'uncensored': 'uncensored',
-    'censored': 'censored'
+    'censored': 'censored',
+    'official_art':'official_art',
+    'game_cg':'game_cg'
     }
 custom_dict = {
     'aphorisms': '((((nipples OR nipple_slip OR areola OR areolae OR areola_slip OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR breasts_outside OR breastless_clothes OR underbust OR underboob) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots))', 
@@ -649,12 +651,16 @@ def get_hash(image):
     if image.endswith(('.jpg', '.jpeg', '.png', '.gif')):
         
         image = Image.open(image)
-    
-    elif image.endswith(('.mp4', '.webm')):
+
+    elif 'http' in image:
+        
+        image = Image.open(BytesIO(requests.get(image).content))
+
+    elif image.endswith(('.mp4', '.webm')): 
         
         video_capture = VideoCapture(image)
-        image = video_capture.read()[1]
-        image = Image.fromarray(imencode('.jpg', image))
+        image = cvtColor(video_capture.read()[1], COLOR_BGR2RGB)
+        image = Image.fromarray(image)
         video_capture.release()
     
     image.thumbnail([32, 32])
@@ -664,23 +670,20 @@ def get_hash(image):
 
 def get_tags(driver, path):
 
-    tags = set()
+    tags = {'qwd'}
     frames = []
-    flag = False
+    flag = path.endswith(('gif', 'webm', 'mp4'))
 
-    if path.endswith(('jpeg', 'jpg', 'png')): frames.append(path)
-    
-    else:
-        
-        flag = True
+    if flag:
+
         temp_dir = tempfile.TemporaryDirectory()
         vidcap = VideoCapture(path)
         success, frame = vidcap.read()
  
         while success:
             
-            temp = join(
-                temp_dir.name, f'{next(tempfile._get_candidate_names())}.jpg'
+            temp = join(temp_dir.name, 
+                f'{next(tempfile._get_candidate_names())}.jpg'
                 )
             with open(temp, 'wb') as img: 
                 img.write(imencode('.jpg', frame)[-1])
@@ -690,7 +693,9 @@ def get_tags(driver, path):
         else: 
             step = round(60 * log((len(frames) * .0005) + 1) + 1)
             frames = frames[::step]
-        
+
+    else: frames.append(path)
+    
     for frame in frames:
 
         driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
@@ -718,7 +723,7 @@ def generate_tags(
     type=None,artists=[],metadata=[],general=[],custom=[],rating=[],exif=True
     ):
     
-    tags = []
+    tags = [['qwd']]
     type = 'Erotica 2' if 'photo' in general else type
 
     if metadata:
@@ -749,6 +754,8 @@ def generate_tags(
         
         tags = set(sum(tags, []) + general)
         custom = tags.copy() | set(rating)
+        custom.remove('qwd')
+        
         zeroth_ifd = {
             piexif.ImageIFD.XPKeywords: [
                 byte for char in '; '.join(custom) for byte in [ord(char), 0]
@@ -770,7 +777,7 @@ def generate_tags(
 
         tags = list(set(sum(tags, []) + general))
         tags.sort()
-        tags = ' '.join(tags), rating
+        tags = ' '.join(tags), rating if rating else ' '.join(tags)
         
     return tags
 

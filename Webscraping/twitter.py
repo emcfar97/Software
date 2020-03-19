@@ -59,8 +59,7 @@ def page_handler(driver, hrefs):
         progress(size, num, SITE)   
 
         driver.get(f'https://twitter.com{href}')
-        artist = href.split('/')[1]
-        x, y, exif, = generate_tags(TYPE, [artist.lower()])
+        first = True
 
         for _ in range(3):
             try:
@@ -69,9 +68,10 @@ def page_handler(driver, hrefs):
                 images = html.findAll(
                     src=re.compile('https://pbs.twimg.com/(card_img)|(media).+')
                     )
-                z = images[0].get('src'), images[-1].get('src')
+
                 images[0].get('src')
                 images[-1].get('src')
+                artist = href.split('/')[1]
             except IndexError:
                 time.sleep(1)
                 # for _ in range(3):
@@ -86,53 +86,36 @@ def page_handler(driver, hrefs):
                 # try: 
                 #     if 'video' == images[0].name: break
                 # except: continue
-            
+         
         for image in images:
-            try:
-                image = image.get('src').replace('small', 'large')
-                x = image.replace("?format=",".")
-                name = join(
-                    PATH, 'Images', SITE, 
-                    f'{artist} - {x.split("/")[-1].split("&")[0]}'
-                    )
-            except:
-                image = image.get('src')
-                name = join(
-                    PATH, 'Images', SITE,
-                    f'{artist} - {image.split("/")[-1]}'
-                    )
-            hash = get_hash(name) 
 
-            if len(images) == 1: 
-                while True:
+            image = image.get('src').replace('small', 'large')
+            name = image.replace('?format=', '.').split('/')[-1]
+            name = join(
+                PATH, 'Images', SITE, f'{artist} - {name.split("&")[0]}'
+                )
+            hash_ = get_hash(image) 
+
+            while True:
+                statement = UPDATE[1] if first else INSERT[3]
+                try:
+                    CURSOR.execute(statement, (name, hash_, image, href))
+                    DATAB.commit()
+                    break
+                except sql.errors.OperationalError: continue
+                except sql.errors.IntegrityError:
+                    num = hash(image)
                     try:
-                        CURSOR.execute(UPDATE[1], (name, hash, image, href))
+                        CURSOR.execute(
+                            statement, 
+                            (f'202 - {href} - {num}', hash_, image, href)
+                            )
                         DATAB.commit()
                         break
-                    except sql.errors.OperationalError: continue
-                    except sql.errors.IntegrityError:
-                        try:
-                            CURSOR.execute(UPDATE[1], (f'202 - {href}', hash, image, href))
-                            DATAB.commit()
-                            break
-                        except sql.errors.IntegrityError: break
+                    except sql.errors.IntegrityError: break
                         
-            else:
-                while True:
-                    try:
-                        CURSOR.execute(UPDATE[2], (name, hash,image, href,SITE))
-                        DATAB.commit()
-                        break
-                    except sql.errors.OperationalError: continue
-        else: 
-            if not images: continue
-            elif len(images) > 1: 
-                while True:
-                    try:
-                        CURSOR.execute(DELETE, (href,))
-                        DATAB.commit()
-                        break
-                    except sql.errors.OperationalError: continue 
+            first = False
+
         DATAB.commit()
         
 def xpath_soup(element):
@@ -159,15 +142,18 @@ def xpath_soup(element):
 def setup(initial=True):
     
     try:
-        driver = get_driver()#True)
+        driver = get_driver(True)
         login(driver, SITE)
         if initial: initialize(driver)
         CURSOR.execute(SELECT[3], (SITE,))
         page_handler(driver, CURSOR.fetchall())
-        driver.close()
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
-            setup(False)
+            setup(False)    
+    except Exception as error:
+        print(f'{SITE}: {error}')
+
+    driver.close()
     DATAB.close()
 
 if __name__ == '__main__':

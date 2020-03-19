@@ -1,0 +1,13 @@
+
+Django
+    python C:\Users\Emc11\Dropbox\Software\CodeKC\djangoProject\myproject\manage.py
+        shell
+        runserver
+        migrate
+
+Flask
+    flask run
+
+Activate and deactivate virtual environment
+    venv\Scripts\activate
+    venv\Scripts\deactivate.bat

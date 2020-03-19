@@ -142,6 +142,10 @@ def setup(initial=True):
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
             setup(False)
+    except Exception as error:
+        print(f'{SITE}: {error}')
+        
+    driver.close()
     DATAB.close()
 
 if __name__ == '__main__':
