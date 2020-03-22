@@ -6,6 +6,7 @@ Django
         migrate
 
 Flask
+    set FLASK_APP=file
     flask run
 
 Activate and deactivate virtual environment

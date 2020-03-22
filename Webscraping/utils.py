@@ -11,7 +11,8 @@ USER = 'Chairekakia'
 EMAIL = 'Emc1130@hotmail.com'
 PASS = 'SakurA1@'
 
-PATH = r'C:\Users\Emc11\Dropbox\Videos\ん'
+root = os.getcwd()[:2].upper()
+PATH = rf'{root}\Users\Emc11\Dropbox\Videos\ん'
     
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
@@ -43,9 +44,8 @@ UPDATE = [
     'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     'UPDATE favorites SET checked=%s, saved=%s WHERE path=%s'
     ]
-if __file__.startswith(('e:\\', 'e:/')):
+if PATH.startswith(('e:\\', 'e:/')):
     
-    PATH = PATH.replace('C:', 'E:')
     SELECT[4] = 'SELECT REPLACE(path, "C:", "E:"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))'
     INSERT[2] = 'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "E:", "C:"), %s, %s)'
     UPDATE = [
