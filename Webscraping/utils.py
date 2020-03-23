@@ -14,11 +14,11 @@ PASS = 'SakurA1@'
 root = os.getcwd()[:2].upper()
 PATH = rf'{root}\Users\Emc11\Dropbox\Videos\ん'
     
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor(buffered=True)
+# DATAB = sql.connect(
+#     user='root', password='SchooL1@', database='userData', 
+#     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
+#     )
+# CURSOR = DATAB.cursor(buffered=True)
 
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
@@ -605,6 +605,17 @@ def login(driver, site, type_=0):
             
         driver.get('https://www.pinterest.com/login/')
         driver.find_element_by_xpath('//*[@id="email"]').send_keys(email)
+        driver.find_element_by_xpath('//*[@id="password"]').send_keys(passw)
+        driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
+        time.sleep(5)
+        
+    elif site == 'deviantArt':
+
+        email = 'rayos1'
+        passw = 'SchooL1@'
+        
+        driver.get('https://www.deviantart.com/users/login')
+        driver.find_element_by_xpath('//*[@id="username"]').send_keys(email)
         driver.find_element_by_xpath('//*[@id="password"]').send_keys(passw)
         driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
         time.sleep(5)
