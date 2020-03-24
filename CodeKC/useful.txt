@@ -1,6 +1,6 @@
 
 Django
-    python C:\Users\Emc11\Dropbox\Software\CodeKC\djangoProject\myproject\manage.py
+    python C:\Users\Emc11\Dropbox\Software\CodeKC\wyco-housing-help\wyco_housing_help\manage.py
         shell
         runserver
         migrate
