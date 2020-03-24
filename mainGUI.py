@@ -3,7 +3,7 @@ from shutil import move
 from subprocess import Popen
 
 from GUI import galleryView, previewView, sliderView, mainView, trainView
-from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, Qt
+from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, Qt
 from GUI import CURSOR, DATAB, EDIT, MODIFY, DELETE, NEZUMI
 
 class App(QMainWindow):
@@ -71,8 +71,8 @@ class Option(QWidget):
 
         width, height = size
         self.widget = QLabel(self)
-        self.label.setFixedSize(width * .25, height)
-        self.widget.setFixedSize(width * .75, height)
+        self.label.setFixedSize(int(width * .25), height)
+        self.widget.setFixedSize(int(width * .75), height)
         
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
@@ -166,16 +166,20 @@ class ManageData(QMainWindow):
     
     def delete_records(self, sender=None):
         
-        gallery = gallery = [
-            (index.data(Qt.UserRole),) for index in 
-            self.gallery.images.selectedIndexes()
-            ]
-        CURSOR.executemany(DELETE, gallery)
-        for image, in gallery: remove(image)
-        DATAB.commit()
-        self.preview.show_image(None)
-        self.gallery.populate()
-    
+        message = QMessageBox.question(
+            self, 'Delete', "Click a button", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+        
+        if message == QMessageBox.Yes:        
+            gallery = gallery = [
+                (index.data(Qt.UserRole),) for index in 
+                self.gallery.images.selectedIndexes()
+                ]
+            CURSOR.executemany(DELETE, gallery)
+            for image, in gallery: remove(image)
+            DATAB.commit()
+            self.preview.show_image(None)
+            self.gallery.populate()
+        
     def keyPressEvent(self, sender):
 
         key_press = sender.key()

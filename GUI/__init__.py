@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import  QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QTableView, QLabel, QLabel, QFormLayout, QLineEdit, QRadioButton, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QTableView, QLabel, QLabel, QFormLayout, QLineEdit, QRadioButton, QComboBox, QMessageBox
 from PyQt5.QtCore import Qt, QTimer, QSize, QUrl
 from PyQt5.QtGui import QImage, QPixmap, QMovie
 
