@@ -167,7 +167,8 @@ class ManageData(QMainWindow):
     def delete_records(self, sender=None):
         
         message = QMessageBox.question(
-            self, 'Delete', "Click a button", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+            self, 'Delete', 'Delete?    ', QMessageBox.Yes | QMessageBox.No
+            )
         
         if message == QMessageBox.Yes:        
             gallery = gallery = [
