@@ -167,7 +167,8 @@ class ManageData(QMainWindow):
     def delete_records(self, sender=None):
         
         message = QMessageBox.question(
-            self, 'Delete', 'Delete?    ', QMessageBox.Yes | QMessageBox.No
+            self, 'Delete', 'Are you sure you want to delete this?',
+            QMessageBox.Yes | QMessageBox.No
             )
         
         if message == QMessageBox.Yes:        
