@@ -6,12 +6,13 @@ from Webscraping.utils import get_driver, get_hash, get_tags, generate_tags, bs4
 import mysql.connector as sql
 from selenium.common.exceptions import WebDriverException
 
+ROOT = os.getcwd()[:2].upper()
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
 CURSOR = DATAB.cursor()
-INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(%s, %s, %s, %s, 0)'
+INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, 0)'
 
 def rename(path):
     
@@ -90,7 +91,7 @@ def edit_properties(path):
             except: pass
 
 def extract_files(path):
-
+    
     for file in [i for i in os.listdir(path) if i.endswith('.json')]:
         
         file = join(path, file)
@@ -140,23 +141,25 @@ def extract_files(path):
 
 def insert_files(path):
 
+    extract_files(path)
+    
     driver = get_driver(True)
     hasher = hashlib.md5()
     ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
 
     for file in os.listdir(path):
         
-        file = join(path, file)
         if not (file.lower().endswith(ext) and isfile(file)): continue
-
+        
+        ext = splitext(file)[-1]
+        file = join(path, file)
         with open(file, 'rb') as data: hasher.update(data.read())
-        head, ext = splitext(file)
         dest = join(
-            r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
+            rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
             f'{hasher.hexdigest()}{ext}'
             )
         
-        if exists(dest): 
+        if exists(dest):
             os.remove(file)
             continue
         
@@ -188,7 +191,7 @@ def insert_files(path):
         DATAB.commit()
 
 paths = [
-    r'C:\Users\Emc11\Downloads'
+    rf'{ROOT}\Users\Emc11\Downloads'
     ]
     
 for path in paths: insert_files(path)
