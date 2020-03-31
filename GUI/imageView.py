@@ -1,7 +1,7 @@
 import textwrap
 from . import *
 from .propertiesView import *
-from PyQt5.QtCore import QAbstractTableModel, QVariant, QObject, QModelIndex, QItemSelectionModel, Qt, pyqtSignal
+from PyQt5.QtCore import QAbstractTableModel, QVariant, QObject, QModelIndex, QItemSelectionModel, Qt
 from PyQt5.QtWidgets import QApplication, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QShortcut
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
 
@@ -20,12 +20,6 @@ def open_database():
 
 class imageView(QTableView):
   
-    # signal = pyqtSignal()
-    # signal_up = pyqtSignal()
-    # signal_down = pyqtSignal()
-    # signal_left = pyqtSignal()
-    # signal_right = pyqtSignal()
-
     def __init__(self, parent):
 
         super().__init__(parent)
@@ -44,7 +38,9 @@ class imageView(QTableView):
             QAbstractScrollArea.AdjustToContentsOnFirstShow
             )
         
+        QShortcut(Qt.Key_Return, self, activated=self.open_slideshow)
         QShortcut(Qt.Key_C | Qt.ControlModifier, self, activated=self.copy_path)
+        QShortcut(Qt.Key_Return | Qt.AltModifier, self, activated=lambda: Properties(parent, self.selectedIndexes()))
         
     def total(self): return len(self.table.images)
     
@@ -155,38 +151,8 @@ class imageView(QTableView):
             index.data(Qt.UserRole) for index in self.selectedIndexes()
             )
 
-        cb.setText(spaths, mode=cb.Clipboard)
+        cb.setText(paths, mode=cb.Clipboard)
 
-    # def keyPressEvent(self, sender): 
-        
-    #     modifier, sender = sender.modifiers(), sender.key()
-        
-    #     if sender == Qt.Key_Return: self.signal.emit()
-            
-    #     elif sender == Qt.Key_Up: self.signal_up.emit()
-            
-    #     elif sender == Qt.Key_Down: self.signal_down.emit()
-            
-    #     elif sender == Qt.Key_Right: self.signal_right.emit()
-            
-    #     elif sender == Qt.Key_Left: self.signal_left.emit()
-            
-    #     elif sender == Qt.Key_C and modifier == Qt.ControlModifier: 
-            
-    #         self.copy_path()
-            
-    # def arrowkey(self,num):
-        
-    #     try:
-    #         selection_model = self.ui.vt_Produkt_Treff.selectionModel()
-    #         indexes = selection_model.selectedIndexes()
-    #         muh = indexes[0].row()
-    #         self.ui.vt_Produkt_Treff.clearSelection()
-    #         self.ui.vt_Produkt_Treff.selectRow(muh + num)
-        
-    #     except UnboundLocalError:
-    #         pass
-        
 class Model(QAbstractTableModel):
 
     def __init__(self, parent, width):
