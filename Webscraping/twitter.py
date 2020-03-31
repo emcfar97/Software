@@ -65,7 +65,7 @@ def page_handler(driver, hrefs):
             try:
                 time.sleep(1)
                 html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-                images = html.findAll(
+                images = html.findAll(alt='Image',
                     src=re.compile('https://pbs.twimg.com/(card_img)|(media).+')
                     )
 
@@ -108,7 +108,7 @@ def page_handler(driver, hrefs):
                     try:
                         CURSOR.execute(
                             statement, 
-                            (f'202 - {href} - {num}', hash_, image, href)
+                            (f'202 - {href} - {num}', hash_, image, href, SITE)
                             )
                         DATAB.commit()
                         break
@@ -142,9 +142,9 @@ def xpath_soup(element):
 def setup(initial=True):
     
     try:
-        driver = get_driver(True)
+        driver = get_driver()#True)
         login(driver, SITE)
-        if initial: initialize(driver)
+        # if initial: initialize(driver)
         CURSOR.execute(SELECT[3], (SITE,))
         page_handler(driver, CURSOR.fetchall())
     except WebDriverException:

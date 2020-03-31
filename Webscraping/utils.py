@@ -35,7 +35,7 @@ INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     'INSERT IGNORE INTO favorites(path, href, site) VALUES(%s, %s, %s)',
-    'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, "twitter")'
+    'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, %s)'
     ]
 UPDATE = [
     'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
