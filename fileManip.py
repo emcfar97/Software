@@ -1,8 +1,8 @@
-import os, shutil, piexif, json, requests, hashlib, imagehash
+import os, shutil, piexif, json, requests, hashlib, imagehash, bs4
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
-from Webscraping.utils import get_driver, get_hash, get_tags, generate_tags, bs4
+from Webscraping.utils import get_driver, get_hash, get_tags, generate_tags, progress
 import mysql.connector as sql
 from selenium.common.exceptions import WebDriverException
 
@@ -97,25 +97,35 @@ def extract_files(path):
         file = join(path, file)
         window = json.load(open(file))[0]['windows']
 
-        for val in window.values():
-            for url in val.values():
-                
-                image = url['url']
-                if url['url'] == 'about:blank':
-                    image = f'https://{url["title"]}'
-                title = url['title'].split('/')[-1]
-                name = join(path, title.split()[0])
-                
-                if name.endswith(('.jpg', '.jpeg')):
+        try:
+            for val in window.values():
+                for url in val.values():
+                    
+                    image = url['url']
+                    if url['url'] == 'about:blank':
+                        image = f'https://{url["title"]}'
+                    title = url['title'].split('/')[-1]
+                    name = join(path, title.split()[0])
+                    
+                    if name.endswith(('.jpg', '.jpeg')):
 
-                    try: 
-                        jpg = Image.open(BytesIO(requests.get(image).content))
-                        jpg.save(name)
+                        try: 
+                            jpg = Image.open(BytesIO(requests.get(image).content))
+                            jpg.save(name)
 
-                    except requests.exceptions.SSLError:
-                        print(f'Error at {image}')
+                        except requests.exceptions.SSLError:
+                            print(f'Error at {image}')
 
-                    except OSError:
+                        except OSError:
+                            name = name.replace('.png', '.jpg')
+                            png = Image.open(BytesIO(requests.get(image).content))
+                            png = png.convert('RGBA')
+                            background = Image.new('RGBA', png.size, (255,255,255))
+                            png = Image.alpha_composite(background, png)
+                            png.convert('RGB').save(name)
+
+                    elif name.endswith('.png'):
+
                         name = name.replace('.png', '.jpg')
                         png = Image.open(BytesIO(requests.get(image).content))
                         png = png.convert('RGBA')
@@ -123,21 +133,14 @@ def extract_files(path):
                         png = Image.alpha_composite(background, png)
                         png.convert('RGB').save(name)
 
-                elif name.endswith('.png'):
+                    elif name.endswith(('.gif','.webm', 'mp4')):
 
-                    name = name.replace('.png', '.jpg')
-                    png = Image.open(BytesIO(requests.get(image).content))
-                    png = png.convert('RGBA')
-                    background = Image.new('RGBA', png.size, (255,255,255))
-                    png = Image.alpha_composite(background, png)
-                    png.convert('RGB').save(name)
+                        with open(name, 'wb') as temp:
+                            temp.write(requests.get(image).content)
+            
+            os.remove(file)
 
-                elif name.endswith(('.gif','.webm', 'mp4')):
-
-                    with open(name, 'wb') as temp:
-                        temp.write(requests.get(image).content)
-        
-        os.remove(file)
+        except: continue
 
 def insert_files(path):
 
@@ -146,13 +149,16 @@ def insert_files(path):
     driver = get_driver(True)
     hasher = hashlib.md5()
     ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
+    files = [
+        join(path, file) for file in os.listdir(path)
+        if  (file.lower().endswith(ext) and isfile(join(path, file)))
+        ]
+    size = len(files)
 
-    for file in os.listdir(path):
+    for num, file in enumerate(files):
+        progress(size, num, 'Files')
         
-        if not (file.lower().endswith(ext) and isfile(file)): continue
-        
-        ext = splitext(file)[-1]
-        file = join(path, file)
+        ext = splitext(file)[-1].lower()
         with open(file, 'rb') as data: hasher.update(data.read())
         dest = join(
             rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
@@ -164,7 +170,7 @@ def insert_files(path):
             continue
         
         try: tags = get_tags(driver, file)
-        except WebDriverException: continue
+        except (FileNotFoundError, WebDriverException): continue
 
         if file.lower().endswith(('jpg', 'jpeg')):
 
@@ -189,6 +195,10 @@ def insert_files(path):
         CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash_))
         shutil.move(file, dest)
         DATAB.commit()
+    
+    progress(len(files), num, 'Files')
+    driver.close()
+    DATAB.close()
 
 paths = [
     rf'{ROOT}\Users\Emc11\Downloads'

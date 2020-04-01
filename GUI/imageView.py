@@ -38,7 +38,7 @@ class imageView(QTableView):
             QAbstractScrollArea.AdjustToContentsOnFirstShow
             )
         
-        QShortcut(Qt.Key_Return, self, activated=self.open_slideshow)
+        QShortcut(Qt.Key_Return, self, activated=lambda: self.open_slideshow(self.currentIndex()))
         QShortcut(Qt.Key_C | Qt.ControlModifier, self, activated=self.copy_path)
         QShortcut(Qt.Key_Return | Qt.AltModifier, self, activated=lambda: Properties(parent, self.selectedIndexes()))
         
@@ -114,11 +114,11 @@ class imageView(QTableView):
         type_ = QActionGroup(typeMenu)
         for i in ['All', 'Photo', 'Illus']:
             action = QAction(i, typeMenu, checkable=True)
+            if i == 'All': action.setChecked(True)
             type_.triggered.connect(parent.populate)
             type_.addAction(action)
             typeMenu.addAction(action)
         else: 
-            action.setChecked(True)
             menu.addMenu(typeMenu)
             type_.setExclusive(True)
             parent.ribbon.type = type_

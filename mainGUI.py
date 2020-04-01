@@ -58,6 +58,12 @@ class App(QMainWindow):
         self.options[title](self)
         self.hide()
 
+    def keyPressEvent(self, sender):
+
+        key_press = sender.key()
+
+        if key_press == Qt.Key_Escape: self.close()
+
     def closeEvent(self, sender): DATAB.close()
  
 class Option(QWidget):
@@ -177,7 +183,9 @@ class ManageData(QMainWindow):
                 self.gallery.images.selectedIndexes()
                 ]
             CURSOR.executemany(DELETE, gallery)
-            for image, in gallery: remove(image)
+            for image, in gallery: 
+                try: remove(image)
+                except FileNotFoundError: continue
             DATAB.commit()
             self.preview.show_image(None)
             self.gallery.populate()
@@ -187,7 +195,10 @@ class ManageData(QMainWindow):
         key_press = sender.key()
 
         if key_press == Qt.Key_Delete: self.delete_records()
+
         elif key_press == Qt.Key_Escape: self.close()
+
+        elif key_press == Qt.Key_F5: self.gallery.populate()
         
     def closeEvent(self, sender):
 
@@ -263,6 +274,8 @@ class GestureDraw(QMainWindow):
                 self.gallery.populate()
             
             else: self.close()
+
+        elif key_press == Qt.Key_F5: self.gallery.populate()
 
     def closeEvent(self, sender):
 

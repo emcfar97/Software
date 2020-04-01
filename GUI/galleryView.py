@@ -57,7 +57,7 @@ class Gallery(QWidget):
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=2500):
+    def populate(self, sender=None, limit=3000):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'

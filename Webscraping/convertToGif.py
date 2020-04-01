@@ -8,8 +8,8 @@ from selenium.webdriver.support.ui import Select
 
 SUM = 0
 EXT = 'webm', 'webp', 'mp4'
-root = getcwd()[:2].upper()
-PATH = rf'{root}\Users\Emc11\Downloads'
+ROOT = getcwd()[:2].upper()
+PATH = rf'{ROOT}\Users\Emc11\Downloads'
 
 def main(paths, lock=False):
 
