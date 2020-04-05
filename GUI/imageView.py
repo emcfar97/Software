@@ -147,8 +147,9 @@ class imageView(QTableView):
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
         
-        paths = ', '.join(
-            index.data(Qt.UserRole) for index in self.selectedIndexes()
+        paths = ' '.join(
+            f'"{index.data(Qt.UserRole)}"' 
+            for index in self.selectedIndexes()
             )
 
         cb.setText(paths, mode=cb.Clipboard)
@@ -188,11 +189,13 @@ class Model(QAbstractTableModel):
             if path.endswith(('.mp4', '.webm')):
                 
                 video_capture = VideoCapture(path)
-                success, image = video_capture.read()
-                image = QImage(
+                image = video_capture.read()[1]
+                # print(path)
+                try: image = QImage(
                     image.data, image.shape[1], image.shape[0], 
                     QImage.Format_RGB888
                     ).rgbSwapped()
+                except: return QVariant()
                 video_capture.release()
                 
             else: image = QImage(path)

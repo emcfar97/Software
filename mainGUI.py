@@ -185,7 +185,7 @@ class ManageData(QMainWindow):
             CURSOR.executemany(DELETE, gallery)
             for image, in gallery: 
                 try: remove(image)
-                except FileNotFoundError: continue
+                except (PermissionError, FileNotFoundError): return
             DATAB.commit()
             self.preview.show_image(None)
             self.gallery.populate()
