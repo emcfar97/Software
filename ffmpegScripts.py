@@ -12,6 +12,16 @@ def get_stream(folder):
     
     return stream, new
 
+def get_folders():
+    
+    targets = input('Target folders: ')
+    
+    if '..' in targets:
+        start, end = targets.split('..')
+        return tuple(str(i) for i in range(int(start), int(end) + 1))
+        
+    else: return tuple(targets.split())
+    
 root = getcwd()[:2].upper()
 source = rf'{root}\Users\Emc11\Videos\Captures'
 dest = rf'{root}\Users\Emc11\Dropbox\Videos\Captures'
@@ -27,6 +37,7 @@ while True:
                 (join(source, file), join(dest, file.replace('.flv', '.mp4'))) 
                 for file in listdir(source) if file.endswith('flv')
                 ]
+            if not files: print(f'No files at {source}')
             for flv, mp4 in files:
                 try: ffmpeg.input(flv).output(mp4, crf=20, preset='fast').run()
                 except Exception as error: print(error); continue
@@ -34,7 +45,7 @@ while True:
 
         elif user_input == '2': # concat files
             
-            targets = tuple(input('Target folders: ').split())
+            targets = get_folders()
             
             for folder in listdir(source):
                 
@@ -47,7 +58,7 @@ while True:
 
         elif user_input == '3': # change framerate
             
-            targets = tuple(input('Target folders: ').split())
+            targets = get_folders()
 
             for folder in listdir(source):
 

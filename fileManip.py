@@ -159,42 +159,46 @@ def insert_files(path):
         progress(size, num, 'Files')
         
         ext = splitext(file)[-1].lower()
-        with open(file, 'rb') as data: hasher.update(data.read())
-        dest = join(
-            rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
-            f'{hasher.hexdigest()}{ext}'
-            )
-        
-        if exists(dest):
-            os.remove(file)
-            continue
-        
-        try: tags = get_tags(driver, file)
-        except (FileNotFoundError, WebDriverException): continue
-
-        if file.lower().endswith(('jpg', 'jpeg')):
-
-            tags, rating, exif = generate_tags(
-                type='Erotica 2', general=tags, 
-                custom=True, rating=True, exif=True
+        try: 
+            with open(file, 'rb') as data: hasher.update(data.read())
+            dest = join(
+                rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
+                f'{hasher.hexdigest()}{ext}'
                 )
-            Image.open(file).save(file, exif=exif)
-
-        elif file.lower().endswith(('.gif', '.webm', '.mp4')): 
             
-            tags.append('animated')
-            if file.lower().endswith(('.webm', '.mp4')):
-                tags.append('audio')
-            tags, rating = generate_tags(
-                type='Erotica 2', general=tags, 
-                custom=True, rating=True, exif=False
-                )
+            if exists(dest):
+                os.remove(file)
+                continue
+            
+            tags = get_tags(driver, file)
 
-        hash_ = get_hash(file.lower())
+            if file.lower().endswith(('jpg', 'jpeg')):
 
-        CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash_))
-        shutil.move(file, dest)
-        DATAB.commit()
+                tags, rating, exif = generate_tags(
+                    type='Erotica 2', general=tags, 
+                    custom=True, rating=True, exif=True
+                    )
+                Image.open(file).save(file, exif=exif)
+
+            elif file.lower().endswith(('.gif', '.webm', '.mp4')): 
+                
+                tags.append('animated')
+                if file.lower().endswith(('.webm', '.mp4')):
+                    tags.append('audio')
+                tags, rating = generate_tags(
+                    type='Erotica 2', general=tags, 
+                    custom=True, rating=True, exif=False
+                    )
+
+            hash_ = get_hash(file.lower())
+
+            CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash_))
+            shutil.move(file, dest)
+            DATAB.commit()
+            
+        except (OSError, WebDriverException): continue
+
+        except: break
     
     progress(len(files), num, 'Files')
     driver.close()
