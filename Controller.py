@@ -8,14 +8,14 @@ def erotica3():
     #     '-s', '6', 'y', '0', '7', '-x'
     #     #              start end  stop
     #     ])
-    threads = [
-        threading.Thread(target=webscrapers),
-        # threading.Thread(target=process.wait)
-        ]
-    for thread in threads: thread.start()
-    for thread in threads: thread.join()
+    # threads = [
+    #     threading.Thread(target=webscrapers),
+    #     # threading.Thread(target=process.wait)
+    #     ]
+    # for thread in threads: thread.start()
+    # for thread in threads: thread.join()
     
-    favorites.setup()
+    # favorites.setup()
     
     threads = [
         threading.Thread(target=gelbooru.setup),
@@ -31,8 +31,8 @@ def webscrapers():
     twitter.setup()
 
 threads = [
-    # threading.Thread(target=flickr.setup),
-    threading.Thread(target=erotica3),
+    threading.Thread(target=flickr.setup),
+    # threading.Thread(target=erotica3),
     # threading.Thread(target=posespace.setup)
     ]
 for thread in threads: thread.start()

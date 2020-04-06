@@ -107,12 +107,13 @@ def setup(initial=True):
         CURSOR.execute(SELECT[2],(SITE,))
         page_handler(driver, CURSOR.fetchall())
     except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
+        if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes':
             setup(False)
     except Exception as error:
         print(f'{SITE}: {error}')
         
-    driver.close()
+    try: driver.close()
+    except: pass
     DATAB.close()
 
 if __name__ == '__main__':

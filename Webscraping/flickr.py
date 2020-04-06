@@ -122,7 +122,7 @@ def page_handler(driver, hrefs):
         while True:
             try:
                 CURSOR.execute(UPDATE[3], (
-                    name, None, f" {tags} ", rating, image, hash, 0, href)
+                    name, '', f" {tags} ", rating, image, hash, 0, href)
                     )
                 DATAB.commit()
                 break
@@ -147,12 +147,13 @@ def setup(initial=True):
         CURSOR.execute(SELECT[2],(SITE,))
         page_handler(driver, CURSOR.fetchall())
     except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes': 
+        if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes': 
             setup(False)
     except Exception as error:
         print(f'{SITE}: {error}')
         
-    driver.close()
+    try: driver.close()
+    except: pass
     DATAB.close()
 
 if __name__ == '__main__':
