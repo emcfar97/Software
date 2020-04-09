@@ -2,7 +2,6 @@ from PIL import ImageFile
 from selenium.common.exceptions import TimeoutException, WebDriverException
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import mysql.connector as sql
-from .utils import *
 
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
@@ -75,9 +74,11 @@ def page_handler(driver, hrefs):
             )
         image = driver.find_element_by_link_text('Original image')
         image = image.get_attribute('href')
-        name = save_image(
-            join(PATH, 'エラティカ 三', image.split('/')[-1]), image, exif
-            )
+        try:
+            name = save_image(
+                join(PATH, 'エラティカ 三', image.split('/')[-1]), image, exif
+                )
+        except OSError: continue
         hash = get_hash(name) 
         
         while True:
@@ -118,7 +119,8 @@ def setup(initial=True):
 
 if __name__ == '__main__':
     
-    driver = get_driver(headless=True)
-    initialize(driver)
-    driver.close()
-    DATAB.close()
+    from utils import *
+    setup()
+
+else: from .utils import *
+

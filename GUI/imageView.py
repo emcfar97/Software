@@ -1,4 +1,4 @@
-import textwrap
+import textwrap, qimage2ndarray
 from . import *
 from .propertiesView import *
 from PyQt5.QtCore import QAbstractTableModel, QVariant, QObject, QModelIndex, QItemSelectionModel, Qt
@@ -37,6 +37,7 @@ class imageView(QTableView):
         self.setSizeAdjustPolicy(
             QAbstractScrollArea.AdjustToContentsOnFirstShow
             )
+        self.setVerticalScrollMode(1)
         
         QShortcut(Qt.Key_Return, self, activated=lambda: self.open_slideshow(self.currentIndex()))
         QShortcut(Qt.Key_C | Qt.ControlModifier, self, activated=self.copy_path)
@@ -177,59 +178,53 @@ class Model(QAbstractTableModel):
         
         ind = (index.row() * 5) + index.column()
 
-        if not index.isValid() or ind > len(self.images): return QVariant()
-        try: self.images[ind]
-        except IndexError: return QVariant()
+        if not index.isValid() or ind >= len(self.images): return QVariant()
+        try: 
         
-        if role == Qt.SizeHintRole: return QSize(self.size, self.size)
+            if role == Qt.SizeHintRole: return QSize(self.size, self.size)
+            
+            elif role == Qt.DecorationRole:
         
-        elif role == Qt.DecorationRole:
-    
-            path = self.images[ind][0]
-            if path.endswith(('.mp4', '.webm')):
+                path = self.images[ind][0]
+                if path.endswith(('.mp4', '.webm')):
+                    
+                    image = VideoCapture(path).read()[-1]
+                    image = qimage2ndarray.array2qimage(image).rgbSwapped()
+                    
+                else: image = QImage(path)
+
+                image = image.scaled(
+                    self.size, self.size, Qt.KeepAspectRatio, 
+                    transformMode=Qt.SmoothTransformation
+                    )
                 
-                video_capture = VideoCapture(path)
-                image = video_capture.read()[1]
-                # print(path)
-                try: image = QImage(
-                    image.data, image.shape[1], image.shape[0], 
-                    QImage.Format_RGB888
-                    ).rgbSwapped()
-                except: return QVariant()
-                video_capture.release()
+                return QPixmap.fromImage(image)
+
+            elif role == Qt.ToolTipRole:
                 
-            else: image = QImage(path)
+                tag, art, sta, rat, typ, = self.images[ind][1:]
+                typ = 'Illustration' if typ else 'Photograph'
+                tags = self.wrapper.wrap(f'{tag}'.strip().replace('qwd', ''))
+                rest = self.wrapper.wrap(
+                    f'Artist:{art}Rating: {rat} Stars: {sta} {typ}'
+                    )
+                return '\n'.join(tags + rest)
 
-            image = image.scaled(
-                self.size, self.size, Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
-            
-            return QPixmap.fromImage(image)
+            elif role == 1000: 
+                
+                data = self.images[ind]
+                path = {data[0]} if data[0] else set()
+                tags = set(data[1].split()) if data[1] else set()
+                artist = set(data[2].split()) if data[2] else set()
+                stars = {data[3]}
+                rating = {data[4]}
+                type = {data[5]}
+                
+                return path, tags, artist, stars, rating, type
 
-        elif role == Qt.ToolTipRole:
-            
-            tag, art, sta, rat, typ, = self.images[ind][1:]
-            typ = 'Illustration' if typ else 'Photograph'
-            tags = self.wrapper.wrap(f'{tag}'.strip().replace('qwd', ''))
-            rest = self.wrapper.wrap(
-                f'Artist: {art} Rating: {rat} Stars: {sta} {typ}'
-                )
-            return '\n'.join(tags + rest)
+            elif role == Qt.UserRole: return QVariant(self.images[ind][0])
 
-        elif role == 1000: 
-            
-            data = self.images[ind]
-            path = {data[0]} if data[0] else set()
-            tags = set(data[1].split()) if data[1] else set()
-            artist = set(data[2].split()) if data[2] else set()
-            stars = {data[3]}
-            rating = {data[4]}
-            type = {data[5]}
-            
-            return path, tags, artist, stars, rating, type
-
-        elif role == Qt.UserRole: return QVariant(self.images[ind][0])
+        except (IndexError, ValueError): pass
 
         return QVariant()
    

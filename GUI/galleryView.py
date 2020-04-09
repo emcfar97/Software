@@ -57,11 +57,10 @@ class Gallery(QWidget):
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=3000):
+    def populate(self, sender=None, limit=3500):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
-        # SELECT = f'SELECT path, tags, artist, stars, rating, type FROM imageData WHERE NOT (ISNULL(path) OR path LIKE "_0_%") AND type AND MATCH(tags, artist) AGAINST("+animated +mizu*" IN BOOLEAN MODE) ORDER BY Rowid DESC LIMIT {limit}'
         
         images = self.images
         images.clearSelection()
@@ -153,7 +152,7 @@ class Ribbon(QWidget):
             self.time.returnPressed.connect(parent.parent().start_session)
             self.select.insertRow(1, 'Time:', self.time)
            
-    def get_tags(self, query='', ops={'and':None, 'or':1, 'not':0}):
+    def get_tags(self, query='', ops={'AND':None, 'OR':1, 'NOT':0}):
         
         string = self.tags.text().split()[::-1]
 
@@ -162,21 +161,20 @@ class Ribbon(QWidget):
             while string:
                 token = string.pop()
 
-                if token.lower() in ops:
-                    op = ops[token.lower()]
+                if token in ops:
                     try:
-                        if op is None: query += f'+{string.pop()} '
+                        if ops[token] is None: query += f"+'{string.pop()} '"
                         else:
-                            if op: query += f'{string.pop()} '
-                            else: query += f'-{string.pop()} '
+                            if ops[token]: query += "'{string.pop()} '"
+                            else: query += f"-'{string.pop()} '"
                     except IndexError: continue
                 else: 
                     if token == '-': pass
-                    elif token.startswith('-'): query += f'{token} '
-                    else: query += f'+{token} '
+                    elif token.startswith('-'): query += f"'{token} '"
+                    else: query += f"+'{token} '"
 
             if query:
-                return f'MATCH(tags, artist) AGAINST(" qwd {query}" IN BOOLEAN MODE)'
+                return f'MATCH(tags, artist) AGAINST("qwd {query}" IN BOOLEAN MODE)'
 
     def get_star(self):
         

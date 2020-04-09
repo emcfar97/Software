@@ -98,14 +98,14 @@ class Properties(QMainWindow):
         stars = int(self.stars.currentText()) if self.stars.currentText() else 0
         rating = self.rating.currentText()
         type = self.type.currentIndex()
+        
+        self.close()
 
         if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
             self.parent().parent().change_records(
                 gallery, tags, artist, stars, rating, type - 1
                 )
-
-        self.close()
-
+        
     def validate(self, type_):
         
         target = (
@@ -118,12 +118,6 @@ class Properties(QMainWindow):
 
         return (insert, remove) if any([insert, remove]) else tuple()
     
-    def type_validation(self):
-
-        type = self.type.currentIndex() - 1
-
-        return [type] if type >= 0 else None
-
     def keyPressEvent(self, sender):
         
         key_press = sender.key()

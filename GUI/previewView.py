@@ -1,3 +1,4 @@
+import qimage2ndarray
 from . import *
 
 class Preview(QWidget):
@@ -52,31 +53,22 @@ class Preview(QWidget):
         self.show_image(self.gallery[self.index])
     
     def show_image(self, path):
-        
-        if path is None: 
-            self.label.setPixmap(QPixmap())
-            return
+                    
+        try:
+            width, height = self.width(), self.height()
+                
+            if path.endswith(('.mp4', '.webm')):
+                
+                image = VideoCapture(path).read()[-1]
+                path = qimage2ndarray.array2qimage(image).rgbSwapped()
             
-        size = self.size()
-        width, height = size.width(), size.height()
-            
-        if path.endswith(('.mp4', '.webm')):
-            
-            success, image = VideoCapture(path).read()
-            image = QImage(
-                image.data, image.shape[1], image.shape[0], 
-                QImage.Format_RGB888
-                ).rgbSwapped()
-            pixmap = QPixmap.fromImage(image).scaled(
-                width, height, Qt.KeepAspectRatio, transformMode=Qt.SmoothTransformation
+            pixmap = QPixmap(path).scaled(
+                width, height, Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
                 )
 
-        else:
-        
-            pixmap = QPixmap(path).scaled(
-                width, height, Qt.KeepAspectRatio, transformMode=Qt.SmoothTransformation
-                )
-            
+        except (ValueError, AttributeError): pixmap = QPixmap()
+                
         self.label.setPixmap(pixmap)
         
     def keyPressEvent(self, sender):

@@ -154,20 +154,7 @@ class ManageData(QMainWindow):
         if type in [0, 1]: parameters.append(f'type={type}')
 
         CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
-        #
-            # if type:
-            #     type, = type
-            #     CURSOR.execute(MODIFY.format(
-            #             ', '.join(f'path=REPLACE(path, "{type_[not type]}", "{type_[type]}")')
-            #             ), gallery
-            #         )
-            #     for image, in gallery:
-            #         print(image.replace(
-            #             type_[not type], type_[type]
-            #             ))
         DATAB.commit()
-        
-        self.preview.show_image(None)
         self.gallery.populate()
     
     def delete_records(self, sender=None):
@@ -185,9 +172,9 @@ class ManageData(QMainWindow):
             CURSOR.executemany(DELETE, gallery)
             for image, in gallery: 
                 try: remove(image)
-                except (PermissionError, FileNotFoundError): return
+                except PermissionError: return
+                except FileNotFoundError: pass
             DATAB.commit()
-            self.preview.show_image(None)
             self.gallery.populate()
         
     def keyPressEvent(self, sender):

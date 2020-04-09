@@ -1,6 +1,5 @@
 import os, json, bs4, re, requests
 from os.path import join
-from selenium.common.exceptions import WebDriverException
 
 ROOT = os.getcwd()[:2].upper()
 PATH = rf'{ROOT}\Users\Emc11\Downloads'
