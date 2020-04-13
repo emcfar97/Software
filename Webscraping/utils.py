@@ -35,7 +35,6 @@ INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     'INSERT IGNORE INTO favorites(path, href, site) VALUES(%s, %s, %s)',
-    'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, %s)'
     ]
 UPDATE = [
     'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
@@ -586,7 +585,7 @@ def login(driver, site, type_=0):
                 time.sleep(.75)
                 driver.find_element_by_xpath(element.format(2)).send_keys(PASS)
                 driver.find_element_by_xpath(element.format(2)).send_keys(Keys.RETURN)
-                time.sleep(3)
+                time.sleep(5)
 
     elif site == 'posespace':
 
@@ -659,23 +658,32 @@ def save_image(name, image, exif=None):
 
 def get_hash(image):
         
+    if 'http' in image:
+        
+        ext = image[-4:]
+        temp_dir = tempfile.TemporaryDirectory()
+        content = BytesIO(requests.get(image).content)
+        temp = join(temp_dir.name, 
+            f'{next(tempfile._get_candidate_names())}{ext}'
+            )
+        with open(temp, 'wb') as img: 
+            img.write(content)
+            image = img.name
+
     if image.endswith(('.jpg', '.jpeg', '.png', '.gif')):
         
         image = Image.open(image)
 
-    elif 'http' in image:
-        
-        image = Image.open(BytesIO(requests.get(image).content))
-
     elif image.endswith(('.mp4', '.webm')): 
         
-        video_capture = VideoCapture(image)
-        image = cvtColor(video_capture.read()[1], COLOR_BGR2RGB)
+        video_capture = VideoCapture(image).read()[-1]
+        image = cvtColor(video_capture, COLOR_BGR2RGB)
         image = Image.fromarray(image)
-        video_capture.release()
     
     image.thumbnail([32, 32])
     image = image.convert('L')
+    try: temp_dir.cleanup()
+    except: pass
 
     return f'{imagehash.dhash(image)}'
 

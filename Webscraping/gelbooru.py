@@ -78,8 +78,8 @@ def page_handler(driver, hrefs):
             name = save_image(
                 join(PATH, 'エラティカ 三', image.split('/')[-1]), image, exif
                 )
-        except OSError: continue
-        hash = get_hash(name) 
+            hash = get_hash(name)
+        except: continue 
         
         while True:
             try:

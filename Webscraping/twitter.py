@@ -2,7 +2,6 @@ import itertools
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import WebDriverException
 import mysql.connector as sql
-from .utils import *
 
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
@@ -11,7 +10,6 @@ DATAB = sql.connect(
 CURSOR = DATAB.cursor() 
 SITE = 'twitter'
 TYPE = 'Erotica 3'
-DELETE = 'DELETE FROM imageDatabase WHERE href=? AND path IS NULL'
 
 def initialize(driver, retry=0):
 
@@ -59,34 +57,37 @@ def page_handler(driver, hrefs):
         progress(size, num, SITE)   
 
         driver.get(f'https://twitter.com{href}')
-        first = True
 
-        for _ in range(3):
+        for _ in range(4):
             try:
-                time.sleep(1)
+                time.sleep(2)
                 html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-                images = html.findAll(alt='Image',
+                if login := html.find(href='/login'):
+                    xpath = xpath_soup(login)
+                    driver.find_element_by_xpath(xpath).click()
+                    driver.back()
+                    time.sleep(2)
+
+                target = html.find('div', style=re.compile('padding-top: .+'))
+                images = target.findAll(alt='Image',
                     src=re.compile('https://pbs.twimg.com/(card_img)|(media).+')
                     )
-
-                images[0].get('src')
-                images[-1].get('src')
+                images[0].get('src'); images[-1].get('src')
                 artist = href.split('/')[1]
-            except IndexError:
-                time.sleep(1)
-                # for _ in range(3):
-                #     try:
-                #         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-                #         # target = html.findAll(href=re.compile('https://help.twitter.com.+'))[0].parent.parent.parent
-                #         images = html.findAll(
-                #             'video', src=True, type_='video/mp4'#attrs={"type": "video/mp4"}
-                #             )
-                #         images[0].get('src'); images[-1].get('src')
-                #     except IndexError: time.sleep(1)
-                # try: 
-                #     if 'video' == images[0].name: break
-                # except: continue
-         
+
+            except (IndexError, AttributeError): 
+                try:
+                    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+                    target = html.find('div', style=re.compile('padding-top: .+'))
+                    images = target.findAll('video',
+                        src=re.compile('https://video.twimg.com/tweet_video.+')
+                        )
+                    images[0].get('src'); images[-1].get('src')
+                    artist = href.split('/')[1]
+
+                except (IndexError, AttributeError): continue
+
+        if len(images) != 1: continue
         for image in images:
 
             image = image.get('src').replace('small', 'large')
@@ -97,25 +98,11 @@ def page_handler(driver, hrefs):
             hash_ = get_hash(image) 
 
             while True:
-                statement = UPDATE[1] if first else INSERT[3]
                 try:
-                    CURSOR.execute(statement, (name, hash_, image, href))
-                    DATAB.commit()
+                    CURSOR.execute(UPDATE[1], (name, hash_, image, href))
                     break
                 except sql.errors.OperationalError: continue
-                except sql.errors.IntegrityError:
-                    num = hash(image)
-                    try:
-                        CURSOR.execute(
-                            statement, 
-                            (f'202 - {href} - {num}', hash_, image, href, SITE)
-                            )
-                        DATAB.commit()
-                        break
-                    except sql.errors.IntegrityError: break
                         
-            first = False
-
         DATAB.commit()
         
 def xpath_soup(element):
@@ -144,11 +131,11 @@ def setup(initial=True):
     try:
         driver = get_driver()#True)
         login(driver, SITE)
-        # if initial: initialize(driver)
+        if initial: initialize(driver)
         CURSOR.execute(SELECT[3], (SITE,))
         page_handler(driver, CURSOR.fetchall())
     except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
+        if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes':
             setup(False)    
     except Exception as error:
         print(f'{SITE}: {error}')
@@ -158,8 +145,7 @@ def setup(initial=True):
 
 if __name__ == '__main__':
 
-    driver = get_driver(headless=True)
-    login(driver, SITE)
-    initialize(driver)
-    driver.close()
-    DATAB.close()
+    from utils import *
+    setup(0)
+
+else: from .utils import *
