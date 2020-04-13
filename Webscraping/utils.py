@@ -41,7 +41,8 @@ UPDATE = [
     'UPDATE favorites SET path=%s, hash=%s, src=%s WHERE href=%s',
     'REPLACE INTO imageData(path,hash,href,site) VALUES(%s,%s,%s,%s)',
     'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-    'UPDATE favorites SET checked=%s, saved=%s WHERE path=%s'
+    'UPDATE favorites SET checked=%s, saved=%s WHERE path=%s',
+    'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, %s)'
     ]
 if PATH.startswith(('e:\\', 'e:/')):
     
