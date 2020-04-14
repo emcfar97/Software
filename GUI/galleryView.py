@@ -1,3 +1,4 @@
+import re
 from . import *
 from .imageView import *
 from PyQt5.QtWidgets import QButtonGroup
@@ -92,12 +93,17 @@ class Gallery(QWidget):
 
     def get_filter(self):
 
+        string = self.ribbon.tags.text()
+        type_ = re.findall('type=(photo.+|illus.+)?\s', string)
+        rating = re.findall('rating=(safe|questionable|explicit)?', string)
+        stars = re.findall('stars[<>=!]+[0-5]', string)
+
         values = [
             'NOT (ISNULL(path) OR path LIKE "_0_%")',
-            self.ribbon.get_rating(),
             self.ribbon.get_type(),
-            self.ribbon.get_tags(),
-            self.ribbon.get_star()
+            self.ribbon.get_rating(),
+            self.ribbon.get_star(),
+            self.ribbon.get_tags()
             ]
 
         if self.type == 'Manage Data': 
@@ -106,7 +112,7 @@ class Gallery(QWidget):
             return query + self.ribbon.get_order()
 
         else:
-            values.append('path LIKE "%.jp%g"')
+            values[0] = 'path LIKE "%.jp%g"'
             values.append('date_used <= Now() - INTERVAL 2 MONTH')
 
             query = ' AND '.join([i for i in values if i])
@@ -163,15 +169,15 @@ class Ribbon(QWidget):
 
                 if token in ops:
                     try:
-                        if ops[token] is None: query += f"+'{string.pop()} '"
+                        if ops[token] is None: query += f"+{string.pop()} "
                         else:
-                            if ops[token]: query += "'{string.pop()} '"
-                            else: query += f"-'{string.pop()} '"
+                            if ops[token]: query += "{string.pop()} "
+                            else: query += f"-{string.pop()} "
                     except IndexError: continue
                 else: 
                     if token == '-': pass
-                    elif token.startswith('-'): query += f"'{token} '"
-                    else: query += f"+'{token} '"
+                    elif token.startswith('-'): query += f"{token} "
+                    else: query += f"+{token} "
 
             if query:
                 return f'MATCH(tags, artist) AGAINST("qwd {query}" IN BOOLEAN MODE)'
