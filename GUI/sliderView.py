@@ -101,8 +101,6 @@ class Slideshow(QMainWindow):
         elif key_press == Qt.Key_Escape: 
             
             self.stack.setCurrentIndex(0)
-            self.video.player.pause()
-            self.video.player.stop()
             self.hide()
             
     def mouseMoveEvent(self, sender):
@@ -176,6 +174,8 @@ class videoPlayer(QVideoWidget):
         
         elif key_press == Qt.Key_Escape: 
             
+            self.replay = False
+            self.player.stop()
             self.parent().keyPressEvent(sender)
 
     def mediaStatusChanged(self, status):
