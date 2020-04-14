@@ -70,7 +70,9 @@ class Properties(QMainWindow):
     def display(self, indexes):
         
         self.indexes = indexes
-        data = [i.data(1000) for i in self.indexes]
+        data = [
+            i.data(1000) for i in indexes if i.data(1000) is not None
+            ]
         paths = set.intersection(*[i[0] for i in data])
         tags = set.intersection(*[i[1] for i in data])
         artist = set.intersection(*[i[2] for i in data])
