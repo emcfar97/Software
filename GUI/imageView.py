@@ -19,7 +19,7 @@ def open_database():
     return datab
 
 class imageView(QTableView):
-  
+
     def __init__(self, parent):
 
         super().__init__(parent)
@@ -42,6 +42,8 @@ class imageView(QTableView):
         QShortcut(Qt.Key_Return, self, activated=lambda: self.open_slideshow(self.currentIndex()))
         QShortcut(Qt.Key_C | Qt.ControlModifier, self, activated=self.copy_path)
         QShortcut(Qt.Key_Return | Qt.AltModifier, self, activated=lambda: Properties(parent, self.selectedIndexes()))
+        QShortcut(Qt.Key_Right, self, activated=lambda: self.arrow_key(1))
+        QShortcut(Qt.Key_Left, self, activated=lambda: self.arrow_key(-1))
         
     def total(self): return len(self.table.images)
     
@@ -155,6 +157,18 @@ class imageView(QTableView):
 
         cb.setText(paths, mode=cb.Clipboard)
 
+    def arrow_key(self, direction):
+
+        index = self.currentIndex()
+        row, col = index.row(), index.column()
+
+        if (col == 0 and direction == -1) or (col == 4 and direction == 1):
+            row = (row + (1 if direction == 1 else -1))
+            if not 0 < row < self.table.rows: return
+        col = (col + direction) % self.table.columnCount(None)
+
+        self.setCurrentIndex(self.table.index(row, col))
+
 class Model(QAbstractTableModel):
 
     def __init__(self, parent, width):
@@ -210,6 +224,8 @@ class Model(QAbstractTableModel):
                     )
                 return '\n'.join(tags + rest)
 
+            elif role == Qt.UserRole: return QVariant(self.images[ind][0])
+
             elif role == 1000: 
                 
                 data = self.images[ind]
@@ -219,10 +235,9 @@ class Model(QAbstractTableModel):
                 stars = {data[3]}
                 rating = {data[4]}
                 type = {data[5]}
+                tags.discard('qwd')
                 
                 return path, tags, artist, stars, rating, type
-
-            elif role == Qt.UserRole: return QVariant(self.images[ind][0])
 
         except (IndexError, ValueError): pass
 
