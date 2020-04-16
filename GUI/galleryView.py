@@ -4,12 +4,12 @@ from .imageView import *
 from PyQt5.QtWidgets import QButtonGroup
     
 RATING = {
-    'Explicit': None,
+    'Explicit': '',
     'Questionable': 'rating!="explicit"',
     'Safe': 'rating="safe"'
     }
 TYPE = {
-    'All': None,
+    'All': '',
     'Photo': 'NOT type',
     'Illus': 'type',
     }
@@ -94,29 +94,39 @@ class Gallery(QWidget):
     def get_filter(self):
 
         string = self.ribbon.tags.text()
-        type_ = re.findall('type=(photo.+|illus.+)?\s', string)
-        rating = re.findall('rating=(safe|questionable|explicit)?', string)
-        stars = re.findall('stars[<>=!]+[0-5]', string)
+        
+        try:
+            type_, = re.findall('type=(?:photo.+|illus.+\b?)', string)
+            string = string.replace(type_, '')
+            type_ = TYPE[re.findall('photo|illus', type_)[0].capitalize()] 
+        except ValueError: type_ = self.ribbon.get_type()
 
-        values = [
+        try:
+            rating, = re.findall('rating=(?:safe|questionable|explicit?)', string)
+            string = string.replace(rating, '')
+            rating = re.sub('(\w+)\Z', r'"\1"', rating)
+        except ValueError: rating = self.ribbon.get_rating()
+
+        try:
+            stars, = re.findall('stars[<>=!]+[0-5]', string)
+            string = string.replace(stars, '')
+            stars = stars.replace('==', '=')
+        except ValueError: stars = ''
+
+        query = [
             'NOT (ISNULL(path) OR path LIKE "_0_%")',
-            self.ribbon.get_type(),
-            self.ribbon.get_rating(),
-            self.ribbon.get_star(),
-            self.ribbon.get_tags()
+            type_, rating, stars, self.ribbon.get_tags(string)
             ]
 
         if self.type == 'Manage Data': 
 
-            query = ' AND '.join([i for i in values if i])
-            return query + self.ribbon.get_order()
+            return f'{" AND ".join(i for i in query if i)} {self.ribbon.get_order()}'
 
         else:
-            values[0] = 'path LIKE "%.jp%g"'
-            values.append('date_used <= Now() - INTERVAL 2 MONTH')
+            query[0] = 'path LIKE "%.jp%g"'
+            query.append('date_used <= Now() - INTERVAL 2 MONTH')
 
-            query = ' AND '.join([i for i in values if i])
-            return query + ' ORDER BY RAND()'
+            return f'{" AND ".join(i for i in query if i)} ORDER BY RAND()'
 
 class Ribbon(QWidget):
      
@@ -140,27 +150,20 @@ class Ribbon(QWidget):
         
         self.tags = QLineEdit(self)
         self.tags.textEdited.connect(parent.populate)
-        self.stars = Widget(
-            'combo-entry', signal=parent.populate,
-            values=['', '>', '>=', '==', '<=', '<']
-            )
-
         self.select.addRow('Search:', self.tags)
-        self.select.addRow('Stars:', self.stars)
         
         if parent.type == 'Manage Data':
             self.tags.returnPressed.connect(parent.populate)
             
         else:
-            self.tags.returnPressed.connect(parent.parent().start_session)
-            
             self.time = QLineEdit(self)
+            self.tags.returnPressed.connect(parent.parent().start_session)
             self.time.returnPressed.connect(parent.parent().start_session)
             self.select.insertRow(1, 'Time:', self.time)
            
-    def get_tags(self, query='', ops={'AND':None, 'OR':1, 'NOT':0}):
+    def get_tags(self, string, query='', ops={'AND':None, 'OR':1, 'NOT':0}):
         
-        string = self.tags.text().split()[::-1]
+        string = string.split()[::-1]
 
         if string and string != ['-']:
 
@@ -181,21 +184,16 @@ class Ribbon(QWidget):
 
             if query:
                 return f'MATCH(tags, artist) AGAINST("qwd {query}" IN BOOLEAN MODE)'
+            
+        return ''
 
-    def get_star(self):
-        
-        op, val = self.stars.get()
-        if op and val: return f'stars{"=" if op == "==" else op}{val}'
-    
     def get_rating(self):
 
-        rating = self.rating.checkedAction()
-        return RATING[rating.text()]
+        return RATING[self.rating.checkedAction().text()]
 
     def get_type(self):
 
-        type = self.type.checkedAction()
-        return TYPE[type.text()]
+        return TYPE[self.type.checkedAction().text()]
     
     def get_order(self):
         
@@ -231,91 +229,3 @@ class StatusBar(QLabel):
         else: select = ''
          
         self.setText(f'{total}     {select}')
-
-class Widget(QWidget):
-    
-    def __init__(self, type_, **kwargs):
-        
-        super().__init__()
-        self.type = type_
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-
-        if self.type == 'entry':
-
-            self.left = QLineEdit()
-            if 'signal' in kwargs:
-                if kwargs['connect'] == 'return':
-                    self.left.returnPressed.connect(kwargs['signal'])
-                elif kwargs['connect'] == 'edit':
-                    self.left.textEdited.connect(kwargs['signal'])
-            
-        elif self.type == 'combo':
-
-            self.left = QComboBox()
-            # self.left.setStyleSheet('background: white')
-            if 'values' in kwargs:
-                self.left.addItems(kwargs['values'])
-        
-        elif self.type == 'combo-entry':
-
-            self.left = QComboBox()
-            self.right = QLineEdit()
-            
-            # self.left.setStyleSheet('background: white')
-            if 'values' in kwargs:
-                self.left.addItems(kwargs['values'])
-            
-            if 'signal' in kwargs:
-                self.right.returnPressed.connect(kwargs['signal'])
-                
-        elif self.type == 'combo-combo':
-
-            self.left = QComboBox()
-            self.right = QComboBox()
-            
-            self.left.addItems(kwargs['values'][0])
-            self.right.addItems(kwargs['values'][1])
-            
-            # self.left.setStyleSheet('background: white')
-            # self.right.setStyleSheet('background: white')
-            
-        self.layout.addWidget(self.left)
-        if '-' in self.type: self.layout.addWidget(self.right)
-         
-    def modify(self, **kwargs):
-        
-        for key, val in kwargs.items():
-            
-            if key == 'title':
-                self.label.setText(val)
-            elif key == 'values':
-                self.right.addItems(val)
-            elif key == 'signal':
-                if kwargs['connect'] == 'return':
-                    self.left.returnPressed.connect(val)
-                elif kwargs['connect'] == 'edit':
-                    self.left.textEdited.connect(val)
-            
-    def get(self):
-        
-        if self.type == 'entry': 
-            return self.left.text()
-        elif self.type == 'combo': 
-            return self.left.currentText()
-        elif self.type == 'combo-entry': 
-            return self.left.currentText(), self.right.text()
-        elif self.type == 'combo-combo': 
-            return self.left.currentText(), self.right.currentText() 
-    
-    def clear(self):
-        
-        if self.type == 'entry': 
-            self.left.clear()
-        elif self.type == 'combo': 
-            self.left.itemText(0)
-        elif self.type == 'combo-entry': 
-            self.left.itemText(0), self.right.clear()
-        elif self.type == 'combo-combo': 
-            self.left.itemText(0), self.right.itemText(0) 
