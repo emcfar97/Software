@@ -50,11 +50,11 @@ if PATH.startswith(('e:\\', 'e:/')):
     INSERT[2] = 'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "E:", "C:"), %s, %s)'
     UPDATE = [
         'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
-        # 'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
         'UPDATE favorites SET path=REPLACE(%s, "E:", "C:"), hash=%s, src=%s WHERE href=%s',
-        'REPLACE INTO imageData(path,hash,href,site) VALUES(%s,%s,%s,%s)',
+        'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, "E:", "C:"),%s,%s,%s)',
         'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-        'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "E:", "C:")'
+        'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "E:", "C:")',
+        'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, %s)'
         ]
 
 metadata_dict = {
@@ -663,12 +663,11 @@ def get_hash(image):
         
         ext = image[-4:]
         temp_dir = tempfile.TemporaryDirectory()
-        content = BytesIO(requests.get(image).content)
         temp = join(temp_dir.name, 
             f'{next(tempfile._get_candidate_names())}{ext}'
             )
         with open(temp, 'wb') as img: 
-            img.write(content)
+            img.write(requests.get(image).content)
             image = img.name
 
     if image.endswith(('.jpg', '.jpeg', '.png', '.gif')):

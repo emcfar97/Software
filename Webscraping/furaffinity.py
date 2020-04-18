@@ -1,7 +1,6 @@
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException
 import mysql.connector as sql
-from .utils import *
 
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
@@ -51,23 +50,33 @@ def page_handler(driver, hrefs):
 
         driver.get(f'https://www.furaffinity.net{href}')
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-
+        
+        if html.find(text=re.compile('not in our database.+')):
+            
+            while True:
+                try:
+                    CURSOR.execute('DELETE FROM imageData WHERE href=%s', (href,))
+                    DATAB.commit()
+                    break
+                except sql.errors.OperationalError: continue 
+            continue      
+                        
         artist = html.find('a', href=re.compile('/user/+(?!chairekakia)'), id=False).get('href')
         image = f'https:{html.find("a", href=re.compile("//d.+")).get("href")}'
         
         name = image.split('/')[-1].split('.')[1:]
         name[0] = re.sub(r'_\d+_-_', ' - ', name[0])
         name = join(PATH, 'Images', SITE, ".".join(name))
-        hash = get_hash(image) 
+        hash_ = get_hash(image) 
 
         while True:
             try:
-                CURSOR.execute(UPDATE[1], (name, hash, image, href))
+                CURSOR.execute(UPDATE[1], (name, hash_, image, href))
                 DATAB.commit()
                 break
             except sql.errors.OperationalError: continue
             except sql.errors.IntegrityError:
-                CURSOR.execute(UPDATE[1], (f'202 - {href}', hash, image, href))
+                CURSOR.execute(UPDATE[1], (f'202 - {href}', hash_, image, href))
                 DATAB.commit()
                 break
     
@@ -87,13 +96,13 @@ def setup(initial=True):
     except Exception as error:
         print(f'{SITE}: {error}')
         
-    driver.close()
+    try: driver.close()
+    except: pass
     DATAB.close()
 
 if __name__ == '__main__':
 
-    driver = get_driver()
-    login(driver, SITE)
-    initialize(driver)
-    driver.close()
-    DATAB.close()
+    from utils import *
+    setup()
+
+else: from .utils import *

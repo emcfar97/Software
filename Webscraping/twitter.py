@@ -75,7 +75,7 @@ def page_handler(driver, hrefs):
                 images[0].get('src'); images[-1].get('src')
                 artist = href.split('/')[1]
 
-            except (IndexError, AttributeError): 
+            except (IndexError, AttributeError, TypeError): 
                 try:
                     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
                     target = html.find('div', style=re.compile('padding-top: .+'))
@@ -85,7 +85,7 @@ def page_handler(driver, hrefs):
                     images[0].get('src'); images[-1].get('src')
                     artist = href.split('/')[1]
 
-                except (IndexError, AttributeError): continue
+                except (IndexError, AttributeError, TypeError): continue
 
         if len(images) != 1: continue
         for image in images:
@@ -140,7 +140,8 @@ def setup(initial=True):
     except Exception as error:
         print(f'{SITE}: {error}')
 
-    driver.close()
+    try: driver.close()
+    except: pass
     DATAB.close()
 
 if __name__ == '__main__':

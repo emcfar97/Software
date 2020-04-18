@@ -1,21 +1,21 @@
 import subprocess, threading
-from Webscraping import flickr, foundry, furaffinity, gelbooru, sankaku, posespace, twitter, favorites
+from Webscraping import flickr, foundry, furaffinity, gelbooru, sankaku, posespace, favorites#, twitter
 
 def erotica3():
 
-    # process = subprocess.Popen([
-    #     r'Webscraping\PixivUtil\PixivUtil2.exe',
-    #     '-s', '6', 'y', '0', '7', '-x'
-    #     #              start end  stop
-    #     ])
-    # threads = [
-    #     threading.Thread(target=webscrapers),
-    #     # threading.Thread(target=process.wait)
-    #     ]
-    # for thread in threads: thread.start()
-    # for thread in threads: thread.join()
+    process = subprocess.Popen([
+        r'Webscraping\PixivUtil\PixivUtil2.exe',
+        '-s', '6', 'y', '0', '7', '-x'
+        #              start end  stop
+        ])
+    threads = [
+        threading.Thread(target=webscrapers),
+        threading.Thread(target=process.wait)
+        ]
+    for thread in threads: thread.start()
+    for thread in threads: thread.join()
     
-    # favorites.setup()
+    favorites.setup()
     
     threads = [
         threading.Thread(target=gelbooru.setup),
@@ -26,9 +26,9 @@ def erotica3():
 
 def webscrapers():
 
-    # furaffinity.setup()
-    # foundry.setup()
-    twitter.setup()
+    furaffinity.setup()
+    foundry.setup()
+    # twitter.setup()
 
 threads = [
     threading.Thread(target=flickr.setup),

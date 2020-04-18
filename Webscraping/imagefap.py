@@ -4,9 +4,10 @@ from os.path import join
 ROOT = os.getcwd()[:2].upper()
 PATH = rf'{ROOT}\Users\Emc11\Downloads'
 
-def page_handler(url): 
+def page_handler(url, title): 
     
-    url = f'{url}?gid={url.split("/")[4]}&view=2'
+    try: url = f'{url}?gid={url.split("/")[4]}&view=2'
+    except IndexError: url = f'https://{title}&view=2'
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     images = html.findAll(href=re.compile('/photo/.+'))
@@ -32,5 +33,5 @@ for file in files:
     file = json.load(open(file))[0]['windows']
     for val in file.values():
         for url in val.values():
-            page_handler(url['url'])
+            page_handler(url['url'], url['title'])
     os.remove(file)
