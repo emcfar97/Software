@@ -145,7 +145,7 @@ def extract_files(path):
 def insert_files(path):
 
     extract_files(path)
-    
+    convert_images(path)
     driver = get_driver(True)
     hasher = hashlib.md5()
     ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
