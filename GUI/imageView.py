@@ -44,6 +44,8 @@ class imageView(QTableView):
         QShortcut(Qt.Key_Return | Qt.AltModifier, self, activated=lambda: Properties(parent, self.selectedIndexes()))
         QShortcut(Qt.Key_Right, self, activated=lambda: self.arrow_key(1))
         QShortcut(Qt.Key_Left, self, activated=lambda: self.arrow_key(-1))
+        QShortcut(Qt.Key_Right | Qt.ShiftModifier, self, activated=lambda: self.arrow_key(1, 1))
+        QShortcut(Qt.Key_Left | Qt.ShiftModifier, self, activated=lambda: self.arrow_key(-1, 1))
         
     def total(self): return len(self.table.images)
     
@@ -157,17 +159,19 @@ class imageView(QTableView):
 
         cb.setText(paths, mode=cb.Clipboard)
 
-    def arrow_key(self, direction):
+    def arrow_key(self, direction, shift=0):
 
         index = self.currentIndex()
         row, col = index.row(), index.column()
 
         if (col == 0 and direction == -1) or (col == 4 and direction == 1):
-            row = (row + (1 if direction == 1 else -1))
-            if not 0 < row < self.table.rows: return
+            if not 0 <= row + direction < self.table.rows: return
+            row += direction
         col = (col + direction) % self.table.columnCount(None)
 
-        self.setCurrentIndex(self.table.index(row, col))
+        if shift: 
+            self.selectionModel().setCurrentIndex(self.table.index(row, col), QItemSelectionModel.Toggle)
+        else: self.setCurrentIndex(self.table.index(row, col))
 
 class Model(QAbstractTableModel):
 
