@@ -1,10 +1,9 @@
 from os import remove
-from shutil import move
 from subprocess import Popen
 
 from GUI import galleryView, previewView, sliderView, mainView, trainView
-from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, Qt
-from GUI import CURSOR, DATAB, EDIT, MODIFY, DELETE, NEZUMI
+from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QDesktopWidget, Qt
+from GUI import CURSOR, DATAB, MODIFY, DELETE, NEZUMI
 
 class App(QMainWindow):
     
@@ -12,6 +11,7 @@ class App(QMainWindow):
         
         super().__init__()
         self.setWindowTitle('Custom GUI')
+        self.desktop = QDesktopWidget()
         self.configure_gui()
         self.create_widgets()
         self.show()
@@ -55,7 +55,7 @@ class App(QMainWindow):
     
     def select(self, title):
         
-        self.options[title](self)
+        self.options[title](self, self.desktop)
         self.hide()
 
     def keyPressEvent(self, sender):
@@ -98,14 +98,16 @@ class Option(QWidget):
 
 class ManageData(QMainWindow):
     
-    def __init__(self, parent):
+    def __init__(self, parent, desktop):
         
         super().__init__(parent)
         self.setWindowTitle('Manage Data')
+        self.desktop = desktop
         self.configure_gui()
         self.create_widgets()
         self.gallery.populate()
         self.showMaximized()
+        self.desktop.resized.connect(lambda x: print('po'))
 
     def configure_gui(self):
         
@@ -122,16 +124,21 @@ class ManageData(QMainWindow):
 
     def create_widgets(self):
         
-        self.slideshow = sliderView.Slideshow(self)
-        self.gallery = galleryView.Gallery(self, self.windowTitle())
+        self.gallery = galleryView.Gallery(self)
         self.preview = previewView.Preview(self, self.windowTitle())
-
+        
         self.layout.addWidget(self.gallery)
         self.layout.addWidget(self.preview)
 
         self.gallery.setParent(self)
         self.preview.setParent(self)
-        
+    
+    def start_slideshow(self, gallery, index):
+
+        try: self.slideshow.close()
+        except: pass
+        self.slideshow = sliderView.Slideshow(self, gallery, index)
+
     def change_records(self, gallery, *args):
         
         parameters = []
@@ -150,8 +157,8 @@ class ManageData(QMainWindow):
                 parameters.append(f'artist=REPLACE(artist, " {artist} ", " ")')
 
         if stars: parameters.append(f'stars={stars}')
-        if rating: parameters.append(f'rating="{rating}"')
-        if type in [0, 1]: parameters.append(f'type={type}')
+        if rating: parameters.append(f'rating={rating - 1}')
+        if type: parameters.append(f'type={type - 1}')
 
         CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
         DATAB.commit()
@@ -186,19 +193,21 @@ class ManageData(QMainWindow):
         elif key_press == Qt.Key_Escape: self.close()
 
         elif key_press == Qt.Key_F5: self.gallery.populate()
-        
+            
     def closeEvent(self, sender):
 
         self.close()
-        self.slideshow.close()
+        try: self.slideshow.close()
+        except: pass
         self.parent().show()
  
 class GestureDraw(QMainWindow):
     
-    def __init__(self, parent):
+    def __init__(self, parent, desktop):
         
         super().__init__(parent)
         self.setWindowTitle('Gesture Draw')
+        self.desktop = desktop
         self.configure_gui()
         self.create_widgets()
         self.gallery.populate()
@@ -217,7 +226,7 @@ class GestureDraw(QMainWindow):
 
     def create_widgets(self):
         
-        self.gallery = galleryView.Gallery(self, self.windowTitle())
+        self.gallery = galleryView.Gallery(self)
         self.preview = previewView.Preview(self, self.windowTitle())
         
         self.stack.addWidget(self.gallery)
@@ -263,7 +272,7 @@ class GestureDraw(QMainWindow):
             else: self.close()
 
         elif key_press == Qt.Key_F5: self.gallery.populate()
-
+    
     def closeEvent(self, sender):
 
         self.close()
@@ -318,5 +327,5 @@ if __name__ == '__main__':
     Qapp = QApplication([])
     
     app = App()
-
+    
     Qapp.exec_()
