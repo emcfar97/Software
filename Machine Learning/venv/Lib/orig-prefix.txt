@@ -1,1 +1,1 @@
-c:\users\emc11\appdata\local\programs\python\python37-32
+c:\users\emc11\appdata\local\programs\python\python36

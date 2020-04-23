@@ -1,106 +1,126 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-import os, pathlib
-from os.path import join, isdir
-import numpy as np
 import tensorflow as tf
-from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-root = os.getcwd()[:2].upper()
-AUTOTUNE = tf.data.experimental.AUTOTUNE
+import os
+import numpy as np
+import matplotlib.pyplot as plt
 
-def prepare_for_training(ds, cache=True, shuffle_buffer_size=1000):
-    
-    # This is a small dataset, only load it once, and keep it in memory.
-    # use `.cache(filename)` to cache preprocessing work for datasets that don't
-    # fit in memory.
-    if cache:
-        if isinstance(cache, str):
-            ds = ds.cache(cache)
-        else:
-            ds = ds.cache()
+# This function will plot images in the form of a grid with 1 row and 5 columns where images are placed in each column.
+def plotImages(images_arr):
+    fig, axes = plt.subplots(1, 5, figsize=(20,20))
+    axes = axes.flatten()
+    for img, ax in zip( images_arr, axes):
+        ax.imshow(img)
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()
 
-    ds = ds.shuffle(buffer_size=shuffle_buffer_size)
+batch_size = 128
+epochs = 15
+IMG_HEIGHT = 150
+IMG_WIDTH = 150
 
-    # Repeat forever
-    ds = ds.repeat()
+_URL = 'https://storage.googleapis.com/mledu-datasets/cats_and_dogs_filtered.zip'
 
-    ds = ds.batch(BATCH_SIZE)
+path_to_zip = tf.keras.utils.get_file('cats_and_dogs.zip', origin=_URL, extract=True)
 
-    # `prefetch` lets the dataset fetch batches in the background while the model
-    # is training.
-    ds = ds.prefetch(buffer_size=AUTOTUNE)
+PATH = os.path.join(os.path.dirname(path_to_zip), 'cats_and_dogs_filtered')
+train_dir = os.path.join(PATH, 'train')
+validation_dir = os.path.join(PATH, 'validation')
 
-    return ds
+train_cats_dir = os.path.join(train_dir, 'cats')  # directory with our training cat pictures
+train_dogs_dir = os.path.join(train_dir, 'dogs')  # directory with our training dog pictures
+validation_cats_dir = os.path.join(validation_dir, 'cats')  # directory with our validation cat pictures
+validation_dogs_dir = os.path.join(validation_dir, 'dogs')  # directory with our validation dog pictures
 
-def get_label(file_path):
-    
-    parts = tf.strings.split(file_path, '/')
-    return parts[-2] == CLASS_NAMES
+num_cats_tr = len(os.listdir(train_cats_dir))
+num_dogs_tr = len(os.listdir(train_dogs_dir))
 
-def decode_img(img):
-    
-    img = tf.image.decode_jpeg(img, channels=3) #color images
-    img = tf.image.convert_image_dtype(img, tf.float32) 
-    #convert unit8 tensor to floats in the [0,1]range
-    return tf.image.resize(img, [IMG_WIDTH, IMG_HEIGHT]) 
+num_cats_val = len(os.listdir(validation_cats_dir))
+num_dogs_val = len(os.listdir(validation_dogs_dir))
 
-def process_path(file_path):
-    
-    label = get_label(file_path)
-    img = tf.io.read_file(file_path)
-    img = decode_img(img)
-    return img, label
+total_train = num_cats_tr + num_dogs_tr
+total_val = num_cats_val + num_dogs_val
 
-path = rf'{root}\Users\Emc11\Dropbox\Pictures\4.Reference\5.Machine Learning\Medium'
-data_dir = pathlib.Path(path)
+print('total training cat images:', num_cats_tr)
+print('total training dog images:', num_dogs_tr)
 
-BATCH_SIZE = 32
-IMG_HEIGHT = 128
-IMG_WIDTH = 128
-STEPS_PER_EPOCH = np.ceil(
-    len(list(data_dir.glob('*/*.jpg'))) / BATCH_SIZE
+print('total validation cat images:', num_cats_val)
+print('total validation dog images:', num_dogs_val)
+print("--")
+print("Total training images:", total_train)
+print("Total validation images:", total_val)
+
+train_image_generator = ImageDataGenerator( # Generator for our training data
+    rescale=1./255, horizontal_flip=True, rotation_range=45, zoom_range=0.5
+    ) 
+validation_image_generator = ImageDataGenerator(rescale=1./255) # Generator for our validation data
+
+train_data_gen = train_image_generator.flow_from_directory(
+    batch_size=batch_size,
+    directory=train_dir,
+    shuffle=True,
+    target_size=(IMG_HEIGHT, IMG_WIDTH),
+    class_mode='binary'
     )
 
-# The 1./255 is to convert from uint8 to float32 in range [0,1].
-image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
-CLASS_NAMES = np.array([item.name for item in data_dir.glob('*')])
-train_data_gen = image_generator.flow_from_directory(
-    directory=str(data_dir), batch_size=BATCH_SIZE, shuffle=True, 
-    target_size=(IMG_HEIGHT, IMG_WIDTH), classes=list(CLASS_NAMES)
+val_data_gen = validation_image_generator.flow_from_directory(
+    batch_size=batch_size,
+    directory=validation_dir,
+    target_size=(IMG_HEIGHT, IMG_WIDTH),
+    class_mode='binary'
     )
 
-# Set `num_parallel_calls` so multiple images are loaded/processed in parallel.
-list_ds = tf.data.Dataset.list_files(str(data_dir/'*/*'))
-labeled_ds = list_ds.map(process_path, num_parallel_calls=AUTOTUNE)
+sample_training_images, _ = next(train_data_gen)
 
-train_ds = prepare_for_training(labeled_ds)
-train_images, train_labels = next(iter(train_ds))
-show_batch(train_images.numpy(), train_labels.numpy())
+plotImages(sample_training_images[:5])
 
-# train_images, test_images = train_images / 255.0,  test_images / 255.0
-#
-    # options = [
-    #     dir for dir in os.listdir(path)
-    #     if isdir(join(path, dir))
-    #     ] + ['Create new model']
-    # for num, dir in enumerate(options, start=1): 
-    #     print(f'{num}. {dir}')
-    # else: print('x. Exit')
-    # try: choice = options[int(input('Input: ')) - 1]
-    # except: choice = 'x'
-
-    # if choice in options[:-1]:
-    #     model = keras.models.load_model(join(path, choice))
-
-    # elif choice == options[-1]:  
-model = keras.Sequential([
-    keras.layers.Flatten(input_shape=(28, 28)),
-    keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(3, activation='softmax')
+model = Sequential([
+    Conv2D(16, 3, padding='same', activation='relu', input_shape=(IMG_HEIGHT, IMG_WIDTH ,3)),
+    MaxPooling2D(),
+    Conv2D(32, 3, padding='same', activation='relu'),
+    MaxPooling2D(),
+    Conv2D(64, 3, padding='same', activation='relu'),
+    MaxPooling2D(),
+    Flatten(),
+    Dense(512, activation='relu'),
+    Dense(1)
     ])
+
 model.compile(
-    optimizer='adam',metrics=['accuracy'],
-    loss='sparse_categorical_crossentropy'
+    optimizer='adam',
+    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+    metrics=['accuracy'])
+model.summary()
+
+history = model.fit_generator(
+    train_data_gen,
+    steps_per_epoch=total_train // batch_size,
+    epochs=epochs,
+    validation_data=val_data_gen,
+    validation_steps=total_val // batch_size
     )
-model.fit(train_images, train_labels, epochs=6)
-model.save(join(path, input('Name this model\n')), save_format='tf')
+
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+
+loss=history.history['loss']
+val_loss=history.history['val_loss']
+
+epochs_range = range(epochs)
+
+plt.figure(figsize=(8, 8))
+plt.subplot(1, 2, 1)
+plt.plot(epochs_range, acc, label='Training Accuracy')
+plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+plt.legend(loc='lower right')
+plt.title('Training and Validation Accuracy')
+
+plt.subplot(1, 2, 2)
+plt.plot(epochs_range, loss, label='Training Loss')
+plt.plot(epochs_range, val_loss, label='Validation Loss')
+plt.legend(loc='upper right')
+plt.title('Training and Validation Loss')
+plt.show()

@@ -44,7 +44,11 @@ import shutil as _shutil
 import errno as _errno
 from random import Random as _Random
 import weakref as _weakref
-import _thread
+
+try:
+    import _thread
+except ImportError:
+    import _dummy_thread as _thread
 _allocate_lock = _thread.allocate_lock
 
 _text_openflags = _os.O_RDWR | _os.O_CREAT | _os.O_EXCL
@@ -637,8 +641,10 @@ class SpooledTemporaryFile:
         if 'b' in mode:
             self._file = _io.BytesIO()
         else:
-            self._file = _io.TextIOWrapper(_io.BytesIO(),
-                            encoding=encoding, newline=newline)
+            # Setting newline="\n" avoids newline translation;
+            # this is important because otherwise on Windows we'd
+            # get double newline translation upon rollover().
+            self._file = _io.StringIO(newline="\n")
         self._max_size = max_size
         self._rolled = False
         self._TemporaryFileArgs = {'mode': mode, 'buffering': buffering,
@@ -658,12 +664,8 @@ class SpooledTemporaryFile:
         newfile = self._file = TemporaryFile(**self._TemporaryFileArgs)
         del self._TemporaryFileArgs
 
-        pos = file.tell()
-        if hasattr(newfile, 'buffer'):
-            newfile.buffer.write(file.detach().getvalue())
-        else:
-            newfile.write(file.getvalue())
-        newfile.seek(pos, 0)
+        newfile.write(file.getvalue())
+        newfile.seek(file.tell(), 0)
 
         self._rolled = True
 
