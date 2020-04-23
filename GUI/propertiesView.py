@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 from PyQt5.QtCore import Qt
 
 class Properties(QMainWindow):
@@ -34,8 +34,6 @@ class Properties(QMainWindow):
         self.type = QComboBox(self)
         
         self.path.setDisabled(True)
-        # self.tags.returnPressed.connect(self.output)
-        # self.artist.returnPressed.connect(self.output)
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration'])
@@ -69,22 +67,21 @@ class Properties(QMainWindow):
 
     def display(self, indexes):
         
-        self.indexes = indexes
-        data = [
+        self.data = [
             i.data(1000) for i in indexes if i.data(1000) is not None
             ]
-        paths = set.intersection(*[i[0] for i in data])
-        tags = set.intersection(*[i[1] for i in data])
-        artist = set.intersection(*[i[2] for i in data])
-        stars = set.intersection(*[i[3] for i in data])
-        rating = set.intersection(*[i[4] for i in data])
-        type = set.intersection(*[i[5] for i in data])
+        paths = set.intersection(*[i[0] for i in self.data])
+        tags = set.intersection(*[i[1] for i in self.data])
+        artist = set.intersection(*[i[2] for i in self.data])
+        stars = set.intersection(*[i[3] for i in self.data])
+        rating = set.intersection(*[i[4] for i in self.data])
+        type = set.intersection(*[i[5] for i in self.data])
         
         if paths: self.path.setText(paths.pop())
         if tags: self.tags.setText(' '.join(tags))
         if artist: self.artist.setText(' '.join(artist))
-        if stars: self.stars.setCurrentIndex(int(stars.pop()))
-        if rating: self.rating.setCurrentText(rating.pop().capitalize())
+        if stars: self.stars.setCurrentIndex(stars.pop())
+        if rating: self.rating.setCurrentIndex(rating.pop() + 1)
         if type: self.type.setCurrentIndex(type.pop() + 1)
 
         self.place = tags, artist
@@ -92,20 +89,18 @@ class Properties(QMainWindow):
     
     def output(self, sender=None):
 
-        gallery = [
-            (index.data(Qt.UserRole),) for index in self.indexes
-            ]
+        gallery = [(index[0].pop(),) for index in self.data]
         tags = self.validate(0)
         artist = self.validate(1)
-        stars = int(self.stars.currentText()) if self.stars.currentText() else 0
-        rating = self.rating.currentText()
+        stars = self.stars.currentIndex()
+        rating = self.rating.currentIndex()
         type = self.type.currentIndex()
         
         self.close()
 
         if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
             self.parent().parent().change_records(
-                gallery, tags, artist, stars, rating, type - 1
+                gallery, tags, artist, stars, rating, type
                 )
         
     def validate(self, type_):
