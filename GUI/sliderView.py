@@ -1,17 +1,21 @@
+from PIL import Image
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from os.path import exists
 
 from . import *
 
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent):
+    def __init__(self, parent, gallery, index):
         
         super().__init__()
         self.parent = parent
         self.configure_gui()
         self.create_widgets()
+        self.gallery = gallery
+        self.index = index
+        self.move(0)
+        self.showFullScreen()
     
     def configure_gui(self):
         
@@ -20,7 +24,7 @@ class Slideshow(QMainWindow):
         resolution = self.parent.size()
 
         self.setGeometry(
-            0, 0, resolution.width(),  resolution.height()
+            0, 0, resolution.width(),  resolution.height() + 10
             )
         self.setStyleSheet('background: black')
           
@@ -42,19 +46,13 @@ class Slideshow(QMainWindow):
             lambda: self.setCursor(Qt.BlankCursor)
             )               
 
-    def update(self, gallery, index):
-
-        self.gallery = gallery
-        self.index = index
-        self.move(0)
-        self.showFullScreen()
-
     def move(self, delta):
         
         self.index = (self.index + delta) % len(self.gallery)
-        if not exists(self.gallery[self.index][0]):
+        try: self.show_image(self.gallery[self.index][0])
+        except FileNotFoundError:
             del self.gallery[self.index]
-        self.show_image(self.gallery[self.index][0])
+            self.show_image(self.gallery[self.index][0])
     
     def show_image(self, path):
         
