@@ -4,11 +4,11 @@ import mysql.connector as sql
 from Webscraping.utils import get_hash
 from PIL import UnidentifiedImageError
 
-# DATAB = sql.connect(
-#     user='root', password='SchooL1@', database='userData', 
-#     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-#     )
-# CURSOR = DATAB.cursor(buffered=True)
+DATAB = sql.connect(
+    user='root', password='SchooL1@', database='userData', 
+    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
+    )
+CURSOR = DATAB.cursor(buffered=True)
 
 path = r'C:\Users\Emc11\Downloads\Katawa Shoujo'
 dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
@@ -126,3 +126,17 @@ from PyQt5.QtWidgets import QApplication, QTableView, QLabel, QItemDelegate
 # app = QApplication([])
 # test_model = ImportSqlTableModel()
 # app.exec_()
+
+SELECT = 'SELECT PATH, TAGS FROM imageData'
+UPDATE = 'UPDATE imageData SET tags=%s WHERE path=%s'
+
+CURSOR.execute(SELECT)
+
+for path, tags in CURSOR.fetchall():
+    if tags:
+        tags = tags.split()
+        tags.sort()
+        tags = ' '.join(tags)
+        CURSOR.execute(UPDATE, (' {tags} ', path))
+    
+DATAB.commit()
