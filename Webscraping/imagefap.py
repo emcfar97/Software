@@ -30,8 +30,8 @@ files = [
 
 for file in files:
 
-    file = json.load(open(file))[0]['windows']
-    for val in file.values():
+    window = json.load(open(file))[0]['windows']
+    for val in window.values():
         for url in val.values():
             page_handler(url['url'], url['title'])
     os.remove(file)

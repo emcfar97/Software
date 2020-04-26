@@ -9,6 +9,7 @@ DATAB = sql.connect(
 CURSOR = DATAB.cursor()
 SITE = 'femjoy'
 TYPE = 'Erotica 2'
+INSERT = 'INSERT INTO imageData(artist, href, site) VALUES(%s, %s, %s)'
 
 def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
     
@@ -23,19 +24,24 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
     driver.get(f'https://www.femjoyhunter.com{url}')
 
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-    while True:
-        try:
-            targets = html.find('ul', class_='gallery-a e')
-            hrefs = [
-                (target.get('href')[28:], SITE) for target in 
-                targets.findAll('a', class_=False, href=True)
-                if (target.get('href')[28:],) not in query
-                ]
-            break
-        except sql.errors.OperationalError: continue
-    while True:
-        try: CURSOR.executemany(INSERT[0], hrefs); break
-        except sql.errors.OperationalError: continue
+    pages = html.find('ul', class_='gallery-a e')
+    for page in pages.findAll('a', class_=False, href=True):
+        href = page.get('href')
+        page = bs4.BeautifulSoup(requests.get(href).content, 'lxml')
+        
+        while True:
+            try:
+                targets = None
+                hrefs = [
+                    (target.get('href')[28:], SITE) for target in 
+                    targets.findAll('a', class_=False, href=True)
+                    if (target.get('href')[28:],) not in query
+                    ]
+                break
+            except sql.errors.OperationalError: continue
+        while True:
+            try: CURSOR.executemany(INSERT, hrefs); break
+            except sql.errors.OperationalError: continue
         
     next = next_page(html.find(class_='next'))
     if hrefs and next: initialize(driver, next, query)
@@ -83,7 +89,7 @@ def page_handler(driver, hrefs):
 def setup(initial=True):
     
     try:
-        driver = get_driver(True)
+        driver = get_driver()#True)
         login(driver, SITE)
         if initial: initialize(driver)
         CURSOR.execute(SELECT[2], (SITE,))
@@ -94,21 +100,13 @@ def setup(initial=True):
     except Exception as error:
         print(f'{SITE}: {error}')
         
-    driver.close()
+    try: driver.close()
+    except: pass
     DATAB.close()
 
 if __name__ == '__main__':
-    
+
     from utils import *
-
-    driver = get_driver()#True)
-    login(driver, SITE)
-    initialize(driver)
-
-    CURSOR.execute(SELECT[2], (SITE,))
-    page_handler(driver, CURSOR.fetchall())
-
-    driver.close()
-    DATAB.close()
+    setup(0)
 
 else: from .utils import *

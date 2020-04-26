@@ -157,6 +157,29 @@ def turbosquid(images, folder, type_):
             
     driver.close()
 
+def gelbooru(images, folder, tags):
+    
+    driver = get_driver(False)
+    driver.get(f'https://gelbooru.com/&s=list&tags={"+".join(tags)}')
+    total = set()
+
+    while len(total) < images:
+        html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        targets = html.findAll('a', id=re.compile(r'p\d+'), href=True)
+        targets = set(targets) - total
+        
+        # for target in targets:
+        #     src = target.get('src')
+        #     image = Image.open(BytesIO(requests.get(src).content))
+        #     name = f"{hash(src)}.{image.format}"
+        #     if exists(name): targets.remove(target); continue
+        #     image.thumbnail([500, 500])
+        #     image.save(join(path, folder, name))
+        
+        total = total | targets
+        pages = html.find(id='paginator').contents[pages.index(' ') + 3]
+        driver.get(f"https://gelbooru.com/{pages.get('href')}")
+
 def localfiles(images, srce, dest):
     
     total = set()
@@ -185,4 +208,5 @@ def localfiles(images, srce, dest):
 # fineartamerica(500, r'Medium\Illustration', 'paintings')
 # localfiles(1000, r'Medium', r'Medium\Illustration')
 # turbosquid(1000, r'Medium\3-Dimensional', 'low-poly')
-clipstudio(1000, r'Medium\3-Dimensional')
+# clipstudio(1000, r'Medium\3-Dimensional')
+gelbooru(2200, r'Medium\3-Dimensional', ['3d', 'rating%3asafe', '-animated', '-custom_maid_3d_2', '-3d_custom_girl'])

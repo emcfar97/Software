@@ -46,11 +46,10 @@ def page_handler(driver, hrefs):
     size = len(hrefs)
 
     for num, (href,) in enumerate(hrefs):
-        progress(size, num, SITE)
 
+        progress(size, num, SITE)
         try: driver.get(f'https://gelbooru.com/{href}')
         except TimeoutException: input('\nContinue?')
-
         if 'page=post&s=list' in driver.current_url:
             CURSOR.execute('UPDATE imageDatabase SET path=? WHERE href=?', (f'404 - {href}', href,))
             DATAB.commit()
@@ -72,6 +71,7 @@ def page_handler(driver, hrefs):
         tags, rating, exif = generate_tags(
             TYPE, artists, metadata, tags, True, True
             )
+        
         image = driver.find_element_by_link_text('Original image')
         image = image.get_attribute('href')
         try:
@@ -81,22 +81,22 @@ def page_handler(driver, hrefs):
             hash = get_hash(name)
         except: continue 
         
-        while True:
+        for _ in range(10):
             try:
                 CURSOR.execute(UPDATE[3], (
-                    name, f" {' '.join(artists)} ", 
-                    f" {tags} ", rating, image, hash, 1, href)
+                    name, ' '.join(artists), 
+                    f' {tags} ', rating, image, hash, 1, href)
                     )
                 DATAB.commit()
                 break
-            except sql.errors.OperationalError: continue
             except sql.errors.IntegrityError:
                 CURSOR.execute(UPDATE[3], (
-                    f'202 - {href}', f" {' '.join(artists)} ", 
-                    f" {tags} ", rating, image, hash, 1, href)
+                    f'202 - {href}', ' '.join(artists), 
+                    f' {tags} ', rating, image, hash, 1, href)
                     )
                 DATAB.commit()
                 break
+            except (sql.errors.OperationalError, sql.errors.DatabaseError): continue
     
     progress(size, size, SITE)
 
@@ -110,8 +110,7 @@ def setup(initial=True):
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes':
             setup(False)
-    except Exception as error:
-        print(f'{SITE}: {error}')
+    except Exception as error: print(f'{SITE}: {error}')
         
     try: driver.close()
     except: pass

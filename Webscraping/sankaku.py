@@ -1,6 +1,5 @@
 from selenium.common.exceptions import WebDriverException
 import mysql.connector as sql
-from .utils import *
 
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
@@ -9,18 +8,22 @@ DATAB = sql.connect(
 CURSOR = DATAB.cursor() 
 SITE = 'sankaku'
 TYPE = 'Erotica 3'
+MODE = {
+    0:['idol', 'エラティカ ニ'],
+    1:['chan', 'エラティカ 三']
+    }
 
 def initialize(driver, url='?tags=fav%3Achairekakia', query=0):
     
     def next_page(pages):
         
-        try: return pages.get('next-page-url')[1:]
-        except IndexError: return False
+        try: return pages.get('next-page-url')
+        except: return False
 
     if not query:
         CURSOR.execute(SELECT[0], (SITE,))
         query = set(CURSOR.fetchall())
-    driver.get(f'https://chan.sankakucomplex.com/{url}')
+    driver.get(f'https://{MODE[0]}.sankakucomplex.com/{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     try: 
         if 'On' in html.find('span', {'data-role':True}).contents:
@@ -55,42 +58,44 @@ def page_handler(driver, hrefs):
     for num, (href,) in enumerate(hrefs):
         progress(size, num, SITE)
 
-        driver.get(f'https://chan.sankakucomplex.com{href}')        
-        time.sleep(1)
+        driver.get(f'https://{MODE[0]}.sankakucomplex.com{href}')        
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-        if html.find(text=re.compile('Too many requests')): 
+        if html.find(text=re.compile('(Too many requests)|(Please slow down)')):
             time.sleep(60)
-            driver.get(f'https://chan.sankakucomplex.com{href}')        
+            driver.refresh()   
             html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        if '404' in driver.current_url: continue
 
         artists = [
-            '_'.join(artist.text.split(' ')[:-2]) for artist in 
-            html.findAll(class_='tag-type-artist')
+            '_'.join(artist.text.split()[:-2]) for artist in 
+            html.findAll(class_=re.compile('tag-type-(artist)|(idol)'))
             ]
         tags = [
-            '_'.join(tag.text.split(' ')[:-2]) for tag in 
+            '_'.join(tag.text.split()[:-2]) for tag in 
             html.findAll(class_='tag-type-general')
             ]
         metadata = [
-            '_'.join(tag.text.split(' ')[:-2]) for tag in 
+            '_'.join(tag.text.split()[:-2]) for tag in 
             html.findAll(class_='tag-type-medium')
             ]
         tags, rating, exif = generate_tags(
             TYPE, artists, metadata, tags, True, True
             )
-        image = f'https:{html.find(id="highres", href=True).get("href")}'
         try:
+            image = f'https:{html.find(id="highres", href=True).get("href")}'
+        
             name = save_image(
-            join(PATH, 'エラティカ 三', image.split('/')[-1].split('?e=')[0]), image, exif
-            )
-            hash = get_hash(name) 
+                join(PATH, MODE[1], image.split('/')[-1].split('?e=')[0]), 
+                image, exif
+                )
+            hash_ = get_hash(name) 
         except: continue
 
         while True:
             try:
                 CURSOR.execute(UPDATE[3], (
                     name, f" {' '.join(artists)} ", 
-                    f" {tags} ", rating, image, hash, 1, href)
+                    f" {tags} ", rating, image, hash_, 1, href)
                     )
                 DATAB.commit()
                 break
@@ -98,23 +103,27 @@ def page_handler(driver, hrefs):
             except sql.errors.IntegrityError:
                 CURSOR.execute(UPDATE[3], (
                     f'202 - {href}', f" {' '.join(artists)} ", 
-                    f" {tags} ", rating, image, hash, 1, href)
+                    f" {tags} ", rating, image, hash_, 1, href)
                     )
                 DATAB.commit()
                 break
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(initial=True, mode=1):
+
+    global MODE
+    # if initial: 
+    MODE = MODE[mode]
     
     try:
-        driver = get_driver(headless=True)
-        login(driver, SITE)
+        driver = get_driver()# True)
+        login(driver, SITE, MODE[0])
         if initial: initialize(driver)
         CURSOR.execute(SELECT[2], (SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, CURSOR.fetchall()[1200:])
     except WebDriverException:
-        if input(f'{SITE}:Browser closed\nContinue? ').lower() in 'yes':
+        if input(f'\n{SITE}:Browser closed\nContinue? ').lower() in 'yes':
             setup(False)
     except Exception as error:
         print(f'{SITE}: {error}')
@@ -125,8 +134,7 @@ def setup(initial=True):
 
 if __name__ == '__main__':
     
-    driver = get_driver(headless=True)
-    login(driver, SITE)
-    initialize(driver)
-    driver.close()
-    DATAB.close()
+    from utils import *
+    setup(0, mode=1)
+
+else: from .utils import *
