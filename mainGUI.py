@@ -3,7 +3,7 @@ from subprocess import Popen
 
 from GUI import galleryView, previewView, sliderView, mainView, trainView
 from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QDesktopWidget, Qt
-from GUI import CURSOR, DATAB, MODIFY, DELETE, NEZUMI
+from GUI import CURSOR, DATAB, MODIFY, DELETE, NEZUMI, sql
 
 class App(QMainWindow):
     
@@ -105,7 +105,6 @@ class ManageData(QMainWindow):
         self.desktop = desktop
         self.configure_gui()
         self.create_widgets()
-        self.gallery.populate()
         self.showMaximized()
         self.desktop.resized.connect(lambda x: print('po'))
 
@@ -160,7 +159,11 @@ class ManageData(QMainWindow):
         if rating: parameters.append(f'rating={rating - 1}')
         if type: parameters.append(f'type={type - 1}')
 
-        CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
+        while True:
+            try:
+                CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
+                break
+            except sql.errors.InternalError: continue
         DATAB.commit()
         self.gallery.populate()
     
@@ -210,7 +213,6 @@ class GestureDraw(QMainWindow):
         self.desktop = desktop
         self.configure_gui()
         self.create_widgets()
-        self.gallery.populate()
         self.show()
         Popen([NEZUMI])
 
