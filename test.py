@@ -1,14 +1,9 @@
 import os, shutil
 from os.path import splitext, join, exists
 import mysql.connector as sql
-from Webscraping.utils import get_hash
+from Webscraping.utils import DATAB, CURSOR, get_tags, generate_tags, get_driver
 from PIL import UnidentifiedImageError
-
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor(buffered=True)
+from selenium.common.exceptions import WebDriverException
 
 path = r'C:\Users\Emc11\Downloads\Katawa Shoujo'
 dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
@@ -127,16 +122,20 @@ from PyQt5.QtWidgets import QApplication, QTableView, QLabel, QItemDelegate
 # test_model = ImportSqlTableModel()
 # app.exec_()
 
-SELECT = 'SELECT PATH, TAGS FROM imageData'
+SELECT = 'SELECT path FROM imageData WHERE site NOT IN ("sankaku", "gelbooru") AND path LIKE "C:%" AND tags=" {tags} "'
 UPDATE = 'UPDATE imageData SET tags=%s WHERE path=%s'
 
+driver = get_driver()
 CURSOR.execute(SELECT)
 
-for path, tags in CURSOR.fetchall():
-    if tags:
-        tags = tags.split()
-        tags.sort()
-        tags = ' '.join(tags)
-        CURSOR.execute(UPDATE, (' {tags} ', path))
-    
-DATAB.commit()
+for path, in CURSOR.fetchall():
+    try:
+        tags = get_tags(driver, path)
+        tags = generate_tags(general=tags, exif=False) 
+        while True:
+            try:
+                CURSOR.execute(UPDATE, (f' {tags} ', path))
+                DATAB.commit()
+                break       
+            except: continue
+    except WebDriverException: driver.refresh() 
