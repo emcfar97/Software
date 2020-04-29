@@ -24,7 +24,7 @@ class Slideshow(QMainWindow):
         resolution = self.parent.size()
 
         self.setGeometry(
-            0, 0, resolution.width(),  resolution.height() + 20
+            0, 0, resolution.width(),  resolution.height() + 10
             )
         self.setStyleSheet('background: black')
           

@@ -241,7 +241,7 @@ def setup():
         login(driver, 'gelbooru')
         login(driver, 'sankaku')
         CURSOR.execute(SELECT[4])
-        main(driver, CURSOR.fetchmany(1000))
+        main(driver, CURSOR.fetchall()[:1000:-1])
         driver.close()
     except WebDriverException:
         if input(f'Favorites: Browser closed\nContinue? ').lower() in 'yes':

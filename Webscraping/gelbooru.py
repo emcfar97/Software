@@ -81,7 +81,7 @@ def page_handler(driver, hrefs):
             hash = get_hash(name)
         except: continue 
         
-        for _ in range(10):
+        for _ in range(5):
             try:
                 CURSOR.execute(UPDATE[3], (
                     name, ' '.join(artists), 
@@ -106,7 +106,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         if initial: initialize(driver)
         CURSOR.execute(SELECT[2],(SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, CURSOR.fetchall()[1000:])
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes':
             setup(False)

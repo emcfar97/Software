@@ -1,11 +1,12 @@
-import imagehash, os, sys, ast, piexif, time, bs4, requests, re, tempfile
+import imagehash, os, sys, ast, piexif, time, bs4, requests, re, tempfile, hashlib
 from math import log
 from PIL import Image
 from io import BytesIO
-from os.path import join
+from os.path import join, splitext
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 import mysql.connector as sql
 
+TYPE = ['エラティカ ニ', 'エラティカ 三']
 RESIZE = [1320, 1000]
 USER = 'Chairekakia'
 EMAIL = 'Emc1130@hotmail.com'
@@ -13,12 +14,13 @@ PASS = 'SakurA1@'
 
 root = os.getcwd()[:2].upper()
 PATH = rf'{root}\Users\Emc11\Dropbox\Videos\ん'
+HASHER = hashlib.md5()
     
-# DATAB = sql.connect(
-#     user='root', password='SchooL1@', database='userData', 
-#     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-#     )
-# CURSOR = DATAB.cursor(buffered=True)
+DATAB = sql.connect(
+    user='root', password='SchooL1@', database='userData', 
+    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
+    )
+CURSOR = DATAB.cursor(buffered=True)
 
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
@@ -659,6 +661,17 @@ def save_image(name, image, exif=None):
     
     return name
 
+def get_name(path, type_):
+
+    data = requests.get(path).content
+    HASHER.update(data)
+    ext = splitext(path)[1].replace('png', 'jpg')
+    name = join(
+        PATH, TYPE[type_], f'{HASHER.hexdigest()}{ext}'
+        )
+
+    return name
+
 def get_hash(image):
         
     if 'http' in image:
@@ -698,6 +711,7 @@ def get_tags(driver, path):
 
     if flag:
 
+        tags.add('animated')
         temp_dir = tempfile.TemporaryDirectory()
         vidcap = VideoCapture(path)
         success, frame = vidcap.read()

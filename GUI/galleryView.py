@@ -29,7 +29,6 @@ class Gallery(QWidget):
         super().__init__(parent)
         self.configure_gui()
         self.create_widgets()
-        self.populate()
      
     def configure_gui(self):
                
@@ -62,20 +61,21 @@ class Gallery(QWidget):
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=4000):
+    def populate(self, sender=None, limit=3500):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
+        SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
+        # SELECT = f'{BASE} WHERE path LIKE "C:%" GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
         
         images = self.images
         images.clearSelection()
         images.table.rowsLoaded = 0
-
         try: 
-            SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
             CURSOR.execute(SELECT)
-            images.table.images = CURSOR.fetchall()
-        except: images.table.images = []
+            selection = CURSOR.fetchall()
+        except: selection = []
 
+        images.table.images = selection
         images.table.rows = (images.total() // 5) + bool(images.total() % 5)
         images.table.layoutChanged.emit()
         images.resizeRowsToContents()
@@ -157,10 +157,9 @@ class Gallery(QWidget):
             
             string = re.sub('NOT ', '-', string)
             string = re.sub('(\w+ OR \w+)', r'(\1)', string)
-            string = re.sub('(\w+|\(.+\))', r'+\1', string)
+            string = re.sub('(\w+\s|\(.+\))', r'+\1', string)
             string = re.sub('(AND \+|OR )', '', string)
-            string = re.sub('-\+', '-', string)
-            if not re.search('\+\w+', string): string += ' qwd'
+            if not re.search('[^\-]\w+', string): string += ' qwd'
 
             return f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
 

@@ -1,9 +1,7 @@
-import hashlib
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException
 import mysql.connector as sql
-from .utils import *
     
 DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
@@ -57,9 +55,10 @@ def page_handler(driver, hrefs):
     elment = 'view.photo-well-scrappy-view.requiredToShowOnServer'
 
     for num, (href,) in enumerate(hrefs):
+        
         progress(size, num, SITE)
-
         driver.get(f'https://www.flickr.com{href}')
+        
         try:
             element = driver.find_element_by_class_name(view)
             ActionChains(driver).move_to_element(element).perform()
@@ -69,16 +68,11 @@ def page_handler(driver, hrefs):
             else: continue
 
             image = driver.find_element_by_class_name('zoom-large').get_attribute('src')
-            hasher.update(requests.get(image).content)
-            ext = image.split('.')[-1]
-            name = save_image(
-                join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.{ext}'), image
-                )
-            tags = get_tags(driver, name)
+            tags = get_tags(driver, image)
             tags, rating, exif = generate_tags(
-                type='Erotica 2', general=tags, 
-                custom=True, rating=True
+                type='Erotica 2', general=tags, custom=True, rating=True
                 )
+            name = get_name(image, 0)
             save_image(name, image, exif)
 
         except:
@@ -89,7 +83,7 @@ def page_handler(driver, hrefs):
                 image = video.get_attribute('src')
                 ext = image.split('.')[-1]
                 data = requests.get(image).content
-                hasher.update(requests.get(image).content)
+                hasher.update(data)
                 with open(name, 'wb') as file: file.write(data) 
                 ext = image.split('.')[-1]
                 name = save_image(
@@ -105,7 +99,7 @@ def page_handler(driver, hrefs):
                 try:
                     status = driver.find_element_by_class_name('statusCode')
                     if status.text == '404':
-                        while True:
+                        for _ in range(50):
                             try:
                                 CURSOR.execute(UPDATE[3], (
                                     f'404 - {href}', None, None, 
@@ -117,24 +111,24 @@ def page_handler(driver, hrefs):
                         continue
                 except: continue
             
-        hash = get_hash(name) 
+        hash_ = get_hash(name) 
         
         while True:
             try:
                 CURSOR.execute(UPDATE[3], (
-                    name, '', f" {tags} ", rating, image, hash, 0, href)
+                    name, ' ', f" {tags} ", rating, image, hash_, 0, href)
                     )
                 DATAB.commit()
                 break
-            except sql.errors.OperationalError: continue
             except sql.errors.IntegrityError:
                 name, ext = name.split('.')
                 name = f'{name}1.{ext}'
                 CURSOR.execute(UPDATE[3], (
-                    name, None, f" {tags} ", rating, image, hash, 0, href)
+                    name, ' ', f" {tags} ", rating, image, hash_, 0, href)
                     )
                 DATAB.commit()
                 break
+            except (sql.errors.OperationalError, sql.errors.DatabaseError): continue
     
     progress(size, size, SITE)
 
@@ -158,8 +152,7 @@ def setup(initial=True):
 
 if __name__ == '__main__':
     
-    driver = get_driver(headless=True)
-    login(driver, SITE)
-    initialize(driver)
-    driver.close()
-    DATAB.close()
+    from utils import *
+    setup()
+
+else: from .utils import *

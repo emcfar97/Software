@@ -1,7 +1,7 @@
 import os, shutil
 from os.path import splitext, join, exists
 import mysql.connector as sql
-from Webscraping.utils import get_tags, generate_tags, get_driver
+from Webscraping.utils import get_hash
 from PIL import UnidentifiedImageError
 
 DATAB = sql.connect(
@@ -127,18 +127,16 @@ from PyQt5.QtWidgets import QApplication, QTableView, QLabel, QItemDelegate
 # test_model = ImportSqlTableModel()
 # app.exec_()
 
-SELECT = 'SELECT path FROM imageData WHERE ISNULL(site) AND path LIKE "C:%" AND tags=" {tags} "'
+SELECT = 'SELECT PATH, TAGS FROM imageData'
 UPDATE = 'UPDATE imageData SET tags=%s WHERE path=%s'
 
-driver = get_driver()
 CURSOR.execute(SELECT)
 
-for path, in CURSOR.fetchall():
-    tags = get_tags(driver, path)
-    tags = generate_tags(general=tags, exif=False) 
-    while True:
-        try:
-            CURSOR.execute(UPDATE, (f' {tags} ', path))
-            DATAB.commit()
-            break
-        except: continue
+for path, tags in CURSOR.fetchall():
+    if tags:
+        tags = tags.split()
+        tags.sort()
+        tags = ' '.join(tags)
+        CURSOR.execute(UPDATE, (' {tags} ', path))
+    
+DATAB.commit()
