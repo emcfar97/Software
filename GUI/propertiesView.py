@@ -89,7 +89,7 @@ class Properties(QMainWindow):
     
     def output(self, sender=None):
 
-        gallery = [(index[0].pop(),) for index in self.data]
+        gallery = [(index[0].pop(),) for index in self.data if index[0]]
         tags = self.validate(0)
         artist = self.validate(1)
         stars = self.stars.currentIndex()
