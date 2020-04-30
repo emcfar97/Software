@@ -1,11 +1,6 @@
 from selenium.common.exceptions import WebDriverException
 import mysql.connector as sql
 
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor() 
 SITE = 'sankaku'
 TYPE = 'Erotica 3'
 MODE = {
@@ -64,7 +59,6 @@ def page_handler(driver, hrefs, mode):
             time.sleep(60)
             driver.refresh()   
             html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-        if '404' in driver.current_url: continue
 
         artists = [
             '_'.join(artist.text.split()[:-2]) for artist in 
@@ -81,6 +75,7 @@ def page_handler(driver, hrefs, mode):
         tags, rating, exif = generate_tags(
             TYPE, artists, metadata, tags, True, True
             )
+        
         try:
             image = f'https:{html.find(id="highres", href=True).get("href")}'
         
@@ -90,7 +85,6 @@ def page_handler(driver, hrefs, mode):
                 )
             hash_ = get_hash(name) 
         except: continue
-
         while True:
             try:
                 CURSOR.execute(UPDATE[3], (
@@ -117,7 +111,7 @@ def setup(initial=True, mode=1):
         login(driver, SITE, MODE[mode][0])
         if initial: initialize(driver, MODE[mode][0])
         CURSOR.execute(SELECT[2], (SITE,))
-        page_handler(driver, CURSOR.fetchall(), MODE[mode])
+        page_handler(driver, CURSOR.fetchall()[59:], MODE[mode])
     except WebDriverException:
         if input(f'\n{SITE}:Browser closed\nContinue? ').lower() in 'yes':
             setup(False, mode)
@@ -131,6 +125,6 @@ def setup(initial=True, mode=1):
 if __name__ == '__main__':
     
     from utils import *
-    setup(1, mode=0)
+    setup(0, mode=0)
 
 else: from .utils import *

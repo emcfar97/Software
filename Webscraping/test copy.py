@@ -1,36 +1,53 @@
-import re, requests, bs4
+import re, requests, bs4, threading, time
 import mysql.connector as sql
-from utils import DATAB, CURSOR, get_name, generate_tags
+from utils import DATAB, CURSOR
 
-SELECT = 'SELECT href FROM imageData WHERE site="gelbooru" AND tags=" {tags} " AND NOT ISNULL(src)'
-UPDATE = 'UPDATE imageData SET tags=%s WHERE href=%s'
-CURSOR.execute(SELECT)
+MODE = {
+    0:['idol', 0], 1:['chan', 1]
+    }
+SELECT = 'SELECT COUNT(*) FROM imageData WHERE site="sankaku" AND type=%s'
+INSERT = 'INSERT INTO imageData(type, href, site) VALUES(%s, %s, "sankaku")'
 
-for href, in CURSOR.fetchall():
+def favorites(type_):
+    
+    mode = MODE[type_]
 
-    url = f'https://gelbooru.com/{href}'
+    url = f'https://{mode[0]}.sankakucomplex.com/?tags=fav%3Achairekakia+order%3Arandom'
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
 
-    artists = [
-        '_'.join(artist.text.split(' ')[1:-1]) for artist in 
-        html.findAll(class_='tag-type-artist')
-        ]
-    tags = [
-        '_'.join(tag.text.split(' ')[1:-1]) for tag in 
-        html.findAll(class_='tag-type-general')
-        ]
-    metadata = [
-        '_'.join(tag.text.split(' ')[1:-1]) for tag in 
-        html.findAll(class_='tag-type-metadata')
-        ]
-    tags = generate_tags(
-        metadata=metadata, general=tags, custom=True, rating=False, exif=False
-        )
-    
-    while True:
+    total = html.find(text=re.compile('has .+ favorites'))
+    total = int(''.join(re.findall('\d', total)))
+    CURSOR.execute(SELECT, (mode[1],))
+    current, = CURSOR.fetchall()[0]
+
+    while current <= total:
         try:
-            CURSOR.execute(UPDATE, (tags, href))
-            DATAB.commit()
-            break
+            hrefs = [
+                (mode[1], href.get('href')) for href in 
+                html.findAll(href=re.compile('/post/show/\d.+'))
+                ]
+            while True:
+                try:
+                    CURSOR.executemany(INSERT, hrefs)
+                    DATAB.commit()
+                    break
+                except: continue
+            CURSOR.execute(SELECT, (mode[1],))
+            current, = CURSOR.fetchall()[0]
+            
+            page_source = requests.get(url).content
+            html = bs4.BeautifulSoup(page_source, 'lxml')
+            if html.find(text=re.compile('(Too many requests)|(Please slow down)')):
+                time.sleep(80)
+                page_source = requests.get(url).content  
+                html = bs4.BeautifulSoup(page_source, 'lxml')
+
         except: continue
+
+threads = [
+    threading.Thread(target=favorites, args=(0,)),
+    threading.Thread(target=favorites, args=(1,))
+    ]
+for thread in threads: thread.start()
+for thread in threads: thread.join()

@@ -1,7 +1,7 @@
 import os, shutil
 from os.path import splitext, join, exists
 import mysql.connector as sql
-from Webscraping.utils import DATAB, CURSOR, get_tags, generate_tags, get_driver
+from Webscraping.utils import DATAB, CURSOR, save_image, get_tags, generate_tags, get_driver
 from PIL import UnidentifiedImageError
 from selenium.common.exceptions import WebDriverException
 
@@ -122,7 +122,7 @@ from PyQt5.QtWidgets import QApplication, QTableView, QLabel, QItemDelegate
 # test_model = ImportSqlTableModel()
 # app.exec_()
 
-SELECT = 'SELECT path FROM imageData WHERE site NOT IN ("sankaku", "gelbooru") AND path LIKE "C:%" AND tags=" {tags} "'
+SELECT = 'SELECT path FROM imageData WHERE ISNULL(site) AND path LIKE "C:%" AND tags=" {tags} "'
 UPDATE = 'UPDATE imageData SET tags=%s WHERE path=%s'
 
 driver = get_driver()
@@ -139,3 +139,4 @@ for path, in CURSOR.fetchall():
                 break       
             except: continue
     except WebDriverException: driver.refresh() 
+    except: continue
