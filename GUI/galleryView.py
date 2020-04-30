@@ -12,14 +12,8 @@ RATING = {
     }
 TYPE = {
     'All': '',
-    'Photo': 'type=0',
-    'Illus': 'type=1',
-    'photo': '0',
-    'illus': '1',
-    }
-ORDER = {
-    'Ascending': 'ASC',
-    'Descending': 'DESC'
+    'Photo': 'type=0', 'Illus': 'type=1',
+    'photo': '0', 'illus': '1',
     }
 
 class Gallery(QWidget):
@@ -29,6 +23,7 @@ class Gallery(QWidget):
         super().__init__(parent)
         self.configure_gui()
         self.create_widgets()
+        self.populate()
      
     def configure_gui(self):
                
@@ -61,22 +56,20 @@ class Gallery(QWidget):
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=3500):
+    def populate(self, sender=None, limit=4000):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
-        SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
-        # SELECT = f'{BASE} WHERE path LIKE "C:%" GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
         
         images = self.images
         images.clearSelection()
         images.table.rowsLoaded = 0
-        try: 
-            CURSOR.execute(SELECT)
-            selection = CURSOR.fetchall()
-        except: selection = []
 
-        images.table.images = selection
-        images.table.rows = (images.total() // 5) + bool(images.total() % 5)
+        try: 
+            SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
+            CURSOR.execute(SELECT)
+            images.table.images = CURSOR.fetchall()
+        except: images.table.images = []
+
         images.table.layoutChanged.emit()
         images.resizeRowsToContents()
         images.resizeColumnsToContents()
@@ -97,7 +90,6 @@ class Gallery(QWidget):
         # except: selection = []
             
         # images.table.images = selection
-        # images.table.rows = (images.total() // 5) + bool(images.total() % 5)
         # images.table.layoutChanged.emit()
         # images.resizeRowsToContents()
         # images.resizeColumnsToContents()
@@ -110,7 +102,7 @@ class Gallery(QWidget):
         try:
             stars, = re.findall('stars[<>=!]+[0-5]', string)
             string = string.replace(stars, '')
-            stars = stars.replace('==', '=')
+            stars = stars.replace('==', '=').lower()
         except ValueError: stars = ''
 
         try:
@@ -119,13 +111,13 @@ class Gallery(QWidget):
                 )
             string = string.replace(rating, '')
             value, = re.findall('(\w+)\Z', rating)
-            rating = re.sub('(\w+)\Z', RATING[value], rating)
+            rating = re.sub('(\w+)\Z', RATING[value], rating).lower()
         except: rating = RATING[self.rating.checkedAction().text()]
         
         try:
             type_, = re.findall('type=(?:photo|illus?)', string)
             string = string.replace(type_, '')
-            type_ = re.sub('(\w+)\Z', TYPE[type_[5:]], type_)
+            type_ = re.sub('(\w+)\Z', TYPE[type_[5:]], type_).lower()
         except: type_ = TYPE[self.type.checkedAction().text()]
         
         try:
@@ -135,7 +127,7 @@ class Gallery(QWidget):
 
         query = [
             'path LIKE "C:%"', type_, rating, stars, 
-            artist, self.get_tags(string.strip())
+            artist.lower(), self.get_tags(string.strip())
             ]
 
         if self.parent().windowTitle() == 'Manage Data':
@@ -157,13 +149,14 @@ class Gallery(QWidget):
             
             string = re.sub('NOT ', '-', string)
             string = re.sub('(\w+ OR \w+)', r'(\1)', string)
-            string = re.sub('(\w+\s|\(.+\))', r'+\1', string)
+            string = re.sub('(\w+|\(.+\))', r'+\1', string)
             string = re.sub('(AND \+|OR )', '', string)
-            if not re.search('[^\-]\w+', string): string += ' qwd'
+            string = re.sub('-\+', '-', string)
+            if not re.search('\+\w+', string): string += ' qwd'
 
             return f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
 
-    def get_order(self):
+    def get_order(self, ORDER={'Ascending': 'ASC', 'Descending': 'DESC'}):
         
         order = self.order
         column = order[0].checkedAction().text()
@@ -173,7 +166,7 @@ class Gallery(QWidget):
             column = 'RAND()' if column == 'Random' else column
             return f' ORDER BY {column} {ORDER[order]}'
 
-        return ' ORDER BY rowid'
+        return ''
       
 class Ribbon(QWidget):
      
@@ -256,16 +249,6 @@ class imageView(QTableView):
             )
         self.setVerticalScrollMode(1)
         
-        QShortcut(Qt.Key_Return, self, activated=lambda: self.open_slideshow(self.currentIndex()))
-        QShortcut(Qt.Key_C | Qt.ControlModifier, self, activated=self.copy_path)
-        QShortcut(Qt.Key_Return | Qt.AltModifier, self, activated=lambda: Properties(parent, self.selectedIndexes()))
-        QShortcut(Qt.Key_Right, self, activated=lambda: self.arrow_key(1))
-        QShortcut(Qt.Key_Left, self, activated=lambda: self.arrow_key(-1))
-        QShortcut(Qt.Key_Right | Qt.ShiftModifier, self, activated=lambda: self.arrow_key(1, 1))
-        QShortcut(Qt.Key_Left | Qt.ShiftModifier, self, activated=lambda: self.arrow_key(-1, 1))
-        
-    def total(self): return len(self.table.images)
-    
     def selectionChanged(self, select, deselect):
         
         if not self.table.images: return
@@ -283,16 +266,6 @@ class imageView(QTableView):
             self.total(), len(self.selectedIndexes())
             )
 
-    def open_slideshow(self, index):
-
-        parent = self.parent().parent()
-
-        if parent.windowTitle() == 'Manage Data':
-            
-            parent.start_slideshow(
-                self.table.images.copy(), (index.row() * 5) + index.column()
-                )
-    
     def create_menu(self):
         
         menu = QMenu(self)
@@ -364,32 +337,101 @@ class imageView(QTableView):
 
     def contextMenuEvent(self, sender): self.menu.popup(sender)
     
+    def total(self): return len(self.table.images)
+    
     def copy_path(self):
-
+    
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
         
         paths = ' '.join(
-            f'"{index.data(Qt.UserRole)}"' 
-            for index in self.selectedIndexes()
+            f'"{index.data(Qt.UserRole)}"' for index in self.selectedIndexes()
             )
-
         cb.setText(paths, mode=cb.Clipboard)
 
-    def arrow_key(self, direction, shift=0):
+    def keyPressEvent(self, sender):
+        
+        key_press = sender.key()
 
-        index = self.currentIndex()
-        row, col = index.row(), index.column()
+        if key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
+            
+            index = self.currentIndex()
+            row, col = index.row(), index.column()
 
-        if (col == 0 and direction == -1) or (col == 4 and direction == 1):
-            if not 0 <= row + direction < self.table.rows: return
-            row += direction
-        col = (col + direction) % self.table.columnCount(None)
+            if key_press in (Qt.Key_Up, Qt.Key_Down): 
+                
+                direction = 1 if key_press == Qt.Key_Down else -1
+                if not 0 <= (row + direction) < self.table.rowCount(): 
+                    return
+                row += direction 
+                
+                if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+                    
+                    self.selectionModel().setCurrentIndex(
+                        self.table.index(row, col), QItemSelectionModel.Toggle
+                        )
+                    return
+            
+            elif key_press in (Qt.Key_Right, Qt.Key_Left): 
 
-        if shift: 
-            self.selectionModel().setCurrentIndex(self.table.index(row, col), QItemSelectionModel.Toggle)
-        else: self.setCurrentIndex(self.table.index(row, col))
+                direction = 1 if key_press == Qt.Key_Right else -1
 
+                if (col== 0 and direction== -1) or (col== 4 and direction== 1):
+                    if not 0 <= (row + direction) < self.table.rowCount():
+                        return
+                    row += direction
+                col = (col + direction) % self.table.columnCount()
+
+                if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+                    
+                    self.selectionModel().setCurrentIndex(
+                        self.table.index(row, col), 
+                        QItemSelectionModel.ToggleCurrent
+                        )
+                    return
+
+            self.setCurrentIndex(self.table.index(row, col))
+                    
+        elif key_press in (Qt.Key_PageUp, Qt.Key_PageDown): 
+            
+            if QApplication.keyboardModifiers() == Qt.ShiftModifier: 
+                
+                old = self.currentIndex()
+
+        elif key_press in (Qt.Key_Home, Qt.Key_End):
+            
+            row, col = (0, 0) if key_press == Qt.Key_Home else (self.table.rowCount() - 1, (self.total() - 1) % self.table.columnCount())
+
+            if QApplication.keyboardModifiers() == Qt.ShiftModifier: 
+                
+                old = self.currentIndex()
+
+            self.setCurrentIndex(self.table.index(row, col))
+
+        elif key_press == Qt.Key_Return:
+    
+            parent = self.parent().parent()
+
+            if parent.windowTitle() == 'Manage Data':
+                
+                parent.start_slideshow(
+                    self.table.images.copy(), (index.row() * 5) + index.column()
+                    )            
+        
+        elif key_press == Qt.Key_A and QApplication.keyboardModifiers() == Qt.CrtlModifier: 
+            
+            self.selectionModel().setCurrentIndex(
+                self.table.index(row, col), QItemSelectionModel.Toggle
+                )
+
+        elif key_press == Qt.Key_C and QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            
+            self.copy_path()
+            
+        elif key_press == Qt.Key_Return and QApplication.keyboardModifiers() == Qt.AltModifier:
+            
+            Properties(self.parent(), self.selectedIndexes())
+                    
 class Model(QAbstractTableModel):
 
     def __init__(self, parent, width):
@@ -399,13 +441,18 @@ class Model(QAbstractTableModel):
         self.size = int(width * .1889)
         self.images = []
         self.rowsLoaded = 0
-        self.rows = 0
 
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
-    def rowCount(self, parent): return self.rows    
+    def rowCount(self, parent=None): 
+        
+        return (
+            (len(self.images) // self.columnCount())
+             + 
+            bool(len(self.images) % self.columnCount())    
+            )
 
-    def columnCount(self, parent): return 5
+    def columnCount(self, parent=None): return 5
 
     def data(self, index, role, type=0):
         
@@ -495,7 +542,6 @@ class Test(QSqlTableModel):
         self.size = int(width * .1888)
         self.images = []
         self.rowsLoaded = 0
-        self.rows = 0
 
     def open_database(self):
          
