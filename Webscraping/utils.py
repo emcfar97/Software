@@ -1,4 +1,4 @@
-import imagehash, os, sys, ast, piexif, time, bs4, requests, re, tempfile, hashlib
+import imagehash, os, piexif, time, bs4, requests, re, tempfile, hashlib, sys, ast
 from math import log
 from PIL import Image
 from io import BytesIO
@@ -6,14 +6,8 @@ from os.path import join, splitext
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 import mysql.connector as sql
 
-TYPE = ['エラティカ ニ', 'エラティカ 三']
-RESIZE = [1320, 1000]
-USER = 'Chairekakia'
-EMAIL = 'Emc1130@hotmail.com'
-PASS = 'SakurA1@'
-
-root = os.getcwd()[:2].upper()
-PATH = rf'{root}\Users\Emc11\Dropbox\Videos\ん'
+ROOT = os.getcwd()[:2].upper()
+PATH = rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん'
 HASHER = hashlib.md5()
     
 DATAB = sql.connect(
@@ -21,43 +15,36 @@ DATAB = sql.connect(
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
 CURSOR = DATAB.cursor(buffered=True)
-
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    'SELECT path, href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
-    '''
-        SELECT REPLACE(save_name, "E:", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
-        SELECT REPLACE(save_name, "E:", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
+    f'SELECT REPLACE(path, "C:", {ROOT}), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
+    f'''
+        SELECT REPLACE(save_name, {ROOT}, "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
+        SELECT REPLACE(save_name, {ROOT}, "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
         ''',
     ]
 INSERT = [
-    'INSERT INTO imageData(href, site) VALUES(%s, %s)',
+    'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
-    'INSERT IGNORE INTO favorites(path, href, site) VALUES(%s, %s, %s)',
+    f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, {ROOT}, "C:"), %s, %s)',
     ]
 UPDATE = [
-    'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-    'UPDATE favorites SET path=%s, hash=%s, src=%s WHERE href=%s',
-    'REPLACE INTO imageData(path,hash,href,site) VALUES(%s,%s,%s,%s)',
-    'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-    'UPDATE favorites SET checked=%s, saved=%s WHERE path=%s',
-    'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, %s)'
+    'UPDATE imageData SET path=REPLACE(%s, {ROOT}, "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
+    'UPDATE favorites SET path=REPLACE(%s, {ROOT}, "C:"), hash=%s, src=%s WHERE href=%s',
+    'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, {ROOT}, "C:"),%s,%s,%s)',
+    'UPDATE imageData SET path=REPLACE(%s, {ROOT}, "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+    'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, {ROOT}, "C:")',
+    'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, {ROOT}, "C:"), %s, %s, %s, %s)'
     ]
-if PATH.startswith(('e:\\', 'e:/')):
-    
-    SELECT[4] = 'SELECT REPLACE(path, "C:", "E:"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))'
-    INSERT[2] = 'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "E:", "C:"), %s, %s)'
-    UPDATE = [
-        'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
-        'UPDATE favorites SET path=REPLACE(%s, "E:", "C:"), hash=%s, src=%s WHERE href=%s',
-        'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, "E:", "C:"),%s,%s,%s)',
-        'UPDATE imageData SET path=REPLACE(%s, "E:", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-        'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "E:", "C:")',
-        'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, %s)'
-        ]
+
+TYPE = ['エラティカ ニ', 'エラティカ 三']
+RESIZE = [1320, 1000]
+USER = 'Chairekakia'
+EMAIL = 'Emc1130@hotmail.com'
+PASS = 'SakurA1@'
 
 metadata_dict = {
     '3d':'3d',
@@ -496,20 +483,25 @@ artists_dict = {
     '＿太子⭕️西り43a': ['', None]
     }
 
-def get_driver(headless=False):
+def execute(statement, arguments, many=0):
 
-    from selenium import webdriver
-    from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
-    from selenium.webdriver.firefox.options import Options
+    for _ in range(10):
+        try:
+            if many: CURSOR.executemany(statement, arguments)
+            else: CURSOR.execute(statement, arguments)
+            DATAB.commit()
+            return True       
+        except sql.errors.InternalError: continue
+
+def progress(size, left, site, length=20):
     
-    options = Options()
-    options.headless = headless
-    binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
-    driver = webdriver.Firefox(firefox_binary=binary, options=options)
-    driver.implicitly_wait(10)
-
-    return driver
-
+    percent = left / size
+    padding = int(percent * length)
+    bar = f'[{"|" * padding}{" " * (length-padding)}]'
+    print(f'{site}  —  {bar} {percent:03.0%} ({left}/{size})')
+    sys.stdout.write("\033[F")
+    if left == size: print()
+        
 def login(driver, site, type_=0):
     
     from selenium.webdriver.common.keys import Keys
@@ -622,25 +614,30 @@ def login(driver, site, type_=0):
         driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
         time.sleep(5)
 
-def progress(size, left, site, length=20):
+def get_driver(headless=False):
+
+    from selenium import webdriver
+    from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+    from selenium.webdriver.firefox.options import Options
     
-    percent = left / size
-    padding = int(percent * length)
-    bar = f'[{"|" * padding}{" " * (length-padding)}]'
-    print(f'{site}  —  {bar} {percent:03.0%} ({left}/{size})')
-    sys.stdout.write("\033[F")
-    if left == size: print()
-        
+    options = Options()
+    options.headless = headless
+    binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
+    driver = webdriver.Firefox(firefox_binary=binary, options=options)
+    driver.implicitly_wait(10)
+
+    return driver
+
 def save_image(name, image, exif=None):
     
-    if name.endswith(('.jpg', '.jpeg')):
+    if image.endswith(('.jpg', '.jpeg')):
 
         img = Image.open(BytesIO(requests.get(image).content))
         img.thumbnail(RESIZE)
         if exif: img.save(name, exif=exif)
         else: img.save(name)
         
-    elif name.endswith('.png'):
+    elif image.endswith('.png'):
 
         name = name.replace('.png', '.jpg')
         img = Image.open(BytesIO(requests.get(image).content))
@@ -652,7 +649,7 @@ def save_image(name, image, exif=None):
         if exif: img.convert('RGB').save(name, exif=exif)
         else: img.convert('RGB').save(name)
 
-    elif name.endswith(('.gif','.webm', '.mp4')):
+    elif image.endswith(('.gif','.webm', '.mp4')):
         
         data = requests.get(image, stream=True)
         with open(name, 'wb') as file: 
@@ -661,22 +658,23 @@ def save_image(name, image, exif=None):
     
     return name
 
-def get_name(path, type_):
+def get_name(path, type_, hasher=0):
+    'Return pathname (from optional hash of image)'
 
-    data = requests.get(path).content
-    HASHER.update(data)
-    ext = splitext(path)[1].replace('png', 'jpg')
-    name = join(
-        PATH, TYPE[type_], f'{HASHER.hexdigest()}{ext}'
-        )
+    if hasher:
+        ext = splitext(path)[1][:4]
+        data = requests.get(path).content
+        HASHER.update(data)
+        path = f'{HASHER.hexdigest()}{ext}'
 
-    return name
+    return join(PATH, TYPE[type_], path.replace('png', 'jpg'))
 
 def get_hash(image):
+    'Return perceptual hash of image'
         
     if 'http' in image:
         
-        ext = image[-4:]
+        ext = splitext(image)[1][:4]
         temp_dir = tempfile.TemporaryDirectory()
         temp = join(temp_dir.name,
             f'{next(tempfile._get_candidate_names())}{ext}'
@@ -699,7 +697,7 @@ def get_hash(image):
     image.thumbnail([32, 32])
     image = image.convert('L')
     try: temp_dir.cleanup()
-    except: pass
+    except UnboundLocalError: pass
 
     return f'{imagehash.dhash(image)}'
 
@@ -712,6 +710,7 @@ def get_tags(driver, path):
     if flag:
 
         tags.add('animated')
+        if path.endswith(('webm', 'mp4')): tags.add('audio')
         temp_dir = tempfile.TemporaryDirectory()
         vidcap = VideoCapture(path)
         success, frame = vidcap.read()
@@ -758,11 +757,10 @@ def get_tags(driver, path):
     return list(tags)
 
 def generate_tags(
-    type=None,artists=[],metadata=[],general=[],custom=[],rating=[],exif=True
+    artists=[], metadata=[], general=[], custom=[], rating=[], exif=True
     ):
     
     tags = [['qwd']]
-    type = 'Erotica 2' if 'photo' in general else type
 
     if metadata:
         
@@ -823,9 +821,11 @@ def generate_tags(
         
     return tags
 
-def evaluate(tags, search):
+def evaluate(tags, pattern):
     
-    query = tuple(search.replace('(', '( ').replace(')', ' )').split(' '))
+    try: return re.search(pattern, tags)
+    except: pass
+    query = tuple(pattern.replace('(', '( ').replace(')', ' )').split(' '))
     query = str(query).replace("'(',", '(').replace(", ')'", ')')
     query = query.replace('<','(').replace('>',')')
             

@@ -1,6 +1,16 @@
 import subprocess, threading
 from Webscraping import flickr, foundry, furaffinity, gelbooru, sankaku, posespace, favorites#, twitter
 
+def erotica2():
+    
+    threads = [
+        threading.Thread(target=flickr.setup),
+        threading.Thread(target=sankaku.setup, args=(0,))
+        # threading.Thread(target=posespace.setup)
+        ]
+    for thread in threads: thread.start()
+    for thread in threads: thread.join()
+
 def erotica3():
 
     # process = subprocess.Popen([
@@ -19,7 +29,7 @@ def erotica3():
     
     threads = [
         threading.Thread(target=gelbooru.setup),
-        # threading.Thread(target=sankaku.setup)
+        threading.Thread(target=sankaku.setup, args=(1,))
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
@@ -31,9 +41,8 @@ def webscrapers():
     # twitter.setup()
 
 threads = [
-    threading.Thread(target=flickr.setup),
-    threading.Thread(target=erotica3),
-    # threading.Thread(target=posespace.setup)
+    threading.Thread(target=erotica2),
+    threading.Thread(target=erotica3)
     ]
 for thread in threads: thread.start()
 for thread in threads: thread.join()
