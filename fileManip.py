@@ -2,7 +2,7 @@ import os, shutil, piexif, json, requests, hashlib, imagehash, bs4
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
-from Webscraping.utils import get_driver, get_hash, get_tags, generate_tags, progress
+from Webscraping.utils import get_driver, get_hash, get_name, get_tags, generate_tags, progress
 import mysql.connector as sql
 from selenium.common.exceptions import WebDriverException
 
@@ -144,10 +144,9 @@ def extract_files(path):
 
 def insert_files(path):
 
-    extract_files(path)
+    # extract_files(path)
     convert_images(path)
     driver = get_driver(True)
-    hasher = hashlib.md5()
     ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
     files = [
         join(path, file) for file in os.listdir(path)
@@ -158,13 +157,8 @@ def insert_files(path):
     for num, file in enumerate(files):
         progress(size, num, 'Files')
         
-        ext = splitext(file)[-1].lower()
         try: 
-            with open(file, 'rb') as data: hasher.update(data.read())
-            dest = join(
-                rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ', 
-                f'{hasher.hexdigest()}{ext}'
-                )
+            dest = get_name(file, 1, 1)
             
             if exists(dest):
                 os.remove(file)
@@ -172,27 +166,22 @@ def insert_files(path):
             
             tags = get_tags(driver, file)
 
-            if file.lower().endswith(('jpg', 'jpeg')):
+            if dest.endswith(('jpg', 'jpeg')):
 
                 tags, rating, exif = generate_tags(
-                    type='Erotica 2', general=tags, 
-                    custom=True, rating=True, exif=True
+                    general=tags, custom=True, rating=True, exif=True
                     )
                 Image.open(file).save(file, exif=exif)
 
-            elif file.lower().endswith(('.gif', '.webm', '.mp4')): 
+            elif dest.endswith(('.gif', '.webm', '.mp4')): 
                 
-                tags.append('animated')
-                if file.lower().endswith(('.webm', '.mp4')):
-                    tags.append('audio')
                 tags, rating = generate_tags(
-                    type='Erotica 2', general=tags, 
-                    custom=True, rating=True, exif=False
+                    general=tags, custom=True, rating=True, exif=False
                     )
 
             hash_ = get_hash(file.lower())
 
-            CURSOR.execute(INSERT, (dest, f" {tags} ", rating, hash_))
+            CURSOR.execute(INSERT, (dest, f' {tags} ', rating, hash_))
             shutil.move(file, dest)
             DATAB.commit()
             

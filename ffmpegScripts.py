@@ -1,13 +1,24 @@
 import ffmpeg
 from ffprobe import FFProbe
 from os import remove, listdir, getcwd
-from os.path import join, exists
+from os.path import join, exists, splitext
 
-def get_stream(folder):
+def get_stream(folder, title=0):
     
-    stream = [
-        ffmpeg.input(join(folder, file)) for file in listdir(folder)
-        ]
+    if title:
+        stream = [
+            ffmpeg.input(join(folder, file)).drawtext(
+                text=file.splitext()[0], fontsize=42, 
+                x=int(metadata.width) * .75, 
+                y=int(metadata.height) * .90
+                ) 
+            for file in listdir(folder)
+            ]
+    else:
+        stream = [
+            ffmpeg.input(join(folder, file)) 
+            for file in listdir(folder)
+            ]
     new = join(dest, listdir(folder)[0]).replace('flv', 'mp4')
     
     return stream, new
@@ -34,12 +45,24 @@ while True:
         if  user_input ==  '1': # convert files
 
             files = [
-                (join(source, file), join(dest, file.replace('.flv', '.mp4'))) 
+                (
+                    join(source, file), splitext(file)[0], 
+                    join(dest, file.replace('.flv', '.mp4'))
+                    )
                 for file in listdir(source) if file.endswith('flv')
                 ]
-            if not files: print(f'No files at {source}')
-            for flv, mp4 in files:
-                try: ffmpeg.input(flv).output(mp4, crf=20, preset='fast').run()
+            for flv, title, mp4 in files:
+                text = input('Overlay text? ')
+                try: 
+                    if text.lower() in 'yes':
+                        metadata = FFProbe(flv).streams[0]
+                        ffmpeg.input(flv).drawtext(
+                            text=title, fontsize=42, 
+                            x=int(metadata.width) * .75, 
+                            y=int(metadata.height) * .90
+                        ).output(mp4, crf=20, preset='fast').run()
+                    else: 
+                        ffmpeg.input(flv).output(mp4, crf=20, preset='fast').run()
                 except Exception as error: print(error); continue
                 remove(flv)
 
@@ -50,7 +73,8 @@ while True:
             for folder in listdir(source):
                 
                 if not folder.endswith((targets)): continue
-                stream, new = get_stream(join(source, folder))
+                text = 1 if input('Overlay text? ').lower() in 'yes' else 0
+                stream, new = get_stream(join(source, folder), text)
                 
                 try: ffmpeg.concat(*stream).output(new, crf=20, preset='fast').run()
                 except Exception as error: print(error); continue

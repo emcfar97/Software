@@ -1,14 +1,41 @@
-(defproject helloworld "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.1"]]
-  :main helloworld.core)
+(defn log2 [n] (/ (Math/log n) (Math/log 2)))
 
-(ns helloworld.core)
+(defn entropy [xs]
+  
+  (let [freqs (vals (frequencies xs))
+        cnt (reduce + freqs)
+        calc #(let [p (double (/ % cnt))]
+                (* p (log2 p)))]
+    (reduce - 0 (pmap calc freqs))
+    )
+  )
 
-(defn -main
-  "I can say 'Hello World'."
-  []
-  (println "Hello, World!"))
+(defn file []
+  (slurp "School\\4.Spring 2020\\Clojure Program\\WarAndPeace.txt")
+  )
+
+(defn split-text [text step]
+  
+  (loop [tail text result []]
+    (if (empty? tail)
+      result
+      (let [len (min step (count tail))]
+        (recur (subs tail len)
+               (conj result (subs tail 0 len))
+               )
+        )
+      )
+    )
+  )
+
+(defn timeit [threads]
+  (print threads " threads\n")
+  (loop [i 1]
+    (when (< i 4)
+      (time (print((entropy (split-text (file) i)))))
+      (recur (inc i))
+      )
+    )
+  )
+
+(timeit 1)
