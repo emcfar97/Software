@@ -144,7 +144,7 @@ def extract_files(path):
 
 def insert_files(path):
 
-    # extract_files(path)
+    extract_files(path)
     convert_images(path)
     driver = get_driver(True)
     ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
@@ -187,7 +187,7 @@ def insert_files(path):
             
         except (OSError, WebDriverException): continue
 
-        except: break
+        except: continue
     
     progress(len(files), num, 'Files')
     driver.close()
