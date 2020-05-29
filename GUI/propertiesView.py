@@ -36,7 +36,7 @@ class Properties(QMainWindow):
         self.path.setDisabled(True)
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
-        self.type.addItems(['', 'Photograph', 'Illustration'])
+        self.type.addItems(['', 'Photograph', 'Illustration', 'Comics'])
         
         self.form = QFormLayout()
         self.form.addRow('Path', self.path)
