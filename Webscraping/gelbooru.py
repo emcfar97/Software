@@ -11,7 +11,7 @@ def initialize(url='?page=favorites&s=view&id=173770&pid=0', query=0):
         except IndexError: return False
 
     if not query:
-        CURSOR.execute(SELECT[0], (SITE,))
+        execute(SELECT[0], (SITE,))
         query = CURSOR.fetchall()
     page_source = requests.get(f'https://gelbooru.com/index.php{url}').content
     html = bs4.BeautifulSoup(page_source, 'lxml')
@@ -39,42 +39,57 @@ def page_handler(hrefs):
         page_source = requests.get(f'https://gelbooru.com/{href}').content
         html = bs4.BeautifulSoup(page_source, 'lxml')
 
-        metadata = [
+        metadata = ' '.join(
             '_'.join(tag.text.split(' ')[1:-1]) for tag in 
             html.findAll(class_='tag-type-metadata')
-            ]
+            )
+        tags = ' '.join(
+            '_'.join(tag.text.split(' ')[1:-1]) for tag in 
+            html.findAll(class_='tag-type-general')
+            )
         artists = [
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
-        tags = [
-            '_'.join(tag.text.split(' ')[1:-1]) for tag in 
-            html.findAll(class_='tag-type-general')
-            ]
         tags, rating, exif = generate_tags(
-            artists, metadata, tags, True, True
+            tags, metadata, True, artists, True
             )
         
-        image = html.find(
-            src=re.compile('https://img(1)|(2).gelbooru.com.+')
+        try:
+            image = html.find(
+            src=re.compile('https://img\d.gelbooru.com/i.+')
             ).get('src')
+        except: image = handle_error(href)
         name = get_name(image.split('/')[-1], 1)
         save_image(name, image, exif)
         hash_ = get_hash(name)
         
         try:
             execute(UPDATE[3], (
-                name, f"{' '.join(artists)}", f' {tags} ', 
-                rating, image, hash_, 1, href)
+                name, f"{' '.join(artists)}", tags, 
+                rating, image, hash_, 1, href),
+                commit=1
                 )
         except sql.errors.IntegrityError:
             execute(UPDATE[3], (
                 f'202 - {href}', f"{' '.join(artists)}", 
-                f' {tags} ', rating, image, hash_, 1, href)
-            )
+                tags, rating, image, hash_, 1, href),
+                commit=1
+                )
         except (sql.errors.OperationalError, sql.errors.DatabaseError): continue
 
     progress(size, size, SITE)
+
+def handle_error(href):
+
+    driver = get_driver(True)
+    driver.get(f'https://gelbooru.com/{href}')
+    src = driver.find_element_by_link_text(
+        'Original image'
+        ).get_attribute('href')
+    driver.close()
+
+    return src
 
 def setup(initial=True):
     

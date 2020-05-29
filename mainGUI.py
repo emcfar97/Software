@@ -135,8 +135,7 @@ class ManageData(QMainWindow):
     def start_slideshow(self, gallery, index):
 
         try: self.slideshow.close()
-        except: pass
-        self.slideshow = sliderView.Slideshow(self, gallery, index)
+        except: self.slideshow = sliderView.Slideshow(self, gallery, index)
 
     def change_records(self, gallery, *args):
         
@@ -161,7 +160,9 @@ class ManageData(QMainWindow):
 
         while True:
             try:
-                CURSOR.executemany(MODIFY.format(', '.join(parameters)), gallery)
+                CURSOR.executemany(
+                    MODIFY.format(', '.join(parameters)), gallery
+                    )
                 break
             except sql.errors.InternalError: continue
         DATAB.commit()

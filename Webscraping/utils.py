@@ -20,112 +20,115 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    f'SELECT REPLACE(path, "C:", {ROOT}), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
+    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
     f'''
-        SELECT REPLACE(save_name, {ROOT}, "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
-        SELECT REPLACE(save_name, {ROOT}, "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
+        SELECT REPLACE(save_name, "{ROOT}", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
+        SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
         ''',
     ]
 INSERT = [
     'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
-    f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, {ROOT}, "C:"), %s, %s)',
+    f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
+    'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
     ]
 UPDATE = [
-    'UPDATE imageData SET path=REPLACE(%s, {ROOT}, "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
-    'UPDATE favorites SET path=REPLACE(%s, {ROOT}, "C:"), hash=%s, src=%s WHERE href=%s',
-    'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, {ROOT}, "C:"),%s,%s,%s)',
-    'UPDATE imageData SET path=REPLACE(%s, {ROOT}, "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
-    'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, {ROOT}, "C:")',
-    'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, {ROOT}, "C:"), %s, %s, %s, %s)'
+    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
+    f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), hash=%s, src=%s WHERE href=%s',
+    f'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, "{ROOT}", "C:"),%s,%s,%s)',
+    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+    f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
+    f'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)'
     ]
 
-TYPE = ['エラティカ ニ', 'エラティカ 三']
+EXT = '(jp*g|png|gif|webm|mp4)'
+TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 USER = 'Chairekakia'
 EMAIL = 'Emc1130@hotmail.com'
 PASS = 'SakurA1@'
+HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
-metadata_dict = {
+METADATA = {
     '3d':'3d',
     'monochrome':'monochrome', 
     'sketch': 'sketch',
     'lineart': 'lineart',
     'screencap':'screencap',
     'animated':'animated',
-    'audio':'audio OR has_audio',
+    'audio':'audio|has_audio',
     'uncensored': 'uncensored',
     'censored': 'censored',
     'official_art':'official_art',
     'game_cg':'game_cg'
     }
-custom_dict = {
-    'aphorisms': '((((nipples OR nipple_slip OR areola OR areolae OR areola_slip OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR breasts_outside OR breastless_clothes OR underbust OR underboob) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes)', 
-    'clothes_lift': 'clothes_lift OR skirt_lift OR shirt_lift OR dress_lift OR sweater_lift OR bra_lift OR bikini_lift OR kimino_lift OR apron_lift',
-    'intercrural': 'thigh_sex',
-    'loops': 'loops OR thigh_strap OR necklace OR neck_ring OR anklet OR bracelet OR armlet',  
-    'naked_clothes': 'naked_belt OR naked_apron OR naked_shirt OR naked_cape OR naked_overalls OR naked_ribbon OR naked_cloak OR naked_bandage', 
-    'sexy': 'NOT (nude OR topless OR (bottomless OR no_panties))',
-    'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
-    'vagina': 'pussy',
-    'underwear': 'underwear OR panties OR bra OR briefs'
-    }
-general_dict = {
+GENERAL = {
     '69': '69',
-    'age_difference': 'age_difference OR teenage_girl_and_younger_boy',
+    'age_difference': 'age_difference|teenage_girl_and_younger_boy',
     'ass': 'ass', 
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
     'breast_rest': 'breast_rest', 
     'character_sheet': 'character_sheet', 
     'condom': 'condom', 
     'concept_art':'concept_art',
-    'cowgirl_position': 'cowgirl_position OR reverse_cowgirl_position', 
-    'cum': 'cum OR precum OR semen',
-    'dancing': 'dancing OR dancer', 
+    'cowgirl_position': 'cowgirl_position|reverse_cowgirl_position', 
+    'cum': 'cum|precum|semen',
+    'dancing': 'dancing|dancer', 
     'doggystyle': 'doggystyle', 
     'eye_contact': 'eye_contact',
     'flashing': 'flashing',
     'furry': 'furry', 
     'futanari': 'futanari', 
-    'gesugao': 'crazy_smile OR crazy_eyes OR gesugao', 
+    'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top',
-    'japanese_clothes': 'yamakasa OR tabi OR sarashi OR fundoshi OR hakama OR yukata OR kimono OR geta OR happi OR zori',
+    'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|yukata|kimono|geta|happi|zori',
     'lactation': 'lactation',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))) AND NOT futanari',
     'masturbation': 'masturbation',
     'missionary': 'missionary', 
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR toned OR abs)', 
     'nude': 'nude OR functionally_nude OR (bottomless AND topless)', 
-    'open_clothes': 'open_clothes OR open_coat OR open_jacket OR open_shirt OR open_robe OR open_kimono OR open_fly OR open_shorts', 
-    'orgasm': 'orgasm OR ejaculation', 
+    'open_clothes': 'open_clothes|open_coat|open_jacket|open_shirt|open_robe|open_kimono|open_fly|open_shorts', 
+    'orgasm': 'orgasm|ejaculation', 
     'penis': 'penis', 
     'penis_kiss': 'penis_kiss', 
-    'piercings': 'piercings OR earrings OR navel_piercings OR areola_piercing OR back_piercing OR navel_piercing OR nipple_piercing OR ear_piercing OR eyebrow_piercing OR eyelid_piercing OR lip_piercing OR nose_piercing OR tongue_piercing OR clitoris_piercing OR labia_piercing OR penis_piercing OR testicle_piercing OR nipple_chain', 
+    'piercings': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain', 
     'pregnant': 'pregnant', 
     'presenting': 'presenting OR top-down_bottom-up OR ((spread_legs OR spread_pussy) AND (trembling OR (heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR spread_pussy', 
     'pubic_hair': 'pubic_hair',
     'pubic_tattoo': 'pubic_tattoo',
-    'pussy': 'pussy OR vagina', 
-    'pussy_juice': 'pussy_juice OR pussy_juices OR pussy_juice_trail OR pussy_juice_puddle OR pussy_juice_stain OR pussy_juice_drip_through_clothes', 
-    'revealing_clothes': 'revealing_clothes OR torn_clothes OR micro_bikini OR crop_top OR pussy_peek OR midriff OR cleavage_cutout OR wardrobe_malfunction OR breast_slip OR nipple_slip OR areola_slip OR no_panties OR no_bra OR pelvic_curtain OR side_slit OR breasts_outside OR see-through OR partially_visible_vulva OR functionally_nude OR breastless_clothes OR bare_shoulders OR one_breast_out',
-    'sex': 'sex OR vaginal OR anal OR facial OR oral OR fellatio OR cunnilingus OR handjob OR frottage OR tribadism', 
-    'sex_toys': 'sex_toys OR vibrator OR dildo OR butt_plug OR artificial_vagina',
+    'pussy': 'pussy|vagina', 
+    'pussy_juice': 'pussy_juice|pussy_juices|pussy_juice_trail|pussy_juice_puddle|pussy_juice_stain|pussy_juice_drip_through_clothes', 
+    'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
+    'sex': 'sex|vaginal|anal|facial|oral|fellatio|cunnilingus|handjob|frottage|tribadism', 
+    'sex_toys': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
     'stealth_sex': 'stealth_sex', 
     'stretch':'stretch', 
     'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))', 
     'spooning': 'spooning', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
-    'suspended_congress': 'suspended_congress OR reverse_suspended_congress',
+    'suspended_congress': 'suspended_congress|reverse_suspended_congress',
     'tattoo': 'tattoo', 
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
     'tribal': 'tribal', 
     'upright_straddle': 'upright_straddle'
     }
-rating_dict = {
-    '2': 'sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion', 
-    '1': 'NOT (sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))',
-    '0': 'NOT (sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))'
+CUSTOM = {
+    'aphorisms': '((((nipples OR nipple_slip OR areola OR areolae OR areola_slip OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR breasts_outside OR breastless_clothes OR underbust OR underboob) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position', 
+    'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
+    'intercrural': 'thigh_sex',
+    'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
+    'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage', 
+    'sexy': 'NOT (nude OR topless OR (bottomless OR no_panties))',
+    'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
+    'vagina': 'pussy',
+    'underwear': 'underwear|panties|bra|briefs'
+    }
+RATING = {
+    2: 'sex|hetero|vaginal|anal|cum|penis|vagina|pussy|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion', 
+    1: 'NOT (sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))',
+    0: 'NOT (sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))'
     }
 artists_dict = {
     '0': ['', None],
@@ -483,14 +486,13 @@ artists_dict = {
     '＿太子⭕️西り43a': ['', None]
     }
 
-def execute(statement, arguments, many=0):
+def execute(statement, arguments, many=0, commit=0):
 
     for _ in range(10):
         try:
             if many: CURSOR.executemany(statement, arguments)
             else: CURSOR.execute(statement, arguments)
-            DATAB.commit()
-            return True       
+            if commit: DATAB.commit()
         except sql.errors.InternalError: continue
 
 def progress(size, left, site, length=20):
@@ -516,7 +518,7 @@ def login(driver, site, type_=0):
             driver.find_element_by_id('login-password').send_keys(Keys.RETURN)
             time.sleep(2.5)
 
-    if site == 'metart':
+    if site == 'metarthunter':
 
         driver.get('https://www.metarthunter.com/members/')
         driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
@@ -524,7 +526,7 @@ def login(driver, site, type_=0):
         while driver.current_url == 'https://www.metarthunter.com/members/': 
             time.sleep(2)
             
-    if site == 'femjoy':
+    if site == 'femjoyhunter':
 
         driver.get('https://www.femjoyhunter.com/members/')
         driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
@@ -536,7 +538,7 @@ def login(driver, site, type_=0):
 
         driver.get('https://www.elitebabes.com/members/')
         driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
-        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('Cxbvmr6ckh6p')
+        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('SakurA1$')
         while driver.current_url == 'https://www.elitebabes.com/members/': 
             time.sleep(2)
 
@@ -629,18 +631,19 @@ def get_driver(headless=False):
     return driver
 
 def save_image(name, image, exif=None):
-    
-    if image.endswith(('.jpg', '.jpeg')):
+    '''Save image to name (with optional exif metadata)'''
 
-        img = Image.open(BytesIO(requests.get(image).content))
+    if re.search('.+jp.*g', image):
+
+        img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
         img.thumbnail(RESIZE)
         if exif: img.save(name, exif=exif)
         else: img.save(name)
         
-    elif image.endswith('.png'):
+    elif re.search('.+png', image):
 
         name = name.replace('.png', '.jpg')
-        img = Image.open(BytesIO(requests.get(image).content))
+        img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
         img.thumbnail(RESIZE)
         img = img.convert('RGBA')
         img = Image.alpha_composite(
@@ -649,28 +652,28 @@ def save_image(name, image, exif=None):
         if exif: img.convert('RGB').save(name, exif=exif)
         else: img.convert('RGB').save(name)
 
-    elif image.endswith(('.gif','.webm', '.mp4')):
+    elif re.search('.+(gif|webm|mp4)', image):
         
-        data = requests.get(image, stream=True)
+        data = requests.get(image, headers=HEADERS, stream=True)
         with open(name, 'wb') as file: 
             for chunk in data.iter_content(chunk_size=1024):
                 if chunk: file.write(chunk)
     
-    return name
-
-def get_name(path, type_, hasher=0):
-    'Return pathname (from optional hash of image)'
+def get_name(path, type_, hasher=0, get=0):
+    '''Return pathname (from optional hash of image)'''
 
     if hasher:
-        ext = splitext(path)[1][:4]
-        data = requests.get(path).content
+        try: data = requests.get(path).content
+        except: data = open(path, 'rb').read()
         HASHER.update(data)
-        path = f'{HASHER.hexdigest()}{ext}'
+        ext = splitext(path)[1][:4]
+        if get: return HASHER.hexdigest()
+        else: path = f'{HASHER.hexdigest()}{ext}'
 
     return join(PATH, TYPE[type_], path.replace('png', 'jpg'))
 
 def get_hash(image):
-    'Return perceptual hash of image'
+    '''Return perceptual hash of image'''
         
     if 'http' in image:
         
@@ -681,14 +684,11 @@ def get_hash(image):
             )
         
         with open(temp, 'wb') as img: 
-            img.write(requests.get(image).content)
-            image = img.name
+            image = img.write(requests.get(image).content).name
     
-    if image.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-        
-        image = Image.open(image)
+    if re.search('.+(jp.*g|png|gif)', image): image = Image.open(image)
 
-    elif image.lower().endswith(('.mp4', '.webm')): 
+    elif re.search('.+(webm|mp4)', image):
         
         video_capture = VideoCapture(image).read()[-1]
         image = cvtColor(video_capture, COLOR_BGR2RGB)
@@ -701,13 +701,14 @@ def get_hash(image):
 
     return f'{imagehash.dhash(image)}'
 
-def get_tags(driver, path):
+def get_tags(driver, path, comic=0):
 
     tags = set()
     frames = []
-    flag = path.endswith(('gif', 'webm', 'mp4'))
+    try: video = path.endswith(('gif', 'webm', 'mp4'))
+    except: video = False
 
-    if flag:
+    if video:
 
         tags.add('animated')
         if path.endswith(('webm', 'mp4')): tags.add('audio')
@@ -728,6 +729,8 @@ def get_tags(driver, path):
         else: 
             step = round(60 * log((len(frames) * .0005) + 1) + 1)
             frames = frames[::step]
+    
+    elif comic: frames = path
 
     else: frames.append(path)
     
@@ -748,47 +751,44 @@ def get_tags(driver, path):
                 if not (_ % 10): driver.refresh()
     
     else:
-        if flag: temp_dir.cleanup()
-        tags.discard('photorealistic')
-        tags.discard('realistic')
+        if video: temp_dir.cleanup()
         if 'vagina' in tags: tags.add('pussy')
         tags.discard('vagina')
+        tags.discard('photorealistic')
+        tags.discard('realistic')
     
-    return list(tags)
+    return ' '.join(tags)
 
 def generate_tags(
-    artists=[], metadata=[], general=[], custom=[], rating=[], exif=True
+    general, metadata=[], custom=[], artists=[], rating=False, exif=True
     ):
     
-    tags = [['qwd']]
+    tags = ['qwd']
 
-    if metadata:
-        
-        tags.append([
-            key for key, val in metadata_dict.items() 
-            if evaluate(metadata, val)
-            ])
     if general:
         
-        tags.append([
-            key for key, val in general_dict.items() 
-            if evaluate(general, val)
-            ])
+        tags.extend(
+            key for key in GENERAL if evaluate(general, GENERAL[key])
+            )
+    if metadata:
+        
+        tags.extend(
+            key for key in METADATA if evaluate(metadata, METADATA[key])
+            )
     if custom:
         
-        tags.append([
-            key for key, val in custom_dict.items() 
-            if evaluate(general, val)
-            ])
+        tags.extend(
+            key for key in CUSTOM if evaluate(general, CUSTOM[key])
+            )
     if rating:
         
+        temp = ' '.join(tags) + ' ' + general
         rating, = [
-            key for key, val in rating_dict.items() 
-            if evaluate(sum(tags,[]) + general, val)
+            key for key in RATING if evaluate(temp, RATING[key])
             ]
     if exif:
         
-        tags = set(sum(tags, []) + general)
+        tags = set(tags + general.split())
         custom = tags.copy()
         custom.remove('qwd')
         
@@ -806,30 +806,27 @@ def generate_tags(
             }
         exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
         
-        tags = list(tags)
-        tags.sort()
+        tags = ' '.join(sorted(list(tags)))
         tags = [
-            ' '.join(tags), rating, 
-            piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})
+            f' {tags} ', rating, piexif.dump({"0th":zeroth_ifd,"Exif":exif_ifd})
             ]
 
     else: 
 
-        tags = list(set(sum(tags, []) + general))
-        tags.sort()
-        tags = (' '.join(tags), rating) if rating else (' '.join(tags))
+        tags = ' '.join(sorted(list(set(tags + general.split()))))
+        if rating: tags = (f' {tags} ', rating)
         
     return tags
 
 def evaluate(tags, pattern):
     
-    try: return re.search(pattern, tags)
-    except: pass
-    query = tuple(pattern.replace('(', '( ').replace(')', ' )').split(' '))
-    query = str(query).replace("'(',", '(').replace(", ')'", ')')
-    query = query.replace('<','(').replace('>',')')
-            
-    return parse(tags, ast.literal_eval(query))
+    if re.search('AND|OR|NOT', pattern):
+        query = tuple(pattern.replace('(', '( ').replace(')', ' )').split(' '))
+        query = str(query).replace("'(',", '(').replace(", ')'", ')')
+        query = query.replace('<','(').replace('>',')')
+                
+        return parse(tags.split(), ast.literal_eval(query))
+    else: return re.search(f'\s({pattern})\s', tags)
 
 def parse(tags, search):
     
