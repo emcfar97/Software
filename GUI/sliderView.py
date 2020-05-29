@@ -56,36 +56,16 @@ class Slideshow(QMainWindow):
     
     def show_image(self, path):
         
-        width, height = self.width(), self.height()
-        
         if path.endswith(('.jpg', '.jpeg', '.png')):
             
-            self.label.setMovie(QMovie())
             pixmap = QPixmap(path).scaled(
-                width, height, Qt.KeepAspectRatio, transformMode=Qt.SmoothTransformation
+                self.width(), self.height(), Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
                 )
             self.label.setPixmap(pixmap)
         
-        elif path.endswith('.gif'):
+        elif path.endswith(('gif', '.webm', '.mp4')):
             
-            self.label.setPixmap(QPixmap())
-            wid, hei = Image.open(path).size
-            ratio = wid / hei
-     
-            dimensions = (
-                (width, width / ratio) 
-                if (width / ratio) <= height else 
-                (height * ratio, height)
-                )
-            
-            movie = QMovie(path)
-            movie.setScaledSize(QSize(*dimensions))
-            self.label.setMovie(movie)
-            movie.start()
-        
-        elif path.endswith(('.webm', '.mp4')):
-            
-            self.label.setMovie(QMovie())
             self.label.setPixmap(QPixmap())
             self.video.update(path)
             self.stack.setCurrentIndex(1)
