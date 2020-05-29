@@ -1,7 +1,7 @@
-import re, textwrap, qimage2ndarray
+import re, textwrap, queue, qimage2ndarray
 from . import *
 from .propertiesView import *
-from PyQt5.QtCore import QAbstractTableModel, QVariant, QModelIndex, QItemSelectionModel, Qt
+from PyQt5.QtCore import QAbstractTableModel, QVariant, QModelIndex, QItemSelectionModel, QItemSelection, Qt
 from PyQt5.QtWidgets import QApplication, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QShortcut
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
 
@@ -11,9 +11,11 @@ RATING = {
     0: 'safe', 1: 'questionable', 2: 'explicit'
     }
 TYPE = {
-    'All': '',
-    'Photo': 'type=0', 'Illus': 'type=1',
-    'photo': '0', 'illus': '1',
+    'all': [''],
+    'photo': ['type=0', '0'], 
+    'illus': ['type=1', '1'], 
+    'comics': ['type=2', '2'],
+    0: 'photograph', 1: 'illustration', 2: 'comic'
     }
 
 class Gallery(QWidget):
@@ -51,12 +53,13 @@ class Gallery(QWidget):
         self.ribbon = Ribbon(self)
         self.images = imageView(self)
         self.status = StatusBar(self)
+        self.history = queue.Queue(50)
          
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=4000):
+    def populate(self, sender=None, limit=4500, id=0):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         
@@ -65,6 +68,8 @@ class Gallery(QWidget):
         images.table.rowsLoaded = 0
 
         try: 
+            # if id: SELECT = f'{COMIC} WHERE hash="{id}"'
+            # else: SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
             SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
             CURSOR.execute(SELECT)
             images.table.images = CURSOR.fetchall()
@@ -98,6 +103,7 @@ class Gallery(QWidget):
     def get_filter(self):
 
         string = self.ribbon.tags.text()
+        self.history.put(string)
 
         try:
             stars, = re.findall('stars[<>=!]+[0-5]', string)
@@ -115,10 +121,10 @@ class Gallery(QWidget):
         except: rating = RATING[self.rating.checkedAction().text()]
         
         try:
-            type_, = re.findall('type=(?:photo|illus?)', string)
+            type_, = re.findall('type=(?:photo|illus|comics?)', string)
             string = string.replace(type_, '')
-            type_ = re.sub('(\w+)\Z', TYPE[type_[5:]], type_).lower()
-        except: type_ = TYPE[self.type.checkedAction().text()]
+            type_ = re.sub('(\w+)\Z', TYPE[type_[5:]][1], type_)
+        except: type_ = TYPE[self.type.checkedAction().text().lower()][0]
         
         try:
             artist, = re.findall('artist=\w+', string)
@@ -237,7 +243,7 @@ class imageView(QTableView):
         self.setModel(self.table)
         self.horizontalHeader().hide()      
         self.verticalHeader().hide()
-        self.setShowGrid(0) 
+        self.setGridStyle(0)
 
         self.doubleClicked.connect(self.open_slideshow)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -307,7 +313,7 @@ class imageView(QTableView):
         
         typeMenu = QMenu('Type', menu)
         type_ = QActionGroup(typeMenu)
-        for i in ['All', 'Photo', 'Illus']:
+        for i in ['All', 'Photo', 'Illus', 'Comics']:
             action = QAction(i, typeMenu, checkable=True)
             if i == 'All': action.setChecked(True)
             type_.triggered.connect(parent.populate)
@@ -349,96 +355,126 @@ class imageView(QTableView):
             )
         cb.setText(paths, mode=cb.Clipboard)
 
+    def open_slideshow(self, index):
+        
+        # path, type_ = index.data(500)
+        # if type_ == 2:
+        #     id = path.split('\\')[-1][:-4]
+        #     self.parent().populate(id=id)
+        
+        # else:
+        parent = self.parent().parent()
+
+        if parent.windowTitle() == 'Manage Data':
+            
+            parent.start_slideshow(
+                self.table.images.copy(), 
+                (index.row() * 5) + index.column()
+                )
+
     def keyPressEvent(self, sender):
         
         key_press = sender.key()
+        mode = QItemSelectionModel()
+        selection = QItemSelection()
+        modifier = sender.modifiers()
+        ctrl = modifier == Qt.ControlModifier
+        shift = modifier == Qt.ShiftModifier
+        alt = modifier == Qt.AltModifier
 
         if key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
             
             index = self.currentIndex()
             row, col = index.row(), index.column()
+            direction = 1 if key_press in (Qt.Key_Down, Qt.Key_Right) else -1
 
-            if key_press in (Qt.Key_Up, Qt.Key_Down): 
-                
-                direction = 1 if key_press == Qt.Key_Down else -1
-                if not 0 <= (row + direction) < self.table.rowCount(): 
-                    return
-                row += direction 
-                
-                if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-                    
-                    self.selectionModel().setCurrentIndex(
-                        self.table.index(row, col), QItemSelectionModel.Toggle
-                        )
-                    return
-            
-            elif key_press in (Qt.Key_Right, Qt.Key_Left): 
-
-                direction = 1 if key_press == Qt.Key_Right else -1
+            if key_press in (Qt.Key_Right, Qt.Key_Left):
 
                 if (col== 0 and direction== -1) or (col== 4 and direction== 1):
-                    if not 0 <= (row + direction) < self.table.rowCount():
-                        return
+                    if not 0 <= (row + direction) < self.table.rowCount():return
                     row += direction
                 col = (col + direction) % self.table.columnCount()
+                new = self.table.index(row, col)
 
-                if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-                    
-                    self.selectionModel().setCurrentIndex(
-                        self.table.index(row, col), 
-                        QItemSelectionModel.ToggleCurrent
-                        )
-                    return
-
-            self.setCurrentIndex(self.table.index(row, col))
-                    
-        elif key_press in (Qt.Key_PageUp, Qt.Key_PageDown): 
-            
-            if QApplication.keyboardModifiers() == Qt.ShiftModifier: 
+            elif key_press in (Qt.Key_Up, Qt.Key_Down):
                 
-                old = self.currentIndex()
+                if not 0 <= (row + direction) < self.table.rowCount(): return
+                row += direction 
+                new = self.table.index(row, col)
+            
+            if shift:
+                return
+                selection.select(
+                    index, new 
+                    if index.data(250) > new.data(250) else 
+                    new, index
+                    )
+                self.selectionModel().select(selection, mode.Toggle)
+
+            else: self.setCurrentIndex(new)
+                    
+        elif key_press in (Qt.Key_PageUp, Qt.Key_PageDown):
+            
+            index = self.currentIndex()
+            row, col = index.row(), index.column()
+            direction = 1 if key_press == Qt.Key_PageDown else -1
+            
+            if not 0 <= (row + direction) < self.table.rowCount(): return
+            row += direction * 5
+            new = self.table.index(row, col)
+
+            if shift:
+                return
+                selection.select(
+                    index, new 
+                    if index.data(250) > new.data(250) else 
+                    new, index
+                    )
+                self.selectionModel().select(selection, mode.Toggle)
+
+            else: self.setCurrentIndex(new)
 
         elif key_press in (Qt.Key_Home, Qt.Key_End):
             
-            row, col = (0, 0) if key_press == Qt.Key_Home else (self.table.rowCount() - 1, (self.total() - 1) % self.table.columnCount())
-
-            if QApplication.keyboardModifiers() == Qt.ShiftModifier: 
-                
-                old = self.currentIndex()
-
-            self.setCurrentIndex(self.table.index(row, col))
-
-        elif key_press == Qt.Key_Return:
-    
-            parent = self.parent().parent()
-
-            if parent.windowTitle() == 'Manage Data':
-                
-                parent.start_slideshow(
-                    self.table.images.copy(), (index.row() * 5) + index.column()
-                    )            
-        
-        elif key_press == Qt.Key_A and QApplication.keyboardModifiers() == Qt.CrtlModifier: 
-            
-            self.selectionModel().setCurrentIndex(
-                self.table.index(row, col), QItemSelectionModel.Toggle
+            row, col = (
+                (0, 0) if key_press == Qt.Key_Home else 
+                (self.table.rowCount() - 1, (self.total() - 1) % self.table.columnCount())
                 )
+            new = self.table.index(row, col)
 
-        elif key_press == Qt.Key_C and QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            if shift:
+                return
+                index = self.currentIndex()
+                selection.select(
+                    index, new 
+                    if index.data(250) > new.data(250) else 
+                    new, index
+                    )
+                self.selectionModel().select(selection, mode.Toggle)
+
+            else: self.setCurrentIndex(new)
+
+        elif key_press == Qt.Key_A and ctrl: self.selectAll()
+                
+        elif key_press == Qt.Key_C and ctrl: self.copy_path()
             
-            self.copy_path()
-            
-        elif key_press == Qt.Key_Return and QApplication.keyboardModifiers() == Qt.AltModifier:
+        elif key_press == Qt.Key_Return and alt:
             
             Properties(self.parent(), self.selectedIndexes())
-                    
+        
+        elif key_press == Qt.Key_Return:
+            
+            self.open_slideshow(self.currentIndex())       
+        
+        else: self.parent().parent().keyPressEvent(sender)
+
 class Model(QAbstractTableModel):
 
     def __init__(self, parent, width):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
-        self.size = int(width * .1889)
+        self.size = int(width * .1888)
         self.images = []
         self.rowsLoaded = 0
 
@@ -485,7 +521,7 @@ class Model(QAbstractTableModel):
                 tag, art, sta, rat, typ, = self.images[ind][1:]
 
                 rat = RATING[rat].lower()
-                typ = 'illustration' if typ else 'photograph'
+                typ = TYPE[typ]
                 tags = self.wrapper.wrap(f'{tag}'.strip().replace('qwd', ''))
                 rest = self.wrapper.wrap(
                     f'Artist: {art.strip()} Rating: {rat} Stars: {sta} Type: {typ}'
@@ -493,8 +529,12 @@ class Model(QAbstractTableModel):
                 return '\n'.join(tags + rest)
 
             elif role == Qt.UserRole: return QVariant(self.images[ind][0])
+            
+            elif role == 250: return ind
+            
+            elif role == 500: return self.images[ind][:6:5]
 
-            elif role == 1000: 
+            elif role == 1000:
                 
                 data = self.images[ind]
                 path = {data[0]} if data[0] else set()
@@ -506,7 +546,7 @@ class Model(QAbstractTableModel):
                 tags.discard('qwd')
                 
                 return path, tags, artist, stars, rating, type
-
+            
         except (IndexError, ValueError): pass
 
         return QVariant()
