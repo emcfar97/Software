@@ -197,6 +197,11 @@ class ManageData(QMainWindow):
         elif key_press == Qt.Key_Escape: self.close()
 
         elif key_press == Qt.Key_F5: self.gallery.populate()
+
+        elif key_press in (Qt.Key_Right, Qt.Key_Left) and sender.modifiers() == Qt.AltModifier:
+
+            direction = 1 if key_press == Qt.Key_Right else 0
+            
             
     def closeEvent(self, sender):
 
