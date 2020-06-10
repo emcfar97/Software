@@ -1,4 +1,4 @@
-import os, shutil, piexif, json, requests, hashlib, imagehash, bs4
+import os, shutil, piexif, json, requests, re
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
@@ -14,18 +14,16 @@ DATAB = sql.connect(
 CURSOR = DATAB.cursor()
 INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, 0)'
 
-def rename(path):
+def rename(path, pattern, string, ext):
     
     for file in os.listdir(path):
     
-        if file.startswith('stunnsfw-'):    
-        # if file.endswith(('.png', '.jpg', '.gif')):
-            
-            old = join(path, file)
-            new = join(path, file.replace('stunnsfw-', 'stunnsfw - '))
-            # new = join(path, f'OptionalTypo - {file}')
-            try: os.rename(old, new)
-            except: FileExistsError: os.remove(old)
+        if file.endswith(ext):
+            new = re.sub(pattern, string, file)
+            file = join(path, file)
+            dest = join(path, new)
+            print(new)
+            # os.rename(file, dest)
             
 def delete(path):
 
@@ -92,9 +90,10 @@ def edit_properties(path):
 
 def extract_files(path):
     
-    for file in [i for i in os.listdir(path) if i.endswith('.json')]:
+    source = join(path, 'Generic')
+    for file in os.listdir(source):
         
-        file = join(path, file)
+        file = join(source, file)
         window = json.load(open(file))[0]['windows']
 
         try:
@@ -144,6 +143,7 @@ def extract_files(path):
 
 def insert_files(path):
 
+    path = join(path, 'Images')
     extract_files(path)
     convert_images(path)
     driver = get_driver(True)
