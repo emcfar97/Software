@@ -1,6 +1,6 @@
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException
+from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException, NoSuchElementException
 
 SITE = 'flickr'
 
@@ -21,7 +21,7 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
 
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     hrefs = [
-        (target.get('href'), SITE) for target in 
+        (target.get('href'), 0, SITE) for target in 
         html.findAll('a', class_='overlay', href=True)
         if (target.get('href'),) not in query
         ]
@@ -44,46 +44,44 @@ def page_handler(driver, hrefs):
         progress(size, num, SITE)
         driver.get(f'https://www.flickr.com{href}')
         
-        try:
-            element = driver.find_element_by_class_name(view)
-            ActionChains(driver).move_to_element(element).perform()
-            for _ in range(50):
-                try: driver.find_element_by_class_name(target).click()
-                except ElementClickInterceptedException: break
-            else: continue
-
-            image = driver.find_element_by_class_name('zoom-large').get_attribute('src')
-            name = get_name(image, 0)
-            save_image(name, image)
-            tags = get_tags(driver, name)
-            tags, rating, exif = generate_tags(
-                general=tags, custom=True, rating=True, exif=True
-                )
-            save_image(name, image, exif)
-
-        except:
+        for _ in range(25):
             try:
-                video = driver.find_element_by_xpath(
-                    '//*[@id="video_1_html5_api"]'
-                    ).get_attribute('src')
-                name = get_name(video, 0, 1)
-                save_image(name, video)
-                tags = get_tags(driver, name)
-                tags, rating = generate_tags(
-                    general=tags, custom=True, rating=True, exif=False
-                    )
+                element = driver.find_element_by_class_name(view)
+                ActionChains(driver).move_to_element(element).perform()
+                driver.find_element_by_class_name(target).click()
 
-            except:
+            except ElementClickInterceptedException:
+                image = driver.find_element_by_class_name(
+                    'zoom-large').get_attribute('src')
+                break
+
+            except NoSuchElementException:
                 try:
-                    status = driver.find_element_by_class_name('statusCode')
-                    if status.text == '404':
-                        execute(UPDATE[3], (
-                            f'404 - {href}', None, None, 
-                            None, None, None, 0, href),
-                            commit=1
-                            )
-                except: continue
-            
+                    image = driver.find_element_by_xpath(
+                        '//*[@id="video_1_html5_api"]'
+                        ).get_attribute('src')
+                    break
+
+                except:
+                    image = None
+                    try:
+                        status = driver.find_element_by_class_name('statusCode')
+                        if status.text == '404':
+                            execute(UPDATE[3], (
+                                f'404 - {href}', None, None, 1, None, None, 0, href),
+                                commit=1
+                                )
+                    except: pass
+                    break
+        
+        if image is None: continue
+        name = get_name(image, 0, 1)
+        save_image(name, image)
+        tags = get_tags(driver, name)
+        tags, rating, exif = generate_tags(
+            general=tags, custom=True, rating=True, exif=True
+            )
+        if name.endswith(('jpg', 'jpeg')): save_image(name, image, exif)
         hash_ = get_hash(name) 
         
         try:
@@ -109,8 +107,8 @@ def setup(initial=True):
         CURSOR.execute(SELECT[2],(SITE,))
         page_handler(driver, CURSOR.fetchall())
     except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes': 
-            setup(False)
+        user = input(f'\n{SITE}: Browser closed\nContinue? ')
+        if user.lower() in 'yes': setup(False)
     except Exception as error: print(f'{SITE}: {error}')
         
     try: driver.close()
