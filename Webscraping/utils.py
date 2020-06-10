@@ -493,6 +493,7 @@ def execute(statement, arguments, many=0, commit=0):
             if many: CURSOR.executemany(statement, arguments)
             else: CURSOR.execute(statement, arguments)
             if commit: DATAB.commit()
+            return 1
         except sql.errors.InternalError: continue
 
 def progress(size, left, site, length=20):
@@ -545,9 +546,9 @@ def login(driver, site, type_=0):
     elif site== 'gelbooru':
 
         driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
-        driver.find_element_by_xpath('//body/div[7]/div/div/form/input[1]').send_keys(USER)
-        driver.find_element_by_xpath('//body/div[7]/div/div/form/input[2]').send_keys(PASS)
-        driver.find_element_by_xpath("//body/div[7]/div/div/form/input[3]").click()
+        driver.find_element_by_xpath('/html/body/div[4]/div[5]/div/div/form/input[1]').send_keys(USER)
+        driver.find_element_by_xpath('/html/body/div[4]/div[5]/div/div/form/input[2]').send_keys(PASS)
+        driver.find_element_by_xpath('/html/body/div[4]/div[5]/div/div/form/input[2]').send_keys(Keys.RETURN)
 
     elif site == 'sankaku':
 
@@ -782,7 +783,7 @@ def generate_tags(
             )
     if rating:
         
-        temp = ' '.join(tags) + ' ' + general
+        temp = f' {" ".join(tags) + " " + general}'
         rating, = [
             key for key in RATING if evaluate(temp, RATING[key])
             ]
