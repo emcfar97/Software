@@ -70,6 +70,8 @@ class Gallery(QWidget):
         try: 
             # if id: SELECT = f'{COMIC} WHERE hash="{id}"'
             # else: SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
+            # filter = self.get_filter()
+            # self.history.put(filter)
             SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
             CURSOR.execute(SELECT)
             images.table.images = CURSOR.fetchall()
@@ -103,7 +105,6 @@ class Gallery(QWidget):
     def get_filter(self):
 
         string = self.ribbon.tags.text()
-        self.history.put(string)
 
         try:
             stars, = re.findall('stars[<>=!]+[0-5]', string)
