@@ -1,7 +1,7 @@
 import os, re
 from datetime import date
+from shutil import copy, copytree
 from win32api import GetLogicalDriveStrings
-from shutil import copy, copytree, ignore_patterns
 from os.path import join, getmtime, isfile, dirname, splitext
 
 def last_modified(path):
@@ -54,8 +54,10 @@ for drive in drives:
             val = get_version(val)
 
             if isfile(key): copy(key, val)
-            else: copytree(key, val, ignore=ignore_patterns('*Reference'))
+            else: copytree(key, val)
 
             print(f'\t{val}') 
 
-print('Done')
+while True:
+    input('\nDone')
+    break
