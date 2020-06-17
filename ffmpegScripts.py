@@ -3,23 +3,22 @@ from ffprobe import FFProbe
 from os import remove, listdir, getcwd
 from os.path import join, exists, splitext
 
-def get_stream(folder, title=0):
+def get_stream(folder, files, text=0):
     
-    if title:
+    if text:
         stream = [
             ffmpeg.input(join(folder, file)).drawtext(
-                text=file.splitext()[0], fontsize=42, 
-                x=int(metadata.width) * .75, 
-                y=int(metadata.height) * .90
+                text=splitext(file)[0], fontsize=42, 
+                x=int(FFProbe(join(folder, file)).streams[0].width) * .75, 
+                y=int(FFProbe(join(folder, file)).streams[0].height) * .90
                 ) 
-            for file in listdir(folder)
+            for file in files
             ]
     else:
         stream = [
-            ffmpeg.input(join(folder, file)) 
-            for file in listdir(folder)
+            ffmpeg.input(join(folder, file)) for file in files
             ]
-    new = join(dest, listdir(folder)[0]).replace('flv', 'mp4')
+    new = join(dest, files[0]).replace(splitext(files[0])[-1], '.mp4')
     
     return stream, new
 
@@ -31,11 +30,12 @@ def get_folders():
         start, end = targets.split('..')
         return tuple(str(i) for i in range(int(start), int(end) + 1))
         
-    else: return tuple(targets.split())
+    return tuple(targets.split())
     
-root = getcwd()[:2].upper()
-source = rf'{root}\Users\Emc11\Videos\Captures'
-dest = rf'{root}\Users\Emc11\Dropbox\Videos\Captures'
+ROOT = getcwd()[:2].upper()
+source = rf'{ROOT}\Users\Emc11\Videos\Captures'
+dest = rf'{ROOT}\Users\Emc11\Dropbox\Videos\Captures'
+EXT = 'flv', 'mkv'
 
 while True:
     user_input = input(
@@ -43,38 +43,41 @@ while True:
         )
     try:
         if  user_input ==  '1': # convert files
+                
+            text = 1 if input('Overlay text? ').lower() in 'yes' else 0
 
             files = [
                 (
                     join(source, file), splitext(file)[0], 
-                    join(dest, file.replace('.flv', '.mp4'))
+                    join(dest, file.replace(splitext(file)[1], '.mp4'))
                     )
-                for file in listdir(source) if file.endswith('flv')
+                for file in listdir(source) if file.endswith(EXT)
                 ]
-            for flv, title, mp4 in files:
-                text = input('Overlay text? ')
+            
+            for file, title, mp4 in files:
                 try: 
-                    if text.lower() in 'yes':
-                        metadata = FFProbe(flv).streams[0]
-                        ffmpeg.input(flv).drawtext(
+                    if text:
+                        metadata = FFProbe(file).streams[0]
+                        ffmpeg.input(file).drawtext(
                             text=title, fontsize=42, 
                             x=int(metadata.width) * .75, 
                             y=int(metadata.height) * .90
                         ).output(mp4, crf=20, preset='fast').run()
                     else: 
-                        ffmpeg.input(flv).output(mp4, crf=20, preset='fast').run()
+                        ffmpeg.input(file).output(mp4, crf=20, preset='fast').run()
                 except Exception as error: print(error); continue
-                remove(flv)
+                remove(file)
 
         elif user_input == '2': # concat files
             
+            text = 1 if input('Overlay text? ').lower() in 'yes' else 0
             targets = get_folders()
             
             for folder in listdir(source):
                 
                 if not folder.endswith((targets)): continue
-                text = 1 if input('Overlay text? ').lower() in 'yes' else 0
-                stream, new = get_stream(join(source, folder), text)
+                folder = join(source, folder)
+                stream, new = get_stream(folder, listdir(folder), text)
                 
                 try: ffmpeg.concat(*stream).output(new, crf=20, preset='fast').run()
                 except Exception as error: print(error); continue
@@ -107,7 +110,7 @@ while True:
             url = input('Enter url: ')
             name = f'{url.split("/")[3]}.mp4'
             ffmpeg.input(url).output(
-                rf'{root}\Users\Emc11\Downloads\{name}').run()
+                rf'{ROOT}\Users\Emc11\Downloads\{name}').run()
             
         elif user_input == '5':
         
