@@ -22,10 +22,10 @@ def get_version(paths):
 
     return re.sub(' [0-9]+', f' {version + 1}', latest)
 
-root = os.getcwd()[:3].upper()
-source = rf'{root}Users\Emc11\Dropbox'
+ROOT = os.getcwd()[:3].upper()
+SOURCE = rf'{ROOT}Users\Emc11\Dropbox'
 drives = GetLogicalDriveStrings().split('\000')[:-1]
-drives.remove(root)
+drives.remove(ROOT)
 
 for drive in drives:
     
@@ -38,7 +38,7 @@ for drive in drives:
         for path in dirs + files:
             
             dropbox = re.sub(
-                r' - \d+', '', join(root.replace(drive[:-1], source), path)
+                r' - \d+', '', join(root.replace(drive[:-1], SOURCE), path)
                 )
             if dropbox.endswith('scriv'):
                 
