@@ -66,6 +66,8 @@ class Preview(QWidget):
                 width, height, Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
+            # ratio = pixmap.width() / pixmap.height()
+            # self. = not (.5 <= ratio <= 2)
 
         except (ValueError, AttributeError): pixmap = QPixmap()
                 
