@@ -1,7 +1,6 @@
-from PIL import Image
+import qimage2ndarray
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-
 from . import *
 
 class Slideshow(QMainWindow):
@@ -63,12 +62,18 @@ class Slideshow(QMainWindow):
                 transformMode=Qt.SmoothTransformation
                 )
             self.label.setPixmap(pixmap)
+            self.video.player.stop()
         
         elif path.endswith(('gif', '.webm', '.mp4')):
             
-            self.label.setPixmap(QPixmap())
+            image = VideoCapture(path).read()[-1]
+            image = qimage2ndarray.array2qimage(image).rgbSwapped()
+            pixmap = QPixmap(image).scaled(
+                self.width(), self.height(), Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
+            self.label.setPixmap(pixmap)
             self.video.update(path)
-            self.stack.setCurrentIndex(1)
         
     def keyPressEvent(self, sender):
 
@@ -92,10 +97,9 @@ class videoPlayer(QVideoWidget):
     def __init__(self, parent):
         
         super().__init__(parent)
-        self.replay = True
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self)
-        self.player.stateChanged.connect(self.mediaStatusChanged)
+        self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
         self.player.setVolume(50) 
 
     def update(self, path):
@@ -104,12 +108,21 @@ class videoPlayer(QVideoWidget):
             QMediaContent(QUrl.fromLocalFile(path))
             )
         self.player.play()
-        self.replay = True
         self.setFocus()
+
+    def mediaStatusChanged(self, status):
+        
+        if status == QMediaPlayer.EndOfMedia: 
+            self.player.play()
+
+        elif status != QMediaPlayer.LoadingMedia:
+            self.parent().setCurrentIndex(1) 
 
     def keyPressEvent(self, sender):
         
         key_press = sender.key()
+        ctrl = sender.modifiers() == Qt.ControlModifier
+
         if key_press == Qt.Key_Space:
             
             status = self.player.state()
@@ -121,45 +134,47 @@ class videoPlayer(QVideoWidget):
         elif key_press == Qt.Key_End: self.player.setPosition(0)  
             
         elif key_press == Qt.Key_Period:
-            
-            self.player.setPosition(self.player.position() + 5000)
+
+            if ctrl:
+                self.player.setPosition(self.player.position() + 50)
+            else:
+                self.player.setPosition(self.player.position() + 5000)
             
         elif key_press == Qt.Key_Comma:
             
-            self.player.setPosition(self.player.position() - 5000)
+            if ctrl:
+                self.player.setPosition(self.player.position() - 50)
+            else:
+                self.player.setPosition(self.player.position() - 5000)
         
         elif key_press == Qt.Key_Up:
             
-            self.player.setVolume(self.player.volume() + 10)
+            if ctrl:
+                self.player.setPosition(self.player.volume() + 1)
+            else:
+                self.player.setVolume(self.player.volume() + 10)
             
         elif key_press == Qt.Key_Down:
             
-            self.player.setVolume(self.player.volume() - 10)
+            if ctrl:
+                self.player.setPosition(self.player.volume() - 1)
+            else:
+                self.player.setVolume(self.player.volume() - 10)
     
         elif key_press == Qt.Key_Right:
             
-            self.replay = False
-            self.player.stop()
-            self.parent().setCurrentIndex(0)
             self.parent().parent().move(+1)
+            self.parent().setCurrentIndex(0)
         
         elif key_press == Qt.Key_Left:
             
-            self.replay = False
-            self.player.stop()
+            self.parent().parent().move(-1)
             self.parent().setCurrentIndex(0)
-            self.parent().parent().move(-1) 
         
-        elif key_press == Qt.Key_Escape: 
+        elif key_press == Qt.Key_Escape:
             
-            self.replay = False
             self.player.stop()
             self.parent().keyPressEvent(sender)
-
-    def mediaStatusChanged(self, status):
-        
-        if self.replay and status == QMediaPlayer.StoppedState: 
-            self.player.play()
     
     def wheelEvent(self, sender):
         
