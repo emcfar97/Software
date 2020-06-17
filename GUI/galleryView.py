@@ -2,8 +2,9 @@ import re, textwrap, queue, qimage2ndarray
 from . import *
 from .propertiesView import *
 from PyQt5.QtCore import QAbstractTableModel, QVariant, QModelIndex, QItemSelectionModel, QItemSelection, Qt
-from PyQt5.QtWidgets import QApplication, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QShortcut
+from PyQt5.QtWidgets import QApplication, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QShortcut, QPushButton, QStyle
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
+from PyQt5.QtGui import QIcon
 
 RATING = {
     'Safe': 'rating=0', 'Questionable': 'rating<=1', 'Explicit': '',
@@ -53,13 +54,12 @@ class Gallery(QWidget):
         self.ribbon = Ribbon(self)
         self.images = imageView(self)
         self.status = StatusBar(self)
-        self.history = queue.Queue(50)
          
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
         self.layout.addWidget(self.status)
     
-    def populate(self, sender=None, limit=4500, id=0):
+    def populate(self, sender=None, limit=5000, id=0):
          
         if self.type == 'Manage Data': self.parent().preview.show_image(None)
         
@@ -103,8 +103,9 @@ class Gallery(QWidget):
         # self.status.modify(images.total())
 
     def get_filter(self):
-
+    
         string = self.ribbon.tags.text()
+        if string: self.ribbon.update(string)
 
         try:
             stars, = re.findall('stars[<>=!]+[0-5]', string)
@@ -149,7 +150,7 @@ class Gallery(QWidget):
             query.append('MATCH(tags, artist) AGAINST("qwd -animated" IN BOOLEAN MODE)')
 
             return f'WHERE {" AND ".join(i for i in query if i)} ORDER BY RAND()'
-
+  
     def get_tags(self, string):
         
         if string:
@@ -174,7 +175,7 @@ class Gallery(QWidget):
             return f' ORDER BY {column} {ORDER[order]}'
 
         return ''
-      
+    
 class Ribbon(QWidget):
      
     def __init__(self, parent):
@@ -185,19 +186,47 @@ class Ribbon(QWidget):
         
     def configure_gui(self):
          
+        self.undo = []
+        self.redo = []
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
-         
+
     def create_widgets(self):
         
         parent = self.parent()
+
+        # Navigate history
+        self.history = QHBoxLayout()
+        self.layout.addLayout(self.history)
+
+        self.back = QPushButton()
+        self.forward = QPushButton()
+        self.menu = QPushButton()
+
+        self.back.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_ArrowLeft')))
+        self.forward.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_ArrowRight')))
+        self.menu.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_ArrowDown')))
+        
+        self.back.clicked.connect(self.go_back)
+        self.forward.clicked.connect(self.go_forward)
+        self.menu.clicked.connect(self.menu.showMenu)
+        
+        for button in [self.back, self.forward, self.menu]:
+            button.setEnabled(False)
+            self.history.addWidget(button)
+
+        # Search function
         self.select = QFormLayout()
-        self.select.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
         self.layout.addLayout(self.select)
         
         self.tags = QLineEdit(self)
         self.tags.setFixedWidth(250)
-        self.tags.textEdited.connect(parent.populate)
+        self.timer = QTimer(self.tags)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(parent.populate)
+        self.tags.textChanged.connect(
+            lambda x: self.timer.start(400)
+            )
         self.select.addRow('Search:', self.tags)
         
         if parent.parent().windowTitle() == 'Manage Data':
@@ -208,7 +237,45 @@ class Ribbon(QWidget):
             self.tags.returnPressed.connect(parent.parent().start_session)
             self.time.returnPressed.connect(parent.parent().start_session)
             self.select.addRow('Time:', self.time)
- 
+    
+    def update(self, string=None):
+
+        menu = QMenu(self)
+
+        if string:
+            self.undo.append(string)
+            self.redo.clear()
+
+        self.back.setEnabled(bool(self.undo))
+        self.forward.setEnabled(bool(self.redo))
+        self.menu.setEnabled(bool(self.undo + self.redo))
+        
+        for num, i in enumerate(self.undo[::-1]):
+            action = QAction(i, menu, checkable=True)
+            if num == 0: action.setChecked(True)
+            menu.addAction(action)
+        for i in self.redo:
+            action = QAction(i, menu, checkable=True)
+            menu.addAction(action)
+        
+        self.menu.setMenu(menu)
+        
+        if not string:
+            string = self.undo[-1]
+            self.tags.setText(string)
+
+    def go_back(self):
+        
+        if self.undo:
+            self.redo.append(self.undo.pop())
+            self.update()
+
+    def go_forward(self):
+        
+        if self.redo:
+            self.undo.append(self.redo.pop())
+            self.update()
+
 class StatusBar(QLabel):
      
     def __init__(self, parent):
