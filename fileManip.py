@@ -96,10 +96,10 @@ def extract_files(path):
         file = join(source, file)
         window = json.load(open(file))[0]['windows']
 
-        try:
-            for val in window.values():
-                for url in val.values():
-                    
+        for val in window.values():
+            for url in val.values():
+                
+                try:
                     image = url['url']
                     if url['url'] == 'about:blank':
                         image = f'https://{url["title"]}'
@@ -137,13 +137,11 @@ def extract_files(path):
                         with open(name, 'wb') as temp:
                             temp.write(requests.get(image).content)
             
+                except: print(name)
             os.remove(file)
-
-        except: continue
 
 def insert_files(path):
 
-    path = join(path, 'Images')
     extract_files(path)
     convert_images(path)
     driver = get_driver(True)
@@ -194,7 +192,7 @@ def insert_files(path):
     DATAB.close()
 
 paths = [
-    rf'{ROOT}\Users\Emc11\Downloads'
+    rf'{ROOT}\Users\Emc11\Downloads\Images'
     ]
     
 for path in paths: insert_files(path)
