@@ -5,25 +5,20 @@ from . import *
 
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent, gallery, index):
+    def __init__(self, parent, resolution):
         
         super().__init__()
         self.parent = parent
-        self.configure_gui()
+        self.configure_gui(resolution)
         self.create_widgets()
-        self.gallery = gallery
-        self.index = index
-        self.move(0)
-        self.showFullScreen()
     
-    def configure_gui(self):
+    def configure_gui(self, resolution):
         
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
-        resolution = self.parent.size()
 
         self.setGeometry(
-            0, 0, resolution.width(),  resolution.height() + 20
+            0, 0, resolution.width(),  resolution.height()
             )
         self.setStyleSheet('background: black')
           
@@ -45,6 +40,13 @@ class Slideshow(QMainWindow):
             lambda: self.setCursor(Qt.BlankCursor)
             )               
 
+    def update(self, gallery, index):
+
+        self.gallery = gallery
+        self.index = index
+        self.move(0)
+        self.showFullScreen()
+
     def move(self, delta):
         
         self.index = (self.index + delta) % len(self.gallery)
@@ -61,29 +63,53 @@ class Slideshow(QMainWindow):
                 self.width(), self.height(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
-            self.label.setPixmap(pixmap)
-            self.video.player.stop()
+            path = None
         
-        elif path.endswith(('gif', '.webm', '.mp4')):
+        elif path.endswith(('.gif', '.webm', '.mp4')):
             
             image = VideoCapture(path).read()[-1]
             image = qimage2ndarray.array2qimage(image).rgbSwapped()
             pixmap = QPixmap(image).scaled(
                 self.width(), self.height(), Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
                 )
-            self.label.setPixmap(pixmap)
-            self.video.update(path)
+                
+        self.label.setPixmap(pixmap)
+        self.video.update(path)
         
     def keyPressEvent(self, sender):
 
         key_press = sender.key()
+        video = self.stack.currentIndex()
+        ctrl = sender.modifiers() == Qt.ControlModifier
             
-        if key_press == Qt.Key_Right: self.move(+1)
-        elif key_press == Qt.Key_Left: self.move(-1)        
-        elif key_press == Qt.Key_Escape: 
+        if key_press in (Qt.Key_Right, Qt.Key_Left):
             
-            self.stack.setCurrentIndex(0)
+            sign = 1 if key_press == Qt.Key_Right else -1
+            self.move(sign * 1)
+            if video: self.stack.setCurrentIndex(0)
+            
+        elif video and key_press in (Qt.Key_Home, Qt.Key_End):
+            
+            if key_press == Qt.Key_Home: self.player.setPosition(0)
+            else: self.player.setPosition(0)
+            
+        elif video and key_press in (Qt.Key_Period, Qt.Key_Comma):
+
+            sign = 1 if key_press == Qt.Key_Period else -1
+            if ctrl: self.video.position(sign * 50)
+            else: self.video.position(sign * 5000)
+        
+        elif video and key_press in (Qt.Key_Up, Qt.Key_Down):
+
+            sign = 1 if key_press == Qt.Key_Up else -1
+            if ctrl: self.video.position(sign * 1)
+            else: self.video.position(sign * 10)
+        
+        elif video and key_press == Qt.Key_Space: self.video.pause()
+
+        elif key_press == Qt.Key_Escape:
+            
+            if video: self.video.stop()
             self.hide()
             
     def mouseMoveEvent(self, sender):
@@ -92,93 +118,48 @@ class Slideshow(QMainWindow):
         self.setCursor(Qt.ArrowCursor)
         self.timer.start(1500)
     
+    def wheelEvent(self, sender):
+        
+        self.video.volume(sender.angleDelta().y() // 12)  
+    
 class videoPlayer(QVideoWidget):
 
     def __init__(self, parent):
         
         super().__init__(parent)
         self.player = QMediaPlayer()
+        self.player.setVolume(50) 
         self.player.setVideoOutput(self)
         self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
-        self.player.setVolume(50) 
 
     def update(self, path):
-
-        self.player.setMedia(
-            QMediaContent(QUrl.fromLocalFile(path))
-            )
+        
+        if path: path = QUrl.fromLocalFile(path)
+        self.player.setMedia(QMediaContent(path))
         self.player.play()
-        self.setFocus()
+    
+    def pause(self):
+
+        status = self.player.state()
+        if status == QMediaPlayer.PlayingState: self.player.pause()
+        elif status == QMediaPlayer.PausedState: self.player.play()
+
+    def position(self, delta):
+
+        self.player.setPosition(self.player.position() + delta)
+
+    def volume(self, delta):
+        
+        if self.player.isAudioAvailable(): 
+            
+            self.player.setVolume(self.player.volume() + delta)
+
+    def stop(self): self.player.stop()
 
     def mediaStatusChanged(self, status):
         
-        if status == QMediaPlayer.EndOfMedia: 
-            self.player.play()
+        if status == QMediaPlayer.EndOfMedia: self.player.play()
 
-        elif status != QMediaPlayer.LoadingMedia:
-            self.parent().setCurrentIndex(1) 
+        elif status not in (2, 1):
 
-    def keyPressEvent(self, sender):
-        
-        key_press = sender.key()
-        ctrl = sender.modifiers() == Qt.ControlModifier
-
-        if key_press == Qt.Key_Space:
-            
-            status = self.player.state()
-            if status == QMediaPlayer.PlayingState: self.player.pause()
-            elif status == QMediaPlayer.PausedState: self.player.play()
-            
-        elif key_press == Qt.Key_Home: self.player.setPosition(0)
-            
-        elif key_press == Qt.Key_End: self.player.setPosition(0)  
-            
-        elif key_press == Qt.Key_Period:
-
-            if ctrl:
-                self.player.setPosition(self.player.position() + 50)
-            else:
-                self.player.setPosition(self.player.position() + 5000)
-            
-        elif key_press == Qt.Key_Comma:
-            
-            if ctrl:
-                self.player.setPosition(self.player.position() - 50)
-            else:
-                self.player.setPosition(self.player.position() - 5000)
-        
-        elif key_press == Qt.Key_Up:
-            
-            if ctrl:
-                self.player.setPosition(self.player.volume() + 1)
-            else:
-                self.player.setVolume(self.player.volume() + 10)
-            
-        elif key_press == Qt.Key_Down:
-            
-            if ctrl:
-                self.player.setPosition(self.player.volume() - 1)
-            else:
-                self.player.setVolume(self.player.volume() - 10)
-    
-        elif key_press == Qt.Key_Right:
-            
-            self.parent().parent().move(+1)
-            self.parent().setCurrentIndex(0)
-        
-        elif key_press == Qt.Key_Left:
-            
-            self.parent().parent().move(-1)
-            self.parent().setCurrentIndex(0)
-        
-        elif key_press == Qt.Key_Escape:
-            
-            self.player.stop()
-            self.parent().keyPressEvent(sender)
-    
-    def wheelEvent(self, sender):
-        
-        if self.player.isAudioAvailable():
-            
-            delta = sender.angleDelta().y() // 12
-            self.player.setVolume(self.player.volume() + delta)           
+            self.parent().setCurrentIndex(1)      
