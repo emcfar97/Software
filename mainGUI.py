@@ -125,6 +125,9 @@ class ManageData(QMainWindow):
         
         self.gallery = galleryView.Gallery(self)
         self.preview = previewView.Preview(self, self.windowTitle())
+        self.slideshow = sliderView.Slideshow(
+            self, Qapp.desktop().screenGeometry()
+            )
         
         self.layout.addWidget(self.gallery)
         self.layout.addWidget(self.preview)
@@ -134,8 +137,7 @@ class ManageData(QMainWindow):
     
     def start_slideshow(self, gallery, index):
 
-        try: self.slideshow.close()
-        except: self.slideshow = sliderView.Slideshow(self, gallery, index)
+        self.slideshow.update(gallery, index)
 
     def change_records(self, gallery, *args):
         
@@ -209,8 +211,7 @@ class ManageData(QMainWindow):
     def closeEvent(self, sender):
 
         self.close()
-        try: self.slideshow.close()
-        except: pass
+        self.slideshow.close()
         self.parent().show()
  
 class GestureDraw(QMainWindow):
@@ -252,13 +253,16 @@ class GestureDraw(QMainWindow):
         time = self.gallery.ribbon.time.text()
         
         if gallery and time:
+
             if ':' in time:
-                m, s = time.split(':')
-                time = int(m) * 60 + int(s)
-            elif time: time = int(time)
+                min, sec = time.split(':')
+                time = int(min) * 60 + int(sec)
+            else: time = int(time)
             
             self.preview.start(gallery, time)
             self.stack.setCurrentIndex(1)
+            self.gallery.ribbon.tags.clear()
+            self.gallery.ribbon.time.clear()
    
     def keyPressEvent(self, sender):
         
@@ -268,14 +272,12 @@ class GestureDraw(QMainWindow):
 
             if self.stack.currentIndex():
             
-                self.timer.close()
-                self.gallery.ribbon.tags.clear()
-                self.gallery.ribbon.time.clear()
                 self.stack.setCurrentIndex(0)
-                self.gallery.populate()
-            
+                # self.gallery.populate()
+                            
             else: self.close()
 
+        elif key_press == Qt.Key_Space: self.preview.pause()
         elif key_press == Qt.Key_F5: self.gallery.populate()
     
     def closeEvent(self, sender):
@@ -334,3 +336,5 @@ if __name__ == '__main__':
     app = App()
     
     Qapp.exec_()
+
+# animated -dancing -sex -cum -masturbation -lactation -exercise -pregnant  type=photo
