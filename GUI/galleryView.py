@@ -4,7 +4,6 @@ from .propertiesView import *
 from PyQt5.QtCore import QAbstractTableModel, QVariant, QModelIndex, QItemSelectionModel, QItemSelection, Qt
 from PyQt5.QtWidgets import QApplication, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QShortcut, QPushButton, QStyle
 from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
-from PyQt5.QtGui import QIcon
 
 RATING = {
     'Safe': 'rating=0', 'Questionable': 'rating<=1', 'Explicit': '',
@@ -61,18 +60,13 @@ class Gallery(QWidget):
     
     def populate(self, sender=None, limit=5000, id=0):
          
-        if self.type == 'Manage Data': self.parent().preview.show_image(None)
-        
         images = self.images
         images.clearSelection()
         images.table.rowsLoaded = 0
 
         try: 
-            # if id: SELECT = f'{COMIC} WHERE hash="{id}"'
-            # else: SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
-            # filter = self.get_filter()
-            # self.history.put(filter)
-            SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
+            if id: SELECT = f'{COMIC} WHERE hash="{id}"'
+            else: SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
             CURSOR.execute(SELECT)
             images.table.images = CURSOR.fetchall()
         except: images.table.images = []
@@ -81,6 +75,10 @@ class Gallery(QWidget):
         images.resizeRowsToContents()
         images.resizeColumnsToContents()
         self.status.modify(images.total())
+        
+        if self.type == 'Manage Data': 
+            
+            self.parent().preview.show_image(None)
         
     # def populate(self, sender=None, limit=3500):
         
@@ -103,54 +101,61 @@ class Gallery(QWidget):
         # self.status.modify(images.total())
 
     def get_filter(self):
-    
+        
+        query = ['path LIKE "C:%"']
+        if self.parent().windowTitle() == 'Gesture Draw':
+
+            query.append('date_used <= Now() - INTERVAL 2 MONTH')
+
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
 
-        try:
-            stars, = re.findall('stars[<>=!]+[0-5]', string)
-            string = string.replace(stars, '')
-            stars = stars.replace('==', '=').lower()
-        except ValueError: stars = ''
-
-        try:
-            rating, = re.findall(
-                'rating[<>=!]+(?:safe|questionable|explicit?)', string
-                )
-            string = string.replace(rating, '')
-            value, = re.findall('(\w+)\Z', rating)
-            rating = re.sub('(\w+)\Z', RATING[value], rating).lower()
-        except: rating = RATING[self.rating.checkedAction().text()]
-        
-        try:
+        try: # Get type
             type_, = re.findall('type=(?:photo|illus|comics?)', string)
             string = string.replace(type_, '')
             type_ = re.sub('(\w+)\Z', TYPE[type_[5:]][1], type_)
         except: type_ = TYPE[self.type.checkedAction().text().lower()][0]
+        finally: query.append(type_)
+
+        try: # Get stars
+            stars, = re.findall('stars[<>=!]+[0-5]', string)
+            string = string.replace(stars, '')
+            stars = stars.replace('==', '=')
+        except ValueError: stars = ''
+        finally: query.append(stars.lower())
+
+        try: # Get rating
+            rating, = re.findall(
+                'rating[<>=!]+(?:safe|questionable|explicit?)', string
+                )
+            string = string.replace(rating, '')
+            rating = re.sub(
+                '(\w+)\Z', RATING[re.findall('(\w+)\Z', rating)], rating
+                )
+        except: rating = RATING[self.rating.checkedAction().text()]
+        finally: query.append(rating.lower())
         
-        try:
-            artist, = re.findall('artist=\w+', string)
+        try: # Get artist
+            artist, = re.findall('artist:\w+', string)
             string = string.replace(artist, '')
+            artist = artist.replace(':', '=')
         except: artist = ''
-
-        query = [
-            'path LIKE "C:%"', type_, rating, stars, 
-            artist.lower(), self.get_tags(string.strip())
-            ]
-
-        if self.parent().windowTitle() == 'Manage Data':
-
-            return f'WHERE {" AND ".join(i for i in query if i)} {self.get_order()}'
+        query.append(artist.lower())
         
-        elif 0:
-            return f'WHERE path LIKE "C:%" GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
+        try: # Get path
+            path, =  re.findall('path:.+jpe*g|gif|webm|mp4', string)
+            string = string.replace(path, '')
+            path = path.replace('path:', 'path LIKE "%') + '"'
+            path = re.sub('.:', 'C:', path)
+        except: path = ''
+        finally: query.append(path)
 
-        else:
-            query.append('date_used <= Now() - INTERVAL 2 MONTH')
-            query.append('MATCH(tags, artist) AGAINST("qwd -animated" IN BOOLEAN MODE)')
+        query.append(self.get_tags(string.strip()))
 
-            return f'WHERE {" AND ".join(i for i in query if i)} ORDER BY RAND()'
-  
+        return f'WHERE {" AND ".join(i for i in query if i)} {self.get_order()}'
+        
+        return f'WHERE GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
+
     def get_tags(self, string):
         
         if string:
@@ -195,7 +200,7 @@ class Ribbon(QWidget):
         
         parent = self.parent()
 
-        # Navigate history
+        # History navigation
         self.history = QHBoxLayout()
         self.layout.addLayout(self.history)
 
@@ -203,9 +208,15 @@ class Ribbon(QWidget):
         self.forward = QPushButton()
         self.menu = QPushButton()
 
-        self.back.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_ArrowLeft')))
-        self.forward.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_ArrowRight')))
-        self.menu.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_ArrowDown')))
+        self.back.setIcon(
+            self.style().standardIcon(getattr(QStyle, 'SP_ArrowLeft'))
+            )
+        self.forward.setIcon(
+            self.style().standardIcon(getattr(QStyle, 'SP_ArrowRight'))
+            )
+        self.menu.setIcon(
+            self.style().standardIcon(getattr(QStyle, 'SP_ArrowDown'))
+            )
         
         self.back.clicked.connect(self.go_back)
         self.forward.clicked.connect(self.go_forward)
@@ -213,6 +224,7 @@ class Ribbon(QWidget):
         
         for button in [self.back, self.forward, self.menu]:
             button.setEnabled(False)
+            # button.setAlignment(Qt.AlignTop)
             self.history.addWidget(button)
 
         # Search function
@@ -225,7 +237,7 @@ class Ribbon(QWidget):
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(parent.populate)
         self.tags.textChanged.connect(
-            lambda x: self.timer.start(400)
+            lambda x: self.timer.start(660)
             )
         self.select.addRow('Search:', self.tags)
         
@@ -234,6 +246,7 @@ class Ribbon(QWidget):
             
         else:
             self.time = QLineEdit(self)
+            self.time.setFixedWidth(250)
             self.tags.returnPressed.connect(parent.parent().start_session)
             self.time.returnPressed.connect(parent.parent().start_session)
             self.select.addRow('Time:', self.time)
@@ -243,8 +256,13 @@ class Ribbon(QWidget):
         menu = QMenu(self)
 
         if string:
-            self.undo.append(string)
-            self.redo.clear()
+            if self.undo:
+                if string != self.undo[-1]:
+                    self.undo.append(string)
+                    self.redo.clear()
+            else:
+                self.undo.append(string)
+                self.redo.clear()
 
         self.back.setEnabled(bool(self.undo))
         self.forward.setEnabled(bool(self.redo))
@@ -349,7 +367,10 @@ class imageView(QTableView):
         order = [QActionGroup(sortMenu), QActionGroup(sortMenu)]
         for i in ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random']:
             action = QAction(i, sortMenu, checkable=True)
-            if i == 'Rowid': action.setChecked(True)
+            if i == 'Rowid' and parent.parent().windowTitle() == 'Manage Data':
+                action.setChecked(True)
+            elif i=='Random' and parent.parent().windowTitle()=='Gesture Draw':
+                action.setChecked(True)
             order[0].triggered.connect(parent.populate)
             order[0].addAction(action)
             sortMenu.addAction(action)
@@ -398,6 +419,7 @@ class imageView(QTableView):
             )
         try:
             menu.addAction(
+
                 QAction('Delete', menu, triggered=parent.parent().delete_records)
                 )
             menu.addSeparator()
@@ -485,10 +507,10 @@ class imageView(QTableView):
             
             index = self.currentIndex()
             row, col = index.row(), index.column()
-            direction = 1 if key_press == Qt.Key_PageDown else -1
+            sign = 1 if key_press == Qt.Key_PageDown else -1
             
-            if not 0 <= (row + direction) < self.table.rowCount(): return
-            row += direction * 5
+            if not 0 <= (row + sign) < self.table.rowCount(): return
+            row += sign * 5
             new = self.table.index(row, col)
 
             if shift:
@@ -549,12 +571,10 @@ class Model(QAbstractTableModel):
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
     def rowCount(self, parent=None): 
-        
-        return (
-            (len(self.images) // self.columnCount())
-             + 
-            bool(len(self.images) % self.columnCount())    
-            )
+
+        rows, cols = divmod(len(self.images), self.columnCount())
+
+        return rows + bool(cols)
 
     def columnCount(self, parent=None): return 5
 
