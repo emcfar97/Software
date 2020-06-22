@@ -33,18 +33,22 @@ class Preview(QWidget):
         self.label = QLabel(self)
         self.label.setGeometry(0, 0, self.width(), self.height())
         self.label.setAlignment(Qt.AlignCenter)
+        self.timer = Countdown(self)
         
     def start(self, gallery, time):
     
         self.index = 0
         self.gallery = gallery
+        self.time = time
+        self.move(0)
         
-        self.timer = Countdown(self, time)
+        self.timer.time = self.time
         self.timer.setGeometry(
             self.width() * .8, self.height() * .8, 
             75, 75
-            )
-        self.move(0)
+            )        
+        min, sec = divmod(time, 60)
+        self.timer.setText(f'{min}:{sec:02d}')
         self.timer.timer.start(1000)                
                 
     def move(self, delta):
@@ -72,33 +76,18 @@ class Preview(QWidget):
         except (ValueError, AttributeError): pixmap = QPixmap()
                 
         self.label.setPixmap(pixmap)
-        
-    def keyPressEvent(self, sender):
+    
+    def pause(self):
 
-        key_press = sender.key()
-        if self.type == 'GestureDraw':
-            
-            if key_press == Qt.Key_Space: 
-                
-                timer = self.timer.timer
-                if timer.isActive(): timer.stop()
-                else: timer.start(1000)  
-                
-            elif key_press == Qt.Key_Escape: 
-
-                parent = self.parent()
-                self.timer.timer.close()
-                parent.stack.setCurrentIndex(0)
-                parent.gallery.ribbon.tags.clear()
-                parent.gallery.ribbon.time.clear()
-                parent.gallery.populate()
-                        
+        if self.timer.timer.isActive(): 
+            self.timer.timer.stop()
+        else: self.timer.timer.start(1000)
+                                
 class Countdown(QLabel):
     
-    def __init__(self, parent, time):
+    def __init__(self, parent):
         
         super().__init__(parent)
-        self.time = [time, time]
         self.timer = QTimer()
         self.setAlignment(Qt.AlignCenter)
         self.timer.timeout.connect(self.countdown)
@@ -106,15 +95,15 @@ class Countdown(QLabel):
 
     def countdown(self):
         
-        if self.time[1]:
+        while self.time:
             
-            self.time[1] -= 1
-            self.setText(f'{self.time[1] // 60}:{self.time[1] % 60:02d}')
-            if self.time[1] <= 5: self.setStyleSheet(
-                'background: white; color: red; font: 20px'
-                )
-            else: self.setStyleSheet(
-                'background: white; color: black; font: 20px'
+            self.time -= 1
+            min, sec = divmod(self.time, 60)
+            self.setText(f'{min}:{sec:02d}')
+            self.setStyleSheet(
+                f'''background: white; 
+                color: {"red" if self.time <= 5 else "black"}; 
+                font: 20px'''
                 )   
         
         else: 
@@ -125,15 +114,19 @@ class Countdown(QLabel):
             if parent.index + 1 < len(parent.gallery):
                 
                 parent.move(+1)
-                self.time[1] = self.time[0]
+                self.time = parent.time
+                min, sec = divmod(self.time, 60)
+                self.setText(f'{min}:{sec:02d}')
+                self.setStyleSheet(
+                    f'''background: white; 
+                    color: {"red" if self.time <= 5 else "black"}; 
+                    font: 20px'''
+                    )  
                 self.timer.start(1000)  
                 
             else:
                 self.timer.stop()
-                null = QPixmap(), QMovie()
-                parent.label.setPixmap(null[0])
-                parent.label.setMovie(null[1])
-                
+                parent.label.setPixmap(QPixmap())
                 self.setText('End of session')
                 self.setStyleSheet(
                     'background: black; color: white; font: 17px'
