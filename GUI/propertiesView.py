@@ -78,7 +78,7 @@ class Properties(QMainWindow):
         type = set.intersection(*[i[5] for i in self.data])
         
         if paths: self.path.setText(paths.pop())
-        if tags: self.tags.setText(' '.join(tags))
+        if tags: self.tags.setText(' '.join(sorted(tags)))
         if artist: self.artist.setText(' '.join(artist))
         if stars: self.stars.setCurrentIndex(stars.pop())
         if rating: self.rating.setCurrentIndex(rating.pop() + 1)
