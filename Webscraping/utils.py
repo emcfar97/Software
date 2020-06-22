@@ -6,15 +6,21 @@ from os.path import join, splitext
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 import mysql.connector as sql
 
-ROOT = os.getcwd()[:2].upper()
-PATH = rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん'
-HASHER = hashlib.md5()
-    
-DATAB = sql.connect(
+def connect():
+
+    DATAB = sql.connect(
     user='root', password='SchooL1@', database='userData', 
     host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
     )
-CURSOR = DATAB.cursor(buffered=True)
+    CURSOR = DATAB.cursor(buffered=True)
+
+    return DATAB, CURSOR
+    
+ROOT = os.getcwd()[:2].upper()
+PATH = rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん'
+HASHER = hashlib.md5()
+
+DATAB, CURSOR = connect()
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
@@ -50,69 +56,35 @@ PASS = 'SakurA1@'
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 METADATA = {
-    '3d':'3d',
-    'monochrome':'monochrome', 
-    'sketch': 'sketch',
-    'lineart': 'lineart',
-    'screencap':'screencap',
-    'animated':'animated',
     'audio':'audio|has_audio',
-    'uncensored': 'uncensored',
-    'censored': 'censored',
-    'official_art':'official_art',
-    'game_cg':'game_cg'
     }
 GENERAL = {
-    '69': '69',
     'age_difference': 'age_difference|teenage_girl_and_younger_boy',
-    'ass': 'ass', 
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
-    'breast_rest': 'breast_rest', 
-    'character_sheet': 'character_sheet', 
     'condom': 'condom', 
-    'concept_art':'concept_art',
     'cowgirl_position': 'cowgirl_position|reverse_cowgirl_position', 
     'cum': 'cum|precum|semen',
     'dancing': 'dancing|dancer', 
-    'doggystyle': 'doggystyle', 
-    'eye_contact': 'eye_contact',
-    'flashing': 'flashing',
-    'furry': 'furry', 
-    'futanari': 'futanari', 
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|yukata|kimono|geta|happi|zori',
-    'lactation': 'lactation',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))) AND NOT futanari',
-    'masturbation': 'masturbation',
-    'missionary': 'missionary', 
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR toned OR abs)', 
     'nude': 'nude OR functionally_nude OR (bottomless AND topless)', 
     'open_clothes': 'open_clothes|open_coat|open_jacket|open_shirt|open_robe|open_kimono|open_fly|open_shorts', 
     'orgasm': 'orgasm|ejaculation', 
-    'penis': 'penis', 
-    'penis_kiss': 'penis_kiss', 
     'piercings': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain', 
-    'pregnant': 'pregnant', 
     'presenting': 'presenting OR top-down_bottom-up OR ((spread_legs OR spread_pussy) AND (trembling OR (heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR spread_pussy', 
-    'pubic_hair': 'pubic_hair',
-    'pubic_tattoo': 'pubic_tattoo',
     'pussy': 'pussy|vagina', 
     'pussy_juice': 'pussy_juice|pussy_juices|pussy_juice_trail|pussy_juice_puddle|pussy_juice_stain|pussy_juice_drip_through_clothes', 
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
-    'sex': 'sex|vaginal|anal|facial|oral|fellatio|cunnilingus|handjob|frottage|tribadism', 
+    'sex': 'sex|vaginal|anal|facial|oral|fellatio|cunnilingus|handjob|frottage|tribadism|group_sex|hetero', 
     'sex_toys': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
-    'stealth_sex': 'stealth_sex', 
-    'stretch':'stretch', 
     'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))', 
-    'spooning': 'spooning', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
     'suspended_congress': 'suspended_congress|reverse_suspended_congress',
-    'tattoo': 'tattoo', 
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
-    'tribal': 'tribal', 
-    'upright_straddle': 'upright_straddle'
     }
 CUSTOM = {
     'aphorisms': '((((nipples OR nipple_slip OR areola OR areolae OR areola_slip OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR breasts_outside OR breastless_clothes OR underbust OR underboob) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position', 
@@ -494,7 +466,7 @@ def execute(statement, arguments, many=0, commit=0):
             else: CURSOR.execute(statement, arguments)
             if commit: DATAB.commit()
             return 1
-        except sql.errors.InternalError: continue
+        except: continue
 
 def progress(size, left, site, length=20):
     
@@ -546,9 +518,9 @@ def login(driver, site, type_=0):
     elif site== 'gelbooru':
 
         driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
-        driver.find_element_by_xpath('/html/body/div[4]/div[5]/div/div/form/input[1]').send_keys(USER)
-        driver.find_element_by_xpath('/html/body/div[4]/div[5]/div/div/form/input[2]').send_keys(PASS)
-        driver.find_element_by_xpath('/html/body/div[4]/div[5]/div/div/form/input[2]').send_keys(Keys.RETURN)
+        driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[1]').send_keys(USER)
+        driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[2]').send_keys(PASS)
+        driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[2]').send_keys(Keys.RETURN)
 
     elif site == 'sankaku':
 
@@ -631,17 +603,16 @@ def get_driver(headless=False):
 
     return driver
 
-def save_image(name, image, exif=None):
+def save_image(name, image, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
-    if re.search('.+jp.*g', image):
+    if re.search('.+jp.*g', image, re.IGNORECASE):
 
         img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
         img.thumbnail(RESIZE)
-        if exif: img.save(name, exif=exif)
-        else: img.save(name)
+        img.save(name, exif=exif)
         
-    elif re.search('.+png', image):
+    elif re.search('.+png', image, re.IGNORECASE):
 
         name = name.replace('.png', '.jpg')
         img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
@@ -650,10 +621,9 @@ def save_image(name, image, exif=None):
         img = Image.alpha_composite(
             Image.new('RGBA', img.size, (255, 255, 255)), img
             )
-        if exif: img.convert('RGB').save(name, exif=exif)
-        else: img.convert('RGB').save(name)
+        img.convert('RGB').save(name, exif=exif)
 
-    elif re.search('.+(gif|webm|mp4)', image):
+    elif re.search('.+(gif|webm|mp4)', image, re.IGNORECASE):
         
         data = requests.get(image, headers=HEADERS, stream=True)
         with open(name, 'wb') as file: 
@@ -687,9 +657,11 @@ def get_hash(image):
         with open(temp, 'wb') as img: 
             image = img.write(requests.get(image).content).name
     
-    if re.search('.+(jp.*g|png|gif)', image): image = Image.open(image)
+    if re.search('.+(jp.*g|png|gif)', image, re.IGNORECASE): 
+        
+        image = Image.open(image)
 
-    elif re.search('.+(webm|mp4)', image):
+    elif re.search('.+(webm|mp4)', image, re.IGNORECASE):
         
         video_capture = VideoCapture(image).read()[-1]
         image = cvtColor(video_capture, COLOR_BGR2RGB)
@@ -753,10 +725,9 @@ def get_tags(driver, path, comic=0):
     
     else:
         if video: temp_dir.cleanup()
-        if 'vagina' in tags: tags.add('pussy')
-        tags.discard('vagina')
         tags.discard('photorealistic')
         tags.discard('realistic')
+        tags.discard('3d')
     
     return ' '.join(tags)
 
@@ -783,7 +754,7 @@ def generate_tags(
             )
     if rating:
         
-        temp = f' {" ".join(tags) + " " + general}'
+        temp = f' {" ".join(tags) + " " + general} '
         rating, = [
             key for key in RATING if evaluate(temp, RATING[key])
             ]
