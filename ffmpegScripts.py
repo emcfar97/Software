@@ -30,7 +30,8 @@ def get_folders():
         return tuple(str(i) for i in range(int(start), int(end) + 1))
         
     return tuple(targets.split())
-    
+
+EXT = 'mp4', 'flv', 'mkv'
 ROOT = getcwd()[:2].upper()
 source = rf'{ROOT}\Users\Emc11\Videos\Captures'
 dest = rf'{ROOT}\Users\Emc11\Dropbox\Videos\Captures'
@@ -49,8 +50,9 @@ while True:
                     join(source, file),
                     join(dest, file.replace(splitext(file)[1], '.mp4'))
                     )
-                for file in listdir(source) if isfile(file)
+                for file in listdir(source) if file.endswith(EXT)
                 ]
+            print(files)
             
             for file, mp4 in files:
                 try: 
