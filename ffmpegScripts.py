@@ -38,10 +38,10 @@ dest = rf'{ROOT}\Users\Emc11\Dropbox\Videos\Captures'
 
 while True:
     user_input = input(
-        'Choose from:\n1 - Convert files\n2 - Concat files\n3 - Change framerate\n4 - Download m3u8\n5 - Check directories\n6 - Exit\n'
+        'Choose from:\n1 - Convert videos\n2 - Concat videos\n3 - Change framerate\n4 - Download m3u8\n5 - Check directories\n6 - Exit\n'
         )
     try:
-        if  user_input ==  '1': # convert files
+        if  user_input ==  '1': # convert vidoes
                 
             text = 1 if input('Overlay text? ').lower() in 'yes' else 0
 
@@ -52,7 +52,6 @@ while True:
                     )
                 for file in listdir(source) if file.endswith(EXT)
                 ]
-            print(files)
             
             for file, mp4 in files:
                 try: 
@@ -69,7 +68,7 @@ while True:
                 except Exception as error: print(error); continue
                 remove(file)
 
-        elif user_input == '2': # concat files
+        elif user_input == '2': # concat videos
             
             text = 1 if input('Overlay text? ').lower() in 'yes' else 0
             targets = get_folders()
@@ -117,7 +116,7 @@ while True:
             ffmpeg.input(url).output(
                 rf'{ROOT}\Users\Emc11\Downloads\Images\{name}'
                 ).run()
-            
+
         elif user_input == '5': # check directories
         
             for file in listdir(source):
