@@ -41,11 +41,13 @@ def webscrapers():
     foundry.setup()
     # twitter.setup()
 
-threads = [
-    # threading.Thread(target=erotica2),
-    threading.Thread(target=erotica3)
-    ]
-for thread in threads: thread.start()
-for thread in threads: thread.join()
+# threads = [
+#     # threading.Thread(target=erotica2),
+#     threading.Thread(target=erotica3)
+#     ]
+# for thread in threads: thread.start()
+# for thread in threads: thread.join()
 
+gelbooru.setup()
+sankaku.setup(1)
 print('Complete')
