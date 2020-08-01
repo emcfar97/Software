@@ -1,9 +1,8 @@
 from os import remove
 from subprocess import Popen
-
-from GUI import galleryView, previewView, sliderView, mainView, trainView
-from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QDesktopWidget, Qt
-from GUI import CURSOR, DATAB, MODIFY, DELETE, NEZUMI, sql
+from GUI import CONNECTION, MODIFY, DELETE, NEZUMI
+from GUI import galleryView, previewView, sliderView#, mainView, trainView
+from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QDesktopWidget, Qt
 
 class App(QMainWindow):
     
@@ -14,6 +13,7 @@ class App(QMainWindow):
         self.desktop = QDesktopWidget()
         self.configure_gui()
         self.create_widgets()
+        self.windows = []
         self.show()
         
     def configure_gui(self):
@@ -56,15 +56,23 @@ class App(QMainWindow):
     def select(self, title):
         
         self.options[title](self, self.desktop)
+        self.windows.append(title)
         self.hide()
 
     def keyPressEvent(self, sender):
 
         key_press = sender.key()
+        modifiers = sender.modifiers()
+        ctrl = modifiers == Qt.ControlModifier
 
-        if key_press == Qt.Key_Escape: self.close()
+        if ctrl:
 
-    def closeEvent(self, sender): DATAB.close()
+            if key_press == Qt.Key_1: self.select('Manage Data')
+            elif key_press == Qt.Key_2: self.select('Gesture Draw')
+
+        elif key_press == Qt.Key_Escape: self.close()
+
+    def closeEvent(self, sender): CONNECTION.close()
  
 class Option(QWidget):
 
@@ -106,7 +114,7 @@ class ManageData(QMainWindow):
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
-        self.desktop.resized.connect(lambda x: print('po'))
+        self.gallery.populate()
 
     def configure_gui(self):
         
@@ -120,24 +128,34 @@ class ManageData(QMainWindow):
             0, 0, 
             resolution.width(),  resolution.height()
             )  
+        self.desktop.resized.connect(self.resized)
 
     def create_widgets(self):
         
         self.gallery = galleryView.Gallery(self)
-        self.preview = previewView.Preview(self, self.windowTitle())
-        self.slideshow = sliderView.Slideshow(
-            self, Qapp.desktop().screenGeometry()
-            )
-        
+        self.preview = previewView.Preview(self)
+        self.slideshow = sliderView.Slideshow(self)
+        self.statusbar = QStatusBar()
+
         self.layout.addWidget(self.gallery)
         self.layout.addWidget(self.preview)
+        self.setStatusBar(self.statusbar)
 
         self.gallery.setParent(self)
         self.preview.setParent(self)
+        self.statusbar.setFixedHeight(25)
     
-    def start_slideshow(self, gallery, index):
+    def open_slideshow(self, index=None):
 
-        self.slideshow.update(gallery, index)
+        view = self.gallery.images
+        if index is None: index = view.currentIndex()
+        
+        # path, type_ = index.data(500)
+        # if type_ == 2:
+        #     id = path.split('\\')[-1][:-4]
+        #     self.parent().populate(id=id)
+
+        self.slideshow.update(view.table.images, sum(index.data(100)))
 
     def change_records(self, gallery, *args):
         
@@ -160,14 +178,9 @@ class ManageData(QMainWindow):
         if rating: parameters.append(f'rating={rating - 1}')
         if type: parameters.append(f'type={type - 1}')
 
-        while True:
-            try:
-                CURSOR.executemany(
-                    MODIFY.format(', '.join(parameters)), gallery
-                    )
-                break
-            except sql.errors.InternalError: continue
-        DATAB.commit()
+        CONNECTION.execute(
+            MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
+            )
         self.gallery.populate()
     
     def delete_records(self, sender=None):
@@ -177,30 +190,37 @@ class ManageData(QMainWindow):
             QMessageBox.Yes | QMessageBox.No
             )
         
-        if message == QMessageBox.Yes:        
+        if message == QMessageBox.Yes: 
+
             gallery = gallery = [
                 (index.data(Qt.UserRole),) for index in 
                 self.gallery.images.selectedIndexes()
                 ]
-            CURSOR.executemany(DELETE, gallery)
             for image, in gallery: 
                 try: remove(image)
                 except PermissionError: return
                 except FileNotFoundError: pass
-            DATAB.commit()
+            CONNECTION.execute(DELETE, gallery, many=1, commit=1)
             self.gallery.populate()
-        
+    
+    def resized(self, sender):
+
+        print('Desktop resized')
+        print(sender)
+
     def keyPressEvent(self, sender):
 
         key_press = sender.key()
+        modifiers = sender.modifiers()
+        alt = modifiers == Qt.AltModifier
 
-        if key_press == Qt.Key_Delete: self.delete_records()
-
-        elif key_press == Qt.Key_Escape: self.close()
+        if key_press == Qt.Key_Return: self.open_slideshow()
 
         elif key_press == Qt.Key_F5: self.gallery.populate()
+        
+        elif key_press == Qt.Key_Delete: self.delete_records()
 
-        elif key_press in (Qt.Key_Right, Qt.Key_Left) and sender.modifiers() == Qt.AltModifier:
+        elif key_press in (Qt.Key_Right, Qt.Key_Left) and alt:
             
             if key_press == Qt.Key_Left:
                 self.gallery.ribbon.go_back()
@@ -208,11 +228,16 @@ class ManageData(QMainWindow):
             else:
                 self.gallery.ribbon.go_forward()
                         
+        elif key_press == Qt.Key_Escape: self.close()
+    
+        else: self.parent().keyPressEvent(sender)
+
     def closeEvent(self, sender):
 
-        self.close()
         self.slideshow.close()
-        self.parent().show()
+        self.parent().windows.remove(self.windowTitle())
+        if not self.parent().windows:
+            self.parent().show()
  
 class GestureDraw(QMainWindow):
     
@@ -224,6 +249,7 @@ class GestureDraw(QMainWindow):
         self.configure_gui()
         self.create_widgets()
         self.show()
+        self.gallery.populate()
         Popen([NEZUMI])
 
     def configure_gui(self):
@@ -239,17 +265,20 @@ class GestureDraw(QMainWindow):
     def create_widgets(self):
         
         self.gallery = galleryView.Gallery(self)
-        self.preview = previewView.Preview(self, self.windowTitle())
-        
+        self.preview = previewView.Preview(self)
+        self.statusbar = QStatusBar()
+     
         self.stack.addWidget(self.gallery)
         self.stack.addWidget(self.preview)
+        self.setStatusBar(self.statusbar)
+        self.statusbar.setFixedHeight(25)
         
     def start_session(self):
         
-        gallery = [
+        gallery = (
             thumb.data(Qt.UserRole) for thumb in 
             self.gallery.images.selectedIndexes()
-            ]
+            )
         time = self.gallery.ribbon.time.text()
         
         if gallery and time:
@@ -260,30 +289,46 @@ class GestureDraw(QMainWindow):
             else: time = int(time)
             
             self.preview.start(gallery, time)
+            self.statusbar.hide()
             self.stack.setCurrentIndex(1)
-            self.gallery.ribbon.tags.clear()
-            self.gallery.ribbon.time.clear()
    
     def keyPressEvent(self, sender):
         
         key_press = sender.key()
+        modifiers = sender.modifiers()
+        alt = modifiers == Qt.AltModifier
 
-        if key_press == Qt.Key_Escape:
-
-            if self.stack.currentIndex():
-            
-                self.stack.setCurrentIndex(0)
-                # self.gallery.populate()
-                            
-            else: self.close()
+        if key_press == Qt.Key_Return: self.start_session()
 
         elif key_press == Qt.Key_Space: self.preview.pause()
-        elif key_press == Qt.Key_F5: self.gallery.populate()
-    
-    def closeEvent(self, sender):
 
-        self.close()
-        self.parent().show()
+        elif key_press == Qt.Key_F5: self.gallery.populate()
+
+        elif key_press in (Qt.Key_Right, Qt.Key_Left) and alt:
+            
+            if key_press == Qt.Key_Left:
+                self.gallery.ribbon.go_back()
+                
+            else:
+                self.gallery.ribbon.go_forward()
+
+        elif key_press == Qt.Key_Escape:
+
+            if self.stack.currentIndex():
+                
+                self.gallery.populate()
+                self.statusbar.show()
+                self.stack.setCurrentIndex(0)
+                            
+            else: self.close()
+        
+        else: self.parent().keyPressEvent(sender)
+
+    def closeEvent(self, sender):
+    
+        self.parent().windows.remove(self.windowTitle())
+        if not self.parent().windows:
+            self.parent().show()
  
 class MachineLearning(QMainWindow):
     
@@ -337,4 +382,5 @@ if __name__ == '__main__':
     
     Qapp.exec_()
 
-# animated -dancing -sex -cum -masturbation -lactation -exercise -pregnant  type=photo
+# animated -dancing -sex -sports -casual_nudity -masturbation -lactation -exercise -pregnant rating=safe type=photo
+# -from_behind -from_below -from_above -from_side
