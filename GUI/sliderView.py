@@ -1,24 +1,26 @@
 import qimage2ndarray
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QStyle
 from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from . import *
 
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent, resolution):
+    def __init__(self, parent):
         
         super().__init__()
         self.parent = parent
-        self.configure_gui(resolution)
+        self.configure_gui()
         self.create_widgets()
     
-    def configure_gui(self, resolution):
+    def configure_gui(self):
         
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
         self.setGeometry(
-            0, 0, resolution.width(),  resolution.height()
+            0, 0, self.parent.width(),  self.parent.height()
             )
         self.setStyleSheet('background: black')
           
@@ -51,7 +53,7 @@ class Slideshow(QMainWindow):
         
         self.index = (self.index + delta) % len(self.gallery)
         try: self.show_image(self.gallery[self.index][0])
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             del self.gallery[self.index]
             self.show_image(self.gallery[self.index][0])
     
@@ -70,10 +72,11 @@ class Slideshow(QMainWindow):
             image = VideoCapture(path).read()[-1]
             image = qimage2ndarray.array2qimage(image).rgbSwapped()
             pixmap = QPixmap(image).scaled(
-                self.width(), self.height(), Qt.KeepAspectRatio, 
+                self.width(), self.height(), Qt.KeepAspectRatio
                 )
                 
         self.label.setPixmap(pixmap)
+        self.stack.setCurrentIndex(0)
         self.video.update(path)
         
     def keyPressEvent(self, sender):
@@ -84,14 +87,12 @@ class Slideshow(QMainWindow):
             
         if key_press in (Qt.Key_Right, Qt.Key_Left):
             
-            sign = 1 if key_press == Qt.Key_Right else -1
-            self.move(sign * 1)
-            if video: self.stack.setCurrentIndex(0)
+            self.move(1 if key_press == Qt.Key_Right else -1)
             
         elif video and key_press in (Qt.Key_Home, Qt.Key_End):
             
-            if key_press == Qt.Key_Home: self.player.setPosition(0)
-            else: self.player.setPosition(0)
+            if key_press == Qt.Key_Home: self.video.position(0)
+            else: self.video.position(0)
             
         elif video and key_press in (Qt.Key_Period, Qt.Key_Comma):
 
@@ -102,14 +103,14 @@ class Slideshow(QMainWindow):
         elif video and key_press in (Qt.Key_Up, Qt.Key_Down):
 
             sign = 1 if key_press == Qt.Key_Up else -1
-            if ctrl: self.video.position(sign * 1)
-            else: self.video.position(sign * 10)
+            if ctrl: self.video.volume(sign * 1)
+            else: self.video.volume(sign * 10)
         
         elif video and key_press == Qt.Key_Space: self.video.pause()
 
         elif key_press == Qt.Key_Escape:
             
-            if video: self.video.stop()
+            if video: self.video.update(None)
             self.hide()
             
     def mouseMoveEvent(self, sender):
@@ -122,6 +123,8 @@ class Slideshow(QMainWindow):
         
         self.video.volume(sender.angleDelta().y() // 12)  
     
+    def closeEvent(self, sender): self.video.update(None)
+
 class videoPlayer(QVideoWidget):
 
     def __init__(self, parent):
@@ -131,6 +134,9 @@ class videoPlayer(QVideoWidget):
         self.player.setVolume(50) 
         self.player.setVideoOutput(self)
         self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
+        # self.player.stateChanged.connect(self.mediaStateChanged)
+        # self.player.positionChanged.connect(self.positionChanged)
+        # self.player.durationChanged.connect(self.durationChanged)
 
     def update(self, path):
         
@@ -163,3 +169,20 @@ class videoPlayer(QVideoWidget):
         elif status not in (2, 1):
 
             self.parent().setCurrentIndex(1)      
+
+    # def mediaStateChanged(self, state):
+    #     if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
+    #         self.playButton.setIcon(
+    #                 self.style().standardIcon(QStyle.SP_MediaPause))
+    #     else:
+    #         self.playButton.setIcon(
+    #                 self.style().standardIcon(QStyle.SP_MediaPlay))
+
+    # def positionChanged(self, position):
+    #     self.positionSlider.setValue(position)
+
+    # def durationChanged(self, duration):
+    #     self.positionSlider.setRange(0, duration)
+
+    # def setPosition(self, position):
+    #     self.mediaPlayer.setPosition(position)
