@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 from PyQt5.QtCore import Qt
 
 class Properties(QMainWindow):
@@ -6,6 +6,7 @@ class Properties(QMainWindow):
     def __init__(self, parent, indexes):
         
         super().__init__(parent)
+        self.parent().properties.add(self)
         self.setWindowTitle('Properties')
         self.configure_gui()
         self.create_widgets()
@@ -13,11 +14,17 @@ class Properties(QMainWindow):
 
     def configure_gui(self):
         
-        self.center = QWidget()
-        self.layout = QVBoxLayout()
-        self.setCentralWidget(self.center)
-        self.center.setLayout(self.layout)
-        
+        self.tabs = QTabWidget()
+        self.setCentralWidget(self.tabs)
+        self.props = QWidget()
+        self.stats = QWidget()
+        self.tabs.addTab(self.props, 'Properties')
+        self.tabs.addTab(self.stats, 'Stats')
+        self.prop_layout = QVBoxLayout()
+        self.stat_layout = QVBoxLayout()
+        self.props.setLayout(self.prop_layout)
+        self.stats.setLayout(self.stat_layout)
+
         size = self.parent().size()
         self.setGeometry(
             size.width() * .3, size.height() * .3, 
@@ -25,7 +32,7 @@ class Properties(QMainWindow):
             )  
         
     def create_widgets(self):
-
+        
         self.path = QLineEdit(self)
         self.tags = QLineEdit(self)
         self.artist = QLineEdit(self)
@@ -45,7 +52,7 @@ class Properties(QMainWindow):
         self.form.addRow('Stars',  self.stars)
         self.form.addRow('Rating',  self.rating)
         self.form.addRow('Type',  self.type)
-        self.layout.addLayout(self.form)
+        self.prop_layout.addLayout(self.form)
 
         horizontal = QHBoxLayout()
         horizontal.setAlignment(Qt.AlignRight)
@@ -56,7 +63,7 @@ class Properties(QMainWindow):
             else: option.clicked.connect(self.close)
             horizontal.addWidget(option)
         else: option.setEnabled(False)
-        self.layout.addLayout(horizontal)
+        self.prop_layout.addLayout(horizontal)
     
         self.path.textEdited.connect(lambda: option.setEnabled(True))
         self.tags.textEdited.connect(lambda: option.setEnabled(True))
@@ -85,6 +92,7 @@ class Properties(QMainWindow):
         if type: self.type.setCurrentIndex(type.pop() + 1)
 
         self.place = tags, artist
+        self.tags.setFocus()
         self.show()
     
     def output(self, sender=None):
@@ -118,6 +126,7 @@ class Properties(QMainWindow):
     def keyPressEvent(self, sender):
         
         key_press = sender.key()
+        ctrl = sender.modifiers()
 
         if key_press == Qt.Key_Return: self.output()
         
