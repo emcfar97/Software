@@ -26,7 +26,7 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
             ).text.lower().replace(' ', '_')
 
         hrefs = [
-            (f' {artist} ', 1, image.get('href'), SITE) for image in 
+            (f' {artist} ', 0, image.get('href'), SITE) for image in 
             page.findAll('a', href=re.compile('https://f6j6u6m9.+'))
             if (image.get('href'),) not in query
             ]
@@ -57,12 +57,12 @@ def page_handler(driver, hrefs):
     
         try:
             execute(UPDATE[3].replace('href', 'src'), (
-                name, artist, tags, rating, image, hash_, 1, image),
+                name, artist, tags, rating, image, hash_, image),
                 commit=1
                 )
         except sql.errors.IntegrityError:
             execute(UPDATE[3].replace('href', 'src'), (
-                f'202 - {image}', artist, tags, rating, image, hash_, 1, image),
+                f'202 - {image}', artist, tags, rating, image, hash_, image),
                 commit=1
                 )
         except (sql.errors.OperationalError, sql.errors.DatabaseError): continue

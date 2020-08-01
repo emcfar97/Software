@@ -3,14 +3,20 @@ from os.path import join, exists
 from utils import DATAB, CURSOR, get_driver, get_name, get_hash, get_tags, generate_tags, save_image, execute, progress
 
 root = os.getcwd()[:2].upper()
-PATH = rf'{root}\Users\Emc11\Downloads'
-INSERT = 'INSERT IGNORE INTO imageData(path, artist, tags, rating, hash, type) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, %s, 0)'
+PATH = rf'{root}\Users\Emc11\Downloads\Images\Imagefap'
+INSERT = f'INSERT IGNORE INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{root}", "C:"), %s, %s, %s, %s, %s, 0)'
 
 def page_handler(url, title):
     
     try: url = f'{url}?gid={url.split("/")[4]}&view=2'
     except IndexError: url = f'https://{title}&view=2'
-    artist = title.split(' - ')[0]
+    artist, = [
+        re.sub(
+            'pornstar|porn|pics|&|sexy|gifs|cock|\d', '', i.lower()
+            ).strip().replace(' ', '_')
+        for i in title.split(',|-|~')
+        ]
+
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     images = html.findAll(href=re.compile('/photo/.+'))
@@ -26,6 +32,7 @@ def page_handler(url, title):
         src = target.find(src=re.compile('https://cdn.imagefap.com/images/full/.+')).get('src')
 
         name = get_name(src, 0, 1)
+        name = name.split('?')[0]
         if exists(name): continue
         save_image(name, src)
         tags = get_tags(driver, name)
@@ -45,10 +52,10 @@ def page_handler(url, title):
 
         hash_ = get_hash(name)
         execute(
-            INSERT, (name, f' {artist} ', f' {tags} ', rating, hash_), commit=1
+            INSERT, (name, f' {artist} ', tags, rating, 'imagefap', hash_), commit=1
             )
     
-driver = get_driver()
+driver = get_driver(True)
 files = [
     join(PATH, file) for file in os.listdir(PATH) 
     if file.endswith('json')
@@ -62,6 +69,7 @@ for file in files:
             for url in val.values():
                 page_handler(url['url'], url['title'])
     except Exception as error: print(error, '\n'); continue
+    except KeyboardInterrupt: break
     os.remove(file)
 
 driver.close()

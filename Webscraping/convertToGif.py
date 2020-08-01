@@ -5,11 +5,12 @@ from os import listdir, remove, getcwd
 from os.path import join, splitext
 from utils import get_driver, progress
 from selenium.webdriver.support.ui import Select
+from selenium.common.exceptions import WebDriverException, NoSuchElementException
 
 SUM = 0
 EXT = 'webm', 'webp', 'mp4'
 ROOT = getcwd()[:2].upper()
-PATH = rf'{ROOT}\Users\Emc11\Downloads'
+PATH = rf'{ROOT}\Users\Emc11\Downloads\Images'
 
 def main(paths, lock=False):
 
@@ -25,7 +26,12 @@ def main(paths, lock=False):
         driver.find_element_by_xpath(upload).click()
 
         if path.endswith('.webp'):
-            driver.find_element_by_name('make-a-gif').click()
+            for _ in range(100):
+                try:
+                    driver.find_element_by_xpath('/html/body/div/div[2]/div[2]/form/p[4]/input').click()
+                    break
+                except: pass
+            else: continue
         else:
             for _ in range(100):
                 try:
@@ -87,21 +93,25 @@ paths = [
     for path in listdir(PATH) 
     if path.endswith(EXT)
     ]
-
-lock = threading.Lock()
 size = len(paths)
-thr = int(2 * log(len(paths), 10) + 1)
-num, div = divmod(size, thr)
+threads = 1 if input('Use threads? ').lower() in 'yes' else 0
 
-threads = [
-    threading.Thread(
-        target=main, 
-        args=(
-            paths[i * num + min(i, div):(i+1) * num + min(i+1, div)], 
-            lock
+if threads:
+    lock = threading.Lock()
+    thr = int(2 * log(len(paths), 10) + 1)
+    num, div = divmod(size, thr)
+
+    threads = [
+        threading.Thread(
+            target=main, 
+            args=(
+                paths[i * num + min(i, div):(i+1) * num + min(i+1, div)], 
+                lock
+                )
             )
-        )
-    for i in range(thr)
-    ]
-for thread in threads: thread.start()
-for thread in threads: thread.join()
+        for i in range(thr)
+        ]
+    for thread in threads: thread.start()
+    for thread in threads: thread.join()
+
+else: main(paths)

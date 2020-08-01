@@ -7,8 +7,8 @@ INSERT = [
     'INSERT INTO comics(path, hash) VALUES(%s, %s)'
     ]
 
-driver = get_driver()
-path = r'C:\Users\Emc11\Downloads\Comics'
+# driver = get_driver()
+path = r'C:\Users\Emc11\Downloads\Images\Comics'
 
 for folder in os.listdir(path):
 
@@ -27,12 +27,13 @@ for folder in os.listdir(path):
     id = split(splitext(cover)[0])[1]
     execute(INSERT[1], [(i, id) for i in images], 1)
 
-    tags = get_tags(driver, images, comic=1)
-    tags, rating = generate_tags(
-        general=tags, custom=True, rating=True, exif=False
-        )
+    # tags = get_tags(driver, images, comic=1)
+    # tags, rating = generate_tags(
+        # general=tags, custom=True, rating=True, exif=False
+        # )
+    tags, rating = ' qwd ', 0
     execute(INSERT[0], (cover, artist, tags, rating, 2, hash_), commit=1)
 
     # shutil.rmtree(folder)
 
-driver.close()
+# driver.close()
