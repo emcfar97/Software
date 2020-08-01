@@ -2,7 +2,7 @@ import imagehash, os, piexif, time, bs4, requests, re, tempfile, hashlib, sys, a
 from math import log
 from PIL import Image
 from io import BytesIO
-from os.path import join, splitext
+from os.path import join, splitext, exists
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 import mysql.connector as sql
 
@@ -42,12 +42,11 @@ UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), hash=%s, src=%s WHERE href=%s',
     f'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, "{ROOT}", "C:"),%s,%s,%s)',
-    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s WHERE href=%s',
     f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
     f'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)'
     ]
 
-EXT = '(jp*g|png|gif|webm|mp4)'
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 USER = 'Chairekakia'
@@ -69,8 +68,9 @@ GENERAL = {
     'girl_on_top': 'girl_on_top',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|yukata|kimono|geta|happi|zori',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))) AND NOT futanari',
-    'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR toned OR abs)', 
-    'nude': 'nude OR functionally_nude OR (bottomless AND topless)', 
+    'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
+    'nude': 'nude AND NOT functionally_nude',
+    'functionally_nude': '(functionally_nude OR (bottomless AND topless)) AND NOT nude', 
     'open_clothes': 'open_clothes|open_coat|open_jacket|open_shirt|open_robe|open_kimono|open_fly|open_shorts', 
     'orgasm': 'orgasm|ejaculation', 
     'piercings': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain', 
@@ -80,14 +80,14 @@ GENERAL = {
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
     'sex': 'sex|vaginal|anal|facial|oral|fellatio|cunnilingus|handjob|frottage|tribadism|group_sex|hetero', 
     'sex_toys': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
-    'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))', 
+    'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
     'suspended_congress': 'suspended_congress|reverse_suspended_congress',
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areola OR areolae OR areola_slip OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR breasts_outside OR breastless_clothes OR underbust OR underboob) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position', 
+    'aphorisms': '((((nipples OR nipple_slip OR areola_slip OR breasts_outside OR underboob OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR corset OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position', 
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'intercrural': 'thigh_sex',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
@@ -466,7 +466,7 @@ def execute(statement, arguments, many=0, commit=0):
             else: CURSOR.execute(statement, arguments)
             if commit: DATAB.commit()
             return 1
-        except: continue
+        except sql.errors.OperationalError: continue
 
 def progress(size, left, site, length=20):
     
@@ -491,7 +491,7 @@ def login(driver, site, type_=0):
             driver.find_element_by_id('login-password').send_keys(Keys.RETURN)
             time.sleep(2.5)
 
-    if site == 'metarthunter':
+    elif site == 'metarthunter':
 
         driver.get('https://www.metarthunter.com/members/')
         driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
@@ -499,7 +499,7 @@ def login(driver, site, type_=0):
         while driver.current_url == 'https://www.metarthunter.com/members/': 
             time.sleep(2)
             
-    if site == 'femjoyhunter':
+    elif site == 'femjoyhunter':
 
         driver.get('https://www.femjoyhunter.com/members/')
         driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
@@ -507,7 +507,7 @@ def login(driver, site, type_=0):
         while driver.current_url == 'https://www.femjoyhunter.com/members/': 
             time.sleep(2)
             
-    if site == 'elitebabes':
+    elif site == 'elitebabes':
 
         driver.get('https://www.elitebabes.com/members/')
         driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
@@ -515,12 +515,21 @@ def login(driver, site, type_=0):
         while driver.current_url == 'https://www.elitebabes.com/members/': 
             time.sleep(2)
 
+    elif site == 'instagram':
+    
+        driver.get('https://www.instagram.com/')
+        driver.find_element_by_xpath('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input').send_keys(EMAIL)
+        driver.find_element_by_xpath('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input').send_keys('SchooL1#')
+        driver.find_element_by_xpath('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input').send_keys(Keys.RETURN)
+        time.sleep(2)
+
     elif site== 'gelbooru':
 
         driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
         driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[1]').send_keys(USER)
         driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[2]').send_keys(PASS)
         driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[2]').send_keys(Keys.RETURN)
+        time.sleep(1)
 
     elif site == 'sankaku':
 
@@ -606,29 +615,34 @@ def get_driver(headless=False):
 def save_image(name, image, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
-    if re.search('.+jp.*g', image, re.IGNORECASE):
+    try:
+        if re.search('jp.*g', image, re.IGNORECASE):
 
-        img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
-        img.thumbnail(RESIZE)
-        img.save(name, exif=exif)
-        
-    elif re.search('.+png', image, re.IGNORECASE):
+            if exists(name): Image.open(name).save(name, exif=exif)
+            else:
+                img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
+                img.thumbnail(RESIZE)
+                img.save(name.replace('.jpeg', '.jpg'), exif=exif)
+            
+        elif re.search('png', image, re.IGNORECASE):
 
-        name = name.replace('.png', '.jpg')
-        img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
-        img.thumbnail(RESIZE)
-        img = img.convert('RGBA')
-        img = Image.alpha_composite(
-            Image.new('RGBA', img.size, (255, 255, 255)), img
-            )
-        img.convert('RGB').save(name, exif=exif)
+            img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
+            img.thumbnail(RESIZE)
+            img = img.convert('RGBA')
+            img = Image.alpha_composite(
+                Image.new('RGBA', img.size, (0, 0, 0)), img
+                )
+            img.convert('RGB').save(name.replace('.png', '.jpg'), exif=exif)
 
-    elif re.search('.+(gif|webm|mp4)', image, re.IGNORECASE):
-        
-        data = requests.get(image, headers=HEADERS, stream=True)
-        with open(name, 'wb') as file: 
-            for chunk in data.iter_content(chunk_size=1024):
-                if chunk: file.write(chunk)
+        elif re.search('gif|webm|mp4', image, re.IGNORECASE):
+            
+            data = requests.get(image, headers=HEADERS, stream=True)
+            with open(name, 'wb') as file: 
+                for chunk in data.iter_content(chunk_size=1024):
+                    if chunk: file.write(chunk)
+    
+    except: return False
+    return exists(name)
     
 def get_name(path, type_, hasher=0, get=0):
     '''Return pathname (from optional hash of image)'''
@@ -637,7 +651,7 @@ def get_name(path, type_, hasher=0, get=0):
         try: data = requests.get(path).content
         except: data = open(path, 'rb').read()
         HASHER.update(data)
-        ext = splitext(path)[1][:4]
+        ext = splitext(path)[1]
         if get: return HASHER.hexdigest()
         else: path = f'{HASHER.hexdigest()}{ext}'
 
@@ -657,11 +671,11 @@ def get_hash(image):
         with open(temp, 'wb') as img: 
             image = img.write(requests.get(image).content).name
     
-    if re.search('.+(jp.*g|png|gif)', image, re.IGNORECASE): 
+    if re.search('jp.*g|png|gif', image, re.IGNORECASE): 
         
         image = Image.open(image)
 
-    elif re.search('.+(webm|mp4)', image, re.IGNORECASE):
+    elif re.search('webm|mp4', image, re.IGNORECASE):
         
         video_capture = VideoCapture(image).read()[-1]
         image = cvtColor(video_capture, COLOR_BGR2RGB)
@@ -731,9 +745,7 @@ def get_tags(driver, path, comic=0):
     
     return ' '.join(tags)
 
-def generate_tags(
-    general, metadata=[], custom=[], artists=[], rating=False, exif=True
-    ):
+def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
     
     tags = ['qwd']
 
@@ -786,7 +798,7 @@ def generate_tags(
     else: 
 
         tags = ' '.join(sorted(list(set(tags + general.split()))))
-        if rating: tags = (f' {tags} ', rating)
+        if rating is not None: tags = (f' {tags} ', rating)
         
     return tags
 
