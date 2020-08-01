@@ -1,8 +1,8 @@
 import os, shutil
-from os.path import splitext, join, exists
-# from Webscraping.utils import DATAB, CURSOR, sql, save_image, get_tags, generate_tags, get_driver, execute
+from os.path import splitext, join, exists, isfile
+from Webscraping.utils import DATAB, CURSOR, sql, save_image, get_tags, generate_tags, get_driver, execute
 
-# 
+# manuke shounen
     # path = r'C:\Users\Emc11\Downloads\Katawa Shoujo'
     # dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
     # sprites = {}
@@ -50,7 +50,7 @@ from os.path import splitext, join, exists
                     
     #                 sprites[char][pose].append(expr)
 
-#
+# pyqt5
     # from PyQt5.QtCore import QVariant, Qt
     # from PyQt5.QtSql import QSqlTableModel, QSqlDatabase, QSqlQuery
     # from PyQt5.QtWidgets import QApplication, QTableView, QLabel, QItemDelegate
@@ -120,5 +120,37 @@ from os.path import splitext, join, exists
     # test_model = ImportSqlTableModel()
     # app.exec_()
 
-h = [file for file in os.listdir('C:\Recycle Bin')]
-print()
+# ffmpeg
+    # import ffmpeg, ffprobe
+
+    # path = r'C:\Users\Emc11\Downloads'
+
+    # for file in os.listdir(path):
+        
+    #     if file.endswith('ogg'):
+    #         file = join(path, file)
+    #         audio = file.replace('ogg', 'opus')
+    #         ffmpeg.input(file).output(audio, metadata='title="ENG Stereo (Opus 112Kbps)"').run()
+
+    # "C:\Users\Emc11\Downloads\S01E01.opus" "C:\Users\Emc11\OneDrive - University of Missouri\Documents\Reference\Pickup A Live\Date A Live - S1\[Judas] Date A Live - S01E01.mkv" 
+    # # [Judas] Date A Live - S01E01
+
+SELECT = 'SELECT DISTINCT artist FROM imagedata GROUP BY artist HAVING COUNT(artist) > 100 ORDER BY artist'
+STATS = '''SELECT (
+    SELECT COUNT(*) FROM imagedata 
+    WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE) AND stars
+    ) AS TOTAL,
+    (
+    SELECT SUM(stars) FROM imagedata 
+    WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE)
+    ) AS STARS
+    '''
+
+CURSOR.execute(SELECT)
+
+for artist, in CURSOR.fetchall()[1:101]:
+
+    CURSOR.execute(STATS, (artist, artist))
+    sum, star = CURSOR.fetchone()
+    try: print(f'{artist.strip():<25} (Num: {sum:>4}, Stars: {star:>4}): {star / (sum*5):>4.2%}')
+    except: continue
