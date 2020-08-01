@@ -1,3 +1,4 @@
+from selenium.common.exceptions import WebDriverException
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -6,7 +7,7 @@ SITE = 'gelbooru'
 def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
     
     def next_page(pages):
-        
+
         try: return pages[pages.index(' ') + 3].get('href')
         except IndexError: return False
 
@@ -21,14 +22,14 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
-    execute(INSERT[0], hrefs, 1)
+    execute(INSERT[0], hrefs, 1, commit=1)
         
     next = next_page(html.find(id='paginator').contents)   
     if hrefs and next: initialize(driver, next, query)
     
     DATAB.commit()
 
-def page_handler(driver, hrefs):
+def page_handler(hrefs):
 
     if not hrefs: return
     size = len(hrefs)
@@ -36,8 +37,8 @@ def page_handler(driver, hrefs):
     for num, (href,) in enumerate(hrefs):
 
         progress(size, num, SITE)
-        driver.get(f'https://gelbooru.com/{href}')
-        html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        page_source = requests.get(f'https://gelbooru.com/{href}').content
+        html = bs4.BeautifulSoup(page_source, 'lxml')
 
         metadata = ' '.join(
             '_'.join(tag.text.split(' ')[1:-1]) for tag in 
@@ -55,38 +56,38 @@ def page_handler(driver, hrefs):
             tags, metadata, True, artists, True
             )
         
-        image = driver.find_element_by_link_text(
-            'Original image'
-            ).get_attribute('href')
+        image = html.find(href=True, text='Original image').get('href')
         name = get_name(image.split('/')[-1], 1)
-        save_image(name, image, exif)
+        if not save_image(name, image, exif): continue
         hash_ = get_hash(name)
         
         try:
             execute(UPDATE[3], (
-                name, f"{' '.join(artists)}", tags, 
-                rating, image, hash_, 1, href),
-                commit=1
+                name, f"{' '.join(artists)}", tags, rating, image, hash_, href
+                ), commit=1
                 )
         except sql.errors.IntegrityError:
-            execute(UPDATE[3], (
-                f'202 - {href}', f"{' '.join(artists)}", 
-                tags, rating, image, hash_, 1, href),
-                commit=1
-                )
-        except (sql.errors.OperationalError, sql.errors.DatabaseError): continue
+            execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+        except sql.errors.DatabaseError: continue
 
     progress(size, size, SITE)
 
 def setup(initial=True):
     
     try:
-        driver = get_driver(headless=0)
+        driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[2],(SITE,))
-        page_handler(driver, CURSOR.fetchall())
-    except Exception as error: print(f'{SITE}: {error}')
+        CURSOR.execute(SELECT[2], (SITE,))
+        page_handler(CURSOR.fetchall())
+    except WebDriverException:
+        user = input(f'\n{SITE}: Browser closed\nContinue? ')
+        if user.lower() in 'yes': setup(False)
+    except Exception as error: print(f'\n{SITE}: {error}')
+
+    finally: 
+        try: driver.close()
+        except: pass
 
 if __name__ == '__main__':
     
