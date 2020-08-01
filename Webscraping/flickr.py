@@ -44,7 +44,7 @@ def page_handler(driver, hrefs):
         progress(size, num, SITE)
         driver.get(f'https://www.flickr.com{href}')
         
-        for _ in range(25):
+        for _ in range(20):
             try:
                 element = driver.find_element_by_class_name(view)
                 ActionChains(driver).move_to_element(element).perform()
@@ -56,27 +56,27 @@ def page_handler(driver, hrefs):
                 break
 
             except NoSuchElementException:
-                try:
+                try: # Video
                     image = driver.find_element_by_xpath(
                         '//*[@id="video_1_html5_api"]'
                         ).get_attribute('src')
-                    break
-
-                except:
+                    
+                except: # Image unavailable
+                    status = driver.find_element_by_class_name('statusCode')
+                    if status.text in ('403', '404'):
+                        execute(
+                            'DELETE FROM imageData WHERE href=%s', (href,), commit=1
+                            )
                     image = None
-                    try:
-                        status = driver.find_element_by_class_name('statusCode')
-                        if status.text == '404':
-                            execute(UPDATE[3], (
-                                f'404 - {href}', None, None, 1, None, None, 0, href),
-                                commit=1
-                                )
-                    except: pass
-                    break
-        
+                
+                break
+            
+            except WebDriverException: pass
+
         if image is None: continue
+        
         name = get_name(image, 0, 1)
-        save_image(name, image)
+        if not save_image(name, image): continue
         tags = get_tags(driver, name)
         tags, rating, exif = generate_tags(
             general=tags, custom=True, rating=True, exif=True
@@ -86,15 +86,12 @@ def page_handler(driver, hrefs):
         
         try:
             execute(UPDATE[3], (
-                name, ' ', tags, rating, image, hash_, 0, href),
+                name, ' ', tags, rating, image, hash_, href),
                 commit=1
                 )
         except sql.errors.IntegrityError:
-            execute(UPDATE[3], (
-                f'202 - {href}', ' ', tags, rating, image, hash_, 0, href),
-                commit=1
-                )
-        except (sql.errors.OperationalError, sql.errors.DatabaseError): continue
+            execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+        except sql.errors.DatabaseError: continue
     
     progress(size, size, SITE)
 
@@ -104,15 +101,16 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[2],(SITE,))
+        CURSOR.execute(SELECT[2], (SITE,))
         page_handler(driver, CURSOR.fetchall())
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)
     except Exception as error: print(f'{SITE}: {error}')
-        
-    try: driver.close()
-    except: pass
+
+    finally:
+        try: driver.close()
+        except: pass
 
 if __name__ == '__main__':
     
