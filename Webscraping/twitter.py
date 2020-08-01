@@ -36,7 +36,7 @@ def initialize(driver, retry=0):
             except sql.errors.OperationalError: continue
         
         if not hrefs: 
-            if retry == 2: break
+            if retry >= 2: break
             else: retry += 1
         else: retry = 0
             
