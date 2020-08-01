@@ -2,16 +2,11 @@ import os, shutil, piexif, json, requests, re
 from os.path import join, isfile, splitext, exists
 from io import BytesIO
 from PIL import Image
-from Webscraping.utils import get_driver, get_hash, get_name, get_tags, generate_tags, progress
-import mysql.connector as sql
+from Webscraping.utils import DATAB, CURSOR, get_driver, get_hash, get_name, get_tags, generate_tags, save_image, progress, sql
 from selenium.common.exceptions import WebDriverException
 
 ROOT = os.getcwd()[:2].upper()
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor()
+EXT = 'jp.*g|png|gif|webp|webm|mp4'
 INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, 0)'
 
 def rename(path, pattern, string, ext):
@@ -25,7 +20,7 @@ def rename(path, pattern, string, ext):
             print(new)
             # os.rename(file, dest)
             
-def delete(path):
+def delete(path, pattern, string, ext):
 
     jpg = [i for i in os.listdir(path) if 'jpg' in i[1]]
     png = [i for i in os.listdir(path) if 'png' in i[1]]
@@ -34,7 +29,7 @@ def delete(path):
     #     # os.remove(file[1])
     #     print(file[1])
 
-def move(path):
+def move(path, pattern, string, ext):
 
     dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
     
@@ -64,9 +59,10 @@ def convert_images(path):
         
         if file.lower().endswith(('png', 'jfif')):
             file = join(path, file)
+            name = f'{splitext(file)[0]}.jpg'
             jpg = Image.open(file).convert("RGB")
-            jpg.save(f'{splitext(file)[0]}.jpg', quality=100)
-            if isfile(f'{splitext(file)[0]}.jpg'): os.remove(file) 
+            jpg.save(name, quality=100)
+            if exists(name): os.remove(file) 
 
 def edit_properties(path):
 
@@ -94,61 +90,38 @@ def extract_files(path):
     for file in os.listdir(source):
         
         file = join(source, file)
-        window = json.load(open(file))[0]['windows']
+        urls = [
+            value for window in 
+            json.load(open(file))[0]['windows'].values() 
+            for value in window.values()
+            ]
 
-        for val in window.values():
-            for url in val.values():
+        for url in urls:
                 
-                try:
-                    image = url['url']
-                    if url['url'] == 'about:blank':
-                        image = f'https://{url["title"]}'
-                    title = url['title'].split('/')[-1]
-                    name = join(path, title.split()[0])
-                    
-                    if name.endswith(('.jpg', '.jpeg')):
-
-                        try: 
-                            jpg = Image.open(BytesIO(requests.get(image).content))
-                            jpg.save(name)
-
-                        except requests.exceptions.SSLError:
-                            print(f'Error at {image}')
-
-                        except OSError:
-                            name = name.replace('.png', '.jpg')
-                            png = Image.open(BytesIO(requests.get(image).content))
-                            png = png.convert('RGBA')
-                            background = Image.new('RGBA', png.size, (255,255,255))
-                            png = Image.alpha_composite(background, png)
-                            png.convert('RGB').save(name)
-
-                    elif name.endswith('.png'):
-
-                        name = name.replace('.png', '.jpg')
-                        png = Image.open(BytesIO(requests.get(image).content))
-                        png = png.convert('RGBA')
-                        background = Image.new('RGBA', png.size, (255,255,255))
-                        png = Image.alpha_composite(background, png)
-                        png.convert('RGB').save(name)
-
-                    elif name.endswith(('.gif','.webm', 'mp4')):
-
-                        with open(name, 'wb') as temp:
-                            temp.write(requests.get(image).content)
-            
-                except: print(name)
-            os.remove(file)
+            try:
+                title = url['title'].split('/')[-1].split()[0]
+                if not re.search(EXT, title):
+                    title = url['url'].split('/')[-1]
+                name = join(path, title)
+                if exists(name): continue
+                image = (
+                    f'https://{url["title"]}'
+                    if url['url'] == 'about:blank' else 
+                    url['url']
+                    )
+                save_image(name, image)
+        
+            except: break
+        os.remove(file)
 
 def insert_files(path):
 
     extract_files(path)
     convert_images(path)
     driver = get_driver(True)
-    ext = 'jpg', 'jpeg', 'gif', 'webm', 'mp4'
     files = [
         join(path, file) for file in os.listdir(path)
-        if  (file.lower().endswith(ext) and isfile(join(path, file)))
+        if isfile(join(path, file))
         ]
     size = len(files)
 
@@ -156,7 +129,7 @@ def insert_files(path):
         progress(size, num, 'Files')
         
         try: 
-            dest = get_name(file, 1, 1)
+            dest = get_name(file, 0, 1)
             
             if exists(dest):
                 os.remove(file)
@@ -177,14 +150,16 @@ def insert_files(path):
                     general=tags, custom=True, rating=True, exif=False
                     )
 
-            hash_ = get_hash(file.lower())
+            hash_ = get_hash(file)
 
-            CURSOR.execute(INSERT, (dest, f' {tags} ', rating, hash_))
+            CURSOR.execute(INSERT, (dest, tags, rating, hash_))
             shutil.move(file, dest)
             DATAB.commit()
             
         except (OSError, WebDriverException): continue
-
+        
+        except KeyboardInterrupt: break
+        
         except: continue
     
     progress(len(files), num, 'Files')
