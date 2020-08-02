@@ -52,7 +52,7 @@ def page_handler(url, title):
 
         hash_ = get_hash(name)
         execute(
-            INSERT, (name, f' {artist} ', tags, rating, 'imagefap', hash_), commit=1
+            INSERT, (name, f' {artist} ', tags, rating, hash_, 'imagefap'), commit=1
             )
     
 driver = get_driver(True)
