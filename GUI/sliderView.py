@@ -59,7 +59,7 @@ class Slideshow(QMainWindow):
     
     def show_image(self, path):
         
-        if path.endswith(('.jpg', '.jpeg', '.png')):
+        if path.endswith(('.jpg', '.png')):
             
             pixmap = QPixmap(path).scaled(
                 self.width(), self.height(), Qt.KeepAspectRatio, 
@@ -107,7 +107,9 @@ class Slideshow(QMainWindow):
             else: self.video.volume(sign * 10)
         
         elif video and key_press == Qt.Key_Space: self.video.pause()
-
+        
+        elif video and key_press == Qt.Key_M: self.video.mute()
+        
         elif key_press == Qt.Key_Escape:
             
             if video: self.video.update(None)
@@ -160,6 +162,12 @@ class videoPlayer(QVideoWidget):
             
             self.player.setVolume(self.player.volume() + delta)
 
+    def mute(self):
+        
+        if self.player.isAudioAvailable(): 
+    
+            self.player.setMuted(not self.player.isMuted())
+
     def stop(self): self.player.stop()
 
     def mediaStatusChanged(self, status):
@@ -170,13 +178,12 @@ class videoPlayer(QVideoWidget):
 
             self.parent().setCurrentIndex(1)      
 
-    # def mediaStateChanged(self, state):
-    #     if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-    #         self.playButton.setIcon(
-    #                 self.style().standardIcon(QStyle.SP_MediaPause))
-    #     else:
-    #         self.playButton.setIcon(
-    #                 self.style().standardIcon(QStyle.SP_MediaPlay))
+        # if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
+        #     self.playButton.setIcon(
+        #             self.style().standardIcon(QStyle.SP_MediaPause))
+        # else:
+        #     self.playButton.setIcon(
+        #             self.style().standardIcon(QStyle.SP_MediaPlay))
 
     # def positionChanged(self, position):
     #     self.positionSlider.setValue(position)
