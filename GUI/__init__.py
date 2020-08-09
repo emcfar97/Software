@@ -26,6 +26,7 @@ class CONNECT:
     def execute(self, statement, arguments=None, many=0, commit=0):
         
         for _ in range(20):
+
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
@@ -37,7 +38,10 @@ class CONNECT:
             
             except sql.errors.ProgrammingError: return list()
 
-            except: self.DATAB, self.CURSOR = self.connect()
+            except Exception as error: 
+                
+                print(error)
+                self.DATAB, self.CURSOR = self.connect()
 
     def close(self): self.DATAB.close()
 
