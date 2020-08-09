@@ -118,7 +118,7 @@ class Gallery(QWidget):
             path, =  re.findall('path=\w+', string, re.IGNORECASE)
             string = string.replace(path, '')
 
-            if re.search('jpe.*g|gif|webm|mp4/Z', path): sub = r'%\1'
+            if re.search('jpg|gif|webm|mp4/Z', path): sub = r'%\1'
             elif re.search('path=.:', path): 
                 sub = r'\1%'
                 path = re.sub('.:', 'C:', path)
@@ -138,7 +138,7 @@ class Gallery(QWidget):
         if string.strip(): # Get tags
     
             string = re.sub('NOT ', '-', string.strip())
-            string = re.sub('(\w+( OR \w+)+)', r'(\1)', string)
+            string = re.sub('(.+( OR .+)+)', r'(\1)', string)
             string = re.sub('(\w+|\(.+\))', r'+\1', string)
             string = re.sub('(AND \+|OR )', '', string)
             string = re.sub('-\+', '-', string)
