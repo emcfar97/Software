@@ -1,54 +1,6 @@
-import os, shutil
+import os, shutil, pathlib
 from os.path import splitext, join, exists, isfile
-from Webscraping.utils import DATAB, CURSOR, sql, save_image, get_tags, generate_tags, get_driver, execute
-
-# manuke shounen
-    # path = r'C:\Users\Emc11\Downloads\Katawa Shoujo'
-    # dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
-    # sprites = {}
-
-    # for i in range(3):
-
-    #         for file in os.listdir(path):
-    #             if not file.endswith('jpg'): continue
-    #             file = splitext(file)[0]
-    #             try: 
-    #                 char, pose, expr = file.split('_')[1:]
-    #                 if not char.startswith(("shiz", "mish", "lill", "hanak", "emi", "rin")): continue
-    #             except ValueError: continue
-                
-    #             if i == 0: 
-    #                 if char == 'emiwheel': continue
-    #                 if char == 'shizuyu': continue
-    #                 if char == 'rinpan': continue
-                    
-    #                 sprites[char] = {}
-                
-    #             elif i == 1: 
-    #                 if char == 'shizuyu':
-    #                     pose = char
-    #                     char = 'shizu'
-    #                 if char == 'emiwheel':
-    #                     pose = char
-    #                     char = 'emi'
-    #                 if char == 'rinpan': 
-    #                     pose = char
-    #                     char = 'rin'
-                    
-    #                 sprites[char][pose] = []
-
-    #             elif i == 2: 
-    #                 if char == 'shizuyu':
-    #                     pose = char
-    #                     char = 'shizu'
-    #                 if char == 'emiwheel':
-    #                     pose = char
-    #                     char = 'emi'
-    #                 if char == 'rinpan': 
-    #                     pose = char
-    #                     char = 'rin'
-                    
-    #                 sprites[char][pose].append(expr)
+# from Webscraping.utils import DATAB, CURSOR, sql, save_image, get_tags, generate_tags, get_driver, execute
 
 # pyqt5
     # from PyQt5.QtCore import QVariant, Qt
@@ -120,37 +72,23 @@ from Webscraping.utils import DATAB, CURSOR, sql, save_image, get_tags, generate
     # test_model = ImportSqlTableModel()
     # app.exec_()
 
-# ffmpeg
-    # import ffmpeg, ffprobe
+# 
+    # SELECT = 'SELECT DISTINCT artist FROM imagedata GROUP BY artist HAVING COUNT(artist) > 100 ORDER BY artist'
+    # STATS = '''SELECT (
+    #     SELECT COUNT(*) FROM imagedata 
+    #     WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE) AND stars
+    #     ) AS TOTAL,
+    #     (
+    #     SELECT SUM(stars) FROM imagedata 
+    #     WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE)
+    #     ) AS STARS
+    #     '''
 
-    # path = r'C:\Users\Emc11\Downloads'
+    # CURSOR.execute(SELECT)
 
-    # for file in os.listdir(path):
-        
-    #     if file.endswith('ogg'):
-    #         file = join(path, file)
-    #         audio = file.replace('ogg', 'opus')
-    #         ffmpeg.input(file).output(audio, metadata='title="ENG Stereo (Opus 112Kbps)"').run()
+    # for artist, in CURSOR.fetchall()[1:101]:
 
-    # "C:\Users\Emc11\Downloads\S01E01.opus" "C:\Users\Emc11\OneDrive - University of Missouri\Documents\Reference\Pickup A Live\Date A Live - S1\[Judas] Date A Live - S01E01.mkv" 
-    # # [Judas] Date A Live - S01E01
-
-SELECT = 'SELECT DISTINCT artist FROM imagedata GROUP BY artist HAVING COUNT(artist) > 100 ORDER BY artist'
-STATS = '''SELECT (
-    SELECT COUNT(*) FROM imagedata 
-    WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE) AND stars
-    ) AS TOTAL,
-    (
-    SELECT SUM(stars) FROM imagedata 
-    WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE)
-    ) AS STARS
-    '''
-
-CURSOR.execute(SELECT)
-
-for artist, in CURSOR.fetchall()[1:101]:
-
-    CURSOR.execute(STATS, (artist, artist))
-    sum, star = CURSOR.fetchone()
-    try: print(f'{artist.strip():<25} (Num: {sum:>4}, Stars: {star:>4}): {star / (sum*5):>4.2%}')
-    except: continue
+    #     CURSOR.execute(STATS, (artist, artist))
+    #     sum, star = CURSOR.fetchone()
+    #     try: print(f'{artist.strip():<25} (Num: {sum:>4}, Stars: {star:>4}): {star / (sum*5):>4.2%}')
+    #     except: continue
