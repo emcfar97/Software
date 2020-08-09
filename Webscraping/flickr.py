@@ -43,6 +43,7 @@ def page_handler(driver, hrefs):
         
         progress(size, num, SITE)
         driver.get(f'https://www.flickr.com{href}')
+        image = None
         
         for _ in range(20):
             try:
@@ -67,14 +68,14 @@ def page_handler(driver, hrefs):
                         execute(
                             'DELETE FROM imageData WHERE href=%s', (href,), commit=1
                             )
-                    image = None
                 
                 break
             
             except WebDriverException: pass
-
-        if image is None: continue
         
+        else: 
+            if image is None: continue
+
         name = get_name(image, 0, 1)
         if not save_image(name, image): continue
         tags = get_tags(driver, name)

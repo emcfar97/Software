@@ -50,4 +50,6 @@ def webscrapers():
 
 gelbooru.setup()
 sankaku.setup(1)
+flickr.setup()
+sankaku.setup(0)
 print('Complete')
