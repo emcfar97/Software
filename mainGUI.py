@@ -221,7 +221,7 @@ class ManageData(QMainWindow):
         elif key_press == Qt.Key_Delete: self.delete_records()
 
         elif key_press in (Qt.Key_Right, Qt.Key_Left) and alt:
-            
+            print('alt-key')
             if key_press == Qt.Key_Left:
                 self.gallery.ribbon.go_back()
                 
