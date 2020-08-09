@@ -87,7 +87,7 @@ GENERAL = {
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areola_slip OR breasts_outside OR underboob OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR corset OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position', 
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR underboob OR corset OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position OR nipple_chain', 
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'intercrural': 'thigh_sex',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
@@ -655,7 +655,7 @@ def get_name(path, type_, hasher=0, get=0):
         if get: return HASHER.hexdigest()
         else: path = f'{HASHER.hexdigest()}{ext}'
 
-    return join(PATH, TYPE[type_], path.replace('png', 'jpg'))
+    return join(PATH, TYPE[type_], path.replace('png', 'jpg').replace('jpeg','jpg'))
 
 def get_hash(image):
     '''Return perceptual hash of image'''
