@@ -12,8 +12,8 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
         except IndexError: return False
 
     if not query:
-        CURSOR.execute(SELECT[0], (SITE,))
-        query = set(CURSOR.fetchall())
+        query = set(execute(SELECT[0], (SITE,)))
+
     driver.get(f'https://www.flickr.com{url}')
     for _ in range(2):
         driver.find_element_by_tag_name('html').send_keys(Keys.END)
@@ -102,8 +102,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[2], (SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, execute(SELECT[2], (SITE,)))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)

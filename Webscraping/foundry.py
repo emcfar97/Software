@@ -21,8 +21,7 @@ def initialize(driver, url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1
 
     driver.get(f'http://www.hentai-foundry.com{url}')
     if not query:
-        CURSOR.execute(SELECT[1], (SITE,))
-        query = set(CURSOR.fetchall())
+        query = set(execute(SELECT[0], (SITE,)))
         driver.find_element_by_xpath('//*[@id="frontPage"]').click()
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     while True:
@@ -81,8 +80,7 @@ def setup(initial=True):
     try:
         driver = get_driver(headless=True)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[3],(SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, execute(SELECT[3], (SITE,)))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
             setup(False)

@@ -78,8 +78,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[2], (SITE,))
-        page_handler(CURSOR.fetchall())
+        page_handler(execute(SELECT[2], (SITE,)))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)

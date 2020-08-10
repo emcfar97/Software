@@ -18,8 +18,7 @@ def initialize(driver, url='/favorites/chairekakia', query=0):
         except AttributeError: return False
 
     if not query:
-        CURSOR.execute(SELECT[1], (SITE,))
-        query = set(CURSOR.fetchall())
+        query = set(execute(SELECT[0], (SITE,)))
     driver.get(f'https://www.furaffinity.net{url}')
     
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
@@ -88,8 +87,7 @@ def setup(initial=True):
         driver = get_driver()
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[3], (SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, execute(SELECT[3], (SITE,)))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
             setup(False)

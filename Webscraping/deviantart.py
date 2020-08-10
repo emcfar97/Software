@@ -12,8 +12,7 @@ def initialize(driver):#, url='/my-favorite-galleries/page/1/', query=0):
     #     except IndexError: return False
 
     # if not query:
-    #     CURSOR.execute(SELECT[0], (SITE,))
-    #     query = set(CURSOR.fetchall())
+    #     query = set(execute(SELECT[0], (SITE,)))
     driver.get(f'https://www.deviantart.com/notifications/watch')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     # x = html.findAll()
@@ -27,8 +26,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[2],(SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, execute(SELECT[2],(SITE,)))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes': 
             setup(False)

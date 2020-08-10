@@ -14,8 +14,7 @@ TYPE = 'Erotica 2'
 
 def initialize(driver, url='/posetool/favs.aspx'):
 
-    CURSOR.execute(SELECT[0], (SITE,))
-    query = set(CURSOR.fetchall())
+    query = set(execute(SELECT[0], (SITE,)))
     driver.get(f'https://www.posespace.com{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     while True:
@@ -137,8 +136,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[2], (SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, execute(SELECT[2], (SITE,)))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
             setup(False)
@@ -155,8 +153,7 @@ if __name__ == '__main__':
     # login(driver, SITE)
     # initialize(driver)
     
-    CURSOR.execute(SELECT[2], (SITE,))
-    page_handler(driver, CURSOR.fetchall())
+    page_handler(driver, execute(SELECT[2], (SITE,)))
 
     driver.close()
     DATAB.close()

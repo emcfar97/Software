@@ -13,8 +13,7 @@ TYPE = 'Erotica 3'
 
 def initialize(driver, retry=0):
 
-    CURSOR.execute(SELECT[1], (SITE,))
-    query = set(CURSOR.fetchall())
+    query = set(execute(SELECT[0], (SITE,)))
     driver.get('https://twitter.com/Chairekakia1/likes')
     time.sleep(4)    
 
@@ -132,8 +131,7 @@ def setup(initial=True):
         driver = get_driver()#True)
         login(driver, SITE)
         if initial: initialize(driver)
-        CURSOR.execute(SELECT[3], (SITE,))
-        page_handler(driver, CURSOR.fetchall())
+        page_handler(driver, execute(SELECT[3], (SITE,)))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue? ').lower() in 'yes':
             setup(False)    

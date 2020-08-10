@@ -66,7 +66,7 @@ GENERAL = {
     'dancing': 'dancing|dancer', 
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top',
-    'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|yukata|kimono|geta|happi|zori',
+    'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|short_yukata|yukata|short_kimono|kimono|geta|happi|zori',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))) AND NOT futanari',
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
     'nude': 'nude AND NOT functionally_nude',
@@ -465,6 +465,7 @@ def execute(statement, arguments, many=0, commit=0):
             if many: CURSOR.executemany(statement, arguments)
             else: CURSOR.execute(statement, arguments)
             if commit: DATAB.commit()
+            if statement.startswith('SEs'): return CURSOR.fetchall()
             return 1
         except sql.errors.OperationalError: continue
 
