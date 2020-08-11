@@ -184,7 +184,7 @@ class Gallery(QWidget):
             
             if key_press == Qt.Key_Left: self.ribbon.go_back()
                 
-            elif key_press = Qt.Key_Right: self.ribbon.go_forward()
+            elif key_press == Qt.Key_Right: self.ribbon.go_forward()
 
         elif key_press == Qt.Key_F4: self.ribbon.tags.setFocus()
         
@@ -407,16 +407,30 @@ class ImageView(QTableView):
                 QAction(
                     'Delete', menu, triggered=parent.parent().delete_records
                     )
+                )                
+            menu.addSeparator()
+            menu.addAction(
+                QAction(
+                    'Find more by artist', menu, triggered=self.find_by_artist
+                    )
                 )
             menu.addSeparator()
             menu.addAction(
-                QAction
-                ('Properties', menu, 
-                triggered=lambda: Properties(parent, self.selectedIndexes()))
+                QAction(
+                    'Properties', menu, triggered=lambda: Properties(parent, self.selectedIndexes())
+                    )
                 )
         except AttributeError: pass
 
         return menu
+
+    def find_by_artist(self, sender):
+
+        artist = self.currentIndex().data(1000)[2].pop()
+        if artist: self.parent().ribbon.tags.setText(artist)
+        else: QMessageBox.Information(
+            self, 'Artist', 'This image has no artist'
+            )
 
     def total(self): return len(self.table.images)
     
