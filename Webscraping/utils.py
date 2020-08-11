@@ -1,23 +1,10 @@
-import imagehash, os, piexif, time, bs4, requests, re, tempfile, hashlib, sys, ast
+import os, imagehash, piexif, time, bs4, requests, re, tempfile, hashlib, sys, ast
 from math import log
 from PIL import Image
 from io import BytesIO
 from os.path import join, splitext, exists
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
-import mysql.connector as sql
 
-def connect():
-
-    DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-    CURSOR = DATAB.cursor(buffered=True)
-
-    return DATAB, CURSOR
-    
-ROOT = os.getcwd()[:2].upper()
-PATH = rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん'
 HASHER = hashlib.md5()
 
 DATAB, CURSOR = connect()
@@ -458,17 +445,6 @@ artists_dict = {
     '＿太子⭕️西り43a': ['', None]
     }
 
-def execute(statement, arguments=None, many=0, commit=0, fetch=0):
-
-    for _ in range(10):
-        try:
-            if many: CURSOR.executemany(statement, arguments)
-            else: CURSOR.execute(statement, arguments)
-            if commit: DATAB.commit()
-            elif fetch: return CURSOR.fetchall()
-            return 1
-        except sql.errors.OperationalError: continue
-
 def progress(size, left, site, length=20):
     
     percent = left / size
@@ -806,16 +782,18 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
 def evaluate(tags, pattern):
     
     if re.search('AND|OR|NOT', pattern):
-        query = tuple(pattern.replace('(', '( ').replace(')', ' )').split(' '))
-        query = str(query).replace("'(',", '(').replace(", ')'", ')')
-        query = query.replace('<','(').replace('>',')')
+        query = re.sub('(.+)', r'(\1)', pattern)
+        query = re.sub('(\w+)', r'"\1"', query)
+        query = re.sub('(" )', r'\1, ', query)
                 
         return parse(tags.split(), ast.literal_eval(query))
+
     else: return re.search(f'\s({pattern})\s', tags)
 
 def parse(tags, search):
     
     if (len(search) == 1) and isinstance(search[0], tuple): search, = search
+    
     elif all(op not in search for op in ['AND','OR','NOT']):
         if isinstance(search, str): return search in tags
         else: return search[0] in tags
