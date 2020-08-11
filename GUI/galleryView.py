@@ -59,7 +59,7 @@ class Gallery(QWidget):
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
     
-    def populate(self, sender=None, limit=5000, id=None):
+    def populate(self, sender=None, limit=5500, id=None):
         
         self.images.clearSelection()
         if id: SELECT = f'{COMIC} WHERE hash="{id}"'
@@ -138,9 +138,9 @@ class Gallery(QWidget):
         if string.strip(): # Get tags
     
             string = re.sub('NOT ', '-', string.strip())
-            string = re.sub('(.+( OR .+)+)', r'(\1)', string)
-            string = re.sub('(\w+|\(.+\))', r'+\1', string)
-            string = re.sub('(AND \+|OR )', '', string)
+            string = re.sub('(-?\w+( OR -?\w+)+)', r'(\1)', string)
+            string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
+            string = re.sub('(\+AND|OR) ', '', string)
             string = re.sub('-\+', '-', string)
             if not re.search('\+\w+', string): string += ' qwd'
 
@@ -173,6 +173,24 @@ class Gallery(QWidget):
         
         try: self.parent().statusbar.showMessage(f'   {total}     {select}')
         except: self.parent().parent().statusbar.showMessage(f'   {total}     {select}')
+    
+    def keyPressEvent(self, sender):
+    
+        key_press = sender.key()
+        modifiers = sender.modifiers()
+        alt = modifiers == Qt.AltModifier
+
+        if alt:
+            
+            if key_press == Qt.Key_Left: self.ribbon.go_back()
+                
+            elif key_press = Qt.Key_Right: self.ribbon.go_forward()
+
+        elif key_press == Qt.Key_F4: self.ribbon.tags.setFocus()
+        
+        elif key_press == Qt.Key_F5: self.populate()
+
+        else: self.parent().keyPressEvent(sender)
 
 class Ribbon(QWidget):
      
@@ -198,37 +216,30 @@ class Ribbon(QWidget):
         self.back = QPushButton()
         self.forward = QPushButton()
         self.menu = QPushButton()
-
-        self.back.setIcon(
-            self.style().standardIcon(getattr(QStyle, 'SP_ArrowLeft'))
-            )
-        self.forward.setIcon(
-            self.style().standardIcon(getattr(QStyle, 'SP_ArrowRight'))
-            )
-        self.menu.setIcon(
-            self.style().standardIcon(getattr(QStyle, 'SP_ArrowDown'))
-            )
         
-        self.back.clicked.connect(self.go_back)
-        self.forward.clicked.connect(self.go_forward)
-        self.menu.clicked.connect(self.menu.showMenu)
-        
-        for button in [self.back, self.forward, self.menu]:
+        for button, icon, event in zip(
+            [self.back, self.forward, self.menu],
+            ['SP_ArrowBack', 'SP_ArrowForward', 'SP_ArrowDown'],
+            [self.go_back, self.go_forward, self.menu.showMenu]
+            ):
+            
+            button.setIcon(
+                self.style().standardIcon(getattr(QStyle, icon))
+                )
+            button.clicked.connect(event)
             button.setEnabled(False)
             self.history.addWidget(button)
 
         # Search function
         self.select = QFormLayout()
-        self.layout.addLayout(self.select)
+        self.layout.addLayout(self.select, 0)
         
         self.tags = QLineEdit(self)
-        self.tags.setFixedWidth(250)
+        self.tags.setFixedWidth(300)
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().populate)
-        self.tags.textChanged.connect(
-            lambda x: self.timer.start(660)
-            )
+        self.tags.textChanged.connect(lambda x: self.timer.start(750))
         self.select.addRow('Search:', self.tags)
         
         if self.parent().parent().windowTitle() == 'Manage Data':
@@ -245,9 +256,17 @@ class Ribbon(QWidget):
                 )
             self.select.addRow('Time:', self.time)
     
+        self.refresh = QPushButton()
+        self.refresh.setIcon(
+            self.style().standardIcon(getattr(QStyle, 'SP_CustomBase'))
+            )
+        self.refresh.clicked.connect(self.parent().populate)
+        self.layout.addWidget(self.refresh, 0, Qt.AlignLeft)
+        
     def update(self, string=None):
 
         if string:
+
             if self.undo:
                 if string != self.undo[-1]:
                     self.undo.append(string)
@@ -260,35 +279,45 @@ class Ribbon(QWidget):
         self.forward.setEnabled(bool(self.redo))
         self.menu.setEnabled(bool(self.undo + self.redo))
 
-        menu = QMenu(self)
-        menu.triggered.connect(self.menuEvent)
-        for state in self.undo[::-1] + self.redo:
-            action = QAction(state, checkable=True)
+        menu = QMenu(self, triggered=self.menuEvent)
+        for state in reversed(self.undo + self.redo[::-1]):
+            
+            action = QAction(state, menu, checkable=True)
+            if state == self.tags.text(): action.setChecked(True)
             menu.addAction(action)
-            if state == self.tags.text(): menu.setActiveAction(action)
-        self.menu.setMenu(menu)
-        
+
+        else: self.menu.setMenu(menu)
+
         if string is None:
+
             string = self.undo[-1] if self.undo else ''
             self.tags.setText(string)
 
     def menuEvent(self, sender):
 
         action = sender.text()
-        if action in self.undo: pass
-        elif action in self.redo: pass
 
-    def go_back(self):
+        if action in self.undo:                
+
+            while action != self.undo[-1]: self.go_back(False)
+
+        elif action in self.redo:                
+
+            while action in self.redo: self.go_forward(False)
+        
+        self.update()
+
+    def go_back(self, update=True):
         
         if self.undo:
             self.redo.append(self.undo.pop())
-            self.update()
+            if update: self.update()
 
-    def go_forward(self):
+    def go_forward(self, update=True):
         
         if self.redo:
             self.undo.append(self.redo.pop())
-            self.update()
+            if update: self.update()
 
 class ImageView(QTableView):
 
@@ -422,13 +451,25 @@ class ImageView(QTableView):
         
         key_press = sender.key()
         mode = QItemSelectionModel()
-        modifier = sender.modifiers()
         selection = QItemSelection()
+        modifier = sender.modifiers()
         ctrl = modifier == Qt.ControlModifier
         shift = modifier == Qt.ShiftModifier
         alt = modifier == Qt.AltModifier
 
-        if key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
+        if alt:
+            
+            if key_press == Qt.Key_Return and self.selectedIndexes():
+            
+                Properties(self.parent(), self.selectedIndexes())
+        
+        elif ctrl:
+
+            if key_press == Qt.Key_A: self.selectAll()
+                    
+            elif key_press == Qt.Key_C: self.copy_path()
+            
+        elif key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
             
             index = self.currentIndex()
             row, col = index.row(), index.column()
@@ -465,7 +506,7 @@ class ImageView(QTableView):
             
             row += sign * 5
             if 0 > row: row = 0
-            elif row >= self.table.rowCount(): row = self.table.rowCount()
+            elif row > self.table.rowCount(): row = self.table.rowCount()
             new = self.table.index(row, col)
 
             if shift:
@@ -495,15 +536,7 @@ class ImageView(QTableView):
 
             else: self.setCurrentIndex(new)
 
-        elif key_press == Qt.Key_A and ctrl: self.selectAll()
-                
-        elif key_press == Qt.Key_C and ctrl: self.copy_path()
-            
-        elif key_press == Qt.Key_Return and alt and self.selectedIndexes():
-            
-            Properties(self.parent(), self.selectedIndexes())
-        
-        else: self.parent().parent().keyPressEvent(sender)
+        else: self.parent().keyPressEvent(sender)
 
 class Model(QAbstractTableModel):
 

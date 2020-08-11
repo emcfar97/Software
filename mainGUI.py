@@ -68,6 +68,7 @@ class App(QMainWindow):
         if ctrl:
 
             if key_press == Qt.Key_1: self.select('Manage Data')
+            
             elif key_press == Qt.Key_2: self.select('Gesture Draw')
 
         elif key_press == Qt.Key_Escape: self.close()
@@ -211,22 +212,10 @@ class ManageData(QMainWindow):
     def keyPressEvent(self, sender):
 
         key_press = sender.key()
-        modifiers = sender.modifiers()
-        alt = modifiers == Qt.AltModifier
 
         if key_press == Qt.Key_Return: self.open_slideshow()
 
-        elif key_press == Qt.Key_F5: self.gallery.populate()
-        
         elif key_press == Qt.Key_Delete: self.delete_records()
-
-        elif key_press in (Qt.Key_Right, Qt.Key_Left) and alt:
-            print('alt-key')
-            if key_press == Qt.Key_Left:
-                self.gallery.ribbon.go_back()
-                
-            else:
-                self.gallery.ribbon.go_forward()
                         
         elif key_press == Qt.Key_Escape: self.close()
     
@@ -295,22 +284,10 @@ class GestureDraw(QMainWindow):
     def keyPressEvent(self, sender):
         
         key_press = sender.key()
-        modifiers = sender.modifiers()
-        alt = modifiers == Qt.AltModifier
 
         if key_press == Qt.Key_Return: self.start_session()
 
         elif key_press == Qt.Key_Space: self.preview.pause()
-
-        elif key_press == Qt.Key_F5: self.gallery.populate()
-
-        elif key_press in (Qt.Key_Right, Qt.Key_Left) and alt:
-            
-            if key_press == Qt.Key_Left:
-                self.gallery.ribbon.go_back()
-                
-            else:
-                self.gallery.ribbon.go_forward()
 
         elif key_press == Qt.Key_Escape:
 
