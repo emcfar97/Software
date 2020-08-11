@@ -7,7 +7,7 @@ SITE = 'instagram'
 def initialize(driver, url='/chairekakia/saved/', retry=0):
     
     driver.get(f'https://www.instagram.com{url}')
-    query = set(execute(SELECT[0], (SITE,)))
+    query = set(execute(SELECT[0], (SITE,), fetch=1))
     
     while True:
 
@@ -26,7 +26,7 @@ def initialize(driver, url='/chairekakia/saved/', retry=0):
             if retry >= 2: break
             else: retry += 1
         else:
-            query = set(execute(SELECT[0], (SITE,)))
+            query = set(execute(SELECT[0], (SITE,), fetch=1))
             retry = 0
 
     DATAB.commit()
@@ -75,7 +75,7 @@ def setup(initial=True):
         driver = get_driver()#headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2], (SITE,)))
+        page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)

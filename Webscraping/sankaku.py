@@ -15,8 +15,7 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
         except: return False
 
     if not query:
-        execute(f'{SELECT[0]} AND type=%s', (SITE, mode[1]))
-        query = CURSOR.fetchall()
+        query = execute(f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1)
     page_source = requests.get(
         f'https://{mode[0]}.sankakucomplex.com/{url}'
         ).content
@@ -98,8 +97,7 @@ def setup(initial=True, mode=1):
     try:
         driver = get_driver(True)
         if initial: initialize(mode)
-        CURSOR.execute(f'{SELECT[2]} AND type=%s', (SITE, mode[1]))
-        page_handler(driver, CURSOR.fetchall()[2:], mode)
+        page_handler(driver, execute(f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1), mode)
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)

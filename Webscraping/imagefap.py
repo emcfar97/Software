@@ -1,6 +1,4 @@
-import os, json, bs4, re, requests
-from os.path import join, exists
-from utils import DATAB, CURSOR, get_driver, get_name, get_hash, get_tags, generate_tags, save_image, execute, progress
+from utils import *
 
 root = os.getcwd()[:2].upper()
 PATH = rf'{root}\Users\Emc11\Downloads\Images\Imagefap'

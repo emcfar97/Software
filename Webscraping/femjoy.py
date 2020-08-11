@@ -10,7 +10,7 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
         except IndexError: return False
 
     if not query:
-        query = set(execute(SELECT[0], (SITE,)))
+        query = set(execute(SELECT[0], (SITE,), fetch=1))
     
     driver.get(f'https://www.{SITE}.com{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
@@ -74,7 +74,7 @@ def setup(initial=True):
         driver = get_driver()#True)
         # login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2].replace('href', 'src, artist'), (SITE,)))
+        page_handler(driver, execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes': 
             setup(False)

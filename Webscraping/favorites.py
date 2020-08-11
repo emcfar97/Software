@@ -1,15 +1,5 @@
-import os, sqlite3, tempfile
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import ElementNotInteractableException, InvalidArgumentException, WebDriverException, ElementClickInterceptedException, NoSuchElementException    
-import mysql.connector as sql
-if __name__ == '__main__': from utils import *
-else: from .utils import *
-
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor(buffered=True)
 
 def main(driver, paths, sankaku=0, gelbooru=0):
     
@@ -248,4 +238,5 @@ def setup():
             setup()
     DATAB.close()
 
-if __name__ == '__main__': setup()
+if __name__ == '__main__': from utils import *
+else: from .utils import *

@@ -458,14 +458,14 @@ artists_dict = {
     '＿太子⭕️西り43a': ['', None]
     }
 
-def execute(statement, arguments, many=0, commit=0):
+def execute(statement, arguments=None, many=0, commit=0, fetch=0):
 
     for _ in range(10):
         try:
             if many: CURSOR.executemany(statement, arguments)
             else: CURSOR.execute(statement, arguments)
             if commit: DATAB.commit()
-            if statement.startswith('SEs'): return CURSOR.fetchall()
+            elif fetch: return CURSOR.fetchall()
             return 1
         except sql.errors.OperationalError: continue
 

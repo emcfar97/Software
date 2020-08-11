@@ -1,16 +1,8 @@
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException
-import mysql.connector as sql
-from .utils import *
 
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor() 
 SITE = 'foundry'
 TYPE = 'Erotica 3'
-host = '192.168.1.43' if ('e:\\' in __file__) else '127.0.0.1'
 
 def initialize(driver, url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1550/page/1', query=0):
     
@@ -21,7 +13,7 @@ def initialize(driver, url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1
 
     driver.get(f'http://www.hentai-foundry.com{url}')
     if not query:
-        query = set(execute(SELECT[0], (SITE,)))
+        query = set(execute(SELECT[0], (SITE,), fetch=1))
         driver.find_element_by_xpath('//*[@id="frontPage"]').click()
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     while True:
@@ -80,7 +72,7 @@ def setup(initial=True):
     try:
         driver = get_driver(headless=True)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[3], (SITE,)))
+        page_handler(driver, execute(SELECT[3], (SITE,), fetch=1))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
             setup(False)

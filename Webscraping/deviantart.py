@@ -1,6 +1,4 @@
 from selenium.common.exceptions import WebDriverException
-# from .utils import *
-from utils import *
 
 SITE = 'deviantArt'
 
@@ -12,7 +10,7 @@ def initialize(driver):#, url='/my-favorite-galleries/page/1/', query=0):
     #     except IndexError: return False
 
     # if not query:
-    #     query = set(execute(SELECT[0], (SITE,)))
+    #     query = set(execute(SELECT[0], (SITE,), fetch=1))
     driver.get(f'https://www.deviantart.com/notifications/watch')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     # x = html.findAll()
@@ -26,7 +24,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2],(SITE,)))
+        page_handler(driver, execute(SELECT[2],(SITE,), fetch=1))
     except WebDriverException:
         if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes': 
             setup(False)
@@ -35,12 +33,5 @@ def setup(initial=True):
         
     driver.close()
 
-if __name__ == '__main__':
-    
-    try:
-        driver = get_driver()#headless=True)
-        login(driver, SITE)
-        initialize(driver)
-    except Exception as error:
-        print(f'{SITE}: {error}')
-    driver.close()
+if __name__ == '__main__': from utils import *
+else: from .utils import *

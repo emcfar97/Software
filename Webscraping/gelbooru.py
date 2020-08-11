@@ -12,8 +12,8 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
         except IndexError: return False
 
     if not query:
-        execute(SELECT[0], (SITE,))
-        query = CURSOR.fetchall()
+        query = execute(SELECT[0], (SITE,), fetch=1)
+        
     driver.get(f'https://gelbooru.com/index.php{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
 
@@ -78,7 +78,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(execute(SELECT[2], (SITE,)))
+        page_handler(execute(SELECT[2], (SITE,), fetch=1))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)

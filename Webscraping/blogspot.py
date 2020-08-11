@@ -13,7 +13,7 @@ def initialize(url, query=0):
         except AttributeError: return False
 
     if not query:
-        query = set(execute(SELECT[0], (SITE,)))
+        query = set(execute(SELECT[0], (SITE,), fetch=1))
 
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
@@ -59,7 +59,7 @@ def setup():
     
     try:
         driver = get_driver(headless=True)
-        page_handler(driver, execute(SELECT[2], (SITE,)))
+        page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup()
