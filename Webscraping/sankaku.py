@@ -111,4 +111,5 @@ if __name__ == '__main__':
     from utils import *
     setup(mode=1)
 
-else: from .utils import *
+else: 
+    from ..utils import get_driver

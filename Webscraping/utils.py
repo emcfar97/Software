@@ -5,41 +5,13 @@ from io import BytesIO
 from os.path import join, splitext, exists
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
-HASHER = hashlib.md5()
-
-DATAB, CURSOR = connect()
-SELECT = [
-    'SELECT href FROM imageData WHERE site=%s',
-    'SELECT href FROM favorites WHERE site=%s',
-    'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
-    'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
-    f'''
-        SELECT REPLACE(save_name, "{ROOT}", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
-        SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
-        ''',
-    ]
-INSERT = [
-    'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)',
-    'INSERT INTO favorites(href, site) VALUES(%s, %s)',
-    f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
-    ]
-UPDATE = [
-    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
-    f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), hash=%s, src=%s WHERE href=%s',
-    f'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, "{ROOT}", "C:"),%s,%s,%s)',
-    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s WHERE href=%s',
-    f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
-    f'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)'
-    ]
-
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 USER = 'Chairekakia'
 EMAIL = 'Emc1130@hotmail.com'
 PASS = 'SakurA1@'
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
+HASHER = hashlib.md5()
 
 METADATA = {
     'audio':'audio|has_audio',

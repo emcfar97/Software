@@ -59,10 +59,11 @@ def page_handler(hrefs):
 driver = get_driver(False)
 login(driver, 'pinterest')
 boards = {
-    'winter-casual':['',],
-    'summer-casual':['',],
+    'winter-casual':['jeans', 'leggings', 'shorts', 'skirt'],
+    'summer-casual':['jeans', 'leggings', 'shorts', 'skirt'],
     'athletic-wear':['',],
     'dresses':['',],
     'business':['',],
+    'your-pinterest-likes': ['']
     }   
 driver.close()
