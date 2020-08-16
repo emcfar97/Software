@@ -12,7 +12,7 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
         except IndexError: return False
 
     if not query:
-        query = set(execute(SELECT[0], (SITE,), fetch=1))
+        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
 
     driver.get(f'https://www.flickr.com{url}')
     for _ in range(2):
@@ -25,7 +25,7 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
         html.findAll('a', class_='overlay', href=True)
         if (target.get('href'),) not in query
         ]
-    execute(INSERT[0], hrefs, 1)
+    CONNECTION.execute(INSERT[0], hrefs, 1)
         
     next = next_page(html.find('a', {'data-track':'paginationRightClick'}))
     if hrefs and next: initialize(driver, next, query)
@@ -65,7 +65,7 @@ def page_handler(driver, hrefs):
                 except: # Image unavailable
                     status = driver.find_element_by_class_name('statusCode')
                     if status.text in ('403', '404'):
-                        execute(
+                        CONNECTION.execute(
                             'DELETE FROM imageData WHERE href=%s', (href,), commit=1
                             )
                 
@@ -86,12 +86,12 @@ def page_handler(driver, hrefs):
         hash_ = get_hash(name) 
         
         try:
-            execute(UPDATE[3], (
+            CONNECTION.execute(UPDATE[3], (
                 name, ' ', tags, rating, image, hash_, href),
                 commit=1
                 )
         except sql.errors.IntegrityError:
-            execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
         except sql.errors.DatabaseError: continue
     
     progress(size, size, SITE)
@@ -102,7 +102,7 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
+        page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)
@@ -117,4 +117,4 @@ if __name__ == '__main__':
     from utils import *
     setup()
 
-else: from .utils import *
+else: from ..utils import *

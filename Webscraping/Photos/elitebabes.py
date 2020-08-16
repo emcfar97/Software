@@ -88,7 +88,7 @@ def setup(initial=True):
 
 if __name__ == '__main__':
     
-    from utils import *
+    from ..utils import *
     setup()
 
-else: from .utils import *
+else: from ..utils import *

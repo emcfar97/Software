@@ -148,7 +148,7 @@ def setup(initial=True):
 
 if __name__ == '__main__':
 
-    from utils import *
+    from .utils import *
     driver = get_driver(True)
     # login(driver, SITE)
     # initialize(driver)
@@ -158,4 +158,4 @@ if __name__ == '__main__':
     driver.close()
     DATAB.close()
 
-else: from .utils import *
+else: from ..utils import *

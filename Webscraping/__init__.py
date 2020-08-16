@@ -1,8 +1,7 @@
-import os
+import os, pathlib, threading
 import mysql.connector as sql
     
-ROOT = os.getcwd()[:2].upper()
-PATH = rf'{ROOT}\Users\Emc11\Dropbox\Videos\ん'
+ROOT = pathlib.Path(os.getcwd()[:2].upper())
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
@@ -39,7 +38,7 @@ class CONNECT:
 
         DATAB = sql.connect(
             user='root', password='SchooL1@', database='userData', 
-            host='127.0.0.1' if ROOT == 'C:' else '192.168.1.43'
+            host='127.0.0.1' if ROOT.drive == 'C:' else '192.168.1.43'
             )
         CURSOR = DATAB.cursor(buffered=True)
 
@@ -62,4 +61,35 @@ class CONNECT:
 
     def close(self): self.DATAB.close()
 
+def start():
+    
+    threads = [
+        threading.Thread(target=Photos.start),
+        threading.Thread(target=Illus.start) 
+        ]
+    for thread in threads: thread.start()
+    for thread in threads: thread.join()
+
+    print('Complete')
+
+def get_driver(headless=False):
+
+    from selenium import webdriver
+    from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+    from selenium.webdriver.firefox.options import Options
+    
+    options = Options()
+    options.headless = headless
+    binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
+    driver = webdriver.Firefox(firefox_binary=binary, options=options)
+    driver.implicitly_wait(10)
+
+    return driver
+
 CONNECTION = CONNECT()
+
+if __name__ == '__main__': 
+    
+    from Webscraping import Photos, Illus
+    
+    start()

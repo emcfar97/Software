@@ -15,7 +15,7 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
         except: return False
 
     if not query:
-        query = execute(f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1)
+        query = CONNECTION.execute(f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1)
     page_source = requests.get(
         f'https://{mode[0]}.sankakucomplex.com/{url}'
         ).content
@@ -26,7 +26,7 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
             html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
             if (target.get('href'),) not in query
             ]
-        execute(INSERT[0], hrefs, 1)
+        CONNECTION.execute(INSERT[0], hrefs, 1)
         
         next = next_page(html.find('div', {'next-page-url': True}))   
         if hrefs and next: initialize(mode, next, query)
@@ -79,13 +79,13 @@ def page_handler(driver, hrefs, mode):
         hash_ = get_hash(name)
 
         try:
-            execute(UPDATE[3], (
+            CONNECTION.execute(UPDATE[3], (
                 name, f"{' '.join(artists)}", tags, 
                 rating, image, hash_, href),
                 commit=1
                 )
         except sql.errors.IntegrityError:
-            execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
         except sql.errors.DatabaseError: continue
     
     progress(size, size, SITE)
@@ -97,7 +97,11 @@ def setup(initial=True, mode=1):
     try:
         driver = get_driver(True)
         if initial: initialize(mode)
-        page_handler(driver, execute(f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1), mode)
+        page_handler(
+            driver, 
+            CONNECTION.execute(f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1), 
+            mode
+            )
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)
@@ -108,8 +112,8 @@ def setup(initial=True, mode=1):
 
 if __name__ == '__main__':
     
-    from utils import *
+    from .utils import *
     setup(mode=1)
 
 else: 
-    from ..utils import get_driver
+    from .utils import get_driver

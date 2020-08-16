@@ -1,9 +1,7 @@
-import os, bs4, re, requests
-from os.path import join
-from utils import DATAB, CURSOR, INSERT, SELECT, UPDATE, sql, execute, get_driver, get_name, get_hash, get_tags, generate_tags, save_image, progress
 from selenium.common.exceptions import WebDriverException
 
 SITE = 'blogspot'
+url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
 
 def initialize(url, query=0):
     
@@ -12,8 +10,7 @@ def initialize(url, query=0):
         try: return page.get('href')
         except AttributeError: return False
 
-    if not query:
-        query = set(execute(SELECT[0], (SITE,), fetch=1))
+    if not query: query = set(execute(SELECT[0], (SITE,), fetch=1))
 
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
@@ -26,7 +23,7 @@ def initialize(url, query=0):
         
     next = next_page(html.find(title='Older Posts'))
     if hrefs and next: initialize(next, query)
-    else: DATAB.commit()
+    else: CONNECTION.DATAB.commit()
 
 def page_handler(driver, hrefs):
 
@@ -68,12 +65,16 @@ def setup():
     try: driver.close()
     except: pass
 
-url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
-page_source = requests.get(url).content
-html = bs4.BeautifulSoup(page_source, 'lxml')
-
-for page in html.findAll('li'):
+if __name__ == '__main__':
     
-    initialize(page.contents[0].get('href'))
+    from . import requests
+    from . import CONNECTION, get_driver, sql
+    
+    page_source = requests.get(url).content
+    html = bs4.BeautifulSoup(page_source, 'lxml')
 
-setup()
+    for page in html.findAll('li'):
+        
+        initialize(page.contents[0].get('href'))
+
+    setup()

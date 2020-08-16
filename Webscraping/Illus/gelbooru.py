@@ -12,7 +12,7 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
         except IndexError: return False
 
     if not query:
-        query = execute(SELECT[0], (SITE,), fetch=1)
+        query = CONNECTION.execute(SELECT[0], (SITE,), fetch=1)
         
     driver.get(f'https://gelbooru.com/index.php{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
@@ -22,7 +22,7 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
-    execute(INSERT[0], hrefs, 1, commit=1)
+    CONNECTION.execute(INSERT[0], hrefs, 1, commit=1)
         
     next = next_page(html.find(id='paginator').contents)   
     if hrefs and next: initialize(driver, next, query)
@@ -62,12 +62,12 @@ def page_handler(hrefs):
         hash_ = get_hash(name)
         
         try:
-            execute(UPDATE[3], (
+            CONNECTION.execute(UPDATE[3], (
                 name, f"{' '.join(artists)}", tags, rating, image, hash_, href
                 ), commit=1
                 )
         except sql.errors.IntegrityError:
-            execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
         except sql.errors.DatabaseError: continue
 
     progress(size, size, SITE)
@@ -78,11 +78,11 @@ def setup(initial=True):
         driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(execute(SELECT[2], (SITE,), fetch=1))
+        page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except WebDriverException:
         user = input(f'\n{SITE}: Browser closed\nContinue? ')
         if user.lower() in 'yes': setup(False)
-    except Exception as error: print(f'\n{SITE}: {error}')
+    # except Exception as error: print(f'\n{SITE}: {error}')
 
     finally: 
         try: driver.close()

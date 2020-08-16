@@ -1,8 +1,11 @@
 import threading
+from . import gelbooru
 from ..utils import *
-from . import gelbooru, sankaku
+from .. import Favorites, sankaku
 
 def start():
+
+    Favorites.start()
 
     threads = [
         threading.Thread(target=gelbooru.setup),
