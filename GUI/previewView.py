@@ -49,8 +49,9 @@ class Preview(QWidget):
         self.timer.timer.start(1000)                
                 
     def show_image(self, path):
+        
+        try: 
 
-        if path: 
             if path.endswith(('.mp4', '.webm')):
                 
                 image = VideoCapture(path).read()[-1]
@@ -61,9 +62,9 @@ class Preview(QWidget):
                 transformMode=Qt.SmoothTransformation
                 )
             # ratio = pixmap.width() / pixmap.height()
-            # scrollbar = not (.5 <= ratio <= 2)
+            # scrollbar.(not (.5 <= ratio <= 2))
 
-        else: pixmap = QPixmap()
+        except: pixmap = QPixmap()
                 
         self.label.setPixmap(pixmap)
     
