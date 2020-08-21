@@ -14,7 +14,7 @@ TYPE = {
     'all': [''],
     'photo': ['type=0', '0'], 
     'illus': ['type=1', '1'], 
-    'comics': ['type=2', '2'],
+    'comic': ['type=2', '2'],
     0: 'photograph', 1: 'illustration', 2: 'comic'
     }
 
@@ -59,10 +59,10 @@ class Gallery(QWidget):
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
     
-    def populate(self, sender=None, limit=5500, id=None):
+    def populate(self, sender=None, limit=6000, id=None):
         
         self.images.clearSelection()
-        if id: SELECT = f'{COMIC} WHERE hash="{id}"'
+        if id: SELECT = f'{self.get_filter(id)}'
         else: SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
         self.images.table.images = CONNECTION.execute(SELECT)
 
@@ -71,8 +71,10 @@ class Gallery(QWidget):
         self.images.resizeColumnsToContents()
         self.statusbar(self.images.total())
 
-    def get_filter(self):
+    def get_filter(self, id=None):
         
+        if id: return f'{COMIC} WHERE hash="{id}" ORDER BY rowid'
+
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
 
@@ -83,7 +85,7 @@ class Gallery(QWidget):
             query.append('date_used <= Now() - INTERVAL 2 MONTH')
 
         try: # Get type
-            type_, = re.findall('type=(?:photo|illus|comics?)', string)
+            type_, = re.findall('type=(?:photo|illus|comic?)', string)
             string = string.replace(type_, '')
             type_ = re.sub('(\w+)\Z', TYPE[type_[5:]][1], type_)
         except: type_ = TYPE[self.type.checkedAction().text().lower()][0]
@@ -258,10 +260,10 @@ class Ribbon(QWidget):
     
         self.refresh = QPushButton()
         self.refresh.setIcon(
-            self.style().standardIcon(getattr(QStyle, 'SP_CustomBase'))
+            self.style().standardIcon(getattr(QStyle, 'SP_BrowserReload'))
             )
         self.refresh.clicked.connect(self.parent().populate)
-        self.layout.addWidget(self.refresh, 0, Qt.AlignLeft)
+        self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
         
     def update(self, string=None):
 
@@ -387,7 +389,7 @@ class ImageView(QTableView):
         
         typeMenu = QMenu('Type', menu)
         type_ = QActionGroup(typeMenu)
-        for i in ['All', 'Photo', 'Illus', 'Comics']:
+        for i in ['All', 'Photo', 'Illus', 'Comic']:
             action = QAction(i, typeMenu, checkable=True)
             if i == 'All': action.setChecked(True)
             type_.triggered.connect(parent.populate)
@@ -507,7 +509,7 @@ class ImageView(QTableView):
                 selection.select(
                     *(index, new) if index > new else (new, index)
                     )
-                self.selectionModel().select(selection, mode.Select)
+                self.selectionModel().select(selection, mode.ToggleCurrent)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -520,14 +522,14 @@ class ImageView(QTableView):
             
             row += sign * 5
             if 0 > row: row = 0
-            elif row > self.table.rowCount(): row = self.table.rowCount()
+            elif row > self.table.rowCount(): row = self.table.rowCount() - 1
             new = self.table.index(row, col)
 
             if shift:
                 selection.select(
                     *(index, new) if index > new else (new, index)
                     )
-                self.selectionModel().select(selection, mode.Select)
+                self.selectionModel().select(selection, mode.ToggleCurrent)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -545,7 +547,7 @@ class ImageView(QTableView):
                 selection.select(
                     *(index, new) if index > new else (new, index)
                     )
-                self.selectionModel().select(selection, mode.Select)
+                self.selectionModel().select(selection, mode.ToggleCurrent)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -615,8 +617,6 @@ class Model(QAbstractTableModel):
             
             elif role == 100: return (index.row() * 5), index.column()
             
-            elif role == 500: return self.images[ind][:6:5]
-
             elif role == 1000:
                 
                 data = self.images[ind]
