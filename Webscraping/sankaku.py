@@ -1,4 +1,3 @@
-from selenium.common.exceptions import WebDriverException
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -95,25 +94,20 @@ def setup(initial=True, mode=1):
     mode = MODE[mode]
 
     try:
-        driver = get_driver(True)
+        driver = WEBDRIVER(True)
         if initial: initialize(mode)
         page_handler(
             driver, 
             CONNECTION.execute(f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1), 
             mode
             )
-    except WebDriverException:
-        user = input(f'\n{SITE}: Browser closed\nContinue? ')
-        if user.lower() in 'yes': setup(False)
     except Exception as error: print(f'\n{SITE}: {error}')
     
-    try: driver.close()
-    except: pass
+    driver.close()
 
 if __name__ == '__main__':
     
     from .utils import *
-    setup(mode=1)
 
 else: 
-    from .utils import get_driver
+    from . import WEBDRIVER

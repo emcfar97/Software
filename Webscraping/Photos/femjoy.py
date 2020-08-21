@@ -71,17 +71,13 @@ def page_handler(driver, hrefs):
 def setup(initial=True):
     
     try:
-        driver = get_driver()#True)
+        driver = WEBDRIVER()#True)
         # login(driver, SITE)
         if initial: initialize(driver)
         page_handler(driver, execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
-    except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes': 
-            setup(False)
     except Exception as error: print(f'{SITE}: {error}')
     
-    try: driver.close()
-    except: pass
+    driver.close()
 
 if __name__ == '__main__':
     

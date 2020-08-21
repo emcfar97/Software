@@ -1,39 +1,34 @@
-import os, shutil, re
-from os.path import join, split, splitext
-from utils import execute, get_driver, get_name, get_hash, get_tags, generate_tags
+import shutil, re
+from . import ROOT, CONNECTION, WEBDRIVER
+from .utils import get_name, get_hash, get_tags, generate_tags
 
-INSERT = [
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash) VALUES(%s, %s, %s, %s, %s, %s)',
-    'INSERT INTO comics(path, hash) VALUES(%s, %s)'
-    ]
+path = ROOT / r'Downloads\Images\Comics'
+driver = WEBDRIVER()
 
-# driver = get_driver()
-path = r'C:\Users\Emc11\Downloads\Images\Comics'
+def start():
 
-for folder in os.listdir(path):
+    for folder in path.iterdir():
 
-    folder = join(path, folder)
-    artist = re.sub('\[|\]|,\s', ' ', re.findall('\[.+\]', folder)[0]).lower()
-    images = [
-        shutil.copy(
-            join(folder, file), 
-            get_name(join(folder, file), 2, 1)
-            )
-        for file in sorted(os.listdir(folder))
-        ]
+        targets = re.findall('\[.+\]|\(\w+\)', folder.stem.lower())
+        artist = ' '.join('_'.join(i[1:-1].split()) for i in targets)
+        images = [
+            (shutil.copy(file, get_name(file, 2, 1)), num)
+            for num, file in enumerate(folder.iterdir())
+            ]
+        cover = images[0][1]
 
-    cover = images[0]
-    hash_ = get_hash(cover)
-    id = split(splitext(cover)[0])[1]
-    execute(INSERT[1], [(i, id) for i in images], 1)
+        for num, image in images:
 
-    # tags = get_tags(driver, images, comic=1)
-    # tags, rating = generate_tags(
-        # general=tags, custom=True, rating=True, exif=False
-        # )
-    tags, rating = ' qwd ', 0
-    execute(INSERT[0], (cover, artist, tags, rating, 2, hash_), commit=1)
+            hash_ = get_hash(image)
+            tags = get_tags(driver, image, comic=1)
+            tags, rating = generate_tags(
+                general=tags, custom=True, rating=True, exif=False
+                )
+            CONNECTION.execute(
+                INSERT[4], 
+                (str(image), artist, tags, rating, 2, hash_, cover.stem, num), 
+                commit=1
+                )
+        shutil.rmtree(folder)
 
-    # shutil.rmtree(folder)
-
-# driver.close()
+    driver.close()

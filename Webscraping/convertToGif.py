@@ -1,16 +1,10 @@
-import requests, threading
-from math import log
-from bs4 import BeautifulSoup
-from os import listdir, remove, getcwd
-from os.path import join, splitext
-from utils import get_driver, progress
+import threading, pathlib
+from .utils import get_driver, progress
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import WebDriverException, NoSuchElementException
 
 SUM = 0
 EXT = 'webm', 'webp', 'mp4'
-ROOT = getcwd()[:2].upper()
-PATH = rf'{ROOT}\Users\Emc11\Downloads\Images'
 
 def main(paths, lock=False):
 
@@ -67,10 +61,10 @@ def main(paths, lock=False):
         
         html = BeautifulSoup(driver.page_source, 'lxml')
         image = html.find('img', src=True, alt='[optimize output image]')
-        with open(join(PATH, f'{splitext(path)[0]}.gif') , 'wb') as file:
+        with open(PATH / path.with_suffix('gif'), 'wb') as file:
             file.write(requests.get(f'https:{image.get("src")}').content)
         
-        remove(path)
+        path.unlink()
         if lock:
             lock.acquire()
             SUM += 1
@@ -89,14 +83,14 @@ def switch(seconds):
     elif seconds <= 10:      return '25'
 
 paths = [
-    join(PATH, path) 
-    for path in listdir(PATH) 
-    if path.endswith(EXT)
+    PATH / path for path in PATH.iterdir()
+    if path.suffix.endswith(EXT)
     ]
 size = len(paths)
 threads = 1 if input('Use threads? ').lower() in 'yes' else 0
 
 if threads:
+    
     lock = threading.Lock()
     thr = int(2 * log(len(paths), 10) + 1)
     num, div = divmod(size, thr)

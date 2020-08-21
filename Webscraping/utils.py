@@ -1,10 +1,11 @@
-import os, imagehash, piexif, time, bs4, requests, re, tempfile, hashlib, sys, ast
+import imagehash, piexif, time, bs4, requests, re, tempfile, hashlib, sys, ast
+from . import ROOT
 from math import log
 from PIL import Image
 from io import BytesIO
-from os.path import join, splitext, exists
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
+PATH = ROOT / r'Videos\ん'
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 USER = 'Chairekakia'
@@ -26,7 +27,7 @@ GENERAL = {
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|short_yukata|yukata|short_kimono|kimono|geta|happi|zori',
-    'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))) AND NOT futanari',
+    'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls)))',
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
     'nude': 'nude AND NOT functionally_nude',
     'functionally_nude': '(functionally_nude OR (bottomless AND topless)) AND NOT nude', 
@@ -46,7 +47,7 @@ GENERAL = {
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR underboob OR corset OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard)) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes) OR amazon_position OR nipple_chain', 
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR underboob OR corset OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain', 
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'intercrural': 'thigh_sex',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
@@ -547,31 +548,17 @@ def login(driver, site, type_=0):
         driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
         time.sleep(5)
 
-def get_driver(headless=False):
-
-    from selenium import webdriver
-    from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
-    from selenium.webdriver.firefox.options import Options
-    
-    options = Options()
-    options.headless = headless
-    binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
-    driver = webdriver.Firefox(firefox_binary=binary, options=options)
-    driver.implicitly_wait(10)
-
-    return driver
-
 def save_image(name, image, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
     try:
         if re.search('jp.*g', image, re.IGNORECASE):
 
-            if exists(name): Image.open(name).save(name, exif=exif)
+            if name.exists(): Image.open(name).save(name, exif=exif)
             else:
                 img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
                 img.thumbnail(RESIZE)
-                img.save(name.replace('.jpeg', '.jpg'), exif=exif)
+                img.save(name.with_suffix('.jpg'), exif=exif)
             
         elif re.search('png', image, re.IGNORECASE):
 
@@ -581,7 +568,7 @@ def save_image(name, image, exif=b''):
             img = Image.alpha_composite(
                 Image.new('RGBA', img.size, (0, 0, 0)), img
                 )
-            img.convert('RGB').save(name.replace('.png', '.jpg'), exif=exif)
+            img.convert('RGB').save(name.with_suffix('.jpg'), exif=exif)
 
         elif re.search('gif|webm|mp4', image, re.IGNORECASE):
             
@@ -591,42 +578,41 @@ def save_image(name, image, exif=b''):
                     if chunk: file.write(chunk)
     
     except: return False
-    return exists(name)
+    return name.exists()
     
-def get_name(path, type_, hasher=0, get=0):
+def get_name(path, type_, hasher=0, fetch=0):
     '''Return pathname (from optional hash of image)'''
 
     if hasher:
         try: data = requests.get(path).content
         except: data = open(path, 'rb').read()
         HASHER.update(data)
-        ext = splitext(path)[1]
-        if get: return HASHER.hexdigest()
-        else: path = f'{HASHER.hexdigest()}{ext}'
+        if fetch: return HASHER.hexdigest()
+        else: stem = f'{HASHER.hexdigest()}{path.suffix}'
 
-    return join(PATH, TYPE[type_], path.replace('png', 'jpg').replace('jpeg','jpg'))
+    return PATH / TYPE[type_] / stem.replace('png', 'jpg').replace('jpeg','jpg')
 
-def get_hash(image):
+def get_hash(image, src=False):
     '''Return perceptual hash of image'''
         
-    if 'http' in image:
+    if src and 'http' in image:
         
-        ext = splitext(image)[1][:4]
+        ext = image.ext[:4]
         temp_dir = tempfile.TemporaryDirectory()
-        temp = join(temp_dir.name,
-            f'{next(tempfile._get_candidate_names())}{ext}'
+        temp = '\\'.join(
+            temp_dir.name, f'{next(tempfile._get_candidate_names())}{ext}'
             )
         
-        with open(temp, 'wb') as img: 
+        with open(temp, 'wb') as img:
             image = img.write(requests.get(image).content).name
     
-    if re.search('jp.*g|png|gif', image, re.IGNORECASE): 
+    if re.search('jp.*g|png|gif', image.suffix): 
         
         image = Image.open(image)
 
-    elif re.search('webm|mp4', image, re.IGNORECASE):
+    elif re.search('webm|mp4', image.suffix):
         
-        video_capture = VideoCapture(image).read()[-1]
+        video_capture = VideoCapture(str(image)).read()[-1]
         image = cvtColor(video_capture, COLOR_BGR2RGB)
         image = Image.fromarray(image)
     
@@ -641,29 +627,26 @@ def get_tags(driver, path, comic=0):
 
     tags = set()
     frames = []
-    try: video = path.endswith(('gif', 'webm', 'mp4'))
+    try: video = path.suffix in ('.gif', '.webm', '.mp4')
     except: video = False
 
     if video:
 
         tags.add('animated')
-        if path.endswith(('webm', 'mp4')): tags.add('audio')
+        if path.suffix in ('.webm', '.mp4'): tags.add('audio')
         temp_dir = tempfile.TemporaryDirectory()
-        vidcap = VideoCapture(path)
+        vidcap = VideoCapture(str(path))
         success, frame = vidcap.read()
  
         while success:
             
-            temp = join(temp_dir.name, 
-                f'{next(tempfile._get_candidate_names())}.jpg'
-                )
-            with open(temp, 'wb') as img: 
-                img.write(imencode('.jpg', frame)[-1])
-                frames.append(img.name)
+            temp = ROOT.parent / temp_dir.name / f'{next(tempfile._get_candidate_names())}.jpg'
+            temp.write_bytes(imencode('.jpg', frame)[-1])
+            frames.append(temp)
             success, frame = vidcap.read()
 
         else: 
-            step = round(60 * log((len(frames) * .0005) + 1) + 1)
+            step = round(90 * log((len(frames) * .0007) + 1) + 1)
             frames = frames[::step]
     
     elif comic: frames = path
@@ -673,18 +656,19 @@ def get_tags(driver, path, comic=0):
     for frame in frames:
 
         driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
-        driver.find_element_by_xpath('//*[@id="exampleFormControlFile1"]').send_keys(frame)
-        driver.find_element_by_xpath('//body/div/div/div/form/button').click()
+        driver.find('//*[@id="exampleFormControlFile1"]', str(frame))
+        driver.find('//body/div/div/div/form/button', click=True)
 
-        for _ in range(50):
-            html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        for _ in range(30):
+            html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
             try:
                 tags.update([
-                    tag.text for tag in html.find('tbody').findAll(href=True)
+                    tag.text for tag in 
+                    html.find('tbody').findAll(href=True)
                     ])
                 break
             except AttributeError: 
-                if not (_ % 10): driver.refresh()
+                if _ % 5: driver.refresh()
     
     else:
         if video: temp_dir.cleanup()
@@ -739,14 +723,14 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
             }
         exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
         
-        tags = ' '.join(sorted(list(tags)))
+        tags = ' '.join(list(tags))
         tags = [
             f' {tags} ', rating, piexif.dump({"0th":zeroth_ifd,"Exif":exif_ifd})
             ]
 
     else: 
 
-        tags = ' '.join(sorted(list(set(tags + general.split()))))
+        tags = ' '.join(list(set(tags + general.split())))
         if rating is not None: tags = (f' {tags} ', rating)
         
     return tags
@@ -754,11 +738,15 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
 def evaluate(tags, pattern):
     
     if re.search('AND|OR|NOT', pattern):
-        query = re.sub('(.+)', r'(\1)', pattern)
-        query = re.sub('(\w+)', r'"\1"', query)
-        query = re.sub('(" )', r'\1, ', query)
+        query = tuple(pattern.replace('(', '( ').replace(')', ' )').split(' '))
+        query = str(query).replace("'(',", '(').replace(", ')'", ')')
+        query = query.replace('<','(').replace('>',')')
+        # query = re.sub('(\w+)', r'"\1",', pattern)
+        # query = re.sub('(\([^(\([^()]*\))]*\))', r'\1,', query)
+        # # query = re.sub('([))])', '),),', query)
+        query = ast.literal_eval(query)
                 
-        return parse(tags.split(), ast.literal_eval(query))
+        return parse(tags.split(), query)
 
     else: return re.search(f'\s({pattern})\s', tags)
 

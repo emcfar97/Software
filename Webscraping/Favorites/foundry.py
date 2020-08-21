@@ -70,17 +70,12 @@ def page_handler(driver, hrefs):
 def setup(initial=True):
     
     try:
-        driver = get_driver(headless=True)
+        driver = WEBDRIVER(headless=True)
         if initial: initialize(driver)
         page_handler(driver, execute(SELECT[3], (SITE,), fetch=1))
-    except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
-            setup(False)
-    except Exception as error:
-        print(f'{SITE}: {error}')
+    except Exception as error: print(f'{SITE}: {error}')
         
     driver.close()
-    DATAB.close()
 
 if __name__ == '__main__':    
 

@@ -72,17 +72,13 @@ def page_handler(driver, hrefs):
 def setup(initial=True):
     
     try:
-        driver = get_driver()#headless=True)
+        driver = WEBDRIVER()#headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
         page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
-    except WebDriverException:
-        user = input(f'\n{SITE}: Browser closed\nContinue? ')
-        if user.lower() in 'yes': setup(False)
     except Exception as error: print(f'{SITE}: {error}')
         
-    try: driver.close()
-    except: pass
+    driver.close()
 
 if __name__ == '__main__':
     

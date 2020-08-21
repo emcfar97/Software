@@ -75,23 +75,18 @@ def page_handler(hrefs):
 def setup(initial=True):
     
     try:
-        driver = get_driver(headless=True)
+        driver = WEBDRIVER(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
         page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
-    except WebDriverException:
-        user = input(f'\n{SITE}: Browser closed\nContinue? ')
-        if user.lower() in 'yes': setup(False)
-    # except Exception as error: print(f'\n{SITE}: {error}')
+    except Exception as error: print(f'\n{SITE}: {error}')
 
-    finally: 
-        try: driver.close()
-        except: pass
+    finally: driver.close()
 
 if __name__ == '__main__':
     
     from utils import *
     setup()
 
-else: from ..utils import get_driver, login
+else: from ..utils import login
 

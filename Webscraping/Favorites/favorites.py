@@ -18,7 +18,7 @@ def main(driver, paths, sankaku=0, gelbooru=0):
                 driver.find_element_by_xpath('//*[@id="url"]').send_keys(src)
             driver.find_element_by_xpath('//body/form/table[2]/tbody/tr[4]/td[1]/input').click()
 
-            if path.endswith(('gif', 'mp4')): time.sleep(20)
+            if path.endswith(('gif', 'mp4', ‘webm’)): time.sleep(20)
             try:
                 html = bs4.BeautifulSoup(driver.page_source, 'lxml')
                 too_large = html.findAll(text=re.compile('too large'))

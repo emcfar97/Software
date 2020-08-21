@@ -53,7 +53,7 @@ def page_handler(url, title):
             INSERT, (name, f' {artist} ', tags, rating, hash_, 'imagefap'), commit=1
             )
     
-driver = get_driver(True)
+driver = WEBDRIVER(True)
 files = [
     join(PATH, file) for file in os.listdir(PATH) 
     if file.endswith('json')

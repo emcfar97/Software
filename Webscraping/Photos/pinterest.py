@@ -56,7 +56,7 @@ def page_handler(hrefs):
         shutil.move(file, dest)
         DATAB.commit()
             
-driver = get_driver(False)
+driver = WEBDRIVER()
 login(driver, 'pinterest')
 boards = {
     'winter-casual':['jeans', 'leggings', 'shorts', 'skirt'],
