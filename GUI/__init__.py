@@ -5,25 +5,19 @@ from PyQt5.QtCore import Qt, QTimer
 from datetime import date
 from cv2 import VideoCapture
 import mysql.connector as sql
-from os import getcwd
+from pathlib import Path
 
 class CONNECT:
-
+    
     def __init__(self):
 
-        self.DATAB, self.CURSOR = self.connect()
-
-    def connect(self):
-
-        DATAB = sql.connect(
+        self.DATAB = sql.connect(
             user='root', password='SchooL1@', database='userData', 
-            host='127.0.0.1' if ROOT == 'C:' else '192.168.1.43'
+            host='127.0.0.1' if ROOT.drive == 'C:' else '192.168.1.43'
             )
-        CURSOR = DATAB.cursor(buffered=True)
+        self.CURSOR = self.DATAB.cursor(buffered=True)
 
-        return DATAB, CURSOR
-
-    def execute(self, statement, arguments=None, many=0, commit=0):
+    def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
         for _ in range(20):
 
@@ -31,21 +25,20 @@ class CONNECT:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
 
-                if commit: self.DATAB.commit()
-                else: return self.CURSOR.fetchall()
+                if commit: return self.DATAB.commit()
+                elif fetch: return self.CURSOR.fetchall()
 
             except sql.errors.OperationalError: continue
             
-            except sql.errors.ProgrammingError: return list()
+            except sql.errors.DatabaseError: self.__init__()
 
-            except Exception as error: 
-                
-                print(error)
-                self.DATAB, self.CURSOR = self.connect()
+            except Exception as error: print(error)
 
+    def commit(self): self.DATAB.commit()
+    
     def close(self): self.DATAB.close()
 
-ROOT = getcwd()[:2].upper()
+ROOT = pathlib.Path().cwd().parent
 CONNECTION = CONNECT()
 BASE = f'SELECT REPLACE(path, "C:", "{ROOT}"), tags, artist, stars, rating, type FROM imageData'
 COMIC = 'SELECT path FROM comics'
