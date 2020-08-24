@@ -1,8 +1,9 @@
-from utils import *
+import json
+from .. import ROOT, CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
-root = os.getcwd()[:2].upper()
-PATH = rf'{root}\Users\Emc11\Downloads\Images\Imagefap'
-INSERT = f'INSERT IGNORE INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{root}", "C:"), %s, %s, %s, %s, %s, 0)'
+ROOT = ROOT.parent.parent
+PATH = ROOT / r'Users\Emc11\Downloads\Images\Imagefap'
 
 def page_handler(url, title):
     
@@ -31,35 +32,32 @@ def page_handler(url, title):
 
         name = get_name(src, 0, 1)
         name = name.split('?')[0]
-        if exists(name): continue
+        if name.exists(): continue
         save_image(name, src)
-        tags = get_tags(driver, name)
 
-        if name.endswith(('jpg', 'jpeg')):
+        if name.suffix in ('jpg', 'jpeg'):
             
             tags, rating, exif = generate_tags(
-                general=tags, custom=True, rating=True, exif=True
+                general=get_tags(driver, name), 
+                custom=True, rating=True, exif=True
                 )
             save_image(name, src, exif)
 
-        elif name.endswith(('.gif', '.webm', '.mp4')):
+        elif name.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
-                general=tags, custom=True, rating=True, exif=False
+                general=get_tags(driver, name), 
+                custom=True, rating=True, exif=False
                 )
 
         hash_ = get_hash(name)
-        execute(
-            INSERT, (name, f' {artist} ', tags, rating, hash_, 'imagefap'), commit=1
+        CONNECTION.execute(
+            INSERT[6], (name, f' {artist} ', tags, rating, hash_, 'imagefap'), commit=1
             )
     
 driver = WEBDRIVER(True)
-files = [
-    join(PATH, file) for file in os.listdir(PATH) 
-    if file.endswith('json')
-    ]
 
-for file in files:
+for file in PATH.iterdir():
 
     window = json.load(open(file))[0]['windows']
     try:
@@ -67,7 +65,6 @@ for file in files:
             for url in val.values():
                 page_handler(url['url'], url['title'])
     except Exception as error: print(error, '\n'); continue
-    except KeyboardInterrupt: break
-    os.remove(file)
+    file.unlink()
 
 driver.close()

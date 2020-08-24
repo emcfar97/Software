@@ -1,3 +1,5 @@
+from . import CONNECTION, INSERT, SELECT, UPDATE, sql
+from .utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -33,7 +35,7 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
         time.sleep(60)   
         initialize(mode, url, query)
 
-    DATAB.commit()
+    CONNECTION.commit()
 
 def page_handler(driver, hrefs, mode):
 
@@ -70,31 +72,25 @@ def page_handler(driver, hrefs, mode):
             ]
         if len(tags.split()) < 10:
             save_image(name, image)
-            tags = tags + get_tags(driver, name)
+            tags += get_tags(driver, name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )        
         if not save_image(name, image, exif): continue
         hash_ = get_hash(name)
 
-        try:
-            CONNECTION.execute(UPDATE[3], (
-                name, f"{' '.join(artists)}", tags, 
-                rating, image, hash_, href),
-                commit=1
-                )
-        except sql.errors.IntegrityError:
-            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
-        except sql.errors.DatabaseError: continue
+        CONNECTION.execute(UPDATE[3],
+            (str(name),f"{' '.join(artists)}", tags, rating, image, hash_,href),
+            commit=1
+            )
     
     progress(size, size, SITE)
 
-def setup(initial=True, mode=1):
+def setup(driver, initial=True, mode=1):
     
     mode = MODE[mode]
 
     try:
-        driver = WEBDRIVER(True)
         if initial: initialize(mode)
         page_handler(
             driver, 
@@ -104,10 +100,3 @@ def setup(initial=True, mode=1):
     except Exception as error: print(f'\n{SITE}: {error}')
     
     driver.close()
-
-if __name__ == '__main__':
-    
-    from .utils import *
-
-else: 
-    from . import WEBDRIVER

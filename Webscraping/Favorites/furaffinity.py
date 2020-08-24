@@ -1,8 +1,8 @@
+from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import WebDriverException
 
 SITE = 'furaffinity'
-TYPE = 'Erotica 3'
 
 def initialize(driver, url='/favorites/chairekakia', query=0):
     
@@ -12,26 +12,19 @@ def initialize(driver, url='/favorites/chairekakia', query=0):
         except AttributeError: return False
 
     if not query:
-        query = set(execute(SELECT[0], (SITE,), fetch=1))
+        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
     driver.get(f'https://www.furaffinity.net{url}')
     
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-    while True:
-        try:
-            hrefs = [
-                (*href, SITE) for href in {(target.get('href'),) for target in 
-                html.findAll(href=re.compile('/view+'))} - query
-                ]
-            break
-        except sql.errors.OperationalError: continue
-    while True:
-        try: CURSOR.executemany(INSERT[1], hrefs); break
-        except sql.errors.OperationalError: continue
+    hrefs = [
+        (*href, SITE) for href in {(target.get('href'),) for target in 
+        html.findAll(href=re.compile('/view+'))} - query
+        ]
+    CURSOR.executemany(INSERT[1], hrefs)
     next = next_page(html.find(class_='button standard right')) 
     if hrefs and next: initialize(driver, next, query)
-    while True:
-        try: DATAB.commit(); break
-        except sql.errors.OperationalError: continue
+
+    CONNECTION.commit()
 
 def page_handler(driver, hrefs):
 
@@ -46,12 +39,7 @@ def page_handler(driver, hrefs):
         
         if html.find(text=re.compile('not in our database.+')):
             
-            while True:
-                try:
-                    CURSOR.execute('DELETE FROM imageData WHERE href=%s', (href,))
-                    DATAB.commit()
-                    break
-                except sql.errors.OperationalError: continue 
+            CURSOR.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
             continue      
                         
         artist = html.find('a', href=re.compile('/user/+(?!chairekakia)'), id=False).get('href')
@@ -62,33 +50,16 @@ def page_handler(driver, hrefs):
         name = join(PATH, 'Images', SITE, ".".join(name))
         hash_ = get_hash(image) 
 
-        while True:
-            try:
-                CURSOR.execute(UPDATE[1], (name, hash_, image, href))
-                DATAB.commit()
-                break
-            except sql.errors.OperationalError: continue
-            except sql.errors.IntegrityError:
-                CURSOR.execute(UPDATE[1], (f'202 - {href}', hash_, image, href))
-                DATAB.commit()
-                break
+        CURSOR.execute(UPDATE[1], (name, hash_, image, href), commit=1)
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER()
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[3], (SITE,), fetch=1))
+        page_handler(driver, CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         
     driver.close()
-
-if __name__ == '__main__':
-
-    from utils import *
-    setup()
-
-else: from .utils import *

@@ -1,8 +1,8 @@
+from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import WebDriverException
 
 SITE = 'foundry'
-TYPE = 'Erotica 3'
 
 def initialize(driver, url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1550/page/1', query=0):
     
@@ -13,26 +13,19 @@ def initialize(driver, url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1
 
     driver.get(f'http://www.hentai-foundry.com{url}')
     if not query:
-        query = set(execute(SELECT[0], (SITE,), fetch=1))
+        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
         driver.find_element_by_xpath('//*[@id="frontPage"]').click()
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-    while True:
-        try:
-            hrefs = [
-                (*href, SITE) for href in {(target.get('href'),) for target in 
-                html.findAll(class_='thumbLink')} - query
-                ]
-            break
-        except sql.errors.OperationalError: continue
-    while True:
-        try: CURSOR.executemany(INSERT[1], hrefs); break
-        except sql.errors.OperationalError: continue
+    hrefs = [
+        (*href, SITE) for href in {(target.get('href'),) for target in 
+        html.findAll(class_='thumbLink')} - query
+        ]
+    CONNECTION.executemany(INSERT[1], hrefs)
 
     next = next_page(html.find('li', class_='next')) 
     if hrefs and next: initialize(driver, next, query)
-    while True:
-        try: DATAB.commit(); break
-        except sql.errors.OperationalError: continue
+
+    CONNECTON.commit()
 
 def page_handler(driver, hrefs):
 
@@ -54,32 +47,16 @@ def page_handler(driver, hrefs):
             )
         hash = get_hash(image) 
 
-        while True:
-            try:
-                CURSOR.execute(UPDATE[1], (name, hash, image, href))
-                DATAB.commit()
-                break
-            except sql.errors.OperationalError: continue
-            except sql.errors.IntegrityError:
-                CURSOR.execute(UPDATE[1], (f'202 - {href}', hash, image, href))
-                DATAB.commit()
-                break
+        
+        CONNECTION.execute(UPDATE[1], (name, hash, image, href), commit=1)
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER(headless=True)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[3], (SITE,), fetch=1))
+        page_handler(driver, CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         
     driver.close()
-
-if __name__ == '__main__':    
-
-    driver = get_driver(headless=True)
-    initialize(driver)
-    driver.close()
-    DATAB.close()

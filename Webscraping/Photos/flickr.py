@@ -1,3 +1,5 @@
+from .. import CONNECTION, sql, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException, NoSuchElementException
@@ -16,7 +18,7 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
 
     driver.get(f'https://www.flickr.com{url}')
     for _ in range(2):
-        driver.find_element_by_tag_name('html').send_keys(Keys.END)
+        driver.find('html', Keys.END, type=6)
         time.sleep(2)
 
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
@@ -30,7 +32,7 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
     next = next_page(html.find('a', {'data-track':'paginationRightClick'}))
     if hrefs and next: initialize(driver, next, query)
 
-    DATAB.commit()
+    CONNECTION.commit()
     
 def page_handler(driver, hrefs):
 
@@ -47,24 +49,23 @@ def page_handler(driver, hrefs):
         
         for _ in range(20):
             try:
-                element = driver.find_element_by_class_name(view)
+                element = driver.find(view, type=7, fetch=1)
                 ActionChains(driver).move_to_element(element).perform()
-                driver.find_element_by_class_name(target).click()
+                driver.find(target, click=True, type=7)
 
             except ElementClickInterceptedException:
-                image = driver.find_element_by_class_name(
-                    'zoom-large').get_attribute('src')
+                image = driver.find('zoom-large', type=7, fetch=1).get_attribute('src')
                 break
 
             except NoSuchElementException:
                 try: # Video
-                    image = driver.find_element_by_xpath(
-                        '//*[@id="video_1_html5_api"]'
+                    image = driver.find(
+                        '//*[@id="video_1_html5_api"]', type=1, fetch=1
                         ).get_attribute('src')
                     
                 except: # Image unavailable
-                    status = driver.find_element_by_class_name('statusCode')
-                    if status.text in ('403', '404'):
+                    status = driver.find('statusCode', type=7, fetch=1).text
+                    if status in ('403', '404'):
                         CONNECTION.execute(
                             'DELETE FROM imageData WHERE href=%s', (href,), commit=1
                             )
@@ -73,43 +74,32 @@ def page_handler(driver, hrefs):
             
             except WebDriverException: pass
         
-        else: 
+        else:
             if image is None: continue
 
         name = get_name(image, 0, 1)
         if not save_image(name, image): continue
-        tags = get_tags(driver, name)
         tags, rating, exif = generate_tags(
-            general=tags, custom=True, rating=True, exif=True
+            general=get_tags(driver, name), 
+            custom=True, rating=True, exif=True
             )
         if name.endswith(('jpg', 'jpeg')): save_image(name, image, exif)
         hash_ = get_hash(name) 
         
-        try:
-            CONNECTION.execute(UPDATE[3], (
-                name, ' ', tags, rating, image, hash_, href),
-                commit=1
-                )
-        except sql.errors.IntegrityError:
-            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
-        except sql.errors.DatabaseError: continue
+        CONNECTION.execute(
+            UPDATE[3], 
+            (str(name), ' ', tags, rating, image, hash_, href),
+            commit=1
+            )
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
         page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
 
     finally: driver.close()
-
-if __name__ == '__main__':
-    
-    from utils import *
-    setup()
-
-else: from ..utils import *

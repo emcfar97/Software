@@ -1,4 +1,5 @@
-from selenium.common.exceptions import WebDriverException
+from .. import CONNECTION, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
 SITE = 'femjoyhunter'
 
@@ -10,7 +11,7 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
         except IndexError: return False
 
     if not query:
-        query = set(execute(SELECT[0], (SITE,), fetch=1))
+        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
     
     driver.get(f'https://www.{SITE}.com{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
@@ -29,12 +30,12 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
             page.findAll('a', href=re.compile('https://a2h6m3w6.+'))
             if (image.get('href'),) not in query
             ]
-        execute(INSERT[3], hrefs, 1)
+        CONNECTION.execute(INSERT[3], hrefs, 1)
         
     next = next_page(html.find(class_='next'))
     if hrefs and next: initialize(driver, next, query)
     
-    DATAB.commit()
+    CONNECTION.commit()
 
 def page_handler(driver, hrefs):
 
@@ -47,41 +48,26 @@ def page_handler(driver, hrefs):
 
         name = get_name(image, 0, 1)
         save_image(name, image)
-        tags = get_tags(driver, name)
         tags, rating, exif = generate_tags(
-            tags, custom=True, artists=artist, rating=True
+            general=get_tags(driver, name), 
+            custom=True, artists=artist, rating=True
             )
-        save_image(name, image, exif)
+        if not save_image(name, image, exif): continue
         hash_ = get_hash(name) 
     
-        try:
-            execute(UPDATE[3].replace('href', 'src'), (
-                name, artist, tags, rating, image, hash_, image),
-                commit=1
-                )
-        except sql.errors.IntegrityError:
-            execute(UPDATE[3].replace('href', 'src'), (
-                f'202 - {image}', artist, tags, rating, image, hash_, image),
-                commit=1
-                )
-        except (sql.errors.OperationalError, sql.errors.DatabaseError): continue
+        CONNECTION.execute(UPDATE[3].replace('href', 'src'), (
+            name, artist, tags, rating, image, hash_, image),
+            commit=1
+            )
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER()#True)
         # login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
+        page_handler(driver, CONNECTION.execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
     
     driver.close()
-
-if __name__ == '__main__':
-    
-    from .utils import *
-    setup(0)
-
-else: from ..utils import *

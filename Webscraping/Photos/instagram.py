@@ -1,3 +1,5 @@
+from .. import CONNECTION, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException, NoSuchElementException
@@ -7,7 +9,7 @@ SITE = 'instagram'
 def initialize(driver, url='/chairekakia/saved/', retry=0):
     
     driver.get(f'https://www.instagram.com{url}')
-    query = set(execute(SELECT[0], (SITE,), fetch=1))
+    query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
     
     while True:
 
@@ -20,13 +22,13 @@ def initialize(driver, url='/chairekakia/saved/', retry=0):
             html.findAll('a', href=re.compile('/p/.+'))
             if (target.get('href'),) not in query
             ]
-        execute(INSERT[0], hrefs, 1)
+        CONNECTION.execute(INSERT[0], hrefs, 1)
             
         if not hrefs:
             if retry >= 2: break
             else: retry += 1
         else:
-            query = set(execute(SELECT[0], (SITE,), fetch=1))
+            query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
             retry = 0
 
     DATAB.commit()
@@ -51,38 +53,26 @@ def page_handler(driver, hrefs):
 
         name = get_name(image, 0, 1)
         save_image(name, image)
-        tags = get_tags(driver, name)
         tags, rating, exif = generate_tags(
-            general=tags, custom=True, rating=True, exif=True
+            general=get_tags(driver, name), 
+            custom=True, rating=True, exif=True
             )
         if name.endswith(('jpg', 'jpeg')): save_image(name, image, exif)
         hash_ = get_hash(name) 
         
-        try:
-            execute(UPDATE[3], (
-                name, ' ', tags, rating, image, hash_, href),
-                commit=1
-                )
-        except sql.errors.IntegrityError:
-            execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
-        except sql.errors.DatabaseError: continue
+        CONNECTION.execute(UPDATE[3], (
+            name, ' ', tags, rating, image, hash_, href),
+            commit=1
+            )
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER()#headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
+        page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         
     driver.close()
-
-if __name__ == '__main__':
-    
-    from utils import *
-    setup(0)
-
-else: from .utils import *

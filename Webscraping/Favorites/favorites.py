@@ -1,5 +1,8 @@
+import sqlite3
+from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import ElementNotInteractableException, InvalidArgumentException, WebDriverException, ElementClickInterceptedException, NoSuchElementException    
+from selenium.common.exceptions import ElementNotInteractableException, InvalidArgumentException, ElementClickInterceptedException, NoSuchElementException    
 
 def main(driver, paths, sankaku=0, gelbooru=0):
     
@@ -26,8 +29,8 @@ def main(driver, paths, sankaku=0, gelbooru=0):
                 cant_find = html.findAll(text=re.compile('file was uploaded'))
                 
                 if too_large or cant_read or cant_find:
-                    CURSOR.execute(UPDATE[4], (1, 0, path))
-                    DATAB.commit()
+                    CONNECTION.execute(UPDATE[4], (1, 0, path))
+                    CONNECTION.commit()
                     continue
                 
                 targets = [
@@ -66,25 +69,25 @@ def main(driver, paths, sankaku=0, gelbooru=0):
                             
             if saved:
                 if src is None: os.remove(path)
-                CURSOR.execute(UPDATE[4], (1, 1, path))
+                CONNECTION.execute(UPDATE[4], (1, 1, path))
 
-            DATAB.commit()
+            CONNECTION.commit()
 
         except ElementNotInteractableException:
             
             if 'sankaku' in match.get('href'):
                 os.remove(path)
-                CURSOR.execute(UPDATE[4], (1, 0, path))
+                CONNECTION.execute(UPDATE[4], (1, 0, path))
 
         except FileNotFoundError:
             
-            CURSOR.execute(UPDATE[4], (1, 1, path,))
-            DATAB.commit()
+            CONNECTION.execute(UPDATE[4], (1, 1, path,))
+            CONNECTION.commit()
 
         except InvalidArgumentException:
             
-            CURSOR.execute(UPDATE[4], (1, 0, path,))
-            DATAB.commit()
+            CONNECTION.execute(UPDATE[4], (1, 0, path,))
+            CONNECTION.commit()
         
         except NoSuchElementException: continue 
             
@@ -182,7 +185,7 @@ def search(driver, path):
             file = join(path, file)
             os.remove(file)
             state = 'DELETE FROM imageDatabase WHERE path=?'
-            CURSOR.execute(state, (path,))
+            CONNECTION.execute(state, (path,))
             driver.get('https://gelbooru.com/index.php?page=post&s=list&tags=all')            
    
 def fix(driver, url='?page=favorites&s=view&id=173770&pid=50'):
@@ -220,23 +223,14 @@ def fix(driver, url='?page=favorites&s=view&id=173770&pid=50'):
     next = next_page(html.find(id='paginator').contents) 
     fix(driver, next)
     
-def setup():
+def setup(driver):
 
     data = sqlite3.connect(r'Webscraping\PixivUtil\Data.sqlite')
-    CURSOR.executemany(INSERT[2], data.execute(SELECT[5]).fetchall())
+    CONNECTION.execute(INSERT[2], data.execute(SELECT[5]).fetchall(), many=1)
     data.close()
-    DATAB.commit()
-    try:
-        driver = get_driver(True)
-        login(driver, 'gelbooru')
-        login(driver, 'sankaku')
-        CURSOR.execute(SELECT[4])
-        main(driver, CURSOR.fetchall()[:1000:-1])
-        driver.close()
-    except WebDriverException:
-        if input(f'Favorites: Browser closed\nContinue? ').lower() in 'yes':
-            setup()
-    DATAB.close()
+    CONNECTION.commit()
 
-if __name__ == '__main__': from utils import *
-else: from .utils import *
+    login(driver, 'gelbooru')
+    login(driver, 'sankaku')
+    main(driver, CONNECTION.execute(SELECT[4], fetch=1))
+    driver.close()

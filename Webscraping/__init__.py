@@ -23,7 +23,8 @@ INSERT = [
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
     'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s, %s)',
-    'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, 0)'
+    'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, 0)',
+    f'INSERT IGNORE INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, 0)'
     ]
 UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
@@ -32,6 +33,9 @@ UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s WHERE href=%s',
     f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
     f'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)'
+    ]
+DELETE = [
+    'DELETE FROM imageData WHERE href=%s AND ISNULL(path)'
     ]
 
 class CONNECT:
@@ -55,6 +59,10 @@ class CONNECT:
                 if commit: return self.DATAB.commit()
                 elif fetch: return self.CURSOR.fetchall()
 
+            except sql.errors.IntegrityError: 
+                self.CURSOR.execute(DELETE[0], (arguments[-1],))
+                self.DATAB.commit()
+
             except sql.errors.OperationalError: continue
             
             except sql.errors.DatabaseError: self.__init__()
@@ -73,11 +81,20 @@ class WEBDRIVER:
         self.driver = webdriver.Firefox(firefox_binary=binary, options=options)
         self.driver.implicitly_wait(10)
 
-    def get(self, url): self.driver.get(url)
+    def get(self, url):
+        
+        self.driver.get(url)
+    
+    def current_url(self): return self.driver.current_url
 
     def page_source(self): return self.driver.page_source
+        
+        # for _ in range(20):
+        #     try: return self.driver.page_source
+        #     except exceptions.WebDriverException: pass
+        # raise exceptions.WebDriverException
     
-    def find(self, adress, keys=None, click=False, type_=1): 
+    def find(self, adress, keys=None, click=False, type_=1, fetch=0):
         
         try:
             
@@ -91,12 +108,14 @@ class WEBDRIVER:
             #     element = self.driver.find_element_by_link_text(adress)
             # elif type_ == 5:
             #     element = self.driver.find_element_by_partial_link_text(adress)
-            # elif type_ == 6:
-            #     element = self.driver.find_element_by_tag_name(adress)
-            # elif type_ == 7:
-            #     element = self.driver.find_element_by_class_name(adress)
+            elif type_ == 6:
+                element = self.driver.find_element_by_tag_name(adress)
+            elif type_ == 7:
+                element = self.driver.find_element_by_class_name(adress)
             # elif type_ == 8:
             #     element = self.driver.find_element_by_css_selector(adress)
+            
+            if fetch: return element
 
             if keys: element.send_keys(keys)
 
@@ -104,11 +123,11 @@ class WEBDRIVER:
 
         # except exceptions.WebDriverException: self.__init__()
         except Exception as error: print(error) 
-        # self.find(adress, keys, click, type_)
+        # self.find(adress, keys, click, type_, fetch)
     
     def refresh(self): self.driver.refresh()
 
-    def close(self): 
+    def close(self):
         
         try: self.driver.close()
         except: pass
@@ -118,7 +137,7 @@ def start():
     from Webscraping import Photos, Illus
     
     threads = [
-        threading.Thread(target=Photos.start),
+        # threading.Thread(target=Photos.start),
         threading.Thread(target=Illus.start) 
         ]
     for thread in threads: thread.start()

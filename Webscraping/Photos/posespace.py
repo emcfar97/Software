@@ -1,20 +1,13 @@
 import imageio, cv2, hashlib
 import numpy as np
-from selenium.common.exceptions import WebDriverException
-import mysql.connector as sql
-from os.path import join
+from .. import CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor() 
 SITE = 'posespace'
-TYPE = 'Erotica 2'
 
 def initialize(driver, url='/posetool/favs.aspx'):
 
-    query = set(execute(SELECT[0], (SITE,), fetch=1))
+    query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
     driver.get(f'https://www.posespace.com{url}')
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     while True:
@@ -26,10 +19,10 @@ def initialize(driver, url='/posetool/favs.aspx'):
             break
         except sql.errors.OperationalError: continue
     while True:
-        try: CURSOR.executemany(INSERT[0], hrefs,); break
+        try: CURSOR.CONNECTION.executemany(INSERT[0], hrefs,); break
         except sql.errors.OperationalError: continue
         
-    DATAB.commit()
+    CONNECTION.commit()
 
 def page_handler(driver, hrefs):
     
@@ -58,16 +51,9 @@ def page_handler(driver, hrefs):
         name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.gif')
         hash = get_hash(name)
 
-        while True:
-            try:
-                CURSOR.execute(UPDATE[3], (name, href[:-2], hash, image, href))
-                DATAB.commit()
-                break
-            except sql.errors.OperationalError: continue
-            except sql.errors.IntegrityError:
-                CURSOR.execute(UPDATE[3], (f'202 - {href}', hash, image, href))
-                DATAB.commit()
-                break
+        CURSOR.CONNECTION.execute(
+            UPDATE[3], (name, href[:-2], hash, image, href, commit=1)
+            )
         
     progress(size, size, SITE)
 
@@ -130,33 +116,13 @@ def find_corners(path):
         
     return corners
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = get_driver(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
-    except WebDriverException:
-        if input(f'{SITE}: Browser closed\nContinue?').lower() in 'yes':
-            setup(False)
+        page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error:
         print(f'{SITE}: {error}')
         
     driver.close()
-    DATAB.close()
-
-if __name__ == '__main__':
-
-    from .utils import *
-    driver = WEBDRIVER(True)
-    # login(driver, SITE)
-    # initialize(driver)
-    
-    page_handler(driver, execute(SELECT[2], (SITE,), fetch=1))
-
-    driver.close()
-    DATAB.close()
-
-else: 
-    from ..utils import *

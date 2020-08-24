@@ -1,4 +1,5 @@
-from selenium.common.exceptions import WebDriverException
+from .. import CONNECTION, sql, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -15,7 +16,7 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
         query = CONNECTION.execute(SELECT[0], (SITE,), fetch=1)
         
     driver.get(f'https://gelbooru.com/index.php{url}')
-    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
 
     hrefs = [
         (target.get('href'), 1, SITE) for target in 
@@ -27,7 +28,7 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
     next = next_page(html.find(id='paginator').contents)   
     if hrefs and next: initialize(driver, next, query)
     
-    DATAB.commit()
+    CONNECTION.commit()
 
 def page_handler(hrefs):
 
@@ -61,32 +62,18 @@ def page_handler(hrefs):
         if not save_image(name, image, exif): continue
         hash_ = get_hash(name)
         
-        try:
-            CONNECTION.execute(UPDATE[3], (
-                name, f"{' '.join(artists)}", tags, rating, image, hash_, href
-                ), commit=1
-                )
-        except sql.errors.IntegrityError:
-            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
-        except sql.errors.DatabaseError: continue
+        CONNECTION.execute(UPDATE[3], (
+            str(name), f"{' '.join(artists)}", tags, rating, image, hash_, href
+            ), commit=1
+            )
 
     progress(size, size, SITE)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
+        driver.close()
         page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'\n{SITE}: {error}')
-
-    finally: driver.close()
-
-if __name__ == '__main__':
-    
-    from utils import *
-    setup()
-
-else: from ..utils import login
-

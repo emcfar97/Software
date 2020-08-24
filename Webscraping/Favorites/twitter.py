@@ -1,38 +1,26 @@
+from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 import itertools
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import WebDriverException
-import mysql.connector as sql
 
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor() 
 SITE = 'twitter'
-TYPE = 'Erotica 3'
 
 def initialize(driver, retry=0):
 
-    query = set(execute(SELECT[0], (SITE,), fetch=1))
+    query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
     driver.get('https://twitter.com/Chairekakia1/likes')
     time.sleep(4)    
 
     while True:
 
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-        while True:
-            try: 
-                targets = html.findAll('article', {'role':'article', 'tabindex':'0'})
-                hrefs = [
-                    (*href, SITE) for href in
-                    {(target.find('a', {'aria-haspopup':False}, href=True
-                    ).get('href'),) for target in targets} - query
-                    ] 
-                break
-            except sql.errors.OperationalError: continue
-        while True:
-            try: CURSOR.executemany(INSERT[1], hrefs); break
-            except sql.errors.OperationalError: continue
+        targets = html.findAll('article', {'role':'article', 'tabindex':'0'})
+        hrefs = [
+            (*href, SITE) for href in
+            {(target.find('a', {'aria-haspopup':False}, href=True
+            ).get('href'),) for target in targets} - query
+            ] 
+        CONNECTION.executemany(INSERT[1], hrefs)
         
         if not hrefs: 
             if retry >= 2: break
@@ -43,9 +31,7 @@ def initialize(driver, retry=0):
             driver.find_element_by_tag_name('html').send_keys(Keys.PAGE_DOWN)
         time.sleep(4)
                 
-    while True:
-        try: DATAB.commit(); break
-        except sql.errors.OperationalError: continue
+    CONNECTION.commit()
 
 def page_handler(driver, hrefs):
     
@@ -96,13 +82,8 @@ def page_handler(driver, hrefs):
                 )
             hash_ = get_hash(image) 
 
-            while True:
-                try:
-                    CURSOR.execute(UPDATE[1], (name, hash_, image, href))
-                    break
-                except sql.errors.OperationalError: continue
+            CONNECTION.execute(UPDATE[1], (name, hash_, image, href), commit=1)
                         
-        DATAB.commit()
         
 def xpath_soup(element):
     """
@@ -125,20 +106,12 @@ def xpath_soup(element):
 
     return '/%s' % '/'.join(components)
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER()#True)
         login(driver, SITE)
         if initial: initialize(driver)
-        page_handler(driver, execute(SELECT[3], (SITE,), fetch=1))
+        page_handler(driver, CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
 
     driver.close()
-
-if __name__ == '__main__':
-
-    from utils import *
-    setup(0)
-
-else: from .utils import *

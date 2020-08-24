@@ -1,4 +1,5 @@
-from selenium.common.exceptions import WebDriverException
+from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 
 SITE = 'deviantArt'
 
@@ -18,16 +19,12 @@ def initialize(driver):#, url='/my-favorite-galleries/page/1/', query=0):
 
 def page_handler(driver): pass
 
-def setup(initial=True):
+def setup(driver, initial=True):
     
     try:
-        driver = WEBDRIVER(headless=True)
         login(driver, SITE)
         if initial: initialize(driver)
         page_handler(driver, execute(SELECT[2],(SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         
     driver.close()
-
-if __name__ == '__main__': from utils import *
-else: from .utils import *

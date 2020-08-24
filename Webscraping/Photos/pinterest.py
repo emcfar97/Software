@@ -1,6 +1,7 @@
-from os.path import exists, join
-from Webscraping.utils import DATAB, CURSOR, get_driver, get_hash, get_name, get_tags, generate_tags, save_image, progress, sql
-from selenium.common.exceptions import WebDriverException
+from .. import CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+
+SITE = 'pinterest'
 
 def initialize(driver):
 
@@ -22,7 +23,7 @@ def initialize(driver):
                     src = target.get('src')
                     image = Image.open(BytesIO(requests.get(src).content))
                     name = f"{hash(src)}.{image.format}"
-                    if exists(name): continue
+                    if name.exists(): continue
                     image.save(join(path, folder, name))
                 
                 total = total | targets
@@ -33,18 +34,18 @@ def initialize(driver):
 def page_handler(hrefs):
 
     for num, (href,) in enumerate(hrefs):
-        progress(size, num, 'pinterest')
+        progress(size, num, SITE)
         
         tags = get_tags(driver, file)
 
-        if dest.endswith(('jpg', 'jpeg')):
+        if dest.suffix in ('jpg', 'jpeg'):
 
             tags, rating, exif = generate_tags(
                 general=tags, custom=True, rating=True, exif=True
                 )
             Image.open(file).save(file, exif=exif)
 
-        elif dest.endswith(('.gif', '.webm', '.mp4')): 
+        elif dest.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
                 general=tags, custom=True, rating=True, exif=False
@@ -52,9 +53,11 @@ def page_handler(hrefs):
 
         hash_ = get_hash(file)
 
-        CURSOR.execute(INSERT, (dest, tags, rating, hash_))
+        CONNECTION.execute(INSERT, (dest, tags, rating, hash_))
         shutil.move(file, dest)
-        DATAB.commit()
+        CONNECTION.commit()
+        
+    progress(size, size, SITE)
             
 driver = WEBDRIVER()
 login(driver, 'pinterest')

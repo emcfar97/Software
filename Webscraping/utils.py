@@ -435,65 +435,65 @@ def login(driver, site, type_=0):
 
         driver.get('https://identity.flickr.com/login')
         while driver.current_url == 'https://identity.flickr.com/login':
-            driver.find_element_by_id('login-email').send_keys(EMAIL)
-            driver.find_element_by_id('login-email').send_keys(Keys.RETURN)
-            driver.find_element_by_id('login-password').send_keys(PASS)
-            driver.find_element_by_id('login-password').send_keys(Keys.RETURN)
+            driver.find('login-email', EMAIL, type_=2)
+            driver.find('login-email', Keys.RETURN, type_=2)
+            driver.find('login-password', PASS, type_=2)
+            driver.find('login-password', Keys.RETURN, type_=2)
             time.sleep(2.5)
 
     elif site == 'metarthunter':
 
         driver.get('https://www.metarthunter.com/members/')
-        driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
-        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('SchooL1@')
+        driver.find('//*[@id="user_login"]', USER)
+        driver.find('//*[@id="user_pass"]', 'SchooL1@')
         while driver.current_url == 'https://www.metarthunter.com/members/': 
             time.sleep(2)
             
     elif site == 'femjoyhunter':
 
         driver.get('https://www.femjoyhunter.com/members/')
-        driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
-        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('SchooL1@')
+        driver.find('//*[@id="user_login"]', USER)
+        driver.find('//*[@id="user_pass"]', 'SchooL1@')
         while driver.current_url == 'https://www.femjoyhunter.com/members/': 
             time.sleep(2)
             
     elif site == 'elitebabes':
 
         driver.get('https://www.elitebabes.com/members/')
-        driver.find_element_by_xpath('//*[@id="user_login"]').send_keys(USER)
-        driver.find_element_by_xpath('//*[@id="user_pass"]').send_keys('SakurA1$')
+        driver.find('//*[@id="user_login"]', USER)
+        driver.find('//*[@id="user_pass"]', 'SakurA1$')
         while driver.current_url == 'https://www.elitebabes.com/members/': 
             time.sleep(2)
 
     elif site == 'instagram':
     
         driver.get('https://www.instagram.com/')
-        driver.find_element_by_xpath('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input').send_keys(EMAIL)
-        driver.find_element_by_xpath('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input').send_keys('SchooL1#')
-        driver.find_element_by_xpath('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input').send_keys(Keys.RETURN)
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', EMAIL)
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', 'SchooL1#')
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', Keys.RETURN)
         time.sleep(2)
 
     elif site== 'gelbooru':
 
         driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
-        driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[1]').send_keys(USER)
-        driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[2]').send_keys(PASS)
-        driver.find_element_by_xpath('/html/body/div[4]/div[4]/div/div/form/input[2]').send_keys(Keys.RETURN)
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[1]', USER)
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', PASS)
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
         time.sleep(1)
 
     elif site == 'sankaku':
 
         driver.get(f'https://{type_}.sankakucomplex.com/user/login')
-        driver.find_element_by_xpath('//*[@id="user_name"]').send_keys(USER)
-        driver.find_element_by_xpath('//*[@id="user_password"]').send_keys(PASS)
-        driver.find_element_by_xpath('//*[@id="user_password"]').send_keys(Keys.RETURN)
+        driver.find('//*[@id="user_name"]', USER)
+        driver.find('//*[@id="user_password"]', PASS)
+        driver.find('//*[@id="user_password"]', Keys.RETURN)
         time.sleep(2)
     
     elif site == 'furaffinity':
 
         driver.get('https://www.furaffinity.net/login/')
-        driver.find_element_by_xpath('//*[@id="login"]').send_keys(USER)
-        driver.find_element_by_xpath('//body/div[2]/div[2]/form/div/section[1]/div/input[2]').send_keys(PASS)
+        driver.find('//*[@id="login"]', USER)
+        driver.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', PASS)
         while driver.current_url == 'https://www.furaffinity.net/login/': 
             time.sleep(2)
     
@@ -503,27 +503,27 @@ def login(driver, site, type_=0):
         element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'  
         while driver.current_url == 'https://twitter.com/login':
             try:  
-                driver.find_element_by_name('session[username_or_email]').send_keys(EMAIL)
+                driver.find('session[username_or_email]', EMAIL, type_=3)
                 time.sleep(.75)
-                driver.find_element_by_name('session[password]').send_keys(PASS)
-                driver.find_element_by_name('session[password]').send_keys(Keys.RETURN)
+                driver.find('session[password]', PASS, type_=3)
+                driver.find('session[password]', Keys.RETURN, type_=3)
                 time.sleep(5)
 
             except:
-                driver.find_element_by_xpath(element.format(1)).send_keys(EMAIL)
+                driver.find(element.format(1), EMAIL)
                 time.sleep(.75)
-                driver.find_element_by_xpath(element.format(2)).send_keys(PASS)
-                driver.find_element_by_xpath(element.format(2)).send_keys(Keys.RETURN)
+                driver.find(element.format(2), PASS)
+                driver.find(element.format(2), Keys.RETURN)
                 time.sleep(5)
 
     elif site == 'posespace':
 
         driver.get('https://www.posespace.com/')
-        driver.find_element_by_xpath("//body/form[1]/div[3]/div[1]/nav/div/div[2]/ul[2]/li[6]/a").click()
-        driver.find_element_by_class_name("popModal").click()
-        driver.find_element_by_id("loginUsername").send_keys(EMAIL)
-        driver.find_element_by_id("loginPassword").send_keys(PASS)
-        driver.find_element_by_id("btnLoginSubmit").click()
+        driver.find("//body/form[1]/div[3]/div[1]/nav/div/div[2]/ul[2]/li[6]/a", click=True)
+        driver.find("popModal", click=True, type_=7)
+        driver.find("loginUsername", EMAIL, type_=2)
+        driver.find("loginPassword", PASS, type_=2)
+        driver.find("btnLoginSubmit", click=True, type_=2)
 
     elif site == 'pinterest':
         
@@ -532,9 +532,9 @@ def login(driver, site, type_=0):
         passw = 'SchooL1@'
             
         driver.get('https://www.pinterest.com/login/')
-        driver.find_element_by_xpath('//*[@id="email"]').send_keys(email)
-        driver.find_element_by_xpath('//*[@id="password"]').send_keys(passw)
-        driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
+        driver.find('//*[@id="email"]', email)
+        driver.find('//*[@id="password"]', passw)
+        driver.find('//*[@id="password"]', Keys.RETURN)
         time.sleep(5)
         
     elif site == 'deviantArt':
@@ -543,9 +543,9 @@ def login(driver, site, type_=0):
         passw = 'SchooL1@'
         
         driver.get('https://www.deviantart.com/users/login')
-        driver.find_element_by_xpath('//*[@id="username"]').send_keys(email)
-        driver.find_element_by_xpath('//*[@id="password"]').send_keys(passw)
-        driver.find_element_by_xpath('//*[@id="password"]').send_keys(Keys.RETURN)
+        driver.find('//*[@id="username"]', email)
+        driver.find('//*[@id="password"]', passw)
+        driver.find('//*[@id="password"]', Keys.RETURN)
         time.sleep(5)
 
 def save_image(name, image, exif=b''):
@@ -585,10 +585,13 @@ def get_name(path, type_, hasher=0, fetch=0):
 
     if hasher:
         try: data = requests.get(path).content
-        except: data = open(path, 'rb').read()
+        except: data = path.read_bytes()
         HASHER.update(data)
+
         if fetch: return HASHER.hexdigest()
-        else: stem = f'{HASHER.hexdigest()}{path.suffix}'
+        stem = f'{HASHER.hexdigest()}{path.suffix}'
+    
+    else: stem = path
 
     return PATH / TYPE[type_] / stem.replace('png', 'jpg').replace('jpeg','jpg')
 
@@ -623,7 +626,7 @@ def get_hash(image, src=False):
 
     return f'{imagehash.dhash(image)}'
 
-def get_tags(driver, path, comic=0):
+def get_tags(driver, path):
 
     tags = set()
     frames = []
@@ -649,8 +652,6 @@ def get_tags(driver, path, comic=0):
             step = round(90 * log((len(frames) * .0007) + 1) + 1)
             frames = frames[::step]
     
-    elif comic: frames = path
-
     else: frames.append(path)
     
     for frame in frames:
@@ -659,7 +660,7 @@ def get_tags(driver, path, comic=0):
         driver.find('//*[@id="exampleFormControlFile1"]', str(frame))
         driver.find('//body/div/div/div/form/button', click=True)
 
-        for _ in range(30):
+        for _ in range(25):
             html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
             try:
                 tags.update([
@@ -668,10 +669,16 @@ def get_tags(driver, path, comic=0):
                     ])
                 break
             except AttributeError: 
-                if _ % 5: driver.refresh()
+                if driver.current_url().endswith('deepdanbooru/'):
+                    driver.find('//*[@id="exampleFormControlFile1"]',str(frame))
+                    driver.find('//body/div/div/div/form/button', click=True)
+                elif not _ % 5: driver.refresh()
     
     else:
         if video: temp_dir.cleanup()
+        tags.discard('rating:safe')
+        tags.discard('rating:questionable')
+        tags.discard('rating:explicit')
         tags.discard('photorealistic')
         tags.discard('realistic')
         tags.discard('3d')

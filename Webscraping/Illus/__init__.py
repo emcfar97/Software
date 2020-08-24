@@ -1,15 +1,14 @@
 import threading
 from . import gelbooru
-from ..utils import *
-from .. import Favorites, sankaku
+from .. import WEBDRIVER, Favorites, sankaku
 
 def start():
 
-    Favorites.start()
+    # Favorites.start()
 
     threads = [
-        threading.Thread(target=gelbooru.setup),
-        threading.Thread(target=sankaku.setup, args=(1,))
+        # threading.Thread(target=gelbooru.setup, args=(WEBDRIVER(),)),
+        threading.Thread(target=sankaku.setup, args=(WEBDRIVER(), 1))
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
