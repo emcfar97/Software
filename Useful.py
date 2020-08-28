@@ -2,12 +2,7 @@ from math import sqrt, radians, sin, cos, atan , degrees
 
 def exchange(matrix, start, end):
     
-    print(
-        'Exchange R{0} with R{1}'
-        .format(sub[start], sub[end])
-        )
-    [print(i) for i in matrix]
-    print()
+    print(f'Exchange R{sub[start]} with R{sub[end]}')
     
     exchange = matrix[start-1]
     matrix[start-1] = matrix[end-1]
@@ -16,14 +11,9 @@ def exchange(matrix, start, end):
     [print(i) for i in matrix]
     print()
 
-def multiplication(matrix, start, num):
+def multiply(matrix, start, num):
     
-    print(
-        'Multiply {1}R{0}'
-        .format(sub[start], num)
-        )
-    [print(i) for i in matrix]
-    print()
+    print(f'Multiply {sub[start]}R{num}')
     
     for i, j in enumerate(matrix[start-1]):
         matrix[start-1][i] = j * num
@@ -33,12 +23,7 @@ def multiplication(matrix, start, num):
 
 def addition(matrix, start, end, num):
     
-    print(
-        'Add {2}R{0} to R{1}'
-        .format(sub[start], sub[end], num)
-        )
-    [print(i) for i in matrix]
-    print()
+    print(f'Add {sub[start]}R{sub[end]} to R{num}')
 
     for i, j in zip(matrix[start-1], range(len(matrix[end-1]))):
         matrix[end-1][j] = (i*num) + matrix[end-1][j]
@@ -46,11 +31,16 @@ def addition(matrix, start, end, num):
     [print(i) for i in matrix]
     print()
 
-sub = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉']
-
 def transpose(x):
     
     return [[x[j][i] for j in range(i)] for i, _ in enumerate(x)]
+
+sub = [chr(i) for i in range(8320, 8330)]
+
+x = [
+    ]
+[print(i) for i in x]
+print()
 
 def f(size=20, previous = None):
     
