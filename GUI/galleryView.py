@@ -59,27 +59,24 @@ class Gallery(QWidget):
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
     
-    def populate(self, sender=None, limit=6000, id=None):
+    def populate(self, sender=None, limit=7500):
         
         self.images.clearSelection()
-        if id: SELECT = f'{self.get_filter(id)}'
-        else: SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
-        self.images.table.images = CONNECTION.execute(SELECT)
+        SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
+        self.images.table.images = CONNECTION.execute(SELECT, fetch=1)
 
         self.images.table.layoutChanged.emit()
         self.images.resizeRowsToContents()
         self.images.resizeColumnsToContents()
         self.statusbar(self.images.total())
 
-    def get_filter(self, id=None):
+    def get_filter(self, i=0):
         
-        if id: return f'{COMIC} WHERE hash="{id}" ORDER BY rowid'
-
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
 
         query = ['path LIKE "C:%"']
-
+        
         if self.title == 'Gesture Draw':
             
             query.append('date_used <= Now() - INTERVAL 2 MONTH')
@@ -137,6 +134,15 @@ class Gallery(QWidget):
         except: site = ''
         finally: query.append(site.lower())
 
+        try: # Read comic
+            comic, =  re.findall('comic:\w+', string, re.IGNORECASE)
+            string = string.replace(comic, '')
+            comic = re.sub('comic:(.+)', r'src="\1"', comic)
+            i = 1
+            query[3] = ''
+        except: comic = ''
+        finally: query.append(comic.lower())
+        
         if string.strip(): # Get tags
     
             string = re.sub('NOT ', '-', string.strip())
@@ -150,14 +156,16 @@ class Gallery(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
 
-        return f'WHERE {" AND ".join(i for i in query if i)} {self.get_order()}'
+        
+        return f'WHERE {" AND ".join(i for i in query if i)} {self.get_order(i)}'
         
         return f'WHERE GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
 
-    def get_order(self, ORDER={'Ascending': 'ASC', 'Descending': 'DESC'}):
+    def get_order(self, type_, ORDER={'Ascending': 'ASC', 'Descending':'DESC'}):
         
         order = self.order
-        column = order[0].checkedAction().text()
+        if type_: column = 'page'
+        else: column = order[0].checkedAction().text()
         order = order[1].checkedAction().text()
         
         if column:
@@ -204,7 +212,7 @@ class Ribbon(QWidget):
         
     def configure_gui(self):
          
-        self.undo = []
+        self.undo = ['']
         self.redo = []
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
@@ -265,7 +273,7 @@ class Ribbon(QWidget):
         self.refresh.clicked.connect(self.parent().populate)
         self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
         
-    def update(self, string=None):
+    def update(self, string=''):
 
         if string:
 
@@ -277,7 +285,7 @@ class Ribbon(QWidget):
                 self.undo.append(string)
                 self.redo.clear()
 
-        self.back.setEnabled(bool(self.undo))
+        self.back.setEnabled(bool(self.undo[1:]))
         self.forward.setEnabled(bool(self.redo))
         self.menu.setEnabled(bool(self.undo + self.redo))
 
@@ -290,10 +298,10 @@ class Ribbon(QWidget):
 
         else: self.menu.setMenu(menu)
 
-        if string is None:
+        # if string == '':
 
-            string = self.undo[-1] if self.undo else ''
-            self.tags.setText(string)
+        #     string = self.undo[-1] if self.undo else ''
+        #     self.tags.setText(string)
 
     def menuEvent(self, sender):
 
@@ -349,61 +357,26 @@ class ImageView(QTableView):
         
         menu = QMenu(self)
         parent = self.parent()
-
-        sortMenu = QMenu('Sort by', menu)
-        order = [QActionGroup(sortMenu), QActionGroup(sortMenu)]
-        for i in ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random']:
-            action = QAction(i, sortMenu, checkable=True)
-            if i == 'Rowid' and parent.parent().windowTitle() == 'Manage Data':
-                action.setChecked(True)
-            elif i=='Random' and parent.parent().windowTitle()=='Gesture Draw':
-                action.setChecked(True)
-            order[0].triggered.connect(parent.populate)
-            order[0].addAction(action)
-            sortMenu.addAction(action)
-        else:
-            sortMenu.addSeparator()
-            for i in ['Ascending', 'Descending']:
-                action = QAction(i, sortMenu, checkable=True)
-                if i.startswith('Asc'): action.setChecked(True)
-                order[1].triggered.connect(parent.populate)
-                order[1].addAction(action)
-                sortMenu.addAction(action)
-
-            menu.addMenu(sortMenu)
-            order[0].setExclusive(True); order[1].setExclusive(True)
-            parent.order = order
-
-        rateMenu = QMenu('Rating', menu)
-        rating = QActionGroup(rateMenu)
-        for i in ['Explicit', 'Questionable', 'Safe']:
-            action = QAction(i, rateMenu, checkable=True)
-            rating.triggered.connect(parent.populate)
-            rating.addAction(action)
-            rateMenu.addAction(action)
-        else: 
-            action.setChecked(True)
-            menu.addMenu(rateMenu)
-            rating.setExclusive(True)
-            parent.rating = rating
         
-        typeMenu = QMenu('Type', menu)
-        type_ = QActionGroup(typeMenu)
-        for i in ['All', 'Photo', 'Illus', 'Comic']:
-            action = QAction(i, typeMenu, checkable=True)
-            if i == 'All': action.setChecked(True)
-            type_.triggered.connect(parent.populate)
-            type_.addAction(action)
-            typeMenu.addAction(action)
-        else: 
-            menu.addMenu(typeMenu)
-            type_.setExclusive(True)
-            parent.type = type_
+        temp_menu, sortMenu = self.create_submenu(
+            menu, 'Sort by', 
+            ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'], 
+            check=0 if parent.parent().windowTitle() == 'Manage Data' else 5,
+            get_menu=True
+            )
+        sortMenu.addSeparator()
+        parent.order = [temp_menu, self.create_submenu(
+            sortMenu, None, ['Ascending', 'Descending'], check=0
+            )]
+        parent.rating = self.create_submenu(
+            menu, 'Rating', ['Explicit', 'Questionable', 'Safe'], check=2
+            )
+        parent.type = self.create_submenu(
+            menu, 'Type', ['All', 'Photo', 'Illus', 'Comic'], check=0
+            )
 
         menu.addSeparator()
-        menu.addAction(
-            QAction('Copy', menu, triggered=self.copy_path)
-            )
+        menu.addAction(QAction('Copy', menu, triggered=self.copy_path))
         try:
             menu.addAction(
                 QAction(
@@ -416,6 +389,11 @@ class ImageView(QTableView):
                     'Find more by artist', menu, triggered=self.find_by_artist
                     )
                 )
+            menu.addAction(
+                QAction(
+                    'Read comic', menu, triggered=self.read_comic                    
+                    )
+                )
             menu.addSeparator()
             menu.addAction(
                 QAction(
@@ -426,6 +404,26 @@ class ImageView(QTableView):
 
         return menu
 
+    def create_submenu(self, parent, name, items, check=None, get_menu=False): 
+        
+        if name is None: menu = parent
+        else: menu = QMenu(name, parent)
+        action_group = QActionGroup(menu)
+
+        for num, item in enumerate(items):
+            action = QAction(item, menu, checkable=True)
+            if num == check: action.setChecked(True)
+            action_group.triggered.connect(self.parent().populate)
+            action_group.addAction(action)
+            menu.addAction(action)
+
+        else:
+            if name is not None: parent.addMenu(menu)
+            action_group.setExclusive(True)
+        
+        if get_menu: return action_group, menu
+        return action_group
+
     def find_by_artist(self, sender):
 
         artist = self.currentIndex().data(1000)[2].pop()
@@ -434,7 +432,11 @@ class ImageView(QTableView):
             self, 'Artist', 'This image has no artist'
             )
 
-    def total(self): return len(self.table.images)
+    def read_comic(self, sender):
+
+        self.parent().ribbon.tags.setText(
+            f'comic:{self.currentIndex().data(200)}'
+            )
     
     def copy_path(self):
     
@@ -445,6 +447,8 @@ class ImageView(QTableView):
             f'"{index.data(Qt.UserRole)}"' for index in self.selectedIndexes()
             )
         cb.setText(paths, mode=cb.Clipboard)
+
+    def total(self): return len(self.table.images)
     
     def selectionChanged(self, select, deselect):
         
@@ -478,6 +482,10 @@ class ImageView(QTableView):
             if key_press == Qt.Key_Return and self.selectedIndexes():
             
                 Properties(self.parent(), self.selectedIndexes())
+            
+            elif key_press in (Qt.Key_Right, Qt.Key_Left): 
+                
+                self.parent().keyPressEvent(sender)
         
         elif ctrl:
 
@@ -560,7 +568,7 @@ class Model(QAbstractTableModel):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
-        self.size = int(width * .1888)
+        self.size = int(width * .1889)
         self.images = []
 
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
@@ -601,7 +609,7 @@ class Model(QAbstractTableModel):
 
             elif role == Qt.ToolTipRole:
                 
-                tag, art, sta, rat, typ, = self.images[ind][1:]
+                tag, art, sta, rat, typ, = self.images[ind][1:6]
 
                 rat = RATING[rat].lower()
                 typ = TYPE[typ]
@@ -617,6 +625,8 @@ class Model(QAbstractTableModel):
             
             elif role == 100: return (index.row() * 5), index.column()
             
+            elif role == 200: return self.images[ind][6]
+                
             elif role == 1000:
                 
                 data = self.images[ind]
@@ -648,122 +658,6 @@ class Model(QAbstractTableModel):
     #     while self.running:
     #         self.sig1.emit(self.source_txt)
 
-# class Test(QSqlTableModel):
-
-    #     def __init__(self, parent, width):
-
-    #         QSqlTableModel.__init__(self, parent)
-    #         self.database = open_database()
-    #         self.setEditStrategy(QSqlTableModel.OnManualSubmit)
-    #         self.setTable('imageData')
-    #         self.setQuery(
-    #             QSqlQuery('SELECT path, tags, artist, rating, stars FROM imageData')
-    #             )
-
-    #         self.wrapper = textwrap.TextWrapper(width=70)
-    #         self.size = int(width * .1888)
-    #         self.images = []
-    #         self.rowsLoaded = 0
-
-    #     def open_database(self):
-            
-    #         datab = QSqlDatabase.addDatabase('QODBC')
-    #         datab.setUserName('root')
-    #         datab.setPassword('SchooL1@')
-    #         datab.setDatabaseName('userData')
-    #         datab.setHostName(
-    #             '192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    #             )
-    #         datab.open()
-            
-    #         return datab
-
-    #     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
-        
-    #     def rowCount(self, parent): return self.rows
-
-    #     def columnCount(self, parent): return 5
-
-    #     def data(self, index, role, type=0):
-            
-    #         ind = (index.row() * 5) + index.column()
-
-    #         if not index.isValid() or ind >= len(self.images): return QVariant()
-    #         try: 
-            
-    #             if role == Qt.SizeHintRole: return QSize(self.size, self.size)
-                
-    #             elif role == Qt.DecorationRole:
-            
-    #                 path = self.images[ind][0]
-    #                 if path.endswith(('.mp4', '.webm')):
-                        
-    #                     image = VideoCapture(path).read()[-1]
-    #                     image = qimage2ndarray.array2qimage(image).rgbSwapped()
-                        
-    #                 else: image = QImage(path)
-
-    #                 image = image.scaled(
-    #                     self.size, self.size, Qt.KeepAspectRatio, 
-    #                     transformMode=Qt.SmoothTransformation
-    #                     )
-                    
-    #                 return self.create_label(QPixmap.fromImage(image))
-
-    #             elif role == Qt.ToolTipRole:
-                    
-    #                 tag, art, sta, rat, typ, = self.images[ind][1:]
-    #                 typ = 'Illustration' if typ else 'Photograph'
-    #                 tags = self.wrapper.wrap(f'{tag}'.strip().replace('qwd', ''))
-    #                 rest = self.wrapper.wrap(
-    #                     f'Artist:{art}Rating: {rat} Stars: {sta} {typ}'
-    #                     )
-    #                 return '\n'.join(tags + rest)
-
-    #             elif role == Qt.UserRole: return QVariant(self.images[ind][0])
-
-    #             elif role == 1000: 
-                    
-    #                 data = self.images[ind]
-    #                 path = {data[0]} if data[0] else set()
-    #                 tags = set(data[1].split()) if data[1] else set()
-    #                 artist = set(data[2].split()) if data[2] else set()
-    #                 stars = {data[3]}
-    #                 rating = {data[4]}
-    #                 type = {data[5]}
-    #                 tags.discard('qwd')
-                    
-    #                 return path, tags, artist, stars, rating, type
-
-    #         except (IndexError, ValueError): pass
-
-    #         return QVariant()
-    
-    #     def create_label(self, image):
-
-    #         label = QLabel()
-    #         label.setFixedSize(self.size, self.size)
-    #         label.setAlignment(Qt.AlignCenter)
-    #         label.setPixmap(image)
-
-    #         return label
-
-    #     # def canFetchMore(self, index):
-
-    #     #     return self.rowsLoaded < 1000
-
-    #     # def fetchMore(self, index, batch=100):
-
-    #     #     remainder = self.rowsLoaded - len(self.images)
-    #     #     itemsToFetch = min(batch, remainder)
-    #     #     self.beginInsertRows(
-    #     #         QModelIndex(), self.rowsLoaded,
-    #     #         self.rowsLoaded + itemsToFetch - 1
-    #     #         )
-    #     #     self.rowsLoaded += itemsToFetch
-    #     #     self.endInsertRows()
-
-# class Test(QSqlTableModel):
     
     # def __init__(self, *args, **kwargs):
 
@@ -779,8 +673,8 @@ class Model(QAbstractTableModel):
     # def open_database(self):
          
     #     datab = QSqlDatabase.addDatabase('QODBC')
-    #     datab.setUserName('root')
-    #     datab.setPassword('SchooL1@')
+    #     datab.setUserName(USER)
+    #     datab.setPassword(PASS)
     #     datab.setDatabaseName('userData')
     #     datab.setHostName(
     #         '192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'

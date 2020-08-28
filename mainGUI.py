@@ -1,4 +1,5 @@
 from os import remove
+from pathlib import Path
 from subprocess import Popen
 from GUI import CONNECTION, MODIFY, DELETE, NEZUMI
 from GUI import galleryView, previewView, sliderView#, mainView, trainView
@@ -55,9 +56,9 @@ class App(QMainWindow):
     
     def select(self, title):
         
+        self.hide()
         self.options[title](self, self.desktop)
         self.windows.append(title)
-        self.hide()
 
     def keyPressEvent(self, sender):
 
@@ -68,7 +69,7 @@ class App(QMainWindow):
         if ctrl:
 
             if key_press == Qt.Key_1: self.select('Manage Data')
-            
+
             elif key_press == Qt.Key_2: self.select('Gesture Draw')
 
         elif key_press == Qt.Key_Escape: self.close()
@@ -150,12 +151,6 @@ class ManageData(QMainWindow):
 
         view = self.gallery.images
         if index is None: index = view.currentIndex()
-        
-        # path, type_ = index.data(500)
-        # if type_ == 2:
-        #     id = path.split('\\')[-1][:-4]
-        #     self.parent().populate(id=id)
-
         self.slideshow.update(view.table.images, sum(index.data(100)))
 
     def change_records(self, gallery, *args):
@@ -201,13 +196,15 @@ class ManageData(QMainWindow):
                 try: remove(image)
                 except PermissionError: return
                 except FileNotFoundError: pass
+                except TypeError: pass
             CONNECTION.execute(DELETE, gallery, many=1, commit=1)
             self.gallery.populate()
     
     def resized(self, sender):
 
-        print('Desktop resized')
-        print(sender)
+        resolution = Qapp.desktop().screenGeometry()
+        print('\nDesktop resized')
+        print(resolution.size())
 
     def keyPressEvent(self, sender):
 
@@ -351,13 +348,12 @@ class MachineLearning(QMainWindow):
         self.close()
         self.parent().show()
 
-if __name__ == '__main__':
-    
-    Qapp = QApplication([])
-    
-    app = App()
-    
-    Qapp.exec_()
+Qapp = QApplication([])
+
+app = App()
+
+Qapp.exec_()
 
 # animated -dancing -sex -sports -casual_nudity -masturbation -lactation -exercise -pregnant rating=safe type=photo
 # -from_behind -from_below -from_above -from_side
+# path=6cc7368796da38a173b09a67c45dfd0    
