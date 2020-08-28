@@ -52,7 +52,7 @@ def page_handler(driver, hrefs):
         hash = get_hash(name)
 
         CURSOR.CONNECTION.execute(
-            UPDATE[3], (name, href[:-2], hash, image, href, commit=1)
+            UPDATE[3], (name, href[:-2], hash, image, href), commit=1
             )
         
     progress(size, size, SITE)
