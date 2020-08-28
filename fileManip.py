@@ -1,43 +1,32 @@
-import os, shutil, piexif, json, requests, re
-from os.path import join, isfile, splitext, exists
-from io import BytesIO
+import os, piexif, json, re
 from PIL import Image
-from Webscraping.utils import DATAB, CURSOR, get_driver, get_hash, get_name, get_tags, generate_tags, save_image, progress, sql
-from selenium.common.exceptions import WebDriverException
+from Webscraping import ROOT, CONNECTION, WEBDRIVER, INSERT
+from Webscraping.utils import get_hash, get_name, get_tags, generate_tags, save_image, progress
 
-ROOT = os.getcwd()[:2].upper()
 EXT = 'jp.*g|png|gif|webp|webm|mp4'
-INSERT = 'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "E:", "C:"), %s, %s, %s, 0)'
 
 def rename(path, pattern, string, ext):
     
-    for file in os.listdir(path):
+    for file in path.iterdir():
     
         if file.endswith(ext):
             new = re.sub(pattern, string, file)
-            file = join(path, file)
-            dest = join(path, new)
+            file = path / file
+            dest = path / new
             print(new)
             # os.rename(file, dest)
             
-def delete(path, pattern, string, ext):
-
-    jpg = [i for i in os.listdir(path) if 'jpg' in i[1]]
-    png = [i for i in os.listdir(path) if 'png' in i[1]]
-
-    # for file in enumerate([file for file in x if file[1] in y]):
-    #     # os.remove(file[1])
-    #     print(file[1])
+def delete(path, pattern, string, ext): pass
 
 def move(path, pattern, string, ext):
 
     dest = r'C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三'
     
-    for folder in os.listdir(path):
-        if os.path.isdir(folder):
-            for file in os.listdir(join(path,folder)):
-                # print(join(path, folder, file))
-                shutil.move(join(path,folder,file), dest)
+    for folder in path.iterdir():
+        if folder.isdir():
+            for file in path / folder.iterdir():
+                # print(path /  folder, file)
+                path / folder / file.rename(dest)
 
     # for folder in os.listdir(path):
     #     if folder.startswith('Chapter') or folder in ['Epilogue','prologue']:
@@ -55,14 +44,14 @@ def move(path, pattern, string, ext):
             
 def convert_images(path):
     
-    for file in os.listdir(path):
+    for file in path.glob('*png'):
         
-        if file.lower().endswith(('png', 'jfif')):
-            file = join(path, file)
-            name = f'{splitext(file)[0]}.jpg'
-            jpg = Image.open(file).convert("RGB")
-            jpg.save(name, quality=100)
-            if exists(name): os.remove(file) 
+        # if file.lower().endswith(('png', 'jfif')):
+        file = path / file
+        name = file.with_suffix('jpg')
+        jpg = Image.open(file).convert("RGB")
+        jpg.save(name, quality=100)
+        if name.exists(): file.unlink()
 
 def edit_properties(path):
 
@@ -72,7 +61,7 @@ def edit_properties(path):
         artist = ['_'.join(root.split('\\')[-1].lower().split())]
         for file in files:
             
-            file = join(root, file)
+            file = root / file
             zeroth_ifd = {
                 piexif.ImageIFD.XPAuthor: [
                     byte for char in '; '.join(artist) for byte in [ord(char), 0]
@@ -80,16 +69,14 @@ def edit_properties(path):
             exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
             metadata = piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})
             Image.open(file).save(file, exif=metadata)
-            try:
-                shutil.move(file, path)
+            try: file.rename(path)
             except: pass
 
 def extract_files(path):
     
-    source = join(path, 'Generic')
-    for file in os.listdir(source):
+    source = path / 'Generic'
+    for file in source.iterdir():
         
-        file = join(source, file)
         urls = [
             value for window in 
             json.load(open(file))[0]['windows'].values() 
@@ -102,74 +89,68 @@ def extract_files(path):
                 title = url['title'].split('/')[-1].split()[0]
                 if not re.search(EXT, title):
                     title = url['url'].split('/')[-1]
-                name = join(path, title)
-                if exists(name): continue
+                name = path / title
+                if name.exists(): continue
                 image = (
                     f'https://{url["title"]}'
                     if url['url'] == 'about:blank' else 
                     url['url']
                     )
-                save_image(name, image)
+                if not save_image(name, image): break
         
             except: break
-        os.remove(file)
+        file.unlink()
 
 def insert_files(path):
 
     extract_files(path)
     convert_images(path)
-    driver = get_driver(True)
+    driver = WEBDRIVER(True)
     files = [
-        join(path, file) for file in os.listdir(path)
-        if isfile(join(path, file))
+        file for file in path.iterdir() if file.is_file()
         ]
-    size = len(files)
+    size = len(files) - 2
 
     for num, file in enumerate(files):
         progress(size, num, 'Files')
         
-        try: 
+        try:
             dest = get_name(file, 0, 1)
             
-            if exists(dest):
-                os.remove(file)
+            if dest.exists():
+                file.unlink()
                 continue
             
+            hash_ = get_hash(file)
             tags = get_tags(driver, file)
 
-            if dest.endswith(('jpg', 'jpeg')):
+            if dest.suffix == '.jpg':
 
                 tags, rating, exif = generate_tags(
                     general=tags, custom=True, rating=True, exif=True
                     )
                 Image.open(file).save(file, exif=exif)
 
-            elif dest.endswith(('.gif', '.webm', '.mp4')): 
+            elif dest.suffix in ('.gif', '.webm', '.mp4'):
                 
                 tags, rating = generate_tags(
                     general=tags, custom=True, rating=True, exif=False
                     )
 
-            hash_ = get_hash(file)
-
-            CURSOR.execute(INSERT, (dest, tags, rating, hash_))
-            shutil.move(file, dest)
-            DATAB.commit()
+            CONNECTION.execute(INSERT[5], (str(dest), tags, rating, hash_), commit=1)
+            file.replace(dest)
             
-        except (OSError, WebDriverException): continue
+        except OSError: continue
         
-        except KeyboardInterrupt: break
-        
-        except: continue
+        except Exception as error: print('\n', error)
     
-    progress(len(files), num, 'Files')
+    progress(size, size, 'Files')
     driver.close()
-    DATAB.close()
 
 paths = [
-    rf'{ROOT}\Users\Emc11\Downloads\Images'
+    ROOT / r'\Users\Emc11\Downloads\Images'
     ]
     
 for path in paths: insert_files(path)
 
-print('Done')
+print('\nDone')
