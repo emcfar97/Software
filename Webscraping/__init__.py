@@ -25,7 +25,7 @@ INSERT = [
     'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
     f'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s, %s)',
     f'INSERT INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)',
-    f'replace INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s)'
+    f'INSERT INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s)'
     ]
 UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',

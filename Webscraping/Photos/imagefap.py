@@ -31,8 +31,7 @@ def page_handler(driver, url, title):
             src=re.compile('https://cdn.imagefap.com/images/full/.+')
             ).get('src')
 
-        name = get_name(src, 0, 1)
-        # if (name:=get_name(src, 0, 1)).exists(): continue
+        if (name:=get_name(src, 0, 1)).exists(): continue
         save_image(name, src)
 
         if name.suffix in ('.jpg', '.jpeg'):
@@ -62,8 +61,7 @@ def start():
         
     driver = WEBDRIVER(True)
 
-    # for file in PATH.iterdir():
-    for file in [r'C:\Users\Emc11\Downloads\Images\Imagefap\Naked bike rides and protests 3 Porn Pics & Porn GIFs - 2020-08-23 20-47-49.json', r'C:\Users\Emc11\Downloads\Images\Imagefap\Karla Kush, Aaliyah Love - Family Secrets Porn Pics & Porn GIFs - 2020-08-16 18-59-41.json']:
+    for file in PATH.iterdir():
 
         window = json.load(open(file))[0]['windows']
         try:
