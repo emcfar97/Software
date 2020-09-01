@@ -10,7 +10,6 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
-        },
-        {"prolog.executablePath": "/Emc11/local/Cellar/swi-prolog/7.6.4/bin/swipl"}
+        }
     ]
 }

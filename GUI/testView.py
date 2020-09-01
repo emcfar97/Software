@@ -1,14 +1,7 @@
-import os
-import mysql.connector as sql
 from PyQt5.QtGui import QPen, QPixmap, QImage
 from PyQt5.QtCore import Qt, QSize, QRect, QSizeF, QRectF
 from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsWidget, QGraphicsScene, QGraphicsGridLayout, QGraphicsView, QGraphicsItem
 
-DATAB = sql.connect(
-    user='root', password='SchooL1@', database='userData', 
-    host='192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    )
-CURSOR = DATAB.cursor()
 SELECT = 'SELECT path FROM imageData WHERE path LIKE "%.jp%g" ORDER BY RAND()'
 
 class RectWidget(QGraphicsWidget):
