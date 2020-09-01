@@ -1,7 +1,8 @@
 import numpy, imageio
+from pathlib import Path
+import tensorflow as tf
 from tensorflow import keras
-import os
-from os.path import join
+from tensorflow.keras import layers
 
 def predict(model, classes, image, verbose=False):
     
@@ -13,11 +14,72 @@ def predict(model, classes, image, verbose=False):
     if verbose: return classes, values
     return classes[values.argmax()]
 
+def make_model(input_shape, num_classes, chckpnt=False, load=False):
+    
+    if load: return keras.models.load_model(home / load)
+
+    inputs = keras.Input(shape=input_shape)
+    x = layers.experimental.preprocessing.Rescaling(1./255)(inputs)
+    x = layers.Conv2D(32, 3, strides=2, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+
+    x = layers.Conv2D(64, 3, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+
+    previous_block_activation = x  # Set aside residual
+    
+    for size in [128, 256, 512, 728]:
+
+        x = layers.Activation('relu')(x)
+        x = layers.SeparableConv2D(size, 3, padding='same')(x)
+        x = layers.BatchNormalization()(x)
+
+        x = layers.Activation('relu')(x)
+        x = layers.SeparableConv2D(size, 3, padding='same')(x)
+        x = layers.BatchNormalization()(x)
+
+        x = layers.MaxPooling2D(3, strides=2, padding='same')(x)
+        
+        # Project residual
+        residual = layers.Conv2D(
+            size, 1, strides=2, padding='same')(previous_block_activation
+            )
+        x = layers.add([x, residual])  # Add back residual
+        previous_block_activation = x  # Set aside next residual
+
+    x = layers.SeparableConv2D(1024, 3, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+    
+    x = layers.GlobalAveragePooling2D()(x)
+    if num_classes == 2:
+        activation = 'sigmoid'
+        units = 1
+    else:
+        activation = 'softmax'
+        units = num_classes
+    
+    x = layers.Dropout(0.5)(x)
+    outputs = layers.Dense(units, activation=activation)(x)
+    model = keras.Model(inputs, outputs)
+
+    if chckpnt: 
+        path = home / 'Checkpoints'
+        checkpoints = list(path.glob(f'{name}_*'))
+        checkpoint = checkpoints[-1]
+        model.load_weights(checkpoint)
+
+    return model
+
 classes = ['Illustration', 'Photograph']
-path = r'Machine Learning\Medium-01'
-model = keras.models.load_model(path)
+home = Path.cwd()  / 'Machine Learning'
+name = r'Medium-02'
+image_size = (180, 180)
+model = make_model(image_size + (3,), 2, load='Medium-01')
 images = [
-  r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\1dc03e690ac783335ae489eddc23d520.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\793fc1fbace7491ca23d44b7f3d6172b.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\ce40008ba01176edf395c4ee8d79902e.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\c1ae62e46f393308ddc39d207a53c5d8.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\d5af221fe91be7b2e7b361209defadbe.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\ca09e0743de63df1146dc26fc13c0b4d.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\1070a199718e00d137088a9227a2d79e.jpg", r"c:\users\emc11\dropbox\videos\ん\エラティカ ニ\69847f23421c8e8dce2de52caa964699.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\23f052fb56a77b6d035492d92150d927.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\2de4e0a4d6e1c9c37d4348e21890acda.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\22f93096a450622aae5393ff677854a0.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\5658482b11bb2207534287547f860b4e.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\182048e699c0b0e29ff7a5a95dbd7552.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\0f639efbb3cbb1157bf0822512aff703.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\e5ffbb61d829c5247c8a978c3ad8c46b.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\3d0016781c5c527786cea18d150b761c.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\db647fa8b6689c5e3cfe351d9d6e86c9.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\8f70908de6e4ba4f76e7519a0f30e5cc.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\a88ebf5b7ab8407294543e4c39c17da2.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\d6540cc80029e7c2a92a24d6e0bd9b69.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\5f397448da4c39c6d445342e46a33235.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\08f440f98cdd0f034a8cfea38cd669ed.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\b5f55bc911ba7f0506099c97dcd0676b.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\f921e1fe3c3b245228505b0d00db43f9.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\dc66401bf60eb546657bf815db5074c2.jpg"
+    r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\ce6de6a8c04b37aabea2b4d2195cd80d.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\10e02f19a038bb3812805eb2f996350b.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\433c0d5f795ef24432de471416eb35ba.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\42bc525d7a108092b13026eab161e723.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\e4d7c2b3a9f90ce815742c13d5529bd9.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\d7278f10c445ce7db4c40160168d09fc.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\ef868ce366cbd21f252f4af9dbf54fda.JPG", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\b22b0ad45a6e685ea107e97cc8fa8001.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\4a2fcce6db5c97c6ea507fc22c221bdc.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\e108727c47b37afa0b89c56cb3e24530.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\da19a8db821e83fecb581d2add99105d.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\6c74483b4fb7a8575207529d328f8e01.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\b1f54ea868019011488e4fca5dc456f7.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\ede9537b4ce16caeb6b8e7a33ce9ffbe.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\444411bcde071105eacb663707af143e.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\b2590fc5b2292cff0bc03b69a7a7c5a2.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\9ae4a9592323198fa546e2cd56dbfa80.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\83003bf692c4b772f726587134f19a74.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\af199e77f58471373fae17b8e2c44736.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\d2bc5438fb1f037f3421aae518a055a1.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\8db4027a191bd23d980d78adeb759910.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\bb2a66b55c2d2a60895f5e7004123265.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\9c23e0afee41bf3c83d846cc32f7742e.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\13d1f3ad9eddd4f955c2804276d695f3.jpg", r"C:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ\03bed036e89ef9e31181edd3bb25ccd2.JPG",
     ]
 
 for num, image in enumerate(images):
