@@ -19,11 +19,11 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
     html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
 
     hrefs = [
-        (target.get('href'), 1, SITE) for target in 
+        (target.get('href'), 2, SITE) for target in 
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
-    CONNECTION.execute(INSERT[0], hrefs, 1, commit=1)
+    CONNECTION.execute(INSERT[0], hrefs, 1)
         
     next = next_page(html.find(id='paginator').contents)   
     if hrefs and next: initialize(driver, next, query)

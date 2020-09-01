@@ -18,7 +18,7 @@ def initialize(driver, url='/chairekakia/saved/', retry=0):
 
         html = bs4.BeautifulSoup(driver.page_source, 'lxml')
         hrefs = [
-            (target.get('href'), 0, SITE) for target in 
+            (target.get('href'), 1, SITE) for target in 
             html.findAll('a', href=re.compile('/p/.+'))
             if (target.get('href'),) not in query
             ]
@@ -31,7 +31,7 @@ def initialize(driver, url='/chairekakia/saved/', retry=0):
             query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
             retry = 0
 
-    DATAB.commit()
+    CONNECTION.commit()
     
 def page_handler(driver, hrefs):
 

@@ -16,7 +16,7 @@ def initialize(url, query=0):
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     hrefs = [
-        (target.get('href'), 0, SITE) for target in 
+        (target.get('href'), 1, SITE) for target in 
         html.findAll('a', href=re.compile('.+://\d.bp.blogspot.com+'))
         if (target.get('href'),) not in query
         ]

@@ -1,11 +1,12 @@
-import pathlib, threading
+from pathlib import Path
 import mysql.connector as sql
 from selenium import webdriver
+from configparser import ConfigParser
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.firefox.options import Options
-    
-ROOT = pathlib.Path().cwd().parent
+
+ROOT = Path(Path().cwd().drive)
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
@@ -22,9 +23,9 @@ INSERT = [
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s, %s)',
-    'INSERT IGNORE INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, 0)',
-    f'INSERT IGNORE INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, 0)'
+    f'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s, %s)',
+    f'INSERT INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)',
+    f'replace INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s)'
     ]
 UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
@@ -42,9 +43,14 @@ class CONNECT:
 
     def __init__(self):
 
+        credentials = ConfigParser(delimiters='=') 
+        credentials.read('credentials.ini')
+
         self.DATAB = sql.connect(
-            user='root', password='SchooL1@', database='userData', 
-            host='127.0.0.1' if ROOT.drive == 'C:' else '192.168.1.43'
+            user=credentials.get('mysql', 'username'), 
+            password=credentials.get('mysql', 'password'), 
+            database=credentials.get('mysql', 'database'), 
+            host=credentials.get('mysql', 'hostname')
             )
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
@@ -53,8 +59,8 @@ class CONNECT:
         for _ in range(20):
 
             try:
-                if many: self.CURSOR.executemany(statement, arguments)
-                else: self.CURSOR.execute(statement, arguments)
+                try: self.CURSOR.execute(statement, arguments)
+                except: self.CURSOR.executemany(statement, arguments)
 
                 if commit: return self.DATAB.commit()
                 elif fetch: return self.CURSOR.fetchall()
@@ -79,22 +85,11 @@ class WEBDRIVER:
         options.headless = headless
         binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
         self.driver = webdriver.Firefox(firefox_binary=binary, options=options)
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(15)
 
-    def get(self, url):
-        
-        self.driver.get(url)
+    def get(self, url): self.driver.get(url)
     
-    def current_url(self): return self.driver.current_url
-
-    def page_source(self): return self.driver.page_source
-        
-        # for _ in range(20):
-        #     try: return self.driver.page_source
-        #     except exceptions.WebDriverException: pass
-        # raise exceptions.WebDriverException
-    
-    def find(self, adress, keys=None, click=False, type_=1, fetch=0):
+    def find(self, adress, keys=None, click=False, type_=1):
         
         try:
             
@@ -107,7 +102,7 @@ class WEBDRIVER:
             # elif type_ == 4:
             #     element = self.driver.find_element_by_link_text(adress)
             # elif type_ == 5:
-            #     element = self.driver.find_element_by_partial_link_text(adress)
+            #     element =self.driver.find_element_by_partial_link_text(adress)
             elif type_ == 6:
                 element = self.driver.find_element_by_tag_name(adress)
             elif type_ == 7:
@@ -115,16 +110,29 @@ class WEBDRIVER:
             # elif type_ == 8:
             #     element = self.driver.find_element_by_css_selector(adress)
             
-            if fetch: return element
-
             if keys: element.send_keys(keys)
 
             if click: element.click()
 
-        # except exceptions.WebDriverException: self.__init__()
-        except Exception as error: print(error) 
-        # self.find(adress, keys, click, type_, fetch)
+            return element
+
+        except exceptions.StaleElementReferenceException:
+            print('stale element')
+
+        except exceptions.NoSuchElementException:
+            print('no such element')
+        
+        except Exception as error: print(error)
     
+    def page_source(self):
+        
+        for _ in range(10):
+            try: return self.driver.page_source
+            except exceptions.WebDriverException: pass
+        raise exceptions.WebDriverException
+    
+    def current_url(self): return self.driver.current_url
+
     def refresh(self): self.driver.refresh()
 
     def close(self):
@@ -134,11 +142,13 @@ class WEBDRIVER:
 
 def start():
     
-    from Webscraping import Photos, Illus
+    import threading
+    from Webscraping import Photos, Illus, comics
     
     threads = [
         # threading.Thread(target=Photos.start),
-        threading.Thread(target=Illus.start) 
+        threading.Thread(target=Illus.start),
+        threading.Thread(target=comics.start)
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()

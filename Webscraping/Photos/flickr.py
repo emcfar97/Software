@@ -23,7 +23,7 @@ def initialize(driver, url='/photos/140284163@N04/favorites/page1', query=0):
 
     html = bs4.BeautifulSoup(driver.page_source, 'lxml')
     hrefs = [
-        (target.get('href'), 0, SITE) for target in 
+        (target.get('href'), 1, SITE) for target in 
         html.findAll('a', class_='overlay', href=True)
         if (target.get('href'),) not in query
         ]

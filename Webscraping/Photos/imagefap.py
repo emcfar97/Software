@@ -2,10 +2,9 @@ import json
 from .. import ROOT, CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
-ROOT = ROOT.parent.parent
-PATH = ROOT / r'Users\Emc11\Downloads\Images\Imagefap'
+PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
 
-def page_handler(url, title):
+def page_handler(driver, url, title):
     
     try: url = f'{url}?gid={url.split("/")[4]}&view=2'
     except IndexError: url = f'https://{title}&view=2'
@@ -28,14 +27,15 @@ def page_handler(url, title):
         href = f'https://www.imagefap.com/{image.get("href")}'
         page_source = requests.get(href).content
         target = bs4.BeautifulSoup(page_source, 'lxml')
-        src = target.find(src=re.compile('https://cdn.imagefap.com/images/full/.+')).get('src')
+        src = target.find(
+            src=re.compile('https://cdn.imagefap.com/images/full/.+')
+            ).get('src')
 
         name = get_name(src, 0, 1)
-        name = name.split('?')[0]
-        if name.exists(): continue
+        # if (name:=get_name(src, 0, 1)).exists(): continue
         save_image(name, src)
 
-        if name.suffix in ('jpg', 'jpeg'):
+        if name.suffix in ('.jpg', '.jpeg'):
             
             tags, rating, exif = generate_tags(
                 general=get_tags(driver, name), 
@@ -52,19 +52,25 @@ def page_handler(url, title):
 
         hash_ = get_hash(name)
         CONNECTION.execute(
-            INSERT[6], (name, f' {artist} ', tags, rating, hash_, 'imagefap'), commit=1
+            INSERT[6], 
+            (str(name), f' {artist} ', tags, rating, hash_, 'imagefap', 1), commit=1
             )
     
-driver = WEBDRIVER(True)
+    progress(size, size, 'Images')
 
-for file in PATH.iterdir():
+def start():
+        
+    driver = WEBDRIVER(True)
 
-    window = json.load(open(file))[0]['windows']
-    try:
-        for val in window.values():
-            for url in val.values():
-                page_handler(url['url'], url['title'])
-    except Exception as error: print(error, '\n'); continue
-    file.unlink()
+    # for file in PATH.iterdir():
+    for file in [r'C:\Users\Emc11\Downloads\Images\Imagefap\Naked bike rides and protests 3 Porn Pics & Porn GIFs - 2020-08-23 20-47-49.json', r'C:\Users\Emc11\Downloads\Images\Imagefap\Karla Kush, Aaliyah Love - Family Secrets Porn Pics & Porn GIFs - 2020-08-16 18-59-41.json']:
 
-driver.close()
+        window = json.load(open(file))[0]['windows']
+        try:
+            for val in window.values():
+                for url in val.values():
+                    page_handler(driver, url['url'], url['title'])
+        except Exception as error: print(error, '\n'); continue
+        file.unlink()
+
+    driver.close()

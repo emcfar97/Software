@@ -1,128 +1,145 @@
-import imageio, cv2, hashlib
+import cv2, imutils, imageio, pathlib
 import numpy as np
+from PIL import Image
 from .. import CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
-from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import login, progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, tempfile
 
 SITE = 'posespace'
 
 def initialize(driver, url='/posetool/favs.aspx'):
 
-    query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
-    driver.get(f'https://www.posespace.com{url}')
-    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
-    while True:
-        try:
-            hrefs = [
-                (*href, SITE) for href in {(target.text,) 
-                for target in html.findAll(class_='emph')} - query
-                ]
-            break
-        except sql.errors.OperationalError: continue
-    while True:
-        try: CURSOR.CONNECTION.executemany(INSERT[0], hrefs,); break
-        except sql.errors.OperationalError: continue
-        
-    CONNECTION.commit()
+    database = set(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
 
+    driver.get(f'https://www.posespace.com{url}')
+    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    hrefs = [
+        (*href, 1, SITE) for href in 
+        {(target.text,) for target in 
+        html.findAll(class_='emph')} - database
+        ]
+    CONNECTION.execute(INSERT[0], hrefs, commit=1)
+        
 def page_handler(driver, hrefs):
     
     if not hrefs: return
     size = len(hrefs)
-    hasher = hashlib.md5()
     url = 'https://www.posespace.com/img/contact/'
 
     for num, (href,) in enumerate(hrefs):
         progress(size, num, SITE)
 
-        image_a = Image.open(
-            BytesIO(requests.get(f'{url}{href}contacta.jpg').content)
+        image_a = np.asarray(bytearray(
+            requests.get(f'{url}{href}contacta.jpg').content)
             )
-        image_b = Image.open(
-            BytesIO(requests.get(f'{url}{href}contactb.jpg').content)
+        image_b = np.asarray(bytearray(
+            requests.get(f'{url}{href}contactb.jpg').content)
             )
-
-        image = Image.new('RGB', (image_a.width, image_a.height+image_b.height))
-        image.paste(image_a)
-        image.paste(image_b, (0, image_a.height))
-
-        image.save(join(r'C:\Users\Emc11\Downloads\test', f'{href}.gif'))
-
+        image_c = np.array(
+            [[255, 255, 255]]
+        )
+        image   = cv2.vconcat([
+            cv2.imdecode(image_a, -1), cv2.imdecode(image_b, -1)
+            ])
+        image = make_gif(image, href)
         continue
-        name = join(PATH, 'エラティカ ニ', f'{hasher.hexdigest()}.gif')
-        hash = get_hash(name)
 
-        CURSOR.CONNECTION.execute(
-            UPDATE[3], (name, href[:-2], hash, image, href), commit=1
+        tags, rating = generate_tags(
+            general=get_tags(driver, image) + ' reference', 
+            custom=True, rating=True, exif=False
+            )
+        name = get_name(image, 0)
+        hash_ = get_hash(image)
+        artist = href[:-3]
+        image.replace(name)
+
+        CONNECTION.execute(
+            UPDATE[3], (str(name), f' {artist} ', tags, rating, None, hash_, href), commit=1
             )
         
     progress(size, size, SITE)
 
-def make_gif(path, name, error=False):
+def make_gif(image, name):
 
-    image = Image.open(join(path, f'{name}.jpg'))
-    corners = find_corners(join(path, f'{name}.jpg'))
-    images = [
-        image.crop((*corner[0], *corner[1]))
-        for corner in zip(corners[0][:24], corners[1][:24])
-        ]
-    os.mkdir(join(path[:-6], name))
-    for num, image in enumerate(images, 1):
-        image.save(join(path[:-6], name, f'{name}_{num:02d}.jpg'))
-    imageio.mimsave(join(path[:-6], f'{name}.gif'), images, duration=.20)
-    
-def find_corners(path):
+    def precedence(contour, cols, tolerance=30):
 
-    def find_row(row):
-        
-        above = gray.shape[1] - np.count_nonzero(gray[row-1])
-        center= gray.shape[1] - np.count_nonzero(gray[row])
-        below = gray.shape[1] - np.count_nonzero(gray[row+1])
-        
-        return (
-            above<center and above<below and below!=0 and above<1,
-            below<center and below<above and above!=0 and below<1
-            )
+        origin = cv2.boundingRect(contour)
+        return ((origin[1] // tolerance) * tolerance) * cols + origin[0]
 
-    def find_col(row, col, span=20):
-
-        rght = 2*span - np.count_nonzero(gray[row-span:row+span,col-1])
-        midd = 2*span - np.count_nonzero(gray[row-span:row+span,col])
-        left = 2*span - np.count_nonzero(gray[row-span:row+span,col+1])
-        
-        return (
-            rght<midd and rght<left and left!=0 and rght<=1,
-            left<midd and left<rght and rght!=0 and left<=1
-            )
-
-    corners = [], []
-    img = cv2.imread(path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.adaptiveThreshold(
-        gray, 255,
-        cv2.ADAPTIVE_THRESH_MEAN_C, 
-        cv2.THRESH_BINARY, 21, 4
+    shapeMask = cv2.inRange(
+        image, np.array([243, 243, 243]), np.array([255, 255, 255])
         )
-     
-    for row in range(1, gray.shape[0]-1):
-
-        top, bot = find_row(row)
-        if top or bot:
-            
-            for col in range(1, gray.shape[1]-1):
-              
-                rght, left = find_col(row, col)
-                if rght and top: corners[0].append([col, row])
-                elif left and bot: corners[1].append([col, row])
+    shapes = imutils.grab_contours(cv2.findContours(
+        cv2.bitwise_not(shapeMask), 
+        cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        ))
+    shapes.sort(key=lambda x:precedence(x, image.shape[1]))
+    
+    total = {
+        tuple(int(i/10) for i in cv2.boundingRect(shape)[2:]) 
+        for shape in shapes[:24]
+        }
+    
+    # for num, shape in enumerate(shapes[:24:], 1):
         
-    return corners
+    #     M = cv2.moments(shape)
+    #     cX, cY = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
+    #     # draw the countour number on the image
+    #     cv2.putText(image, f"#{num}", (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    #     cv2.drawContours(image, [shape], -1, (0, 255, 0), 2)
+
+    # print(f'\n{name:<15}: {len(total):>2} total animate? {len(total)<3}')
+    # cv2.imshow(name, image)
+    # cv2.waitKey(0)
+    temps = []
+
+    if len(total) < 3:
+
+        images = []
+        gif = tempfile.TemporaryFile(suffix='.gif').name
+        
+        for shape in shapes[:24]:
+            
+            x, y, w, h = cv2.boundingRect(shapes.pop(0))
+            crop = cv2.cvtColor(image[y:y+h, x:x+w], cv2.COLOR_BGR2RGB)
+            images.append(Image.fromarray(crop))
+
+        new = Image.new('RGB', total.pop())
+        new.save(gif, save_all=True, append_images=images, duration=100)
+        # imageio.mimsave(gif, images, fps=12,)
+        temps.append(pathlib.Path(gif))
+    return
+    for shape in shapes:
+
+        temp = tempfile.TemporaryFile(suffix='.jpg').name
+        x, y, w, h = cv2.boundingRect(shape)
+        cv2.imwrite(temp, image[y:y+h, x:x+w])
+        temps.append(pathlib.Path(temp))
+    
+    return temps
+
+def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
+    dim = None
+    (h, w) = image.shape[:2]
+
+    if width is None and height is None:
+        return image
+    if width is None:
+        r = height / float(h)
+        dim = (int(w * r), height)
+    else:
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    return cv2.resize(image, dim, interpolation=inter)
 
 def setup(driver, initial=True):
     
-    try:
-        login(driver, SITE)
-        if initial: initialize(driver)
-        page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
-    except Exception as error:
-        print(f'{SITE}: {error}')
+    # try:
+    driver.close()
+    # login(driver, SITE)
+    # if initial: initialize(driver)
+    page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    # except Exception as error:
+    #     print(f'{SITE}: {error}')
         
     driver.close()

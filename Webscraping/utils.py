@@ -3,16 +3,17 @@ from . import ROOT
 from math import log
 from PIL import Image
 from io import BytesIO
+from configparser import ConfigParser
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
-PATH = ROOT / r'Videos\ん'
+PATH = ROOT / r'\Users\Emc11\Dropbox\Videos\ん'
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
-USER = 'Chairekakia'
-EMAIL = 'Emc1130@hotmail.com'
-PASS = 'SakurA1@'
-HEADERS = {'User-Agent': 'Mozilla/5.0'}
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0'
+    }
 HASHER = hashlib.md5()
+EXT = 'jp.*g|png|gif|webp|webm|mp4'
 
 METADATA = {
     'audio':'audio|has_audio',
@@ -51,7 +52,7 @@ CUSTOM = {
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'intercrural': 'thigh_sex',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
-    'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage', 
+    'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage|naked_robe', 
     'sexy': 'NOT (nude OR topless OR (bottomless OR no_panties))',
     'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
     'vagina': 'pussy',
@@ -423,96 +424,101 @@ def progress(size, left, site, length=20):
     percent = left / size
     padding = int(percent * length)
     bar = f'[{"|" * padding}{" " * (length-padding)}]'
-    print(f'{site}  —  {bar} {percent:03.0%} ({left}/{size})')
+    print(f'{site}  —  {bar} {percent:>4.0%} ({left}/{size})')
     sys.stdout.write("\033[F")
     if left == size: print()
         
 def login(driver, site, type_=0):
     
+    credentials = ConfigParser(delimiters='=') 
+    credentials.read('credentials.ini')
     from selenium.webdriver.common.keys import Keys
 
     if site == 'flickr':
 
         driver.get('https://identity.flickr.com/login')
         while driver.current_url == 'https://identity.flickr.com/login':
-            driver.find('login-email', EMAIL, type_=2)
+            driver.find('login-email', credentials.get(site, 'user'), type_=2)
             driver.find('login-email', Keys.RETURN, type_=2)
-            driver.find('login-password', PASS, type_=2)
+            driver.find('login-password', credentials.get(site,'pass'), type_=2)
             driver.find('login-password', Keys.RETURN, type_=2)
             time.sleep(2.5)
 
     elif site == 'metarthunter':
 
         driver.get('https://www.metarthunter.com/members/')
-        driver.find('//*[@id="user_login"]', USER)
-        driver.find('//*[@id="user_pass"]', 'SchooL1@')
+        driver.find('//*[@id="user_login"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_pass"]', credentials.get(site, 'pass'))
         while driver.current_url == 'https://www.metarthunter.com/members/': 
             time.sleep(2)
             
     elif site == 'femjoyhunter':
 
         driver.get('https://www.femjoyhunter.com/members/')
-        driver.find('//*[@id="user_login"]', USER)
-        driver.find('//*[@id="user_pass"]', 'SchooL1@')
+        driver.find('//*[@id="user_login"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_pass"]', credentials.get(site, 'pass'))
         while driver.current_url == 'https://www.femjoyhunter.com/members/': 
             time.sleep(2)
             
     elif site == 'elitebabes':
 
         driver.get('https://www.elitebabes.com/members/')
-        driver.find('//*[@id="user_login"]', USER)
-        driver.find('//*[@id="user_pass"]', 'SakurA1$')
+        driver.find('//*[@id="user_login"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_pass"]', credentials.get(site, 'pass'))
         while driver.current_url == 'https://www.elitebabes.com/members/': 
             time.sleep(2)
 
     elif site == 'instagram':
     
         driver.get('https://www.instagram.com/')
-        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', EMAIL)
-        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', 'SchooL1#')
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', credentials.get(site, 'email'))
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', credentials.get(site, 'pass'))
         driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', Keys.RETURN)
         time.sleep(2)
 
     elif site== 'gelbooru':
 
         driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
-        driver.find('/html/body/div[4]/div[4]/div/div/form/input[1]', USER)
-        driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', PASS)
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[1]', credentials.get(site, 'user'))
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', credentials.get(site, 'pass'))
         driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
         time.sleep(1)
 
     elif site == 'sankaku':
 
         driver.get(f'https://{type_}.sankakucomplex.com/user/login')
-        driver.find('//*[@id="user_name"]', USER)
-        driver.find('//*[@id="user_password"]', PASS)
+        driver.find('//*[@id="user_name"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_password"]', credentials.get(site, 'pass'))
         driver.find('//*[@id="user_password"]', Keys.RETURN)
         time.sleep(2)
     
     elif site == 'furaffinity':
 
         driver.get('https://www.furaffinity.net/login/')
-        driver.find('//*[@id="login"]', USER)
-        driver.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', PASS)
+        driver.find('//*[@id="login"]', credentials.get(site, 'user'))
+        driver.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', credentials.get(site, 'pass'))
         while driver.current_url == 'https://www.furaffinity.net/login/': 
             time.sleep(2)
     
     elif site == 'twitter':
 
+        email = credentials.get(site, 'email')
+        passw = credentials.get(site, 'pass')
+
         driver.get('https://twitter.com/login')
         element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'  
         while driver.current_url == 'https://twitter.com/login':
             try:  
-                driver.find('session[username_or_email]', EMAIL, type_=3)
+                driver.find('session[username_or_email]', email, type_=3)
                 time.sleep(.75)
-                driver.find('session[password]', PASS, type_=3)
+                driver.find('session[password]', passw, type_=3)
                 driver.find('session[password]', Keys.RETURN, type_=3)
                 time.sleep(5)
 
             except:
-                driver.find(element.format(1), EMAIL)
+                driver.find(element.format(1), email)
                 time.sleep(.75)
-                driver.find(element.format(2), PASS)
+                driver.find(element.format(2), passw)
                 driver.find(element.format(2), Keys.RETURN)
                 time.sleep(5)
 
@@ -521,30 +527,23 @@ def login(driver, site, type_=0):
         driver.get('https://www.posespace.com/')
         driver.find("//body/form[1]/div[3]/div[1]/nav/div/div[2]/ul[2]/li[6]/a", click=True)
         driver.find("popModal", click=True, type_=7)
-        driver.find("loginUsername", EMAIL, type_=2)
-        driver.find("loginPassword", PASS, type_=2)
+        driver.find("loginUsername", credentials.get(site, 'email'), type_=2)
+        driver.find("loginPassword", credentials.get(site, 'pass'), type_=2)
         driver.find("btnLoginSubmit", click=True, type_=2)
 
     elif site == 'pinterest':
         
-        if type_: email = EMAIL
-        else: email = 'emc1140@hotmail.com'
-        passw = 'SchooL1@'
-            
         driver.get('https://www.pinterest.com/login/')
-        driver.find('//*[@id="email"]', email)
-        driver.find('//*[@id="password"]', passw)
+        driver.find('//*[@id="email"]', credentials.get(site, 'email'))
+        driver.find('//*[@id="password"]', credentials.get(site, 'pass'))
         driver.find('//*[@id="password"]', Keys.RETURN)
         time.sleep(5)
         
     elif site == 'deviantArt':
 
-        email = 'rayos1'
-        passw = 'SchooL1@'
-        
         driver.get('https://www.deviantart.com/users/login')
-        driver.find('//*[@id="username"]', email)
-        driver.find('//*[@id="password"]', passw)
+        driver.find('//*[@id="username"]', credentials.get(site, 'email'))
+        driver.find('//*[@id="password"]', credentials.get(site, 'pass'))
         driver.find('//*[@id="password"]', Keys.RETURN)
         time.sleep(5)
 
@@ -580,7 +579,7 @@ def save_image(name, image, exif=b''):
     except: return False
     return name.exists()
     
-def get_name(path, type_, hasher=0, fetch=0):
+def get_name(path, type_, hasher=1, fetch=0):
     '''Return pathname (from optional hash of image)'''
 
     if hasher:
@@ -589,7 +588,8 @@ def get_name(path, type_, hasher=0, fetch=0):
         HASHER.update(data)
 
         if fetch: return HASHER.hexdigest()
-        stem = f'{HASHER.hexdigest()}{path.suffix}'
+        try: stem = f'{HASHER.hexdigest()}{path.suffix.lower()}'
+        except: stem = f'{HASHER.hexdigest()}.{re.findall(EXT, path)[0]}'
     
     else: stem = path
 
@@ -609,11 +609,11 @@ def get_hash(image, src=False):
         with open(temp, 'wb') as img:
             image = img.write(requests.get(image).content).name
     
-    if re.search('jp.*g|png|gif', image.suffix): 
+    if re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
         
         image = Image.open(image)
 
-    elif re.search('webm|mp4', image.suffix):
+    elif re.search('webm|mp4', image.suffix, re.IGNORECASE):
         
         video_capture = VideoCapture(str(image)).read()[-1]
         image = cvtColor(video_capture, COLOR_BGR2RGB)
@@ -660,7 +660,7 @@ def get_tags(driver, path):
         driver.find('//*[@id="exampleFormControlFile1"]', str(frame))
         driver.find('//body/div/div/div/form/button', click=True)
 
-        for _ in range(25):
+        for _ in range(16):
             html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
             try:
                 tags.update([
@@ -672,7 +672,7 @@ def get_tags(driver, path):
                 if driver.current_url().endswith('deepdanbooru/'):
                     driver.find('//*[@id="exampleFormControlFile1"]',str(frame))
                     driver.find('//body/div/div/div/form/button', click=True)
-                elif not _ % 5: driver.refresh()
+                elif not _ % 4: driver.refresh()
     
     else:
         if video: temp_dir.cleanup()

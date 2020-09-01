@@ -5,8 +5,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 SITE = 'sankaku'
 MODE = {
-    0:['idol', 0],
-    1:['chan', 1]
+    0:['idol', 1],
+    1:['chan', 2]
     }
 
 def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
@@ -27,7 +27,7 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
             html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
             if (target.get('href'),) not in query
             ]
-        CONNECTION.execute(INSERT[0], hrefs, 1)
+        CONNECTION.execute(INSERT[0], hrefs, 2)
         
         next = next_page(html.find('div', {'next-page-url': True}))   
         if hrefs and next: initialize(mode, next, query)

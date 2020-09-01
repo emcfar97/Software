@@ -26,7 +26,7 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
             ).text.lower().replace(' ', '_')
 
         hrefs = [
-            (f' {artist} ', 0, image.get('href'), SITE) for image in  
+            (f' {artist} ', 1, image.get('href'), SITE) for image in  
             page.findAll('a', href=re.compile('https://a2h6m3w6.+'))
             if (image.get('href'),) not in query
             ]
