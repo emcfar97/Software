@@ -88,8 +88,8 @@ class Properties(QMainWindow):
         if tags: self.tags.setText(' '.join(sorted(tags)))
         if artist: self.artist.setText(' '.join(artist))
         if stars: self.stars.setCurrentIndex(stars.pop())
-        if rating: self.rating.setCurrentIndex(rating.pop() + 1)
-        if type: self.type.setCurrentIndex(type.pop() + 1)
+        if rating: self.rating.setCurrentText(rating.pop())
+        if type: self.type.setCurrentText(type.pop())
 
         self.place = tags, artist
         self.tags.setFocus()

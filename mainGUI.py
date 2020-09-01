@@ -171,8 +171,8 @@ class ManageData(QMainWindow):
                 parameters.append(f'artist=REPLACE(artist, " {artist} ", " ")')
 
         if stars: parameters.append(f'stars={stars}')
-        if rating: parameters.append(f'rating={rating - 1}')
-        if type: parameters.append(f'type={type - 1}')
+        if rating: parameters.append(f'rating={rating}')
+        if type: parameters.append(f'type={type}')
 
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1

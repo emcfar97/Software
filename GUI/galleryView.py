@@ -1,4 +1,4 @@
-import re, textwrap, qimage2ndarray, time
+import re, textwrap, qimage2ndarray
 from . import *
 from .propertiesView import Properties
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QVariant, QModelIndex, Qt, QSize, pyqtSignal
@@ -6,16 +6,15 @@ from PyQt5.QtWidgets import QAbstractScrollArea, QTableView, QAbstractItemView, 
 # from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
 
 RATING = {
-    'Safe': 'rating=0', 'Questionable': 'rating<=1', 'Explicit': '',
-    'safe': '0', 'questionable': '1', 'explicit': '2',
-    0: 'safe', 1: 'questionable', 2: 'explicit'
+    'Safe': 'rating=1', 
+    'Questionable': 'rating<=2', 
+    'Explicit': '',
     }
 TYPE = {
-    'all': [''],
-    'photo': ['type=0', '0'], 
-    'illus': ['type=1', '1'], 
-    'comic': ['type=2', '2'],
-    0: 'photograph', 1: 'illustration', 2: 'comic'
+    'all': '',
+    'photo': 'type=1', 
+    'illus': 'type=2', 
+    'comic': 'type=3',
     }
 
 class Gallery(QWidget):
@@ -84,8 +83,8 @@ class Gallery(QWidget):
         try: # Get type
             type_, = re.findall('type=(?:photo|illus|comic?)', string)
             string = string.replace(type_, '')
-            type_ = re.sub('(\w+)\Z', TYPE[type_[5:]][1], type_)
-        except: type_ = TYPE[self.type.checkedAction().text().lower()][0]
+            type_ = TYPE[type_[5:].capitalize()]
+        except: type_ = TYPE[self.type.checkedAction().text().lower()]
         finally: query.append(type_)
 
         try: # Get stars
@@ -100,9 +99,7 @@ class Gallery(QWidget):
                 'rating[<>=!]+(?:safe|questionable|explicit?)', string
                 )
             string = string.replace(rating, '')
-            rating = re.sub(
-                '(\w+)\Z', RATING[re.findall('(\w+)\Z', rating)[0]], rating
-                )
+            rating = RATING[rating.capitalize()]
         except: rating = RATING[self.rating.checkedAction().text()]
         finally: query.append(rating.lower())
         
@@ -611,13 +608,11 @@ class Model(QAbstractTableModel):
                 
                 tag, art, sta, rat, typ, = self.images[ind][1:6]
 
-                rat = RATING[rat].lower()
-                typ = TYPE[typ]
                 tags = self.wrapper.wrap(
                     ' '.join(sorted(tag.replace('qwd ', '').split()))
                     )
                 rest = self.wrapper.wrap(
-                    f'Artist: {art.strip()} Rating: {rat} Stars: {sta} Type: {typ}'
+                    f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()}'
                     )
                 return '\n'.join(tags + rest)
 
