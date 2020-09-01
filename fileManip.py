@@ -1,4 +1,4 @@
-import os, piexif, json, re
+import json, re
 from PIL import Image
 from Webscraping import ROOT, CONNECTION, WEBDRIVER, INSERT
 from Webscraping.utils import get_hash, get_name, get_tags, generate_tags, save_image, progress
@@ -48,12 +48,14 @@ def convert_images(path):
         
         # if file.lower().endswith(('png', 'jfif')):
         file = path / file
-        name = file.with_suffix('jpg')
+        name = file.with_suffix('.jpg')
         jpg = Image.open(file).convert("RGB")
         jpg.save(name, quality=100)
         if name.exists(): file.unlink()
 
 def edit_properties(path):
+
+    import piexif, os
 
     for root, dir, files in os.walk(path):
         
@@ -103,7 +105,7 @@ def extract_files(path):
 
 def insert_files(path):
 
-    extract_files(path)
+    # extract_files(path)
     convert_images(path)
     driver = WEBDRIVER(True)
     files = [
@@ -115,33 +117,32 @@ def insert_files(path):
         progress(size, num, 'Files')
         
         try:
-            dest = get_name(file, 0, 1)
-            
-            if dest.exists():
+            if (dest := get_name(file, 0, 1)).exists():
                 file.unlink()
                 continue
             
             hash_ = get_hash(file)
-            tags = get_tags(driver, file)
 
-            if dest.suffix == '.jpg':
+            if dest.suffix.lower() == '.jpg':
 
                 tags, rating, exif = generate_tags(
-                    general=tags, custom=True, rating=True, exif=True
+                    general=get_tags(driver, file), 
+                    custom=True, rating=True, exif=True
                     )
                 Image.open(file).save(file, exif=exif)
 
-            elif dest.suffix in ('.gif', '.webm', '.mp4'):
+            elif dest.suffix.lower() in ('.gif', '.webm', '.mp4'):
                 
                 tags, rating = generate_tags(
-                    general=tags, custom=True, rating=True, exif=False
+                    general=get_tags(driver, file), 
+                    custom=True, rating=True, exif=False
                     )
 
-            CONNECTION.execute(INSERT[5], (str(dest), tags, rating, hash_), commit=1)
+            CONNECTION.execute(
+                INSERT[5], (str(dest), tags, rating, hash_), commit=1
+                )
             file.replace(dest)
             
-        except OSError: continue
-        
         except Exception as error: print('\n', error)
     
     progress(size, size, 'Files')

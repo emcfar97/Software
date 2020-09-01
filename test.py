@@ -40,7 +40,7 @@ def Remove_redundant_artists_and_tags():
 
     CONNECTION.commit()
 
-def Get_images_for_database():
+def Get_images_for_not_in_windows():
 
     import tempfile, hashlib   
     from math import log
@@ -120,7 +120,7 @@ def Get_images_for_database():
     save_images(path, dests[num])
     # save_images(paths[num], dests[num])
 
-def clean_dataset():
+def Clean_dataset():
     
     from pathlib import Path
     
@@ -205,26 +205,41 @@ def Find_symmetric_videos():
             
         if symmetric(frames): print(path)
 
-def normalize_database():
+def Normalize_database():
 
     from pathlib import Path
     from Webscraping import CONNECTION
 
-    files = [
-        set(
-            Path(path) for path, in
-            CONNECTION.execute('SELECT path FROM imageData WHERE path LIKE "C:%"', fetch=1)
-            ),
-        set(Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*'))
-        ]
+    DELETE = 'DELETE FROM imageData WHERE path=%s'
 
-    in_database = files[0] - files[1]
-    in_windows = files[1] - files[0]
+    database = set(
+        Path(path) for path, in CONNECTION.execute(
+            'SELECT path FROM imageData WHERE path LIKE "C:%"', fetch=1
+            )
+        )
+    windows = set(
+        Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*')
+        )
+    x = database - windows
+    y = windows - database
 
-    for file in in_windows:
+    for num, file in enumerate(y):
         file.replace(Path(r'C:\Users\Emc11\Downloads\Images\Test') / file.name)
-    for file in in_database:
-        CONNECTION.execute('DELETE FROM imageData WHERE path=%s', (str(file),), commit=1)
+    else: 
+        try: print(f'{num+1} files moved')
+        except: print('0 files moved')
+    
+    for num, file in enumerate(x):
+        CONNECTION.execute(DELETE, (str(file),), commit=1)
+    else: 
+        try: print(f'{num+1} records deleted')
+        except: print('0 records deleted')
         
 # Find_symmetric_videos()
-Controller()
+# Controller()
+from Webscraping.Photos import imagefap, pinterest
+
+# pinterest.start()
+imagefap.start()
+
+# Normalize_database() 

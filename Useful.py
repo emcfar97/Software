@@ -13,7 +13,7 @@ def exchange(matrix, start, end):
 
 def multiply(matrix, start, num):
     
-    print(f'Multiply {sub[start]}R{num}')
+    print(f'Multiply {num}R{sub[start]}')
     
     for i, j in enumerate(matrix[start-1]):
         matrix[start-1][i] = j * num
@@ -23,7 +23,7 @@ def multiply(matrix, start, num):
 
 def addition(matrix, start, end, num):
     
-    print(f'Add {sub[start]}R{sub[end]} to R{num}')
+    print(f'Add {num}R{sub[end]} to R{sub[start]}')
 
     for i, j in zip(matrix[start-1], range(len(matrix[end-1]))):
         matrix[end-1][j] = (i*num) + matrix[end-1][j]
