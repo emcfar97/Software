@@ -2,18 +2,24 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHB
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 
+from pathlib import Path
 from datetime import date
 from cv2 import VideoCapture
 import mysql.connector as sql
-from pathlib import Path
+from configparser import ConfigParser
 
 class CONNECT:
     
     def __init__(self):
+    
+        credentials = ConfigParser(delimiters='=') 
+        credentials.read('credentials.ini')
 
         self.DATAB = sql.connect(
-            user='root', password='SchooL1@', database='userData', 
-            host='127.0.0.1' if ROOT.drive == 'C:' else '192.168.1.43'
+            user=credentials.get('mysql', 'username'), 
+            password=credentials.get('mysql', 'password'), 
+            database=credentials.get('mysql', 'database'), 
+            host=credentials.get('mysql', 'hostname')
             )
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
@@ -30,6 +36,8 @@ class CONNECT:
 
             except sql.errors.OperationalError: continue
             
+            except sql.errors.ProgrammingError: return list()
+            
             except sql.errors.DatabaseError: self.__init__()
 
             except Exception as error: print(error)
@@ -38,10 +46,9 @@ class CONNECT:
     
     def close(self): self.DATAB.close()
 
-ROOT = pathlib.Path().cwd().parent
+ROOT = Path().cwd().drive
 CONNECTION = CONNECT()
-BASE = f'SELECT REPLACE(path, "C:", "{ROOT}"), tags, artist, stars, rating, type FROM imageData'
-COMIC = 'SELECT path FROM comics'
+BASE = f'SELECT REPLACE(path, "C:", "{ROOT}"), tags, artist, stars, rating, type, src FROM imageData'
 UPDATE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=REPLACE(%s, "{ROOT}", "C:")'
 MODIFY = f'UPDATE imageData SET {{}} WHERE path=REPLACE(%s, "{ROOT}", "C:")'
 DELETE = f'DELETE FROM imageData WHERE path=REPLACE(%s, "{ROOT}", "C:")'
