@@ -153,7 +153,6 @@ class Gallery(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
 
-        
         return f'WHERE {" AND ".join(i for i in query if i)} {self.get_order(i)}'
         
         return f'WHERE GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
