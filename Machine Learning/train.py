@@ -9,9 +9,7 @@ def make_model(input_shape, num_classes, chckpnt=False, load=False):
     # Image augmentation block
     x = data_augmentation(inputs)
 
-    if load:
-        model = keras.load_model(home / f'{name}.h5')
-        model = model(x)
+    if load: model = keras.load_model(f'{name}.h5')(x)
     
     else:
         # Entry block
@@ -62,10 +60,11 @@ def make_model(input_shape, num_classes, chckpnt=False, load=False):
         model = keras.Model(inputs, outputs)
         
     if chckpnt: 
+        
         path = home / 'Checkpoints'
-        checkpoints = path.glob(f'{name}_*')
+        checkpoints = list(path.glob(f'{name}_*'))
         checkpoint = checkpoints[-1]
-        model.load_weights(path / checkpoint)
+        model.load_weights(checkpoint)
     
     return model
 
@@ -91,11 +90,11 @@ def cleanup(num_skipped=0):
     print(f'Deleted {num_skipped} images\n')
 
 path = r'E:\Users\Emc11\Training'
-home = Path().cwd() / 'Machine Learning'
-name = 'Medium-02'
-image_size = (180, 180)
+home = Path(__file__).parent
+name = home / 'Medium-01'
+image_size = 180, 180
 batch_size = 32
-epochs = 25 
+epochs = 4 
 
 # cleanup()
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -108,8 +107,12 @@ val_ds = tf.keras.preprocessing.image_dataset_from_directory(
     )
 
 data_augmentation = keras.Sequential([
-    layers.experimental.preprocessing.RandomFlip('horizontal'),
-    layers.experimental.preprocessing.RandomRotation(0.1),
+    layers.experimental.preprocessing.RandomFlip('vertical'),
+    layers.experimental.preprocessing.RandomRotation(0.33),
+    layers.experimental.preprocessing.RandomZoom(
+        height_factor=(-0.3, -0.2),
+        width_factor=(-0.3, -0.2)
+        ),
     ])
 augmented_train_ds = train_ds.map(
     lambda x, y: (data_augmentation(x, training=True), y)
@@ -124,14 +127,16 @@ callbacks = keras.callbacks.ModelCheckpoint(
     home / rf'Checkpoints\{name}_{{epoch:02}}.hdf5',
     save_freq=2
     )
-model.compile(
-    optimizer=keras.optimizers.Adam(1e-3),
-    loss='binary_crossentropy',
-    metrics=['accuracy']
-    )
-model.fit(
-    train_ds, epochs=epochs, 
-    callbacks=[callbacks], 
-    validation_data=val_ds
-    )
-model.save(home / f'{name}.h5')
+for i in range(16):
+    
+    model.compile(
+        optimizer=keras.optimizers.Adam(1e-3),
+        loss='binary_crossentropy',
+        metrics=['accuracy']
+        )
+    model.fit(
+        train_ds, epochs=epochs, 
+        callbacks=[callbacks], 
+        validation_data=val_ds
+        )
+    model.save(home / f'{name}.h5')
