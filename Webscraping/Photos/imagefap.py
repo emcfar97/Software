@@ -3,17 +3,18 @@ from .. import ROOT, CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
+SITE = 'imagefap'
 
 def page_handler(driver, url, title):
     
     try: url = f'{url}?gid={url.split("/")[4]}&view=2'
     except IndexError: url = f'https://{title}&view=2'
-    artist, = [
+    artist = ' '.join(
         re.sub(
             'pornstar|porn|pics|&|sexy|gifs|cock|\d', '', i.lower()
             ).strip().replace(' ', '_')
         for i in title.split(',|-|~')
-        ]
+        )
 
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
@@ -51,8 +52,9 @@ def page_handler(driver, url, title):
 
         hash_ = get_hash(name)
         CONNECTION.execute(
-            INSERT[6], 
-            (str(name), f' {artist} ', tags, rating, hash_, 'imagefap', 1), commit=1
+            INSERT[5], 
+            (str(name), artist, tags, rating, hash_, SITE, 1), 
+            commit=1
             )
     
     progress(size, size, 'Images')

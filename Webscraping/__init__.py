@@ -17,21 +17,21 @@ SELECT = [
         SELECT REPLACE(save_name, "{ROOT}", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
         ''',
+    f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
     'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
-    f'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s, %s)',
-    f'INSERT INTO imageData(path, tags, rating, hash, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)',
-    f'INSERT INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s, %s, %s)'
+    f'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
+    f'replace INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s)'
     ]
 UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), hash=%s, src=%s WHERE href=%s',
-    f'REPLACE INTO imageData(path,hash,href,site) VALUES(REPLACE(%s, "{ROOT}", "C:"),%s,%s,%s)',
-    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=%s, tags=%s, rating=%s, src=%s, hash=%s WHERE href=%s',
+    f'REPLACE INTO imageData(path, hash, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"),%s,%s,%s)',
+    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, src=%s, hash=%s WHERE href=%s',
     f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
     f'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)'
     ]
@@ -56,7 +56,7 @@ class CONNECT:
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
-        for _ in range(20):
+        for _ in range(10):
 
             try:
                 try: self.CURSOR.execute(statement, arguments)
@@ -72,6 +72,8 @@ class CONNECT:
             except sql.errors.OperationalError: continue
             
             except sql.errors.DatabaseError: self.__init__()
+            
+            except sql.errors.ProgrammingError: raise sql.ProgrammingError
 
     def commit(self): self.DATAB.commit()
     
