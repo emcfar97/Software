@@ -1,10 +1,10 @@
 import qimage2ndarray
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QSlider, QPushButton
+from cv2 import VideoCapture
+from PyQt5.QtCore import Qt, QTimer, QUrl
+from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtWidgets import QSlider, QPushButton, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit 
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from . import *
 
 class Slideshow(QMainWindow):
     
@@ -60,7 +60,7 @@ class Slideshow(QMainWindow):
     
     def show_image(self, path):
         
-        if path.endswith(('.jpg', '.png')):
+        if path.lower().endswith(('.jpg', '.png')):
             
             pixmap = QPixmap(path).scaled(
                 self.width(), self.height(), Qt.KeepAspectRatio, 
@@ -68,7 +68,7 @@ class Slideshow(QMainWindow):
                 )
             path = None
         
-        elif path.endswith(('.gif', '.webm', '.mp4')):
+        elif path.lower().endswith(('.gif', '.webm', '.mp4')):
             
             image = VideoCapture(path).read()[-1]
             image = qimage2ndarray.array2qimage(image).rgbSwapped()

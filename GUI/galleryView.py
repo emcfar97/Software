@@ -1,15 +1,12 @@
 import re, textwrap, qimage2ndarray
-from . import *
+from cv2 import VideoCapture
+from . import CONNECTION, BASE
 from .propertiesView import Properties
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QVariant, QModelIndex, Qt, QSize, pyqtSignal
-from PyQt5.QtWidgets import QAbstractScrollArea, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QRadioButton, QStyle
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, QModelIndex, Qt, QSize, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QFormLayout, QHBoxLayout, QAbstractScrollArea, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QRadioButton, QStyle
 # from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
 
-RATING = {
-    'Safe': 'rating=1', 
-    'Questionable': 'rating<=2', 
-    'Explicit': '',
-    }
 TYPE = {
     'all': '',
     'photo': 'type=1', 
@@ -58,7 +55,7 @@ class Gallery(QWidget):
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
     
-    def populate(self, sender=None, limit=7500):
+    def populate(self, sender=None, limit=10000):
         
         self.images.clearSelection()
         SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
@@ -76,14 +73,21 @@ class Gallery(QWidget):
 
         query = ['path LIKE "C:%"']
         
+        try: # Duplicates
+            duplicate, = re.findall('duplicates:true', string)
+            return f'WHERE GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
+        except: pass
+
         if self.title == 'Gesture Draw':
             
             query.append('date_used <= Now() - INTERVAL 2 MONTH')
 
         try: # Get type
-            type_, = re.findall('type=(?:photo|illus|comic?)', string)
+            type_, = re.findall(
+                'type=(?:photograph|illustration|comic?)', string
+                )
             string = string.replace(type_, '')
-            type_ = TYPE[type_[5:].capitalize()]
+            type_ = re.sub('type=(.+)', r'type="\1"', type_)
         except: type_ = TYPE[self.type.checkedAction().text().lower()]
         finally: query.append(type_)
 
@@ -92,30 +96,31 @@ class Gallery(QWidget):
             string = string.replace(stars, '')
             stars = stars.replace('==', '=')
         except ValueError: stars = ''
-        finally: query.append(stars.lower())
+        finally: query.append(stars)
 
         try: # Get rating
             rating, = re.findall(
                 'rating[<>=!]+(?:safe|questionable|explicit?)', string
                 )
             string = string.replace(rating, '')
-            rating = RATING[rating.capitalize()]
-        except: rating = RATING[self.rating.checkedAction().text()]
-        finally: query.append(rating.lower())
+            word = re.sub('rating.*=(.+)', r'"\1"', rating)
+            rating = rating.replace(word.strip(''), word)
+        except: rating = f'rating="{self.rating.checkedAction().text()}"'
+        finally: query.append(rating)
         
         try: # Get artist
             artist, = re.findall('artist=\w+', string)
             string = string.replace(artist, '')
             artist = re.sub('artist=(.+)', r'artist LIKE "%\1%"', artist)
         except: artist = ''
-        finally: query.append(artist.lower())
+        finally: query.append(artist)
         
         try: # Get path
             path, =  re.findall('path=\w+', string, re.IGNORECASE)
             string = string.replace(path, '')
 
             if re.search('jpg|gif|webm|mp4/Z', path): sub = r'%\1'
-            elif re.search('path=.:', path): 
+            elif re.search('path=.:', path):
                 sub = r'\1%'
                 path = re.sub('.:', 'C:', path)
             else: sub = r'%\1%'
@@ -131,12 +136,11 @@ class Gallery(QWidget):
         except: site = ''
         finally: query.append(site.lower())
 
-        try: # Read comic
+        try: # Get comic
             comic, =  re.findall('comic:\w+', string, re.IGNORECASE)
             string = string.replace(comic, '')
             comic = re.sub('comic:(.+)', r'src="\1"', comic)
-            i = 1
-            query[3] = ''
+            query[1:] = ''
         except: comic = ''
         finally: query.append(comic.lower())
         
@@ -152,10 +156,8 @@ class Gallery(QWidget):
             query.append(
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
-
-        return f'WHERE {" AND ".join(i for i in query if i)} {self.get_order(i)}'
         
-        return f'WHERE GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
+        return f'WHERE {" AND ".join(i for i in query if i)}{self.get_order(i)}'
 
     def get_order(self, type_, ORDER={'Ascending': 'ASC', 'Descending':'DESC'}):
         
@@ -434,6 +436,10 @@ class ImageView(QTableView):
             f'comic:{self.currentIndex().data(200)}'
             )
     
+    def duplicates(self):
+
+        self.parent().ribbon.tags.setText(f'duplicates:True')
+
     def copy_path(self):
     
         cb = QApplication.clipboard()

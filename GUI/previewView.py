@@ -1,5 +1,8 @@
 import qimage2ndarray
-from . import *
+from cv2 import VideoCapture
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit, QComboBox, QMessageBox, QDesktopWidget, QStatusBar
 
 class Preview(QWidget):
     

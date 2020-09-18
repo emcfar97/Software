@@ -1,10 +1,5 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit, QComboBox, QMessageBox, QDesktopWidget, QStatusBar
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import Qt, QTimer
-
 from pathlib import Path
 from datetime import date
-from cv2 import VideoCapture
 import mysql.connector as sql
 from configparser import ConfigParser
 
@@ -25,7 +20,7 @@ class CONNECT:
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
-        for _ in range(20):
+        for _ in range(10):
 
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
@@ -34,7 +29,7 @@ class CONNECT:
                 if commit: return self.DATAB.commit()
                 elif fetch: return self.CURSOR.fetchall()
 
-            except sql.errors.OperationalError: continue
+            except sql.errors.OperationalError as error: continue
             
             except sql.errors.ProgrammingError: return list()
             
