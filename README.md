@@ -1,5 +1,3 @@
-# Software
-
 # Machine Learning
 
 # GUI
