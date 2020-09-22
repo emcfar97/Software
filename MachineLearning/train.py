@@ -2,8 +2,6 @@ if __name__ == '__main__': from __init__ import *
 else: from . import *
 from datetime import date
 
-from tensorflow.python.keras import activations
-
 def make_model(input_shape, classes, chckpnt=False, load=False):
 
     inputs = keras.Input(shape=(*input_shape, 3))
@@ -91,25 +89,19 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
 
 def save_model(epoch):
     
-    if epoch % saves == 0:
+    factors = [i for i in range(2, epoch) if not epoch % i]
+
+    if epoch % factors[len(factors) // 2] == 0:
         
         model.save(
             MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5'
             )
 
-def decompose(epoch):
-
-    factors = [i for i in range(2, epoch) if not epoch % i]
-    total = len(factors)
-
-    if total % 2: return factors[total // 2],  epoch # factors[total // 2]
-    else: return factors[(total // 2) + 1], epoch # :(total // 2) + 1]
-
 NAME, VERSION = 'Medium', 5
 DATA = Path(r'E:\Users\Emc11\Training') / NAME
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-saves, epochs = decompose(16)
 IMAGE_SIZE = 180, 180
+EPOCHS = 16
 BATCH = 32
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -153,7 +145,7 @@ model.compile(
     metrics=['accuracy']
     )
 model.fit(
-    train_ds, validation_data=val_ds, epochs=epochs, 
+    train_ds, validation_data=val_ds, epochs=EPOCHS, 
     callbacks=[checkpoint, tensorboard, save_callback], 
     verbose=2
     )
