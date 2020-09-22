@@ -22,21 +22,21 @@ def get_drives(drive_types=(DRIVE_REMOVABLE,)):
 
 def last_modified(path):
 
-    try: modified = path.stat().st_mtime
-    except: return
-    difference = date.today() - date.fromtimestamp(modified)
+    if path.exists():
+        
+        modified = date.fromtimestamp(path.stat().st_mtime)
+        difference = date.today() - modified
 
-    return difference.days <= 15
+        return difference.days <= 15
 
 def get_version(paths):
 
     latest = str(sorted(paths)[-1])
-    version = int(re.findall(' \d+', latest)[0])
+    version = int(*re.findall(' \d+', latest))
 
     return re.sub(' \d+', f' {version + 1:02}', latest)
 
 for drive in get_drives():
-# for drive in ['E:\\', 'D:\\']:
     
     print(drive)
 
@@ -53,7 +53,7 @@ for drive in get_drives():
                 
                 dropbox = dropbox.parent.with_suffix(dropbox.suffix)
 
-            if re.search(r'\D - \d', path.stem) and last_modified(dropbox):
+            if re.search(r' - \d', path.stem) and last_modified(dropbox):
                 
                 targets[dropbox] = targets.get(dropbox, []) + [path]
 
@@ -61,11 +61,9 @@ for drive in get_drives():
             
             val = get_version(val)
 
-            if isfile(key): copy(key, val)
+            if key.is_file(): copy(key, val)
             else: copytree(key, val)
 
             print(f'\t{val}') 
 
-while True:
-    input('\nDone')
-    break
+while True: input('\nDone'); break
