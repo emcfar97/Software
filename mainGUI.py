@@ -1,9 +1,10 @@
 from os import remove
-from pathlib import Path
 from subprocess import Popen
 from GUI import CONNECTION, MODIFY, DELETE, NEZUMI
-from GUI import galleryView, previewView, sliderView#, mainView, trainView
-from GUI import QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QDesktopWidget, Qt
+from GUI import galleryView, previewView, sliderView
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit, QComboBox, QMessageBox, QDesktopWidget, QStatusBar
+from PyQt5.QtCore import Qt, QTimer
 
 class App(QMainWindow):
     
@@ -324,7 +325,7 @@ class MachineLearning(QMainWindow):
             resolution.width(),  resolution.height()
             )  
 
-    def create_widgets(self): 
+    def create_widgets(self):
         
         self.main = mainView.Main(self)
         self.train = trainView.Training(self)
@@ -334,14 +335,8 @@ class MachineLearning(QMainWindow):
         self.stack.setCurrentIndex(1)
         
     def keyPressEvent(self, sender):
-        
-        if sender.key() == Qt.Key_F11: self.open_slideshow()
-        
-        elif sender.key() == Qt.Key_Enter: self.change_records()
-        
-        elif sender.key() == Qt.Key_Delete: self.delete_records()
-        
-        elif sender.key() == Qt.Key_Escape: self.close()
+                
+        if sender.key() == Qt.Key_Escape: self.close()
 
     def closeEvent(self, sender):
     
@@ -356,4 +351,4 @@ Qapp.exec_()
 
 # animated -dancing -sex -sports -casual_nudity -masturbation -lactation -exercise -pregnant rating=safe type=photo
 # -from_behind -from_below -from_above -from_side
-# path=6cc7368796da38a173b09a67c45dfd0    
+# path=6cc7368796da38a173b09a67c45dfd0
