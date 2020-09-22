@@ -1,5 +1,7 @@
+# GUI
+
 # Machine Learning
 
-# GUI
+# School
 
 # Webscraping
