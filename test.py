@@ -1,4 +1,21 @@
+def Controller():
+    
+    import Webscraping
+    from Webscraping import WEBDRIVER, Photos, Illus, insert_records
+    # from Webscraping.Photos import imagefap, pinterest
+    # from Webscraping.Illus import gelbooru
+
+    # pinterest.start()
+    # imagefap.start()
+    # Photos.start()
+    Illus.start()
+    # insert_records.start()
+
 def Artist_statistics():
+
+    from Webscraping import CONNECT
+
+    CONNECTION = CONNECT()
 
     SELECT = 'SELECT DISTINCT artist FROM imagedata GROUP BY artist HAVING COUNT(artist) > 100 ORDER BY artist'
     STATS = '''SELECT (
@@ -11,20 +28,18 @@ def Artist_statistics():
         ) AS STARS
         '''
 
-    CURSOR.execute(SELECT)
+    for artist, in CONNECTION.execute(SELECT, fetch=1)[1:101]:
 
-    for artist, in CURSOR.fetchall()[1:101]:
-
-        CURSOR.execute(STATS, (artist, artist))
-        sum, star = CURSOR.fetchone()
+        sum, star = CONNECTION.execute(STATS, (artist, artist), fetch=1)
         try: print(f'{artist.strip():<25} (Num: {sum:>4}, Stars: {star:>4}): {star / (sum*5):>4.2%}')
         except: continue
 
-def Remove_redundant_artists_and_tags():
+def Remove_redundancies():
 
-    from Webscraping import CONNECTION
+    from Webscraping import CONNECT
     from os.path import exists
-        
+
+    CONNECTION = CONNECT()        
     SELECT = 'SELECT path, artist, tags FROM imageData WHERE path Like "C%"'
     UPDATE = 'UPDATE imageData SET artist=%s, tags=%s WHERE path=%s'
     DELETE = 'DELETE FROM imageData WHERE path=%s'
@@ -40,7 +55,73 @@ def Remove_redundant_artists_and_tags():
 
     CONNECTION.commit()
 
-def Get_images_for_not_in_windows():
+def Normalize_dataset():
+
+    from pathlib import Path
+    from Webscraping import CONNECTION
+
+    DELETE = 'DELETE FROM imageData WHERE path=%s'
+
+    database = set(
+        Path(path) for path, in CONNECTION.execute(
+            'SELECT path FROM imageData WHERE path LIKE "C:%"', fetch=1
+            )
+        )
+    windows = set(
+        Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*')
+        )
+    y = windows - database
+    x = database - windows
+    
+    for num1, file in enumerate(y, 1):
+        file.replace(Path(r'C:\Users\Emc11\Downloads\Images\Test') / file.name)
+    else: 
+        try: print(f'{num1} files moved')
+        except: print('0 files moved')
+    
+    for num2, file in enumerate(x, 1):
+        CONNECTION.execute(DELETE, (str(file),), commit=1)
+    else: 
+        try: print(f'{num2} records deleted')
+        except: print('0 records deleted')
+
+def Find_symmetric_videos():
+
+    from pathlib import Path
+    from cv2 import VideoCapture
+    from Webscraping import CONNECTION 
+
+    def compare(seq):
+        
+        return [
+            (left == right).all() for left, right, num in
+            zip(seq, reversed(seq), range(len(seq) // 2))
+            ]
+
+    def symmetric(seq):
+        
+        if len(seq) % 2 != 0: del seq[len(seq) // 2]
+        
+        return any([
+            compare(seq[1:]), compare(seq), compare(seq[:-1])
+            ])
+
+    SELECT = 'SELECT path FROM imageData WHERE MATCH(tags, artist) AGAINST("animated -audio" IN BOOLEAN MODE) AND type=0'
+    
+    for path, in CONNECTION.execute(SELECT, fetch=1):
+
+        frames = []
+        vidcap = VideoCapture(path)
+        success, frame = vidcap.read()
+
+        while success:
+            
+            frames.append(frame)
+            success, frame = vidcap.read()
+            
+        if symmetric(frames): print(path)
+
+def Get_images_database():
 
     import tempfile, hashlib   
     from math import log
@@ -62,7 +143,7 @@ def Get_images_for_not_in_windows():
                 
                 if file.suffix in (('.jpeg', '.jpg', '.png')): images = [file]
                 
-                elif file.suffix in (('.gif', '.mp4', '.webm', '.mp4')): 
+                elif file.suffix in (('.gif', '.mp4', '.webm', '.mp4')):
                     
                     images = []
                     temp_dir = tempfile.TemporaryDirectory()
@@ -110,13 +191,12 @@ def Get_images_for_not_in_windows():
         Path(r'E:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三')
         ]
     dests = [
-        Path(r'E:\Users\Emc11\Training\Photographs'),
-        Path(r'E:\Users\Emc11\Training\Illustrations')
+        Path(r'E:\Users\Emc11\Training\Medium\Photographs'),
+        Path(r'E:\Users\Emc11\Training\Medium\Illustrations')
         ]
 
     num = 1
-    path = [
-    ]
+    path = []
     save_images(path, dests[num])
     # save_images(paths[num], dests[num])
 
@@ -124,23 +204,25 @@ def Clean_dataset():
     
     from pathlib import Path
     
-    k = Path(r'E:\Users\Emc11\Training\Illustrations')
-    l = Path(r'E:\Users\Emc11\Training\Photographs')
+    j = Path(r'E:\Users\Emc11\Training')
+    k = j / r'Medium\Illustrations'
+    l = j / r'Medium\Photographs'
 
     move = []
     delete = []
     
     for path in move:
 
-        photo = l / path
+        # photo = l / path
         illus = k / path
+        if illus.exists(): illus.replace(j / path)
+        
+        # if photo.exists() == illus.exists(): 
+        #     photo.replace(photo.parent)
+        #     illus.replace(illus.parent)
 
-        if photo.exists() == illus.exists(): 
-            photo.replace(photo.parent)
-            illus.replace(illus.parent)
-
-        else:
-            if not photo.exists(): illus.replace(photo)
+        # else:
+        #     if not photo.exists(): illus.replace(photo)
             
         move.remove(path)
 
@@ -163,83 +245,27 @@ def Clean_dataset():
 
     print(delete)
 
-def Controller():
-
-    import Webscraping
-
-    Webscraping.start()
-
-def Find_symmetric_videos():
-
-    from pathlib import Path
-    from cv2 import VideoCapture
-    from Webscraping import CONNECTION 
-
-    def compare(seq):
-        
-        return [
-            (left == right).all() for left, right, num in
-            zip(seq, reversed(seq), range(len(seq) // 2))
-            ]
-
-    def symmetric(seq):
-        
-        if len(seq) % 2 != 0: del seq[len(seq) // 2]
-        
-        return any([
-            compare(seq[1:]), compare(seq), compare(seq[:-1])
-            ])
-
-    SELECT = 'SELECT path FROM imageData WHERE MATCH(tags, artist) AGAINST("animated -audio" IN BOOLEAN MODE) AND type=0'
+def Check_Predictions():
     
-    for path, in CONNECTION.execute(SELECT, fetch=1):
+    import cv2, random
+    from PIL import Image
+    from MachineLearning import Model, Path, np
 
-        frames = []
-        vidcap = VideoCapture(path)
-        success, frame = vidcap.read()
+    model = Model('medium-01.hdf5')
+    path = Path(r'C:\Users\Emc11\Dropbox\Videos\ん')
+    glob = list(path.glob('エラティカ *\*jpg'))
 
-        while success:
-            
-            frames.append(frame)
-            success, frame = vidcap.read()
-            
-        if symmetric(frames): print(path)
+    for image in random.choices(glob, k=25):
 
-def Normalize_database():
+        prediction = model.predict(image)
 
-    from pathlib import Path
-    from Webscraping import CONNECTION
+        image_ = np.array(Image.open(image))
+        image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
+        cv2.imshow(prediction, image_)
+        cv2.waitKey(0)
 
-    DELETE = 'DELETE FROM imageData WHERE path=%s'
-
-    database = set(
-        Path(path) for path, in CONNECTION.execute(
-            'SELECT path FROM imageData WHERE path LIKE "C:%"', fetch=1
-            )
-        )
-    windows = set(
-        Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*')
-        )
-    x = database - windows
-    y = windows - database
-
-    for num, file in enumerate(y):
-        file.replace(Path(r'C:\Users\Emc11\Downloads\Images\Test') / file.name)
-    else: 
-        try: print(f'{num+1} files moved')
-        except: print('0 files moved')
-    
-    for num, file in enumerate(x):
-        CONNECTION.execute(DELETE, (str(file),), commit=1)
-    else: 
-        try: print(f'{num+1} records deleted')
-        except: print('0 records deleted')
-        
-# Find_symmetric_videos()
 # Controller()
-from Webscraping.Photos import imagefap, pinterest
-
-# pinterest.start()
-imagefap.start()
-
+# Find_symmetric_videos()
 # Normalize_database() 
+# Get_images_dataset()
+# Clean_dataset()
