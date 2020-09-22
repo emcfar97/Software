@@ -2,8 +2,9 @@
 *.v2
 *.pyc
 *.hdf5
+*__pychache__
 geckodriver.log
 geckodriver.exe
+MachineLearning/Checkpoints
 MachineLearning/Models
 MachineLearning/Logs
-*__pychache__
