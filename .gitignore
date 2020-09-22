@@ -1,1 +1,4 @@
-credentials.ini
+*.ini
+*.v2
+*.pyc
+*.hdf5
