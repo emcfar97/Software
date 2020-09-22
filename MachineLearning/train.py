@@ -17,9 +17,9 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
         if load == 0:
             x = layers.Conv2D(32, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
-            x = layers.Conv2D(32, 3, activation='relu')(x)
+            x = layers.Conv2D(64, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
-            x = layers.Conv2D(32, 3, activation='relu')(x)
+            x = layers.Conv2D(128, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
             x = layers.Flatten()(x)
             x = layers.Dense(128, activation='relu')(x)
@@ -75,11 +75,11 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
             x = layers.BatchNormalization()(x)
             x = layers.MaxPooling2D(pool_size=(2, 2))(x)
         
-        # if classes == 2: activation, units = 'sigmoid', classes
-        # else: activation, units = 'softmax', classes
+        if classes == 1: activation ='sigmoid'
+        else: activation ='softmax'
         
         x = layers.Dropout(0.5)(x)
-        outputs = layers.Dense(classes, activation='relu')(x)
+        outputs = layers.Dense(classes, activation=activation)(x)
         model = keras.Model(inputs, outputs)
         
     if chckpnt:
@@ -89,39 +89,28 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
     
     return model
 
-def cleanup(num_skipped=0):
-
-    import PIL
+def save_model(epoch):
     
-    for folder in DATA.iterdir():
-
-        for path in folder.iterdir():
-            
-            try: 
-                jfif = tf.compat.as_bytes('JFIF') in path.read_bytes()
-                size = PIL.Image.open(path).size == (512, 512)
-            except PIL.UnidentifiedImageError: jfif = size = False
-            
-            if not jfif or not size:
-                path.unlink()
-                num_skipped += 1
-                                
-    print(f'Deleted {num_skipped} images\n')
+    if epoch % saves == 0:
+        
+        model.save(
+            MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5'
+            )
 
 def decompose(epoch):
 
-    factors = [i for i in range(2, epoch) if epoch%i == 0]
+    factors = [i for i in range(2, epoch) if not epoch % i]
     total = len(factors)
 
-    if total % 2: return factors[total // 2], factors[total // 2]
-    else: return factors[(total // 2) - 1:(total // 2) + 1]
+    if total % 2: return factors[total // 2],  epoch # factors[total // 2]
+    else: return factors[(total // 2) + 1], epoch # :(total // 2) + 1]
 
-NAME, VERSION = 'Medium', 1
+NAME, VERSION = 'Medium', 5
 DATA = Path(r'E:\Users\Emc11\Training') / NAME
+AUTOTUNE = tf.data.experimental.AUTOTUNE
+saves, epochs = decompose(16)
 IMAGE_SIZE = 180, 180
 BATCH = 32
-saves, epochs = decompose(16)
-# cleanup()
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     str(DATA), validation_split=0.2, subset='training', 
@@ -144,29 +133,28 @@ augmented_train_ds = train_ds.map(
     lambda x, y: (data_augmentation(x, training=True), y)
     )
 
-train_ds = train_ds.prefetch(buffer_size=32)
-val_ds = val_ds.prefetch(buffer_size=32)
+train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 checkpoint = keras.callbacks.ModelCheckpoint(
-    CHCKPNT / f'{NAME}_{{epoch:02}}.hdf5', save_frequency=saves
+    CHCKPNT / f'{NAME}_{{epoch:02}}.hdf5'
     )
-tensorboard = tf.keras.callbacks.TensorBoard(
+tensorboard = keras.callbacks.TensorBoard(
     log_dir=LOGS / f'{date.today()}', histogram_freq=1
     )
+save_callback = keras.callbacks.LambdaCallback(
+    on_epoch_end=lambda epoch: save_model(epoch)
+    )
 
-model = make_model(IMAGE_SIZE, classes=2, chckpnt=True, load=0)
+model = make_model(IMAGE_SIZE, classes=2, load=0)
 model.compile(
-    optimizer=keras.optimizers.Adam(1e-3),
+    optimizer='adam',
     loss=tf.losses.SparseCategoricalCrossentropy(from_logits=True),
     metrics=['accuracy']
     )
-
-for save in range(saves):
-        
-    model.fit(
-        train_ds, epochs=epochs + save*epochs, 
-        callbacks=[checkpoint, tensorboard], 
-        validation_data=val_ds,
-        initial_epoch=save*epochs
-        )
-    model.save(MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5')
+model.fit(
+    train_ds, validation_data=val_ds, epochs=epochs, 
+    callbacks=[checkpoint, tensorboard, save_callback], 
+    verbose=2
+    )
+model.save(MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5')
