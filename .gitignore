@@ -4,3 +4,6 @@
 *.hdf5
 geckodriver.log
 geckodriver.exe
+MachineLearning/Models
+MachineLearning/Logs
+*__pychache__
