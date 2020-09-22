@@ -2,3 +2,5 @@
 *.v2
 *.pyc
 *.hdf5
+geckodriver.log
+geckodriver.exe
