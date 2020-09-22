@@ -1,8 +1,6 @@
 import sqlite3
 from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import ElementNotInteractableException, InvalidArgumentException, ElementClickInterceptedException, NoSuchElementException    
 
 def main(driver, paths, sankaku=0, gelbooru=0):
     

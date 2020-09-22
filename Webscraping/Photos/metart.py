@@ -1,9 +1,11 @@
-from .. import CONNECTION, INSERT, SELECT, UPDATE
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 SITE = 'metarthunter'
 
-def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
+def initialize(url='/my-favorite-galleries/page/1/', query=0):
     
     def next_page(page):
              
@@ -13,8 +15,8 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
     if not query:
         query = set(CONNECTION.execute(SELECT[0], (SITE,)), fetch=1)
     
-    driver.get(f'https://www.{SITE}.com{url}')
-    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+    DRIVER.get(f'https://www.{SITE}.com{url}')
+    html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
     targets = html.find('ul', class_='gallery-a e')
     
     for target in targets.findAll(href=True, title=True, class_=False):
@@ -33,11 +35,11 @@ def initialize(driver, url='/my-favorite-galleries/page/1/', query=0):
         CONNECTION.execute(INSERT[3], hrefs, 1)
         
     next = next_page(html.find(class_='next'))
-    if hrefs and next: initialize(driver, next, query)
+    if hrefs and next: initialize(next, query)
     
     CONNECTION.commit()
 
-def page_handler(driver, hrefs):
+def page_handler(hrefs):
 
     if not hrefs: return
     size = len(hrefs)
@@ -49,7 +51,7 @@ def page_handler(driver, hrefs):
         name = get_name(image, 0, 1)
         save_image(name, image)
         tags, rating, exif = generate_tags(
-            general=get_tags(driver, name), 
+            general=get_tags(DRIVER, name), 
             custom=True, artists=artist, rating=True
             )
         if not save_image(name, image, exif): continue
@@ -62,12 +64,12 @@ def page_handler(driver, hrefs):
     
     progress(size, size, SITE)
 
-def setup(driver, initial=True):
+def setup(initial=True):
     
     try:
-        # login(driver, SITE)
-        if initial: initialize(driver)
-        page_handler(driver, CONNECTION.execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
+        # login(DRIVER, SITE)
+        if initial: initialize(DRIVER)
+        page_handler(CONNECTION.execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
     
-    driver.close()
+    DRIVER.close()

@@ -1,9 +1,10 @@
 import shutil, re
-from . import ROOT, CONNECTION, WEBDRIVER, INSERT
+from . import ROOT, CONNECT, INSERT, WEBDRIVER
 from .utils import progress, get_name, get_hash, get_tags, generate_tags
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 path = ROOT.parent / r'Downloads\Images\Comics'
-driver = WEBDRIVER(True)
 
 def start():
 
@@ -29,7 +30,7 @@ def start():
 
             hash_ = get_hash(image)
             tags, rating = generate_tags(
-                general=get_tags(driver, image), custom=True, rating=True, exif=False
+                general=get_tags(DRIVER, image), custom=True, rating=True, exif=False
                 )
             CONNECTION.execute(
                 INSERT[4], 
@@ -38,4 +39,4 @@ def start():
         CONNECTION.commit()
         shutil.rmtree(folder)
 
-    driver.close()
+    DRIVER.close()

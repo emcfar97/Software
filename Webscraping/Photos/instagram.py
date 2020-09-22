@@ -1,22 +1,24 @@
-from .. import CONNECTION, INSERT, SELECT, UPDATE
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException, NoSuchElementException
 
 SITE = 'instagram'
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 
-def initialize(driver, url='/chairekakia/saved/', retry=0):
+def initialize(url='/chairekakia/saved/', retry=0):
     
-    driver.get(f'https://www.instagram.com{url}')
+    DRIVER.get(f'https://www.instagram.com{url}')
     query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
     
     while True:
 
-        driver.find_element_by_tag_name('html').send_keys(Keys.PAGE_DOWN)
+        DRIVER.find_element_by_tag_name('html').send_keys(Keys.PAGE_DOWN)
         time.sleep(2)
 
-        html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
         hrefs = [
             (target.get('href'), 1, SITE) for target in 
             html.findAll('a', href=re.compile('/p/.+'))
@@ -33,7 +35,7 @@ def initialize(driver, url='/chairekakia/saved/', retry=0):
 
     CONNECTION.commit()
     
-def page_handler(driver, hrefs):
+def page_handler(hrefs):
 
     if not hrefs: return
     size = len(hrefs)
@@ -41,8 +43,8 @@ def page_handler(driver, hrefs):
     for num, (href,) in enumerate(hrefs):
         
         progress(size, num, SITE)
-        driver.get(f'https://www.instagram.com{href}')
-        html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        DRIVER.get(f'https://www.instagram.com{href}')
+        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
         artist = html.find('a', href=re.compile('/.+/')).text
 
         try:
@@ -54,7 +56,7 @@ def page_handler(driver, hrefs):
         name = get_name(image, 0, 1)
         save_image(name, image)
         tags, rating, exif = generate_tags(
-            general=get_tags(driver, name), 
+            general=get_tags(DRIVER, name), 
             custom=True, rating=True, exif=True
             )
         if name.endswith(('jpg', 'jpeg')): save_image(name, image, exif)
@@ -67,12 +69,12 @@ def page_handler(driver, hrefs):
     
     progress(size, size, SITE)
 
-def setup(driver, initial=True):
+def setup(initial=True):
     
     try:
-        login(driver, SITE)
-        if initial: initialize(driver)
-        page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+        login(DRIVER, SITE)
+        if initial: initialize(DRIVER)
+        page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         
-    driver.close()
+    DRIVER.close()

@@ -1,6 +1,8 @@
-from .. import CONNECTION, INSERT, SELECT, UPDATE
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 SITE = 'blogspot'
 url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
 
@@ -26,7 +28,7 @@ def initialize(url, query=0):
     if hrefs and next: initialize(next, query)
     else: CONNECTION.commit()
 
-def page_handler(driver, hrefs):
+def page_handler(hrefs):
 
     if not hrefs: return
     size = len(hrefs)
@@ -38,7 +40,7 @@ def page_handler(driver, hrefs):
         name = get_name(href, 0, hasher=1)
         if not save_image(name, href): continue
         tags, rating, exif = generate_tags(
-            get_tags(driver, name) + ' casual_nudity',
+            get_tags(DRIVER, name) + ' casual_nudity',
             custom=True, rating=True, exif=True
             )
         save_image(name, href, exif, exists=True)
@@ -49,14 +51,14 @@ def page_handler(driver, hrefs):
             commit=1
             )
 
-def setup(driver):
+def start():
 
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
 
     for page in html.findAll('li'): initialize(page.contents[0].get('href'))
     
-    try: page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    try: page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'\n{SITE}: {error}')
         
-    driver.close()
+    DRIVER.close()

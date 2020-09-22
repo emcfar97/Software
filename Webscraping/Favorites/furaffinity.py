@@ -1,10 +1,12 @@
-from .. import CONNECTION, INSERT, SELECT, UPDATE, sql
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 from selenium.webdriver.common.action_chains import ActionChains
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER()
 SITE = 'furaffinity'
 
-def initialize(driver, url='/favorites/chairekakia', query=0):
+def initialize(url='/favorites/chairekakia', query=0):
     
     def next_page(pages):
         
@@ -13,20 +15,20 @@ def initialize(driver, url='/favorites/chairekakia', query=0):
 
     if not query:
         query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
-    driver.get(f'https://www.furaffinity.net{url}')
+    DRIVER.get(f'https://www.furaffinity.net{url}')
     
-    html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+    html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
     hrefs = [
         (*href, SITE) for href in {(target.get('href'),) for target in 
         html.findAll(href=re.compile('/view+'))} - query
         ]
-    CURSOR.executemany(INSERT[1], hrefs)
+    CONNECTION.execute(INSERT[1], hrefs, many=1)
     next = next_page(html.find(class_='button standard right')) 
-    if hrefs and next: initialize(driver, next, query)
+    if hrefs and next: initialize(next, query)
 
     CONNECTION.commit()
 
-def page_handler(driver, hrefs):
+def page_handler(hrefs):
 
     if not hrefs: return
     size = len(hrefs)
@@ -34,12 +36,12 @@ def page_handler(driver, hrefs):
     for num, (href,) in enumerate(hrefs):
         progress(size, num, SITE)
 
-        driver.get(f'https://www.furaffinity.net{href}')
-        html = bs4.BeautifulSoup(driver.page_source, 'lxml')
+        DRIVER.get(f'https://www.furaffinity.net{href}')
+        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
         
         if html.find(text=re.compile('not in our database.+')):
             
-            CURSOR.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
             continue      
                         
         artist = html.find('a', href=re.compile('/user/+(?!chairekakia)'), id=False).get('href')
@@ -50,16 +52,16 @@ def page_handler(driver, hrefs):
         name = join(PATH, 'Images', SITE, ".".join(name))
         hash_ = get_hash(image) 
 
-        CURSOR.execute(UPDATE[1], (name, hash_, image, href), commit=1)
+        CONNECTION.execute(UPDATE[1], (name, hash_, image, href), commit=1)
     
     progress(size, size, SITE)
 
-def setup(driver, initial=True):
+def setup(initial=True):
     
     try:
-        login(driver, SITE)
-        if initial: initialize(driver)
-        page_handler(driver, CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+        login(DRIVER, SITE)
+        if initial: initialize(DRIVER)
+        page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         
-    driver.close()
+    DRIVER.close()

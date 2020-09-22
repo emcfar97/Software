@@ -1,17 +1,19 @@
 import cv2, imutils, imageio, pathlib
 import numpy as np
 from PIL import Image
-from .. import CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, tempfile
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 SITE = 'posespace'
 
-def initialize(driver, url='/posetool/favs.aspx'):
+def initialize(url='/posetool/favs.aspx'):
 
     database = set(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
 
-    driver.get(f'https://www.posespace.com{url}')
-    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    DRIVER.get(f'https://www.posespace.com{url}')
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, 1, SITE) for href in 
         {(target.text,) for target in 
@@ -19,7 +21,7 @@ def initialize(driver, url='/posetool/favs.aspx'):
         ]
     CONNECTION.execute(INSERT[0], hrefs, commit=1)
         
-def page_handler(driver, hrefs):
+def page_handler(hrefs):
     
     if not hrefs: return
     size = len(hrefs)
@@ -44,7 +46,7 @@ def page_handler(driver, hrefs):
         continue
 
         tags, rating = generate_tags(
-            general=get_tags(driver, image) + ' reference', 
+            general=get_tags(image) + ' reference', 
             custom=True, rating=True, exif=False
             )
         name = get_name(image, 0)
@@ -132,14 +134,14 @@ def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
 
     return cv2.resize(image, dim, interpolation=inter)
 
-def setup(driver, initial=True):
+def setup(initial=True):
     
     # try:
-    driver.close()
-    # login(driver, SITE)
-    # if initial: initialize(driver)
-    page_handler(driver, CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    DRIVER.close()
+    # login(SITE)
+    # if initial: initialize(DRIVER)
+    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     # except Exception as error:
     #     print(f'{SITE}: {error}')
         
-    driver.close()
+    DRIVER.close()

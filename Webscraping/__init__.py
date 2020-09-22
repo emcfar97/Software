@@ -20,12 +20,12 @@ SELECT = [
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
-    'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)',
-    'INSERT INTO favorites(href, site) VALUES(%s, %s)',
+    'INSERT IGNORE INTO imageData(href, type, site) VALUES(%s, %s, %s)',
+    'INSERT IGNORE INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
-    f'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
-    f'replace INTO imageData(path, artist, tags, rating, hash, site, type) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s)'
+    'INSERT IGNORE INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
+    f'INSERT IGNORE INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
+    f'INSERT IGNORE INTO imageData(path, artist, tags, rating, type, hash, src, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)'
     ]
 UPDATE = [
     f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
@@ -59,21 +59,24 @@ class CONNECT:
         for _ in range(10):
 
             try:
-                try: self.CURSOR.execute(statement, arguments)
-                except: self.CURSOR.executemany(statement, arguments)
+                if many: self.CURSOR.executemany(statement, arguments)
+                else: self.CURSOR.execute(statement, arguments)
 
-                if commit: return self.DATAB.commit()
+                if commit:  return self.DATAB.commit()
                 elif fetch: return self.CURSOR.fetchall()
+                else: return 1
 
-            except sql.errors.IntegrityError: 
+            except sql.errors.IntegrityError:
                 self.CURSOR.execute(DELETE[0], (arguments[-1],))
                 self.DATAB.commit()
 
-            except sql.errors.OperationalError: continue
+            except sql.errors.OperationalError as error:
+                if 'Lost connection' in error.msg: self.__init__()
+                else: continue
             
+            except sql.errors.ProgrammingError as error: raise error
+
             except sql.errors.DatabaseError: self.__init__()
-            
-            except sql.errors.ProgrammingError: raise sql.ProgrammingError
 
     def commit(self): self.DATAB.commit()
     
@@ -124,6 +127,9 @@ class WEBDRIVER:
         except exceptions.NoSuchElementException:
             print('no such element')
         
+        except exceptions.FileNotFoundError:
+            print('file not found')
+            
         except Exception as error: print(error)
     
     def page_source(self):
@@ -148,13 +154,11 @@ def start():
     from Webscraping import Photos, Illus, comics
     
     threads = [
-        # threading.Thread(target=Photos.start),
+        threading.Thread(target=Photos.start),
         threading.Thread(target=Illus.start),
-        threading.Thread(target=comics.start)
+        # threading.Thread(target=comics.start)
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
 
     print('Complete')
-
-CONNECTION = CONNECT()

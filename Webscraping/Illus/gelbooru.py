@@ -1,11 +1,13 @@
-from .. import CONNECTION, sql, INSERT, SELECT, UPDATE
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER
 SITE = 'gelbooru'
     
-def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
+def initialize(url='?page=favorites&s=view&id=173770&pid=0', query=0):
     
     def next_page(pages):
 
@@ -13,20 +15,20 @@ def initialize(driver, url='?page=favorites&s=view&id=173770&pid=0', query=0):
         except IndexError: return False
 
     if not query:
-        query = CONNECTION.execute(SELECT[0], (SITE,), fetch=1)
+        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
         
-    driver.get(f'https://gelbooru.com/index.php{url}')
-    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    DRIVER.get(f'https://gelbooru.com/index.php{url}')
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
     hrefs = [
         (target.get('href'), 2, SITE) for target in 
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
-    CONNECTION.execute(INSERT[0], hrefs, 1)
+    CONNECTION.execute(INSERT[0], hrefs, many=1)
         
     next = next_page(html.find(id='paginator').contents)   
-    if hrefs and next: initialize(driver, next, query)
+    if hrefs and next: initialize(next, query)
     
     CONNECTION.commit()
 
@@ -58,22 +60,22 @@ def page_handler(hrefs):
             )
         
         image = html.find(href=True, text='Original image').get('href')
-        name = get_name(image.split('/')[-1], 1)
+        name = get_name(image.split('/')[-1], 1, 0)
         if not save_image(name, image, exif): continue
         hash_ = get_hash(name)
         
         CONNECTION.execute(UPDATE[3], (
-            str(name), f"{' '.join(artists)}", tags, rating, image, hash_, href
+            str(name), ' '.join(artists), tags, rating, image, hash_, href
             ), commit=1
             )
 
     progress(size, size, SITE)
 
-def setup(driver, initial=True):
+def start(initial=True):
     
     try:
-        login(driver, SITE)
-        if initial: initialize(driver)
-        driver.close()
+        login(DRIVER, SITE)
+        if initial: initialize(DRIVER)
+        DRIVER.close()
         page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'\n{SITE}: {error}')

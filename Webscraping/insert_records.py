@@ -1,7 +1,11 @@
 import json
 from PIL import Image
-from . import ROOT, CONNECTION, WEBDRIVER, INSERT
-from ..utils import get_hash, get_name, get_tags, generate_tags, save_image, progress
+from . import ROOT, CONNECT, INSERT, WEBDRIVER
+from .utils import get_hash, get_name, get_tags, generate_tags, save_image, progress, re
+
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
+EXT = 'jp.*g|png|gif|webm|mp4'
 
 def convert_images(path):
     
@@ -18,39 +22,38 @@ def extract_files(path):
     
     source = path / 'Generic'
     for file in source.iterdir():
+
+        go = True
         
-        urls = [
-            value for window in 
-            json.load(open(file))[0]['windows'].values() 
-            for value in window.values()
-            ]
+        try:
+            urls = [
+                value for window in 
+                json.load(open(file, encoding='utf-8'))[0]['windows'].values() 
+                for value in window.values()
+                ]
+        except: continue
 
         for url in urls:
                 
             try:
                 title = url['title'].split('/')[-1].split()[0]
-                if not re.search(EXT, title):
-                    title = url['url'].split('/')[-1]
-                name = path / title
-                if name.exists(): continue
+                if not re.search(EXT, title): title = url['url'].split('/')[-1]
+                if (name:=path / title).exists(): continue
                 image = (
                     f'https://{url["title"]}'
                     if url['url'] == 'about:blank' else 
                     url['url']
                     )
-                if not save_image(name, image): break
+                if not save_image(name, image): go = False; break
         
-            except: break
-        file.unlink()
+            except: go = False; break
+        if go: file.unlink()
 
-def start(path):
+def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
 
-    # extract_files(path)
+    extract_files(path)
     convert_images(path)
-    driver = WEBDRIVER(True)
-    files = [
-        file for file in path.iterdir() if file.is_file()
-        ]
+    files = [file for file in path.iterdir() if file.is_file()]
     size = len(files) - 2
 
     for num, file in enumerate(files):
@@ -66,7 +69,7 @@ def start(path):
             if dest.suffix.lower() == '.jpg':
 
                 tags, rating, exif = generate_tags(
-                    general=get_tags(driver, file), 
+                    general=get_tags(DRIVER, file), 
                     custom=True, rating=True, exif=True
                     )
                 Image.open(file).save(file, exif=exif)
@@ -74,13 +77,13 @@ def start(path):
             elif dest.suffix.lower() in ('.gif', '.webm', '.mp4'):
                 
                 tags, rating = generate_tags(
-                    general=get_tags(driver, file), 
+                    general=get_tags(DRIVER, file), 
                     custom=True, rating=True, exif=False
                     )
 
             CONNECTION.execute(
                 INSERT[5], 
-                (str(dest), '', tags, rating, hash_, None, 1), 
+                (str(dest), '', tags, rating, 1, hash_, None, None), 
                 commit=1
                 )
             file.replace(dest)
@@ -88,8 +91,7 @@ def start(path):
         except Exception as error: print('\n', error)
     
     progress(size, size, 'Files')
-    driver.close()
+    DRIVER.close()
 
-path = ROOT / r'\Users\Emc11\Downloads\Images'
-start(path)
-print('\nDone')
+    print('\nDone')
+

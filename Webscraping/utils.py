@@ -598,7 +598,7 @@ def get_name(path, type_, hasher=1, fetch=0):
 def get_hash(image, src=False):
     '''Return perceptual hash of image'''
         
-    if src and 'http' in image:
+    if src:
         
         ext = image.ext[:4]
         temp_dir = tempfile.TemporaryDirectory()
@@ -621,8 +621,7 @@ def get_hash(image, src=False):
     
     image.thumbnail([32, 32])
     image = image.convert('L')
-    try: temp_dir.cleanup()
-    except UnboundLocalError: pass
+    if src: temp_dir.cleanup()
 
     return f'{imagehash.dhash(image)}'
 
@@ -688,6 +687,9 @@ def get_tags(driver, path):
 def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
     
     tags = ['qwd']
+    # re.sub(
+    #     '(3d)|(photorealistic)|(realistic)|(rating:\w+)|(score:\w+)', '', ' '.join(tags)
+    #     ).split()
 
     if general:
         

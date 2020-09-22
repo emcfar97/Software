@@ -1,19 +1,20 @@
 import json
-from .. import ROOT, CONNECTION, WEBDRIVER, INSERT, SELECT, UPDATE
+from .. import ROOT, CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
+REMOVE = 'ass|big|cock|gifs|gif|girls|naked|nude|pics|pornstar|porn|sexy|&|\d'
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 SITE = 'imagefap'
 
-def page_handler(driver, url, title):
+def page_handler(url, title):
     
     try: url = f'{url}?gid={url.split("/")[4]}&view=2'
     except IndexError: url = f'https://{title}&view=2'
     artist = ' '.join(
-        re.sub(
-            'pornstar|porn|pics|&|sexy|gifs|cock|\d', '', i.lower()
-            ).strip().replace(' ', '_')
-        for i in title.split(',|-|~')
+        string.strip().replace(' ', '_') for string in 
+        re.split(',|-|~', re.sub(REMOVE, '', title.lower()))
         )
 
     page_source = requests.get(url).content
@@ -38,7 +39,7 @@ def page_handler(driver, url, title):
         if name.suffix in ('.jpg', '.jpeg'):
             
             tags, rating, exif = generate_tags(
-                general=get_tags(driver, name), 
+                general=get_tags(DRIVER, name), 
                 custom=True, rating=True, exif=True
                 )
             save_image(name, src, exif)
@@ -46,14 +47,14 @@ def page_handler(driver, url, title):
         elif name.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
-                general=get_tags(driver, name), 
+                general=get_tags(DRIVER, name), 
                 custom=True, rating=True, exif=False
                 )
 
         hash_ = get_hash(name)
         CONNECTION.execute(
             INSERT[5], 
-            (str(name), artist, tags, rating, hash_, SITE, 1), 
+            (str(name), artist, tags, rating, 1, hash_, None, SITE), 
             commit=1
             )
     
@@ -61,16 +62,15 @@ def page_handler(driver, url, title):
 
 def start():
         
-    driver = WEBDRIVER(True)
-
     for file in PATH.iterdir():
 
         window = json.load(open(file))[0]['windows']
         try:
             for val in window.values():
                 for url in val.values():
-                    page_handler(driver, url['url'], url['title'])
+                    page_handler(url['url'], url['title'])
         except Exception as error: print(error, '\n'); continue
         file.unlink()
+        print()
 
-    driver.close()
+    DRIVER.close()
