@@ -3,9 +3,8 @@ from cv2 import VideoCapture
 from . import CONNECTION, BASE
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, QModelIndex, Qt, QSize, pyqtSignal
+from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, QModelIndex, Qt, QSize
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QFormLayout, QHBoxLayout, QAbstractScrollArea, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QRadioButton, QStyle
-# from PyQt5.QtSql import QSqlDatabase, QSqlTableModel, QSqlQuery
 
 TYPE = {
     'all': '',
@@ -51,23 +50,17 @@ class Gallery(QWidget):
         self.properties = set()
         self.ribbon = Ribbon(self)
         self.images = ImageView(self)
+        self.thread = Worker(self)
          
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
-    
-    def populate(self, sender=None, limit=10000):
+        self.thread.finished.connect(
+            self.images.table.layoutChanged.emit
+            )
+
+    def populate(self, sender=None, limit=10000, i=0):
         
         self.images.clearSelection()
-        SELECT = f'{BASE} {self.get_filter()} LIMIT {limit}'
-        self.images.table.images = CONNECTION.execute(SELECT, fetch=1)
-
-        self.images.table.layoutChanged.emit()
-        self.images.resizeRowsToContents()
-        self.images.resizeColumnsToContents()
-        self.statusbar(self.images.total())
-
-    def get_filter(self, i=0):
-        
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
 
@@ -157,7 +150,10 @@ class Gallery(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
         
-        return f'WHERE {" AND ".join(i for i in query if i)}{self.get_order(i)}'
+        filter = " AND ".join(i for i in query if i) + self.get_order(i)
+        
+        self.thread.statement = f'{BASE} WHERE {filter} LIMIT {limit}'
+        self.thread.start()
 
     def get_order(self, type_, ORDER={'Ascending': 'ASC', 'Descending':'DESC'}):
         
@@ -295,33 +291,31 @@ class Ribbon(QWidget):
             menu.addAction(action)
 
         else: self.menu.setMenu(menu)
-
-        # if string == '':
-
-        #     string = self.undo[-1] if self.undo else ''
-        #     self.tags.setText(string)
+        
+        string = self.undo[-1]
+        self.tags.setText(string)
 
     def menuEvent(self, sender):
 
         action = sender.text()
 
-        if action in self.undo:                
+        if action in self.undo:
 
-            while action != self.undo[-1]: self.go_back(False)
+            while action != self.undo[-1]: self.go_back(update=False)
 
-        elif action in self.redo:                
+        elif action in self.redo:
 
-            while action in self.redo: self.go_forward(False)
+            while action in self.redo: self.go_forward(update=False)
         
         self.update()
 
-    def go_back(self, update=True):
+    def go_back(self, sender=None, update=True):
         
         if self.undo:
             self.redo.append(self.undo.pop())
             if update: self.update()
 
-    def go_forward(self, update=True):
+    def go_forward(self, sender=None, update=True):
         
         if self.redo:
             self.undo.append(self.redo.pop())
@@ -336,8 +330,9 @@ class ImageView(QTableView):
         # self.table = Test(self, parent.width())   
         self.table = Model(self, parent.width())   
         self.setModel(self.table)
-        self.horizontalHeader().hide()      
-        self.verticalHeader().hide()
+        for header in [self.horizontalHeader(), self.verticalHeader()]:
+            header.setSectionResizeMode(header.ResizeToContents)
+            header.hide()
         self.setGridStyle(0)
 
         if parent.parent().windowTitle() == 'Manage Data':
@@ -421,7 +416,7 @@ class ImageView(QTableView):
         
         if get_menu: return action_group, menu
         return action_group
-
+    
     def find_by_artist(self, sender):
 
         artist = self.currentIndex().data(1000)[2].pop()
@@ -451,6 +446,8 @@ class ImageView(QTableView):
         cb.setText(paths, mode=cb.Clipboard)
 
     def total(self): return len(self.table.images)
+
+    def update(self, images): self.table.images = images
     
     def selectionChanged(self, select, deselect):
         
@@ -644,61 +641,17 @@ class Model(QAbstractTableModel):
 
         return QVariant()
 
-# class Thread(QtCore.QThread):
+class Worker(QThread):
     
-    # sig1 = pyqtSignal(str)
-    
-    # def __init__(self, parent=None):
-
-    #     QThread.__init__(self, parent)
-    
-    # def run(self):
-    
-    #     self.running = True
-    #     while self.running:
-    #         self.sig1.emit(self.source_txt)
-
-    
-    # def __init__(self, *args, **kwargs):
-
-    #     super(Test, self).__init__(*args, **kwargs)
-    #     self.database = open_database()
-    #     self.setEditStrategy(QSqlTableModel.OnManualSubmit)
-    #     self.setTable('imageData')
-    #     self.setQuery(
-    #         QSqlQuery('SELECT path, tags, artist, rating, stars FROM imageData')
-    #         )
-    #     self.select()
-
-    # def open_database(self):
-         
-    #     datab = QSqlDatabase.addDatabase('QODBC')
-    #     datab.setUserName(USER)
-    #     datab.setPassword(PASS)
-    #     datab.setDatabaseName('userData')
-    #     datab.setHostName(
-    #         '192.168.1.43' if __file__.startswith(('e:\\', 'e:/')) else '127.0.0.1'
-    #         )
-    #     datab.open()
+    def __init__(self, parent):
         
-    #     return datab
+        QThread.__init__(self)
+        self.statusbar = parent.statusbar
+        self.images = parent.images
+    
+    def __del__(self): self.wait()
 
-    # def data(self, index, role=Qt.DisplayRole):
+    def run(self):
 
-    #     value = super(Test, self).data(index)
-    #     if index.column() in self.booleanSet:
-    #         if role == Qt.CheckStateRole:
-    #             return Qt.Unchecked if value == 2 else Qt.Checked
-    #         else:
-    #             return QVariant()
-    #     return QSqlTableModel.data(self, index, role)
-
-    # def flags(self, index):
-    #     if not index.isValid():
-    #         return Qt.NoItemFlags
-    #     if index.column() in self.booleanSet:
-    #         return Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsEditable
-    #     elif index.column() in self.readOnlySet:
-    #         return Qt.ItemIsSelectable | Qt.ItemIsEnabled
-    #     else:
-    #         return QSqlTableModel.flags(self, index)
+        self.images.update(CONNECTION.execute(self.statement, fetch=1))
+        self.statusbar(self.images.total())
