@@ -28,6 +28,7 @@ class CONNECT:
 
                 if commit: return self.DATAB.commit()
                 elif fetch: return self.CURSOR.fetchall()
+                else: return list()
 
             except sql.errors.OperationalError as error: continue
             
