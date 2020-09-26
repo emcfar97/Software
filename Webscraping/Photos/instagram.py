@@ -1,12 +1,10 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException, NoSuchElementException
 
 SITE = 'instagram'
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER(True)
 
 def initialize(url='/chairekakia/saved/', retry=0):
     
@@ -71,9 +69,13 @@ def page_handler(hrefs):
 
 def setup(initial=True):
     
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
+    
     try:
         login(DRIVER, SITE)
-        if initial: initialize(DRIVER)
+        if initial: initialize()
         page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
         

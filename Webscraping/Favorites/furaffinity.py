@@ -1,9 +1,6 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
-from selenium.webdriver.common.action_chains import ActionChains
+from ..utils import PATH, progress, bs4, re
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER()
 SITE = 'furaffinity'
 
 def initialize(url='/favorites/chairekakia', query=0):
@@ -14,10 +11,10 @@ def initialize(url='/favorites/chairekakia', query=0):
         except AttributeError: return False
 
     if not query:
-        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+        query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.get(f'https://www.furaffinity.net{url}')
     
-    html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, SITE) for href in {(target.get('href'),) for target in 
         html.findAll(href=re.compile('/view+'))} - query
@@ -37,31 +34,31 @@ def page_handler(hrefs):
         progress(size, num, SITE)
 
         DRIVER.get(f'https://www.furaffinity.net{href}')
-        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
         if html.find(text=re.compile('not in our database.+')):
             
-            CONNECTION.execute('DELETE FROM imageData WHERE href=%s', (href,), commit=1)
+            CONNECTION.execute('DELETE FROM favorites WHERE href=%s', (href,), commit=1)
             continue      
                         
-        artist = html.find('a', href=re.compile('/user/+(?!chairekakia)'), id=False).get('href')
-        image = f'https:{html.find("a", href=re.compile("//d.+")).get("href")}'
-        
-        name = image.split('/')[-1].split('.')[1:]
-        name[0] = re.sub(r'_\d+_-_', ' - ', name[0])
-        name = join(PATH, 'Images', SITE, ".".join(name))
-        hash_ = get_hash(image) 
+        artist = html.find(
+            'a', href=re.compile('/user/+(?!chairekakia)'), id=False
+            ).get('href').split('/')[2]
+        image = html.find("a", href=re.compile("//d.+")).get("href")
+        name = '-'.join(artist, re.findall('_.+', image)[0][1:])
+        name = PATH / 'Images' / SITE / name
 
-        CONNECTION.execute(UPDATE[1], (name, hash_, image, href), commit=1)
+        CONNECTION.execute(UPDATE[1], (name, image, href), commit=1)
     
     progress(size, size, SITE)
 
-def setup(initial=True):
+def start(initial=True):
     
-    try:
-        login(DRIVER, SITE)
-        if initial: initialize(DRIVER)
-        page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
-    except Exception as error: print(f'{SITE}: {error}')
-        
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER(False)
+    
+    # login(DRIVER, SITE)
+    # if initial: initialize()
+    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()

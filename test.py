@@ -1,15 +1,13 @@
 def Controller():
     
     import Webscraping
-    from Webscraping import WEBDRIVER, Photos, Illus, insert_records
-    # from Webscraping.Photos import imagefap, pinterest
-    # from Webscraping.Illus import gelbooru
+    from Webscraping import Photos, Illus, insert_records
 
-    # pinterest.start()
-    # imagefap.start()
-    # Photos.start()
-    Illus.start()
+    # Webscraping.start()
+    # Webscraping.Favorites.favorites.start()
     # insert_records.start()
+    # Photos.flickr.start()
+    # Illus.start()
 
 def Artist_statistics():
 
@@ -121,8 +119,8 @@ def Find_symmetric_videos():
             
         if symmetric(frames): print(path)
 
-def Get_images_database():
-
+def Get_images_dataset():
+    
     import tempfile, hashlib   
     from math import log
     from PIL import Image 
@@ -211,9 +209,9 @@ def Clean_dataset():
     move = []
     delete = []
     
-    for path in move:
-
-        # photo = l / path
+    while move:
+        path = move.pop()
+        photo = l / path
         illus = k / path
         if illus.exists(): illus.replace(j / path)
         
@@ -224,12 +222,9 @@ def Clean_dataset():
         # else:
         #     if not photo.exists(): illus.replace(photo)
             
-        move.remove(path)
-
-    print(move)
-
-    for path in delete:
-    
+    while delete:
+        
+        path = delete.pop()
         photo = l / path
         illus = k / path
 
@@ -241,17 +236,14 @@ def Clean_dataset():
             if illus.exists(): illus.unlink()
             elif photo.exists(): photo.unlink()
         
-        delete.remove(path)
-
-    print(delete)
-
 def Check_Predictions():
     
     import cv2, random
+    import numpy as np
     from PIL import Image
-    from MachineLearning import Model, Path, np
+    from MachineLearning import Model, Path
 
-    model = Model('medium-01.hdf5')
+    model = Model('Medium-06.hdf5')
     path = Path(r'C:\Users\Emc11\Dropbox\Videos\ん')
     glob = list(path.glob('エラティカ *\*jpg'))
 
@@ -259,13 +251,15 @@ def Check_Predictions():
 
         prediction = model.predict(image)
 
-        image_ = np.array(Image.open(image))
-        image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
-        cv2.imshow(prediction, image_)
+        image = np.array(Image.open(image))
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        cv2.imshow(prediction, image)
         cv2.waitKey(0)
 
-# Controller()
+Controller()
 # Find_symmetric_videos()
 # Normalize_database() 
 # Get_images_dataset()
 # Clean_dataset()
+# Check_Predictions()

@@ -8,6 +8,10 @@ path = ROOT.parent / r'Downloads\Images\Comics'
 
 def start():
 
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
+    
     folders = path.iterdir()
     size = len(folders)
 

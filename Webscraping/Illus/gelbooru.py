@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import login, progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
+from ..utils import progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -73,9 +73,11 @@ def page_handler(hrefs):
 
 def start(initial=True):
     
-    try:
-        login(DRIVER, SITE)
-        if initial: initialize(DRIVER)
-        DRIVER.close()
-        page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
-    except Exception as error: print(f'\n{SITE}: {error}')
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
+    
+    login(DRIVER, SITE)
+    if initial: initialize()
+    DRIVER.close()
+    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))

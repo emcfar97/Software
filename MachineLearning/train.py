@@ -1,6 +1,5 @@
 if __name__ == '__main__': from __init__ import *
 else: from . import *
-from datetime import date
 
 def make_model(input_shape, classes, chckpnt=False, load=False):
 
@@ -13,7 +12,7 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
     
     else:
         if load == 0:
-            x = layers.Conv2D(32, 3, activation='relu')(x)
+            x = layers.Conv2D(64, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
             x = layers.Conv2D(64, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
@@ -73,8 +72,8 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
             x = layers.BatchNormalization()(x)
             x = layers.MaxPooling2D(pool_size=(2, 2))(x)
         
-        if classes == 1: activation ='sigmoid'
-        else: activation ='softmax'
+        if classes == 1: activation = 'sigmoid'
+        else: activation = 'softmax'
         
         x = layers.Dropout(0.5)(x)
         outputs = layers.Dense(classes, activation=activation)(x)
@@ -87,21 +86,24 @@ def make_model(input_shape, classes, chckpnt=False, load=False):
     
     return model
 
-def save_model(epoch):
-    
+def save_model(epoch, logs):
+
     factors = [i for i in range(2, epoch) if not epoch % i]
-
-    if epoch % factors[len(factors) // 2] == 0:
+    if factors: 
         
-        model.save(
-            MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5'
-            )
+        save = factors[len(factors) // 2]
+    
+        if not epoch % save:
+            
+            model.save(
+                MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5'
+                )
 
-NAME, VERSION = 'Medium', 5
+NAME, VERSION = 'Medium', 6
 DATA = Path(r'E:\Users\Emc11\Training') / NAME
 AUTOTUNE = tf.data.experimental.AUTOTUNE
+EPOCHS, INITIAL = 16, 0
 IMAGE_SIZE = 180, 180
-EPOCHS = 16
 BATCH = 32
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -125,17 +127,17 @@ augmented_train_ds = train_ds.map(
     lambda x, y: (data_augmentation(x, training=True), y)
     )
 
-train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
-val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
 checkpoint = keras.callbacks.ModelCheckpoint(
     CHCKPNT / f'{NAME}_{{epoch:02}}.hdf5'
     )
 tensorboard = keras.callbacks.TensorBoard(
-    log_dir=LOGS / f'{date.today()}', histogram_freq=1
+    log_dir=LOGS / f'{NAME}-{VERSION:02}', histogram_freq=1
     )
 save_callback = keras.callbacks.LambdaCallback(
-    on_epoch_end=lambda epoch: save_model(epoch)
+    on_epoch_end=save_model
     )
 
 model = make_model(IMAGE_SIZE, classes=2, load=0)
@@ -147,6 +149,6 @@ model.compile(
 model.fit(
     train_ds, validation_data=val_ds, epochs=EPOCHS, 
     callbacks=[checkpoint, tensorboard, save_callback], 
-    verbose=2
+    initial_epoch=INITIAL, verbose=0
     )
 model.save(MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5')
