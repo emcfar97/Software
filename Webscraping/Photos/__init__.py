@@ -13,7 +13,7 @@ def start():
     for thread in threads: thread.join()
 
     threads = [
-        threading.Thread(target=flickr.start),
+        # threading.Thread(target=flickr.start),
         threading.Thread(target=sankaku.start, args=(0,)),
         # threading.Thread(target=posespace.start)
         ]

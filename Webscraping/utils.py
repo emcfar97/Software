@@ -1,8 +1,9 @@
-import imagehash, piexif, bs4, requests, re, tempfile, hashlib, sys, ast
+import imagehash, piexif, time, bs4, requests, re, tempfile, hashlib, sys, ast
 from . import ROOT
 from math import log
 from PIL import Image
 from io import BytesIO
+from configparser import ConfigParser
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
 PATH = ROOT / r'\Users\Emc11\Dropbox\Videos\ん'
@@ -427,14 +428,133 @@ def progress(size, left, site, length=20):
     sys.stdout.write("\033[F")
     if left == size: print()
         
+def login(driver, site, type_=0):
+    
+    credentials = ConfigParser(delimiters='=') 
+    credentials.read('credentials.ini')
+    from selenium.webdriver.common.keys import Keys
+
+    if site == 'flickr':
+
+        driver.get('https://identity.flickr.com/login')
+        while driver.current_url == 'https://identity.flickr.com/login':
+            driver.find('login-email', credentials.get(site, 'user'), type_=2)
+            driver.find('login-email', Keys.RETURN, type_=2)
+            driver.find('login-password', credentials.get(site,'pass'), type_=2)
+            driver.find('login-password', Keys.RETURN, type_=2)
+            time.sleep(2.5)
+
+    elif site == 'metarthunter':
+
+        driver.get('https://www.metarthunter.com/members/')
+        driver.find('//*[@id="user_login"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_pass"]', credentials.get(site, 'pass'))
+        while driver.current_url == 'https://www.metarthunter.com/members/': 
+            time.sleep(2)
+            
+    elif site == 'femjoyhunter':
+
+        driver.get('https://www.femjoyhunter.com/members/')
+        driver.find('//*[@id="user_login"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_pass"]', credentials.get(site, 'pass'))
+        while driver.current_url == 'https://www.femjoyhunter.com/members/': 
+            time.sleep(2)
+            
+    elif site == 'elitebabes':
+
+        driver.get('https://www.elitebabes.com/members/')
+        driver.find('//*[@id="user_login"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_pass"]', credentials.get(site, 'pass'))
+        while driver.current_url == 'https://www.elitebabes.com/members/': 
+            time.sleep(2)
+
+    elif site == 'instagram':
+    
+        driver.get('https://www.instagram.com/')
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', credentials.get(site, 'email'))
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', credentials.get(site, 'pass'))
+        driver.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', Keys.RETURN)
+        time.sleep(2)
+
+    elif site== 'gelbooru':
+
+        driver.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[1]', credentials.get(site, 'user'))
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', credentials.get(site, 'pass'))
+        driver.find('/html/body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
+        time.sleep(1)
+
+    elif site == 'sankaku':
+
+        driver.get(f'https://{type_}.sankakucomplex.com/user/login')
+        driver.find('//*[@id="user_name"]', credentials.get(site, 'user'))
+        driver.find('//*[@id="user_password"]', credentials.get(site, 'pass'))
+        driver.find('//*[@id="user_password"]', Keys.RETURN)
+        time.sleep(2)
+    
+    elif site == 'furaffinity':
+
+        driver.get('https://www.furaffinity.net/login/')
+        driver.find('//*[@id="login"]', credentials.get(site, 'user'))
+        driver.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', credentials.get(site, 'pass'))
+        while driver.current_url == 'https://www.furaffinity.net/login/': 
+            time.sleep(2)
+    
+    elif site == 'twitter':
+
+        email = credentials.get(site, 'email')
+        passw = credentials.get(site, 'pass')
+
+        driver.get('https://twitter.com/login')
+        element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'  
+        while driver.current_url == 'https://twitter.com/login':
+            try:  
+                driver.find('session[username_or_email]', email, type_=3)
+                time.sleep(.75)
+                driver.find('session[password]', passw, type_=3)
+                driver.find('session[password]', Keys.RETURN, type_=3)
+                time.sleep(5)
+
+            except:
+                driver.find(element.format(1), email)
+                time.sleep(.75)
+                driver.find(element.format(2), passw)
+                driver.find(element.format(2), Keys.RETURN)
+                time.sleep(5)
+
+    elif site == 'posespace':
+
+        driver.get('https://www.posespace.com/')
+        driver.find("//body/form[1]/div[3]/div[1]/nav/div/div[2]/ul[2]/li[6]/a", click=True)
+        driver.find("popModal", click=True, type_=7)
+        driver.find("loginUsername", credentials.get(site, 'email'), type_=2)
+        driver.find("loginPassword", credentials.get(site, 'pass'), type_=2)
+        driver.find("btnLoginSubmit", click=True, type_=2)
+
+    elif site == 'pinterest':
+        
+        driver.get('https://www.pinterest.com/login/')
+        driver.find('//*[@id="email"]', credentials.get(site, 'email'))
+        driver.find('//*[@id="password"]', credentials.get(site, 'pass'))
+        driver.find('//*[@id="password"]', Keys.RETURN)
+        time.sleep(5)
+        
+    elif site == 'deviantArt':
+
+        driver.get('https://www.deviantart.com/users/login')
+        driver.find('//*[@id="username"]', credentials.get(site, 'email'))
+        driver.find('//*[@id="password"]', credentials.get(site, 'pass'))
+        driver.find('//*[@id="password"]', Keys.RETURN)
+        time.sleep(5)
+
 def save_image(name, image, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
     try:
         if re.search('jp.*g', image, re.IGNORECASE):
 
-            try: Image.open(name).save(name, exif=exif)
-            except:
+            if name.exists(): Image.open(name).save(name, exif=exif)
+            else:
                 img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
                 img.thumbnail(RESIZE)
                 img.save(name.with_suffix('.jpg'), exif=exif)
@@ -480,12 +600,16 @@ def get_hash(image, src=False):
         
     if src:
         
-        # ext = f".{image.split('.')[-1]}"
-        # temp = tempfile.TemporaryFile(suffix=ext)
-        # temp.write(requests.get(image).content)
-        image = Image.open(BytesIO(requests.get(image).content))
+        ext = image.ext[:4]
+        temp_dir = tempfile.TemporaryDirectory()
+        temp = '\\'.join(
+            temp_dir.name, f'{next(tempfile._get_candidate_names())}{ext}'
+            )
+        
+        with open(temp, 'wb') as img:
+            image = img.write(requests.get(image).content).name
     
-    elif re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
+    if re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
         
         image = Image.open(image)
 
@@ -497,6 +621,7 @@ def get_hash(image, src=False):
     
     image.thumbnail([32, 32])
     image = image.convert('L')
+    if src: temp_dir.cleanup()
 
     return f'{imagehash.dhash(image)}'
 

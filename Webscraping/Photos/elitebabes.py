@@ -1,6 +1,8 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 SITE = 'elitebabes'
 
 def initialize(url='/my-favorite-galleries/page/1/', query=0):
@@ -36,7 +38,7 @@ def initialize(url='/my-favorite-galleries/page/1/', query=0):
         CONNECTION.execute(INSERT[3], hrefs, 1)
         
     next = next_page(html.find(class_='next'))
-    if hrefs and next: initialize(next, query)
+    if hrefs and next: initialize(DRIVER, next, query)
     
     CONNECTION.commit()
     
@@ -67,13 +69,9 @@ def page_handler(hrefs):
 
 def setup(initial=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
-    
     try:
         login(DRIVER, SITE)
-        if initial: initialize()
+        if initial: initialize(DRIVER)
         page_handler(DRIVER, CONNECTION.execute(SELECT[2].replace('href', 'src, artist'), (SITE,), fetch=1))
     except Exception as error: print(f'{SITE}: {error}')
     

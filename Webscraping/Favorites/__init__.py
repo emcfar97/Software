@@ -1,14 +1,12 @@
 import threading
-from . import favorites, foundry, furaffinity, twitter
+from . import foundry, furaffinity, twitter
 
 def start():
 
     threads = [
-        threading.Thread(target=furaffinity.start),
-        threading.Thread(target=foundry.start),
-        # threading.Thread(target=twitter.start)
+        threading.Thread(target=furaffinity.setup),
+        threading.Thread(target=foundry.setup),
+        threading.Thread(target=twitter.setup)
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
-
-    favorites.start()

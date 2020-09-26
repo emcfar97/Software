@@ -1,6 +1,6 @@
 from PIL import Image
 from pathlib import Path
-from numpy import resize, array, loadtxt, argwhere
+from numpy import resize, array, loadtxt
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -17,32 +17,29 @@ class Model():
         self.path = MODELS / path
         self.model = keras.models.load_model(self.path, compile=False)
         self.labels = loadtxt(
-            self.path.with_name(f'{path.split("-")[0]}.txt'), dtype='<U44'
+            self.path.with_name(f'{self.path.stem.split("-")[0]}.txt'), 
+            dtype='<U44'
             )
-        self.type = self.labels[0]
-        self.labels = self.labels[1:]
         self.shape = self.model.input_shape
     
     def build(self): pass
 
     def train(self): pass
 
-    def predict(self, image, threshold=0.3):
+    def predict(self, image, threshold=0.1):
 
         image = resize(array(Image.open(image)), (1, *self.shape[1:]))
-        scores = self.model.predict(image)
-
-        if scores.size == 1: return self.labels[int(scores < threshold)]
-
-        elif self.type == '__single__': return self.labels[scores.argmax()]
+        scores = self.model.predict(image).reshape(*self.labels.shape)
         
-        return [self.labels[j] for i, j in argwhere(scores > threshold)]
+        if self.labels.size == 2: return self.labels[scores.argmax()]
+        return [
+            self.labels[score] for score in 
+            range(*self.labels.shape)
+            if scores[score] > threshold
+            ]
 
     def summary(self): return self.model.summary()
 
-    def save(self, name=None):
+    def save(self, name):
 
-        if name: name = MODELS / name.with_suffix('hdf5')
-        else: name = self.path
-        
-        self.model.save(name, save_format='h5')
+        self.model.save(MODELS / name.with_suffix('hdf5'), save_format='h5')

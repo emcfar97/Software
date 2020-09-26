@@ -3,7 +3,20 @@ from PIL import Image
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
 from .utils import get_hash, get_name, get_tags, generate_tags, save_image, progress, re
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 EXT = 'jp.*g|png|gif|webm|mp4'
+
+def convert_images(path):
+    
+    for file in path.glob('*png'):
+        
+        # if file.lower().endswith(('png', 'jfif')):
+        file = path / file
+        name = file.with_suffix('.jpg')
+        jpg = Image.open(file).convert("RGB")
+        jpg.save(name, quality=100)
+        if name.exists(): file.unlink()
 
 def extract_files(path):
     
@@ -12,22 +25,20 @@ def extract_files(path):
 
         go = True
         
-        # try:
-        urls = [
-            value for window in 
-            json.load(open(file, encoding='utf-8'))[0]['windows'].values() 
-            for value in window.values()
-            ]
-        # except: continue
+        try:
+            urls = [
+                value for window in 
+                json.load(open(file, encoding='utf-8'))[0]['windows'].values() 
+                for value in window.values()
+                ]
+        except: continue
 
         for url in urls:
                 
             try:
                 title = url['title'].split('/')[-1].split()[0]
                 if not re.search(EXT, title): title = url['url'].split('/')[-1]
-                name = path / title
-                if name.suffix == '.png': name = name.with_suffix('.jpg')
-                if name.exists(): continue
+                if (name:=path / title).exists(): continue
                 image = (
                     f'https://{url["title"]}'
                     if url['url'] == 'about:blank' else 
@@ -40,11 +51,8 @@ def extract_files(path):
 
 def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
 
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
-    
     extract_files(path)
+    convert_images(path)
     files = [file for file in path.iterdir() if file.is_file()]
     size = len(files) - 2
 

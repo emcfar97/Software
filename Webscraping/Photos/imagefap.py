@@ -1,9 +1,11 @@
 import json
 from .. import ROOT, CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
 REMOVE = 'ass|big|cock|gifs|gif|girls|naked|nude|pics|pornstar|porn|sexy|&|\d'
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 SITE = 'imagefap'
 
 def page_handler(url, title):
@@ -60,10 +62,6 @@ def page_handler(url, title):
 
 def start():
         
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
-    
     for file in PATH.iterdir():
 
         window = json.load(open(file))[0]['windows']

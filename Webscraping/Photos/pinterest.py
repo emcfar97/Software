@@ -1,9 +1,11 @@
 from .. import CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 from PIL import Image
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'pinterest'
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER(True)
 
 def page_handler(hrefs):
     
@@ -42,10 +44,7 @@ def page_handler(hrefs):
     
 def start():
 
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
-    
     login(DRIVER, SITE)
     boards = {
         # 'winter-casual':['jeans', 'leggings', 'shorts', 'skirt'],

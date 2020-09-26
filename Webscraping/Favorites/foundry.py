@@ -1,6 +1,9 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, progress, get_hash, bs4, re
+from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
+from selenium.webdriver.common.action_chains import ActionChains
 
+CONNECTION = CONNECT()
+DRIVER = WEBDRIVER()
 SITE = 'foundry'
 
 def initialize(url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1550/page/1', query=0):
@@ -12,19 +15,19 @@ def initialize(url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1550/page
 
     DRIVER.get(f'http://www.hentai-foundry.com{url}')
     if not query:
-        DRIVER.find('//*[@id="frontPage"]', click=True, type_=1)
-        query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+        DRIVER.find_element_by_xpath('//*[@id="frontPage"]').click()
+    html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
     hrefs = [
         (*href, SITE) for href in {(target.get('href'),) for target in 
         html.findAll(class_='thumbLink')} - query
         ]
-    CONNECTION.execute(INSERT[1], hrefs, many=1)
+    CONNECTION.executemany(INSERT[1], hrefs)
 
     next = next_page(html.find('li', class_='next')) 
     if hrefs and next: initialize(next, query)
 
-    CONNECTION.commit()
+    CONNECTON.commit()
 
 def page_handler(hrefs):
 
@@ -35,27 +38,26 @@ def page_handler(hrefs):
         progress(size, num, SITE)
 
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
-        DRIVER.find(
-            '//body/main/div/section[1]/div[2]/img', click=True, type_=1
-            )
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        DRIVER.find_element_by_xpath('//body/main/div/section[1]/div[2]/img').click()
+        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
 
         artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
         image = f'http:{html.find(class_="center", src=True).get("src")}'
-        name = (
-            PATH / 'Images' / SITE / (artist + re.findall('-[^f\d]+', image)[0])
+        name = join(
+            PATH, 'Images', SITE, re.sub(
+            r'-\d+-', ' - ', image.split('/')[-1])
             )
+        hash = get_hash(image) 
 
-        CONNECTION.execute(UPDATE[1], (str(name), image, href), commit=1)
+        CONNECTION.execute(UPDATE[1], (name, hash, image, href), commit=1)
     
     progress(size, size, SITE)
 
-def start(initial=True):
+def setup(initial=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
-    
-    if initial: initialize()
-    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+    try:
+        if initial: initialize(DRIVER)
+        page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+    except Exception as error: print(f'{SITE}: {error}')
+        
     DRIVER.close()
