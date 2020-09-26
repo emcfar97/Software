@@ -4,13 +4,13 @@ from . import CONNECTION, BASE
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, QModelIndex, Qt, QSize
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QFormLayout, QHBoxLayout, QAbstractScrollArea, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QRadioButton, QStyle
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QRadioButton, QMessageBox, QStyle
 
 TYPE = {
-    'all': '',
-    'photo': 'type=1', 
-    'illus': 'type=2', 
-    'comic': 'type=3',
+    'All': '',
+    'Photo': 'type=1', 
+    'Illus': 'type=2', 
+    'Comic': 'type=3',
     }
 
 class Gallery(QWidget):
@@ -58,34 +58,49 @@ class Gallery(QWidget):
             self.images.table.layoutChanged.emit
             )
 
-    def populate(self, sender=None, limit=10000, i=0):
+    def populate(self, sender=None, limit=10000, i=0, op='[<>=!]=?'):
         
         self.images.clearSelection()
-        string = self.ribbon.tags.text()
+        string = self.ribbon.tags.text().lower()
         if string: self.ribbon.update(string)
-
         query = ['path LIKE "C:%"']
         
         try: # Duplicates
             duplicate, = re.findall('duplicates:true', string)
-            return f'WHERE GROUP BY hash HAVING COUNT(hash) > 1 ORDER BY hash'
+            filter = f'hash HAVING COUNT(hash) > 1 ORDER BY hash'
+            self.thread.statement = f'{BASE} WHERE {query[0]} GROUP BY {filter} LIMIT {limit}'
+            self.thread.start()
+            return
+        
         except: pass
 
         if self.title == 'Gesture Draw':
             
             query.append('date_used <= Now() - INTERVAL 2 MONTH')
 
+        # tokens = re.findall(f'\w+{op}\w+', string)
+
+        # for token in tokens:
+            
+        #     string = string.replace(token, '')
+        #     col, val = re.split(op, token)
+            
+        #     if re.search('\D', val):
+        #         token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
+                
+        #     query.append(token)
+
         try: # Get type
             type_, = re.findall(
                 'type=(?:photograph|illustration|comic?)', string
                 )
             string = string.replace(type_, '')
-            type_ = re.sub('type=(.+)', r'type="\1"', type_)
-        except: type_ = TYPE[self.type.checkedAction().text().lower()]
+            type_ = re.sub('(type=)(.+)', r'\1"\2"', type_)
+        except: type_ = TYPE[self.type.checkedAction().text()]
         finally: query.append(type_)
 
         try: # Get stars
-            stars, = re.findall('stars[<>=!]+[0-5]', string)
+            stars, = re.findall('stars[<>=!]=*[0-5]', string)
             string = string.replace(stars, '')
             stars = stars.replace('==', '=')
         except ValueError: stars = ''
@@ -93,10 +108,10 @@ class Gallery(QWidget):
 
         try: # Get rating
             rating, = re.findall(
-                'rating[<>=!]+(?:safe|questionable|explicit?)', string
+                'rating[<>=!]=?(?:safe|questionable|explicit?)', string
                 )
             string = string.replace(rating, '')
-            word = re.sub('rating.*=(.+)', r'"\1"', rating)
+            word = re.sub('(rating[<>=!]=?)(.+)', r'\1"\2"', rating)
             rating = rating.replace(word.strip(''), word)
         except: rating = f'rating="{self.rating.checkedAction().text()}"'
         finally: query.append(rating)
@@ -125,17 +140,17 @@ class Gallery(QWidget):
         try: # Get site
             site, =  re.findall('site=\w+', string, re.IGNORECASE)
             string = string.replace(site, '')
-            site = re.sub('site=(.+)', r'site="\1"', site)
+            site = re.sub('(site=)(.+)', r'\1"\2"', site)
         except: site = ''
-        finally: query.append(site.lower())
+        finally: query.append(site)
 
         try: # Get comic
             comic, =  re.findall('comic:\w+', string, re.IGNORECASE)
             string = string.replace(comic, '')
             comic = re.sub('comic:(.+)', r'src="\1"', comic)
-            query[1:] = ''
+            del query[1:]
         except: comic = ''
-        finally: query.append(comic.lower())
+        finally: query.append(comic)
         
         if string.strip(): # Get tags
     
