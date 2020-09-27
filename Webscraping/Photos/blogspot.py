@@ -1,8 +1,6 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER(True)
 SITE = 'blogspot'
 url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
 
@@ -53,6 +51,10 @@ def page_handler(hrefs):
 
 def start():
 
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
+    
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
 

@@ -2,10 +2,8 @@ import cv2, imutils, imageio, pathlib
 import numpy as np
 from PIL import Image
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import login, progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, tempfile
+from ..utils import progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, tempfile
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER(True)
 SITE = 'posespace'
 
 def initialize(url='/posetool/favs.aspx'):
@@ -136,12 +134,12 @@ def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
 
 def setup(initial=True):
     
-    # try:
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
+    
     DRIVER.close()
     # login(SITE)
-    # if initial: initialize(DRIVER)
+    # if initial: initialize()
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
-    # except Exception as error:
-    #     print(f'{SITE}: {error}')
-        
     DRIVER.close()

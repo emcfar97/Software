@@ -1,15 +1,13 @@
 from . import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from .utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
+from .utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER(True)
 SITE = 'sankaku'
-MODE = {
-    0:['idol', 1],
-    1:['chan', 2]
-    }
+MODE = [
+    ['idol', 1],
+    ['chan', 2]
+    ]
 
 def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
     
@@ -18,12 +16,16 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
         except: return False
 
     if not query:
-        query = set(CONNECTION.execute(f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1))
+        query = set(
+            CONNECTION.execute(
+                f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1
+                )
+            )
     page_source = requests.get(
         f'https://{mode[0]}.sankakucomplex.com/{url}'
         ).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
-    try: 
+    try:
         hrefs = [
             (target.get('href'), mode[1], SITE) for target in 
             html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
@@ -82,7 +84,7 @@ def page_handler(hrefs, mode):
         hash_ = get_hash(name)
 
         CONNECTION.execute(UPDATE[3],
-            (str(name),f"{' '.join(artists)}", tags, rating, image, hash_,href),
+            (str(name), ' '.join(artists), tags, rating, image, hash_, href),
             commit=1
             )
     
@@ -90,14 +92,16 @@ def page_handler(hrefs, mode):
 
 def start(mode=1, initial=True):
     
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
     mode = MODE[mode]
 
-    try:
-        if initial: initialize(mode)
-        page_handler(
-            CONNECTION.execute(f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1), 
-            mode
-            )
-    except Exception as error: print(f'\n{SITE}: {error}')
-    
+    if initial: initialize(mode)
+    page_handler(
+        CONNECTION.execute(
+            f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1
+            ), 
+        mode
+        )
     DRIVER.close()

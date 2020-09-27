@@ -1,28 +1,26 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import login, progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
+from ..utils import PATH, progress, bs4, time, re
 import itertools
 from selenium.webdriver.common.keys import Keys
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER()
 SITE = 'twitter'
 
 def initialize(retry=0):
 
-    query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+    query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.get('https://twitter.com/Chairekakia1/likes')
     time.sleep(4)    
 
     while True:
 
-        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         targets = html.findAll('article', {'role':'article', 'tabindex':'0'})
         hrefs = [
             (*href, SITE) for href in
             {(target.find('a', {'aria-haspopup':False}, href=True
             ).get('href'),) for target in targets} - query
             ] 
-        CONNECTION.executemany(INSERT[1], hrefs)
+        CONNECTION.execute(INSERT[1], hrefs, many=1)
         
         if not hrefs: 
             if retry >= 2: break
@@ -30,7 +28,7 @@ def initialize(retry=0):
         else: retry = 0
             
         for _ in range(3):
-            DRIVER.find_element_by_tag_name('html').send_keys(Keys.PAGE_DOWN)
+            DRIVER.find('html', Keys.PAGE_DOWN, type_=6)
         time.sleep(4)
                 
     CONNECTION.commit()
@@ -48,10 +46,10 @@ def page_handler(hrefs):
         for _ in range(4):
             try:
                 time.sleep(2)
-                html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+                html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
                 if login := html.find(href='/login'):
                     xpath = xpath_soup(login)
-                    DRIVER.find_element_by_xpath(xpath).click()
+                    DRIVER.find(xpath, click=True, type_=1)
                     DRIVER.back()
                     time.sleep(2)
 
@@ -64,7 +62,7 @@ def page_handler(hrefs):
 
             except (IndexError, AttributeError, TypeError): 
                 try:
-                    html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+                    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
                     target = html.find('div', style=re.compile('padding-top: .+'))
                     images = target.findAll('video',
                         src=re.compile('https://video.twimg.com/tweet_video.+')
@@ -79,14 +77,10 @@ def page_handler(hrefs):
 
             image = image.get('src').replace('small', 'large')
             name = image.replace('?format=', '.').split('/')[-1]
-            name = join(
-                PATH, 'Images', SITE, f'{artist} - {name.split("&")[0]}'
-                )
-            hash_ = get_hash(image) 
+            name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
             CONNECTION.execute(UPDATE[1], (name, hash_, image, href), commit=1)
-                        
-        
+                              
 def xpath_soup(element):
     """
     Generate xpath of soup element
@@ -108,12 +102,13 @@ def xpath_soup(element):
 
     return '/%s' % '/'.join(components)
 
-def setup(initial=True):
+def start(initial=True):
     
-    try:
-        login(DRIVER, SITE)
-        if initial: initialize(DRIVER)
-        page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
-    except Exception as error: print(f'{SITE}: {error}')
-
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER(False)
+    
+    DRIVER.login(SITE)
+    if initial: initialize()
+    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
