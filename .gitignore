@@ -3,6 +3,8 @@
 *.pyc
 *.hdf5
 *__pychache__
+.vscode
+Music
 geckodriver.log
 geckodriver.exe
 MachineLearning/Checkpoints
