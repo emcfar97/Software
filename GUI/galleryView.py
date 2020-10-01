@@ -57,12 +57,16 @@ class Gallery(QWidget):
         self.thread.finished.connect(
             self.images.table.layoutChanged.emit
             )
+        # self.thread.terminated.connect(
+        #     self.images.table.layoutChanged.emit
+        #     )
 
     def populate(self, sender=None, limit=10000, i=0, op='[<>=!]=?'):
         
         self.images.clearSelection()
-        string = self.ribbon.tags.text().lower()
+        string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
+        string = string.lower()
         query = ['path LIKE "C:%"']
         
         try: # Duplicates
@@ -111,53 +115,51 @@ class Gallery(QWidget):
                 'rating[<>=!]=?(?:safe|questionable|explicit?)', string
                 )
             string = string.replace(rating, '')
-            word = re.sub('(rating[<>=!]=?)(.+)', r'\1"\2"', rating)
-            rating = rating.replace(word.strip(''), word)
+            rating = re.sub('(rating[<>=!]=?)(.+)', r'\1"\2"', rating)
         except: rating = f'rating="{self.rating.checkedAction().text()}"'
         finally: query.append(rating)
         
         try: # Get artist
             artist, = re.findall('artist=\w+', string)
             string = string.replace(artist, '')
-            artist = re.sub('artist=(.+)', r'artist LIKE "%\1%"', artist)
+            artist = re.sub('(artist)=(.+)', r'\1 LIKE "%\2%"', artist)
         except: artist = ''
         finally: query.append(artist)
         
         try: # Get path
-            path, =  re.findall('path=\w+', string, re.IGNORECASE)
+            path, =  re.findall('path=.+', string)
             string = string.replace(path, '')
 
-            if re.search('jpg|gif|webm|mp4/Z', path): sub = r'%\1'
+            if re.search('jpg|gif|webm|mp4/Z', path): 
+                path = re.sub('(path)=(.+)', r'\1 LIKE "%\2"')
             elif re.search('path=.:', path):
-                sub = r'\1%'
-                path = re.sub('.:', 'C:', path)
-            else: sub = r'%\1%'
-            
-            path = re.sub('path=(.+)', f'path LIKE "{sub}"', path)
+                path = re.sub('(path)=.:(.+)', r'\1 LIKE "C:\2%"')
+            else: 
+                path = re.sub('(path)=(.+)', r'\1 LIKE "%\2%"')
         except: path = ''
         finally: query.append(path)
                 
         try: # Get site
-            site, =  re.findall('site=\w+', string, re.IGNORECASE)
+            site, =  re.findall('site=\w+', string)
             string = string.replace(site, '')
             site = re.sub('(site=)(.+)', r'\1"\2"', site)
         except: site = ''
         finally: query.append(site)
 
         try: # Get comic
-            comic, =  re.findall('comic:\w+', string, re.IGNORECASE)
+            comic, =  re.findall('comic=\w+', string)
             string = string.replace(comic, '')
-            comic = re.sub('comic:(.+)', r'src="\1"', comic)
+            comic = re.sub('comic(=.+)', r'src"\1"', comic)
             del query[1:]
         except: comic = ''
         finally: query.append(comic)
         
         if string.strip(): # Get tags
     
-            string = re.sub('NOT ', '-', string.strip())
-            string = re.sub('(-?\w+( OR -?\w+)+)', r'(\1)', string)
+            string = re.sub('not ', '-', string.strip())
+            string = re.sub('(-?\w+( or -?\w+)+)', r'(\1)', string)
             string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
-            string = re.sub('(\+AND|OR) ', '', string)
+            string = re.sub('(\+and|or) ', '', string)
             string = re.sub('-\+', '-', string)
             if not re.search('\+\w+', string): string += ' qwd'
 
@@ -462,7 +464,9 @@ class ImageView(QTableView):
 
     def total(self): return len(self.table.images)
 
-    def update(self, images): self.table.images = images
+    def update(self, images): 
+        
+        self.table.images = list() if images is None else images
     
     def selectionChanged(self, select, deselect):
         
@@ -665,7 +669,7 @@ class Worker(QThread):
         self.images = parent.images
     
     def __del__(self): self.wait()
-
+    
     def run(self):
 
         self.images.update(CONNECTION.execute(self.statement, fetch=1))
