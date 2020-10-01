@@ -4,9 +4,11 @@
 *.hdf5
 *__pychache__
 .vscode
-Music
+Music/
+Pythonista/
 geckodriver.log
 geckodriver.exe
 MachineLearning/Checkpoints
 MachineLearning/Models
 MachineLearning/Logs
+Webscraping/PixivUtil
