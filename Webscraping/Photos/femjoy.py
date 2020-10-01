@@ -1,5 +1,6 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+import time
 
 SITE = 'femjoyhunter'
 
@@ -40,11 +41,11 @@ def initialize(url='/my-favorite-galleries/page/1/', query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (image, artist) in enumerate(hrefs):
+    for (image, artist) in hrefs:
         
-        progress(size, num, SITE)
+        print(progress)
 
         name = get_name(image, 0, 1)
         save_image(name, image)
@@ -60,8 +61,8 @@ def page_handler(hrefs):
             commit=1
             )
     
-    progress(size, size, SITE)
-
+    print(progress)
+    
 def setup(initial=True):
     
     global CONNECTION, DRIVER

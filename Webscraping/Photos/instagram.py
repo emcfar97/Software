@@ -1,7 +1,6 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import WebDriverException, ElementClickInterceptedException, NoSuchElementException
 
 SITE = 'instagram'
@@ -36,11 +35,11 @@ def initialize(url='/chairekakia/saved/', retry=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
+    for href, in hrefs:
         
-        progress(size, num, SITE)
+        print(progress)
         DRIVER.get(f'https://www.instagram.com{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
         artist = html.find('a', href=re.compile('/.+/')).text
@@ -65,7 +64,7 @@ def page_handler(hrefs):
             commit=1
             )
     
-    progress(size, size, SITE)
+    print(progress)
 
 def setup(initial=True):
     

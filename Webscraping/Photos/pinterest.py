@@ -1,5 +1,5 @@
 from .. import CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 from PIL import Image
 from selenium.webdriver.common.keys import Keys
 
@@ -7,10 +7,11 @@ SITE = 'pinterest'
 
 def page_handler(hrefs):
     
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, href in enumerate(hrefs):
-        progress(size, num, SITE)
+    for href, in hrefs:
+        
+        print(progress)
 
         page_source = requests.get(f'https://www.pinterest.com{href}')
         html = bs4.BeautifulSoup(page_source, 'lxml')
@@ -38,7 +39,7 @@ def page_handler(hrefs):
             INSERT[5], (name, tags, rating, 0, hash_, src, SITE), commit=1
             )
         
-    progress(size, size, SITE)
+    print(progress)
     
 def start():
 

@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
 SITE = 'blogspot'
 url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
@@ -29,11 +29,11 @@ def initialize(url, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
-
-        progress(size, num, SITE)
+    for href, in hrefs:
+        
+        print(progress)
 
         name = get_name(href, 0, hasher=1)
         if not save_image(name, href): continue

@@ -1,5 +1,6 @@
 from . import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from .utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
+from .utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
+import time
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -44,11 +45,12 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
 def page_handler(hrefs, mode):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
+    for href, in hrefs:
         
-        progress(size, num, SITE)
+        print(progress)
+        
         page_source = requests.get(
             f'https://{mode[0]}.sankakucomplex.com{href}'
             ).content      
@@ -88,7 +90,7 @@ def page_handler(hrefs, mode):
             commit=1
             )
     
-    progress(size, size, SITE)
+    print(progress)
 
 def start(mode=1, initial=True):
     

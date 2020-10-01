@@ -1,5 +1,6 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, progress, bs4, time, re
+from ..utils import PATH, Progress, bs4, re
+import time
 import itertools
 from selenium.webdriver.common.keys import Keys
 
@@ -36,10 +37,11 @@ def initialize(retry=0):
 def page_handler(hrefs):
     
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
-        progress(size, num, SITE)   
+    for href, in hrefs:
+        
+        print(progress) 
 
         DRIVER.get(f'https://twitter.com{href}')
 

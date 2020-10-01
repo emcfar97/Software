@@ -1,6 +1,6 @@
 import json
 from .. import ROOT, CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
 
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
 REMOVE = 'ass|big|cock|gifs|gif|girls|naked|nude|pics|pornstar|porn|sexy|&|\d'
@@ -18,11 +18,11 @@ def page_handler(url, title):
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     images = html.findAll(href=re.compile('/photo/.+'))
-    size = len(images)
+    progress = Progress(len(images), 'Images')
 
-    for num, image in enumerate(images):
-
-        progress(size, num, 'Images')
+    for image in images:
+        
+        print(progress)
 
         href = f'https://www.imagefap.com/{image.get("href")}'
         page_source = requests.get(href).content
@@ -56,7 +56,7 @@ def page_handler(url, title):
             commit=1
             )
     
-    progress(size, size, 'Images')
+    print(progress)
 
 def start():
         

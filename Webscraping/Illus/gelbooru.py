@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
+from ..utils import Progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -35,11 +35,11 @@ def initialize(url='?page=favorites&s=view&id=173770&pid=0', query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
-
-        progress(size, num, SITE)
+    for href, in hrefs:
+        
+        print(progress)
         page_source = requests.get(f'https://gelbooru.com/{href}').content
         html = bs4.BeautifulSoup(page_source, 'lxml')
 
@@ -69,7 +69,7 @@ def page_handler(hrefs):
             ), commit=1
             )
 
-    progress(size, size, SITE)
+    print(progress)
 
 def start(initial=True):
     

@@ -1,7 +1,7 @@
 import json
 from PIL import Image
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
-from .utils import get_hash, get_name, get_tags, generate_tags, save_image, progress, re
+from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image, re
 
 EXT = 'jp.*g|png|gif|webm|mp4'
 
@@ -46,10 +46,11 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
     
     extract_files(path)
     files = [file for file in path.iterdir() if file.is_file()]
-    size = len(files) - 2
+    progress = Progress(len(files) - 2, 'Files')
 
-    for num, file in enumerate(files):
-        progress(size, num, 'Files')
+    for href, in hrefs:
+        
+        print(progress)
         
         try:
             if (dest := get_name(file, 0, 1)).exists():
@@ -82,7 +83,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
             
         except Exception as error: print('\n', error)
     
-    progress(size, size, 'Files')
+    print(progress)
     DRIVER.close()
 
     print('\nDone')

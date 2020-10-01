@@ -2,7 +2,7 @@ import cv2, imutils, imageio, pathlib
 import numpy as np
 from PIL import Image
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, tempfile
+from ..utils import Progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, tempfile
 
 SITE = 'posespace'
 
@@ -22,11 +22,12 @@ def initialize(url='/posetool/favs.aspx'):
 def page_handler(hrefs):
     
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
     url = 'https://www.posespace.com/img/contact/'
 
-    for num, (href,) in enumerate(hrefs):
-        progress(size, num, SITE)
+    for href, in hrefs:
+        
+        print(progress)
 
         image_a = np.asarray(bytearray(
             requests.get(f'{url}{href}contacta.jpg').content)
@@ -56,7 +57,7 @@ def page_handler(hrefs):
             UPDATE[3], (str(name), f' {artist} ', tags, rating, None, hash_, href), commit=1
             )
         
-    progress(size, size, SITE)
+    print(progress)
 
 def make_gif(image, name):
 

@@ -1,6 +1,6 @@
 import shutil, re
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
-from .utils import progress, get_name, get_hash, get_tags, generate_tags
+from .utils import Progress, get_name, get_hash, get_tags, generate_tags
 
 CONNECTION = CONNECT()
 DRIVER = WEBDRIVER(True)
@@ -13,11 +13,11 @@ def start():
     DRIVER = WEBDRIVER()
     
     folders = path.iterdir()
-    size = len(folders)
+    progress = Progress(len(hrefs), '\nComic')
 
-    for num, folder in enumerate(folders):
-
-        progress(size, num, '\nComics')
+    for href, in hrefs:
+        
+        print(progress)
 
         targets = re.findall('\[.+\]|\(\w+\)', folder.stem.lower())
         artist = ' '.join('_'.join(i[1:-1].split()) for i in targets)

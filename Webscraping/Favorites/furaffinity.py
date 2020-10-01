@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, progress, bs4, re
+from ..utils import PATH, Progress, bs4, re
 
 SITE = 'furaffinity'
 
@@ -28,10 +28,11 @@ def initialize(url='/favorites/chairekakia', query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
-        progress(size, num, SITE)
+    for href, in hrefs:
+        
+        print(progress)
 
         DRIVER.get(f'https://www.furaffinity.net{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -50,7 +51,7 @@ def page_handler(hrefs):
 
         CONNECTION.execute(UPDATE[1], (name, image, href), commit=1)
     
-    progress(size, size, SITE)
+    print(progress)
 
 def start(initial=True):
     

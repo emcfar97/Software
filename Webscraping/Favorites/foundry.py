@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, progress, get_hash, bs4, re
+from ..utils import PATH, Progress, get_hash, bs4, re
 
 SITE = 'foundry'
 
@@ -29,10 +29,11 @@ def initialize(url='/user/Chairekakia/faves/pictures/enterAgree/1/size/1550/page
 def page_handler(hrefs):
 
     if not hrefs: return
-    size = len(hrefs)
+    progress = Progress(len(hrefs), SITE)
 
-    for num, (href,) in enumerate(hrefs):
-        progress(size, num, SITE)
+    for href, in hrefs:
+        
+        print(progress)
 
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
         DRIVER.find(
@@ -48,7 +49,7 @@ def page_handler(hrefs):
 
         CONNECTION.execute(UPDATE[1], (str(name), image, href), commit=1)
     
-    progress(size, size, SITE)
+    print(progress)
 
 def start(initial=True):
     
