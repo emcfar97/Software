@@ -1,19 +1,21 @@
+import time
 from pathlib import Path
 import mysql.connector as sql
 from selenium import webdriver
 from configparser import ConfigParser
 from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions as exceptions
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+from selenium.webdriver.common.action_chains import ActionChains
 
+CREDENTIALS = ConfigParser(delimiters='=') 
+CREDENTIALS.read('credentials.ini')
 ROOT = Path(Path().cwd().drive)
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
+    f'SELECT DISTINCT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
     f'''
         SELECT REPLACE(save_name, "{ROOT}", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
@@ -39,8 +41,6 @@ UPDATE = [
 DELETE = [
     'DELETE FROM imageData WHERE href=%s AND ISNULL(path)'
     ]
-CREDENTIALS = ConfigParser(delimiters='=') 
-CREDENTIALS.read('credentials.ini')
 
 class CONNECT:
 
@@ -85,51 +85,47 @@ class CONNECT:
 
 class WEBDRIVER:
     
-    def __init__(self, headless=True):
+    def __init__(self, headless=True, wait=15):
 
-        options = Options()
+        binary = webdriver.firefox.firefox_binary.FirefoxBinary(
+            r'C:\Program Files\Mozilla Firefox\firefox.exe'
+            )
+        options = webdriver.firefox.options.Options()
         options.headless = headless
-        binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
         self.driver = webdriver.Firefox(firefox_binary=binary, options=options)
-        self.driver.implicitly_wait(15)
+        self.driver.implicitly_wait(wait)
+        self.options = {
+            1: self.driver.find_element_by_xpath,
+            2: self.driver.find_element_by_id,
+            3: self.driver.find_element_by_name,
+            4: self.driver.find_element_by_link_text,
+            5: self.driver.find_element_by_partial_link_text,
+            6: self.driver.find_element_by_tag_name,
+            7: self.driver.find_element_by_class_name,
+            8: self.driver.find_element_by_css_selector,
+            }
 
     def get(self, url): self.driver.get(url)
     
-    def find(self, address, keys=None, click=False, type_=1):
+    def find(self, address, keys=None, click=None, move=None, type_=1, fetch=0):
         
         try:
-            
-            if   type_ == 1:
-                element = self.driver.find_element_by_xpath(address)
-            elif type_ == 2:
-                element = self.driver.find_element_by_id(address)
-            elif type_ == 3:
-                element = self.driver.find_element_by_name(address)
-            # elif type_ == 4:
-            #     element = self.driver.find_element_by_link_text(address)
-            # elif type_ == 5:
-            #     element =self.driver.find_element_by_partial_link_text(address)
-            elif type_ == 6:
-                element = self.driver.find_element_by_tag_name(address)
-            elif type_ == 7:
-                element = self.driver.find_element_by_class_name(address)
-            # elif type_ == 8:
-            #     element = self.driver.find_element_by_css_selector(address)
+            element = self.options[type_](address)
             
             if keys: element.send_keys(keys)
-
             if click: element.click()
+            if move:ActionChains(self.driver).move_to_element(element).perform()
 
             return element
-
-        except exceptions.StaleElementReferenceException as error:
-            if fetch: raise error
-            print('stale element')
 
         except exceptions.NoSuchElementException as error:
             if fetch: raise error
             print('no such element')
         
+        except exceptions.StaleElementReferenceException as error:
+            if fetch: raise error
+            print('stale element')
+
         except exceptions.ElementClickInterceptedException as error:
             if fetch: raise error
             print('click intercepted')
@@ -193,26 +189,28 @@ class WEBDRIVER:
         elif site == 'instagram':
         
             self.get('https://www.instagram.com/')
-            self.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', CREDENTIALS.get(site, 'email'))
-            self.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', CREDENTIALS.get(site, 'pass'))
-            self.find('/html/body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', Keys.RETURN)
+            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', CREDENTIALS.get(site, 'email'))
+            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', CREDENTIALS.get(site, 'pass'))
+            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', Keys.RETURN)
             time.sleep(2)
 
         elif site== 'gelbooru':
 
             self.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
-            self.find('/html/body/div[4]/div[4]/div/div/form/input[1]', CREDENTIALS.get(site, 'user'))
-            self.find('/html/body/div[4]/div[4]/div/div/form/input[2]', CREDENTIALS.get(site, 'pass'))
-            self.find('/html/body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
+            self.find('//body/div[4]/div[4]/div/div/form/input[1]', CREDENTIALS.get(site, 'user'))
+            self.find('//body/div[4]/div[4]/div/div/form/input[2]', CREDENTIALS.get(site, 'pass'))
+            self.find('//body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
             time.sleep(1)
 
         elif site == 'sankaku':
-
+        
             self.get(f'https://{type_}.sankakucomplex.com/user/login')
-            self.find('//*[@id="user_name"]', CREDENTIALS.get(site, 'user'))
-            self.find('//*[@id="user_password"]', CREDENTIALS.get(site, 'pass'))
-            self.find('//*[@id="user_password"]', Keys.RETURN)
-            time.sleep(2)
+            
+            while self.current_url().endswith('/user/login'):
+                self.find('//*[@id="user_name"]', CREDENTIALS.get(site, 'user').lower())
+                self.find('//*[@id="user_password"]', CREDENTIALS.get(site, 'pass'))
+                self.find('//*[@id="user_password"]', Keys.RETURN)
+                time.sleep(1)
         
         elif site == 'furaffinity':
 
