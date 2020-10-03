@@ -4,8 +4,9 @@
 *.hdf5
 *__pychache__
 .vscode
-Music/
-Pythonista/
+ffmpeg-20190824-1cfba7f-win64-static/*
+Music/*
+Pythonista/*
 geckodriver.log
 geckodriver.exe
 MachineLearning/Checkpoints
