@@ -1,8 +1,8 @@
 import qimage2ndarray
 from cv2 import VideoCapture
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit, QComboBox, QMessageBox, QDesktopWidget, QStatusBar
+from PyQt5.QtWidgets import QWidget, QLabel
 
 class Preview(QWidget):
     
@@ -51,24 +51,20 @@ class Preview(QWidget):
         self.timer.setText('{}:{:02}'.format(*divmod(time, 60)))
         self.timer.timer.start(1000)                
                 
-    def show_image(self, path):
+    def show_image(self, path, pixmap=QPixmap()):
         
-        try: 
-
-            if path.endswith(('.mp4', '.webm')):
-                
-                image = VideoCapture(path).read()[-1]
-                path = qimage2ndarray.array2qimage(image).rgbSwapped()
+        if path.endswith(('.mp4', '.webm')):
             
-            pixmap = QPixmap(path).scaled(
-                self.width(), self.height(), Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
-            # ratio = pixmap.width() / pixmap.height()
-            # scrollbar.(not (.5 <= ratio <= 2))
+            image = VideoCapture(path).read()[-1]
+            path = qimage2ndarray.array2qimage(image).rgbSwapped()
+        
+        pixmap = QPixmap(path).scaled(
+            self.width(), self.height(), Qt.KeepAspectRatio, 
+            transformMode=Qt.SmoothTransformation
+            )
+        # ratio = pixmap.width() / pixmap.height()
+        # scrollbar.(not (.5 <= ratio <= 2))
 
-        except: pixmap = QPixmap()
-                
         self.label.setPixmap(pixmap)
     
     def pause(self):

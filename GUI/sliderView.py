@@ -1,10 +1,10 @@
 import qimage2ndarray
 from cv2 import VideoCapture
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QUrl
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QSlider, QPushButton, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit 
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel 
 
 class Slideshow(QMainWindow):
     
@@ -137,9 +137,6 @@ class videoPlayer(QVideoWidget):
         self.player.setVolume(50) 
         self.player.setVideoOutput(self)
         self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
-        # self.player.stateChanged.connect(self.mediaStateChanged)
-        # self.player.positionChanged.connect(self.positionChanged)
-        # self.player.durationChanged.connect(self.durationChanged)
 
     def update(self, path):
         
@@ -177,101 +174,4 @@ class videoPlayer(QVideoWidget):
 
         elif status not in (2, 1):
 
-            self.parent().setCurrentIndex(1)      
-
-        # if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-        #     self.playButton.setIcon(
-        #             self.style().standardIcon(QStyle.SP_MediaPause))
-        # else:
-        #     self.playButton.setIcon(
-        #             self.style().standardIcon(QStyle.SP_MediaPlay))
-
-    def positionChanged(self, position):
-
-        self.parent().controls.timeline.setValue(position)
-
-    def durationChanged(self, duration):
-
-        self.parent().controls.total = duration
-
-class Controls(QWidget):
-    
-    def __init__(self, parent):
-         
-        super().__init__(parent)
-        self.configure_gui()
-        self.create_widgets()
-
-    def configure_gui(self):
-
-        self.layout = QVBoxLayout()
-        self.timeline = QSlider(Qt.Horizontal)
-        self.timeline.valueChanged.connect(self.playback)
-        self.options = QHBoxLayout()
-        
-        self.setLayout(self.layout)
-        self.layout.addWidget(self.timeline)
-        self.layout.addLayout(self.options)
-        
-    def create_widgets(self):
-        
-        self.play = self.create_button('SP_MediaPlay', self.playback, 1)
-        self.pause = self.create_button('SP_MediaPause', self.playback, 2)
-        self.stop = self.create_button('SP_MediaStop', self.playback, 3)
-
-        self.seek_b = self.create_button('SP_MediaSkipBackward', self.seek, 0)
-        self.skip_b = self.create_button('SP_MediaSeekBackward', self.skip, 0)
-        self.seek_f = self.create_button('SP_MediaSeekForward', self.seek, 1)
-        self.skip_f = self.create_button('SP_MediaSkipForward', self.skip, 1)
-
-        self.time = QLabel('00:00:000 / 00:00:000')
-        self.options.addWidget(self.time)
-        self.sound = self.create_button('SP_MediaVolume', self.mute)
-        self.volume = QSlider(Qt.Horizontal)
-        self.volume.valueChanged.connect(self.volumeChanged)
-        self.options.addWidget(self.volume)
-        
-    def create_button(self, icon, slot, lamb=None):
-
-        button = QPushButton(self)
-        if lamb: button.clicked.connect(lambda: slot(lam))
-        else: button.clicked.connect(slot)
-        button.setIcon(
-            self.style().standardIcon(getattr(QStyle, icon))
-            )
-        self.options.addWidget(button)
-
-        return button
-
-    def playback(self, sender):
-        
-        slider = self.timeline.value()
-        current = self.total * (slider / 100)
-        self.time.setText(
-            '{:02.0f}:{:02.0f}:{:03.0f} / {:02.0f}:{:02.0f}:{:03.0f}'
-            .format(*divmod(current, 60), 0, *divmod(self.total, 60), 0)
-            )
-
-    def playback(self, sender):
-
-        if sender == 1: self.video.play()
-        elif sender == 2: self.video.pause()
-        elif sender == 3: self.video.stop()
-    
-    def seek(self, sender):
-
-        print(sender)
-    
-    def skip(self, sender):
-
-        if sender: self.parent().move(1)
-        else: self.parent().move(-1)
-    
-    def mute(self, op=['SP_MediaVolumeMuted', 'SP_MediaVolume']):
-        
-        muted = op[self.video.player.isMuted()]
-        self.sound.setIcon(QIcon(muted))
-
-    def volumeChanged(self, sender):
-
-        self.parent().video.volume(self.volume.value())
+            self.parent().setCurrentIndex(1)
