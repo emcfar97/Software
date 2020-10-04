@@ -1,9 +1,10 @@
 import sqlite3, json
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, get_tags, generate_tags, bs4, requests, re
+from ..utils import PATH, Progress, get_tags, generate_tags, bs4, requests, re
 import os, time
 
 EXT = '.gif', '.webm', '.mp4'
+IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 
 def main(paths, upload=False, sankaku=0, gelbooru=0):
     
@@ -24,26 +25,24 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         else: DRIVER.find('//*[@id="file"]', path)
         DRIVER.find('//body/form/table[2]/tbody/tr[4]/td[1]/input', click=True)
         if path.endswith(('gif', 'mp4', 'webm')): time.sleep(45)
-        else: time.sleep(10)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        check = html.find(
-            text=re.compile('(too large)|(read query)|(file was uploaded)|(request failed:)')
-            )
-        if check:
+        if html.find(text=re.compile(IGNORE)):
             CONNECTION.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
-        targets = [
+        try:
+            targets = [
             target.find(href=re.compile('/gelbooru|/chan.san')) 
             for target in html.find(id='pages', class_='pages').contents 
             if type(target) != bs4.element.NavigableString and 
             target.findAll(href=re.compile('/gelbooru|/chan.san')) and 
             target.findAll(text=re.compile('(Best)|(Additional) match'))
             ]
+        except: continue
         
         if targets and not upload: saved = favorite(targets)
         elif upload and (sankaku < limit or gelbooru < 50):
-            saved, type_ = upload(path, href, src, site, artist)  
+            saved, type_ = upload(path, href, src, site, artists)  
             if type_: sankaku += 1
             else: gelbooru += 1
         else: saved = False
@@ -51,22 +50,6 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         if saved and src is None: os.remove(path)
         CONNECTION.execute(UPDATE[4], (1, saved, path), commit=1)
 
-        # except ElementNotInteractableException:
-            
-        #     if 'sankaku' in match.get('href'):
-        #         os.remove(path)
-        #         CONNECTION.execute(UPDATE[4], (1, 0, path))
-
-        # except FileNotFoundError:
-            
-        #     CONNECTION.execute(UPDATE[4], (1, 1, path,), commit=1)
-
-        # except InvalidArgumentException:
-            
-        #     CONNECTION.execute(UPDATE[4], (1, 0, path,), commit=1)
-        
-        # except NoSuchElementException: continue 
-        
         print(progress)
      
 def upload(path, href, src, site, artists):
@@ -149,17 +132,30 @@ def favorite(targets, saved=False):
 
     return saved
 
-def start():
-
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0, wait=30)
+def initialize():
     
     data = sqlite3.connect(r'Webscraping\PixivUtil\Data.sqlite')
     CONNECTION.execute(
         INSERT[2], data.execute(SELECT[5]).fetchall(), many=1, commit=1
         )
     data.close()
+    
+    paths = list()
+    for site in ['foundry', 'furaffinity', 'misc', 'twitter']:
+
+        paths += [
+            (str(path), None, site) for path in 
+            (PATH / 'Images' / site).iterdir()
+            ]
+
+    CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
+
+def start():
+
+    global CONNECTION, DRIVER
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER(wait=30)
+    initialize()
 
     DRIVER.login('gelbooru')
     DRIVER.login('sankaku', 'chan')
