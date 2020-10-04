@@ -3,8 +3,8 @@ from cv2 import VideoCapture
 from . import CONNECTION, BASE
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, QModelIndex, Qt, QSize
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QRadioButton, QMessageBox, QStyle
+from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QMessageBox, QStyle
 
 TYPE = {
     'All': '',
@@ -61,99 +61,52 @@ class Gallery(QWidget):
         #     self.images.table.layoutChanged.emit
         #     )
 
-    def populate(self, sender=None, limit=10000, i=0, op='[<>=!]=?'):
+    def populate(self, sender=None, limit=10000, op='[<>=!]=?'):
         
         self.images.clearSelection()
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
         string = string.lower()
-        query = ['path LIKE "C:%"']
+        order = self.get_order()
+        query = {
+            '': 'path LIKE "C:%"',
+            'type': TYPE[self.type.checkedAction().text()],
+            'rating': f'rating="{self.rating.checkedAction().text()}"',
+            }
         
-        try: # Duplicates
-            duplicate, = re.findall('duplicates:true', string)
+        if re.search('duplicates:true', string):
+
             filter = f'hash HAVING COUNT(hash) > 1 ORDER BY hash'
-            self.thread.statement = f'{BASE} WHERE {query[0]} GROUP BY {filter} LIMIT {limit}'
+            self.thread.statement = f"{BASE} WHERE {query['']} GROUP BY {filter} LIMIT {limit}"
             self.thread.start()
             return
         
-        except: pass
-
-        if self.title == 'Gesture Draw':
+        elif self.title == 'Gesture Draw':
             
-            query.append('date_used <= Now() - INTERVAL 2 MONTH')
+            query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
 
-        # tokens = re.findall(f'\w+{op}\w+', string)
+        for token in re.findall(f'\w+{op}\w+', string):
+            
+            string = string.replace(token, '')
+            col, val = re.split(op, token)
+            
+            if re.search('\D', val):
 
-        # for token in tokens:
+                token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
             
-        #     string = string.replace(token, '')
-        #     col, val = re.split(op, token)
-            
-        #     if re.search('\D', val):
-        #         token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
+            elif col in ('path', 'artist'):
                 
-        #     query.append(token)
-
-        try: # Get type
-            type_, = re.findall(
-                'type=(?:photograph|illustration|comic?)', string
-                )
-            string = string.replace(type_, '')
-            type_ = re.sub('(type=)(.+)', r'\1"\2"', type_)
-        except: type_ = TYPE[self.type.checkedAction().text()]
-        finally: query.append(type_)
-
-        try: # Get stars
-            stars, = re.findall('stars[<>=!]=*[0-5]', string)
-            string = string.replace(stars, '')
-            stars = stars.replace('==', '=')
-        except ValueError: stars = ''
-        finally: query.append(stars)
-
-        try: # Get rating
-            rating, = re.findall(
-                'rating[<>=!]=?(?:safe|questionable|explicit?)', string
-                )
-            string = string.replace(rating, '')
-            rating = re.sub('(rating[<>=!]=?)(.+)', r'\1"\2"', rating)
-        except: rating = f'rating="{self.rating.checkedAction().text()}"'
-        finally: query.append(rating)
-        
-        try: # Get artist
-            artist, = re.findall('artist=\w+', string)
-            string = string.replace(artist, '')
-            artist = re.sub('(artist)=(.+)', r'\1 LIKE "%\2%"', artist)
-        except: artist = ''
-        finally: query.append(artist)
-        
-        try: # Get path
-            path, =  re.findall('path=.+', string)
-            string = string.replace(path, '')
-
-            if re.search('jpg|gif|webm|mp4/Z', path): 
-                path = re.sub('(path)=(.+)', r'\1 LIKE "%\2"')
-            elif re.search('path=.:', path):
-                path = re.sub('(path)=.:(.+)', r'\1 LIKE "C:\2%"')
-            else: 
-                path = re.sub('(path)=(.+)', r'\1 LIKE "%\2%"')
-        except: path = ''
-        finally: query.append(path)
+                if re.search('jpg|gif|webm|mp4$',val):token=f'{col} LIKE %{val}'
+                elif re.search('^.:', val): token = f'{col} LIKE C:{val[2:]}%'
+                else: token = f'{col} LIKE %{val}%'
+            
+            elif col == 'comic': 
                 
-        try: # Get site
-            site, =  re.findall('site=\w+', string)
-            string = string.replace(site, '')
-            site = re.sub('(site=)(.+)', r'\1"\2"', site)
-        except: site = ''
-        finally: query.append(site)
+                token = f'src={val}'
+                order = self.get_order(1)
 
-        try: # Get comic
-            comic, =  re.findall('comic=\w+', string)
-            string = string.replace(comic, '')
-            comic = re.sub('comic(=.+)', r'src"\1"', comic)
-            del query[1:]
-        except: comic = ''
-        finally: query.append(comic)
-        
+            query[col] = token
+
         if string.strip(): # Get tags
     
             string = re.sub('not ', '-', string.strip())
@@ -163,25 +116,23 @@ class Gallery(QWidget):
             string = re.sub('-\+', '-', string)
             if not re.search('\+\w+', string): string += ' qwd'
 
-            query.append(
+            query['tags'] = (
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
-        
-        filter = " AND ".join(i for i in query if i) + self.get_order(i)
-        
-        self.thread.statement = f'{BASE} WHERE {filter} LIMIT {limit}'
+
+        filter = " AND ".join(val for val in query.values() if val)
+        self.thread.statement = f'{BASE} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
 
-    def get_order(self, type_, ORDER={'Ascending': 'ASC', 'Descending':'DESC'}):
+    def get_order(self,type_=0,ORDER={'Ascending': 'ASC', 'Descending':'DESC'}):
         
-        order = self.order
+        order = self.order[1].checkedAction().text()
+        column = self.order[0].checkedAction().text()
         if type_: column = 'page'
-        else: column = order[0].checkedAction().text()
-        order = order[1].checkedAction().text()
         
         if column:
             column = 'RAND()' if column == 'Random' else column
-            return f' ORDER BY {column} {ORDER[order]}'
+            return f'ORDER BY {column} {ORDER[order]}'
 
         return ''
             
@@ -604,60 +555,57 @@ class Model(QAbstractTableModel):
         ind = (index.row() * 5) + index.column()
 
         if not index.isValid() or ind >= len(self.images): return QVariant()
-        try: 
         
-            if role == Qt.SizeHintRole: return QSize(self.size, self.size)
-            
-            elif role == Qt.DecorationRole:
+        if role == Qt.SizeHintRole: return QSize(self.size, self.size)
         
-                path = self.images[ind][0]
-                if path.endswith(('.mp4', '.webm')):
-                    
-                    image = VideoCapture(path).read()[-1]
-                    image = qimage2ndarray.array2qimage(image).rgbSwapped()
-                    
-                else: image = QImage(path)
-
-                image = image.scaled(
-                    self.size, self.size, Qt.KeepAspectRatio, 
-                    transformMode=Qt.SmoothTransformation
-                    )
+        elif role == Qt.DecorationRole:
+    
+            path = self.images[ind][0]
+            if path.endswith(('.mp4', '.webm')):
                 
-                return QPixmap.fromImage(image)
-
-            elif role == Qt.ToolTipRole:
+                image = VideoCapture(path).read()[-1]
+                image = qimage2ndarray.array2qimage(image).rgbSwapped()
                 
-                tag, art, sta, rat, typ, = self.images[ind][1:6]
+            else: image = QImage(path)
 
-                tags = self.wrapper.wrap(
-                    ' '.join(sorted(tag.replace('qwd ', '').split()))
-                    )
-                rest = self.wrapper.wrap(
-                    f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()}'
-                    )
-                return '\n'.join(tags + rest)
-
-            elif role == Qt.UserRole: return QVariant(self.images[ind][0])
+            image = image.scaled(
+                self.size, self.size, Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
             
-            elif role == 100: return (index.row() * 5), index.column()
-            
-            elif role == 200: return self.images[ind][6]
-                
-            elif role == 1000:
-                
-                data = self.images[ind]
-                path = {data[0]} if data[0] else set()
-                tags = set(data[1].split()) if data[1] else set()
-                artist = set(data[2].split()) if data[2] else set()
-                stars = {data[3]}
-                rating = {data[4]}
-                type = {data[5]}
-                tags.discard('qwd')
-                
-                return path, tags, artist, stars, rating, type
-            
-        except (IndexError, ValueError): pass
+            return QPixmap.fromImage(image)
 
+        elif role == Qt.ToolTipRole:
+            
+            tag, art, sta, rat, typ, = self.images[ind][1:6]
+
+            tags = self.wrapper.wrap(
+                ' '.join(sorted(tag.replace('qwd ', '').split()))
+                )
+            rest = self.wrapper.wrap(
+                f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()}'
+                )
+            return '\n'.join(tags + rest)
+
+        elif role == Qt.UserRole: return QVariant(self.images[ind][0])
+        
+        elif role == 100: return (index.row() * 5), index.column()
+        
+        elif role == 200: return self.images[ind][6]
+            
+        elif role == 1000:
+            
+            data = self.images[ind]
+            path = {data[0]} if data[0] else set()
+            tags = set(data[1].split()) if data[1] else set()
+            artist = set(data[2].split()) if data[2] else set()
+            stars = {data[3]}
+            rating = {data[4]}
+            type = {data[5]}
+            tags.discard('qwd')
+            
+            return path, tags, artist, stars, rating, type
+        
         return QVariant()
 
 class Worker(QThread):
