@@ -1,6 +1,5 @@
-import re, textwrap, qimage2ndarray
-from cv2 import VideoCapture
-from . import CONNECTION, BASE
+import re, textwrap
+from . import CONNECTION, BASE, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
@@ -11,6 +10,11 @@ TYPE = {
     'Photo': 'type=1', 
     'Illus': 'type=2', 
     'Comic': 'type=3',
+    }
+RATING = {
+    'Explicit': '',
+    'Questionable': 'rating<3',
+    'Safe': 'rating=1' 
     }
 
 class Gallery(QWidget):
@@ -57,22 +61,18 @@ class Gallery(QWidget):
         self.thread.finished.connect(
             self.images.table.layoutChanged.emit
             )
-        # self.thread.terminated.connect(
-        #     self.images.table.layoutChanged.emit
-        #     )
 
     def populate(self, sender=None, limit=10000, op='[<>=!]=?'):
         
         self.images.clearSelection()
         string = self.ribbon.tags.text()
-        if string: self.ribbon.update(string)
-        string = string.lower()
-        order = self.get_order()
+        if string: string = self.ribbon.update(string)
         query = {
             '': 'path LIKE "C:%"',
             'type': TYPE[self.type.checkedAction().text()],
-            'rating': f'rating="{self.rating.checkedAction().text()}"',
+            'rating': RATING[self.rating.checkedAction().text()],
             }
+        order = self.get_order()
         
         if re.search('duplicates:true', string):
 
@@ -85,20 +85,18 @@ class Gallery(QWidget):
             
             query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
 
-        for token in re.findall(f'\w+{op}\w+', string):
+        for token in re.findall(f'\w+{op}[\w\*]+', string):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
             
-            if re.search('\D', val):
+            if re.search('\*', val): 
+                
+                token = f'{col} LIKE "{val.replace("*", "%")}"'
+
+            elif re.search('\D', val):
 
                 token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
-            
-            elif col in ('path', 'artist'):
-                
-                if re.search('jpg|gif|webm|mp4$',val):token=f'{col} LIKE %{val}'
-                elif re.search('^.:', val): token = f'{col} LIKE C:{val[2:]}%'
-                else: token = f'{col} LIKE %{val}%'
             
             elif col == 'comic': 
                 
@@ -106,7 +104,7 @@ class Gallery(QWidget):
                 order = self.get_order(1)
 
             query[col] = token
-
+        
         if string.strip(): # Get tags
     
             string = re.sub('not ', '-', string.strip())
@@ -121,6 +119,7 @@ class Gallery(QWidget):
                 )
 
         filter = " AND ".join(val for val in query.values() if val)
+        
         self.thread.statement = f'{BASE} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
 
@@ -252,16 +251,17 @@ class Ribbon(QWidget):
         self.menu.setEnabled(bool(self.undo + self.redo))
 
         menu = QMenu(self, triggered=self.menuEvent)
-        for state in reversed(self.undo + self.redo[::-1]):
+        for state in reversed(self.undo[1:] + self.redo[::-1]):
             
             action = QAction(state, menu, checkable=True)
-            if state == self.tags.text(): action.setChecked(True)
+            if state == string: action.setChecked(True)
             menu.addAction(action)
 
         else: self.menu.setMenu(menu)
         
-        string = self.undo[-1]
-        self.tags.setText(string)
+        self.tags.setText(self.undo[-1])
+        
+        return string.lower()
 
     def menuEvent(self, sender):
 
@@ -415,7 +415,7 @@ class ImageView(QTableView):
 
     def total(self): return len(self.table.images)
 
-    def update(self, images): 
+    def update(self, images):
         
         self.table.images = list() if images is None else images
     
@@ -561,19 +561,19 @@ class Model(QAbstractTableModel):
         elif role == Qt.DecorationRole:
     
             path = self.images[ind][0]
-            if path.endswith(('.mp4', '.webm')):
                 
-                image = VideoCapture(path).read()[-1]
-                image = qimage2ndarray.array2qimage(image).rgbSwapped()
-                
-            else: image = QImage(path)
+            image = (
+                get_frame(path) 
+                if path.endswith(('.mp4', '.webm')) else 
+                QImage(path)
+                )
 
             image = image.scaled(
                 self.size, self.size, Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
             
-            return QPixmap.fromImage(image)
+            return QPixmap(image)
 
         elif role == Qt.ToolTipRole:
             
