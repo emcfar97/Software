@@ -1,10 +1,10 @@
 from os import remove
 from subprocess import Popen
-from GUI import CONNECTION, MODIFY, DELETE, NEZUMI
+from GUI import ROOT, CONNECTION, MODIFY, DELETE, NEZUMI
 from GUI import galleryView, previewView, sliderView
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QFormLayout, QLabel, QLineEdit, QComboBox, QMessageBox, QDesktopWidget, QStatusBar
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QLabel, QMessageBox, QStatusBar
+from PyQt5.QtCore import Qt
 
 class App(QMainWindow):
     
@@ -12,7 +12,6 @@ class App(QMainWindow):
         
         super().__init__()
         self.setWindowTitle('Custom GUI')
-        self.desktop = QDesktopWidget()
         self.configure_gui()
         self.create_widgets()
         self.windows = []
@@ -58,7 +57,7 @@ class App(QMainWindow):
     def select(self, title):
         
         self.hide()
-        self.options[title](self, self.desktop)
+        self.options[title](self)
         self.windows.append(title)
 
     def keyPressEvent(self, sender):
@@ -108,12 +107,16 @@ class Option(QWidget):
             self.parent().parent().select(self.target)
 
 class ManageData(QMainWindow):
-    
-    def __init__(self, parent, desktop):
+            
+    TYPE = {
+        'エラティカ ニ': 'エラティカ 三',
+        'エラティカ 三': 'エラティカ ニ'
+        }
+
+    def __init__(self, parent):
         
         super().__init__(parent)
         self.setWindowTitle('Manage Data')
-        self.desktop = desktop
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
@@ -131,7 +134,6 @@ class ManageData(QMainWindow):
             0, 0, 
             resolution.width(),  resolution.height()
             )  
-        self.desktop.resized.connect(self.resized)
 
     def create_widgets(self):
         
@@ -173,7 +175,15 @@ class ManageData(QMainWindow):
 
         if stars: parameters.append(f'stars={stars}')
         if rating: parameters.append(f'rating={rating}')
-        if type: parameters.append(f'type={type}')
+        if type: 
+            parameters.append(f'type={type}')
+            # for path, in gallery:
+            #     path = ROOT / path
+            #     old = path.parts[4]
+            #     new = ManageData.TYPE[old]
+            #     parent = path.parent.parent
+            #     path.rename(parent / old / path.name)
+            # parameters.append(f'path=REPACE(path, {old}, {new})')
 
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
@@ -193,20 +203,14 @@ class ManageData(QMainWindow):
                 (index.data(Qt.UserRole),) for index in 
                 self.gallery.images.selectedIndexes()
                 ]
-            for image, in gallery: 
-                try: remove(image)
+            for path, in gallery: 
+                try: remove(path)
                 except PermissionError: return
                 except FileNotFoundError: pass
                 except TypeError: pass
             CONNECTION.execute(DELETE, gallery, many=1, commit=1)
             self.gallery.populate()
     
-    def resized(self, sender):
-
-        resolution = Qapp.desktop().screenGeometry()
-        print('\nDesktop resized')
-        print(resolution.size())
-
     def keyPressEvent(self, sender):
 
         key_press = sender.key()
@@ -228,11 +232,10 @@ class ManageData(QMainWindow):
  
 class GestureDraw(QMainWindow):
     
-    def __init__(self, parent, desktop):
+    def __init__(self, parent):
         
         super().__init__(parent)
         self.setWindowTitle('Gesture Draw')
-        self.desktop = desktop
         self.configure_gui()
         self.create_widgets()
         self.show()
@@ -258,6 +261,9 @@ class GestureDraw(QMainWindow):
         self.stack.addWidget(self.gallery)
         self.stack.addWidget(self.preview)
         self.setStatusBar(self.statusbar)
+
+        self.gallery.setParent(self)
+        self.preview.setParent(self)
         self.statusbar.setFixedHeight(25)
         
     def start_session(self):
@@ -272,7 +278,7 @@ class GestureDraw(QMainWindow):
 
             if ':' in time:
                 min, sec = time.split(':')
-                time = int(min) * 60 + int(sec)
+                time = (int(min) * 60) + int(sec)
             else: time = int(time)
             
             self.preview.start(gallery, time)
@@ -349,6 +355,5 @@ app = App()
 
 Qapp.exec_()
 
-# animated -dancing -sex -sports -casual_nudity -masturbation -lactation -exercise -pregnant rating=safe type=photo
+# animated -dancing -sex -sports -casual_nudity -masturbation -lactation -exercise -pregnant rating=safe type=photograph
 # -from_behind -from_below -from_above -from_side
-# path=6cc7368796da38a173b09a67c45dfd0
