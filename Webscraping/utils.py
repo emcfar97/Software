@@ -5,20 +5,21 @@ from PIL import Image
 from io import BytesIO
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
-PATH = ROOT / r'\Users\Emc11\Dropbox\Videos\ん'
+PATH = ROOT / r'\Users\Emc11\Dropbox\ん'
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 HEADERS = {
     'User-Agent': 'Mozilla/5.0'
     }
 HASHER = hashlib.md5()
-EXT = 'jp.*g|png|gif|webp|webm|mp4'
+EXT = 'jp.*g|png|gif|webp|webm|mp4|JP.*G|PNG|GIF|WEBP|WEBM|MP4'
 
 METADATA = {
     'audio':'audio|has_audio',
     '3d_cg': '3d'
     }
 GENERAL = {
+    '3d_cg': '3d',
     'age_difference': 'age_difference|teenage_girl_and_younger_boy',
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
     'condom': 'condom', 
@@ -72,6 +73,7 @@ class Progress:
         self.site = site
         self.length = length
         self.left = (i for i in range(self.size))
+        print()
         
     def __str__(self):
         
@@ -93,9 +95,12 @@ def save_image(name, image, exif=b''):
 
             try: Image.open(name).save(name, exif=exif)
             except:
-                img = Image.open(BytesIO(requests.get(image, headers=HEADERS).content))
+                img = Image.open(
+                    BytesIO(requests.get(image, headers=HEADERS).content)
+                    )
                 img.thumbnail(RESIZE)
-                img.save(name.with_suffix('.jpg'), exif=exif)
+                name = name.with_suffix('.jpg')
+                img.save(name, exif=exif)
             
         elif re.search('png', image, re.IGNORECASE):
 
@@ -219,10 +224,10 @@ def get_tags(driver, path):
 
 def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
     
+    general = re.sub(
+        '(photorealistic)|(realistic)|((rating|score):\w+)', '', general
+        )
     tags = ['qwd']
-    # re.sub(
-    #     '(3d)|(photorealistic)|(realistic)|(rating:\w+)|(score:\w+)', '', ' '.join(tags)
-    #     ).split()
 
     if general:
         

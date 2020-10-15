@@ -1,6 +1,6 @@
-import json
+import json, time
 from .. import ROOT, CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
 REMOVE = 'ass|big|cock|gifs|gif|girls|naked|nude|pics|pornstar|porn|sexy|&|\d'

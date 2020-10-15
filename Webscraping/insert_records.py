@@ -8,39 +8,36 @@ EXT = 'jp.*g|png|gif|webm|mp4'
 def extract_files(path):
     
     source = path / 'Generic'
+
     for file in source.iterdir():
 
-        go = True
+        delete = True
         
-        # try:
         urls = [
             value for window in 
             json.load(open(file, encoding='utf-8'))[0]['windows'].values() 
             for value in window.values()
             ]
-        # except: continue
 
         for url in urls:
                 
-            try:
-                title = url['title'].split('/')[-1].split()[0]
-                if not re.search(EXT, title): title = url['url'].split('/')[-1]
-                name = path / title
-                if name.suffix == '.png': name = name.with_suffix('.jpg')
-                if name.exists(): continue
-                image = (
-                    f'https://{url["title"]}'
-                    if url['url'] == 'about:blank' else 
-                    url['url']
-                    )
-                if not save_image(name, image): go = False; break
+            title = url['title'].split('/')[-1].split()[0]
+            if not re.search(EXT, title): title = url['url'].split('/')[-1]
+            name = path / title
+            if name.suffix == '.png': name = name.with_suffix('.jpg')
+            if name.exists(): continue
+            image = (
+                f'https://{url["title"]}'
+                if url['url'] == 'about:blank' else 
+                url['url']
+                )
+            if not save_image(name, image): 
+                delete = False
         
-            except: go = False; break
-        if go: file.unlink()
+        if delete: file.unlink()
 
 def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
 
-    global CONNECTION, DRIVER
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
     
@@ -48,7 +45,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
     files = [file for file in path.iterdir() if file.is_file()]
     progress = Progress(len(files) - 2, 'Files')
 
-    for href, in hrefs:
+    for file in files:
         
         print(progress)
         

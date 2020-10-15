@@ -59,8 +59,9 @@ def page_handler(hrefs):
             tags, metadata, True, artists, True
             )
         
+        type_ = 0 if 'photo_(medium)' in tags else 1
         image = html.find(href=True, text='Original image').get('href')
-        name = get_name(image.split('/')[-1], 1, 0)
+        name = get_name(image.split('/')[-1], type_, 0)
         if not save_image(name, image, exif): continue
         hash_ = get_hash(name)
         

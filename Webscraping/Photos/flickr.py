@@ -18,7 +18,7 @@ def initialize(url='/photos/140284163@N04/favorites/page1', query=0):
 
     DRIVER.get(f'https://www.flickr.com{url}')
     for _ in range(2):
-        DRIVER.find('html', 6, Keys.END)
+        DRIVER.find('html', Keys.END, type_=6)
         time.sleep(2)
 
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -49,11 +49,11 @@ def page_handler(hrefs):
         
         for _ in range(20):
             try:
-                element = DRIVER.find(view, 7, move=True, fetch=1)
-                DRIVER.find(target, 7, click=True, fetch=1)
+                DRIVER.find(view, move=True, type_=7, fetch=1)
+                DRIVER.find(target, click=True, type_=7, fetch=1)
 
             except exceptions.ElementClickInterceptedException:
-                image = DRIVER.find('zoom-large', 7).get_attribute('src')
+                image = DRIVER.find('zoom-large', type_=7).get_attribute('src')
                 break
 
             except exceptions.NoSuchElementException:
@@ -63,7 +63,7 @@ def page_handler(hrefs):
                         ).get_attribute('src')
                     
                 except: # Image unavailable
-                    status = DRIVER.find('statusCode', 7, fetch=1).text
+                    status = DRIVER.find('statusCode', type_=7, fetch=1).text
                     if status in ('403', '404'):
                         CONNECTION.execute(DELETE, (href,), commit=1)
                 break

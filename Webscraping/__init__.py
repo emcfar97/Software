@@ -15,7 +15,7 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    f'SELECT DISTINCT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
+    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
     f'''
         SELECT REPLACE(save_name, "{ROOT}", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
@@ -72,7 +72,8 @@ class CONNECT:
                 return 1
 
             except sql.errors.OperationalError as error: 
-                if error.msg.startswith('2055'): self.__init__()
+                print(error.errno)
+                if error.errno == 2055: self.__init__()
                 else: continue
             
             except sql.errors.ProgrammingError as error: raise error
@@ -105,7 +106,11 @@ class WEBDRIVER:
             8: self.driver.find_element_by_css_selector,
             }
 
-    def get(self, url): self.driver.get(url)
+    def get(self, url, retry=3): 
+        
+        for _ in range(retry):
+            try: self.driver.get(url)
+            except exceptions.TimeoutException: continue
     
     def find(self, address, keys=None, click=None, move=None, type_=1, fetch=0):
         
@@ -114,7 +119,8 @@ class WEBDRIVER:
             
             if keys: element.send_keys(keys)
             if click: element.click()
-            if move:ActionChains(self.driver).move_to_element(element).perform()
+            if move:
+                ActionChains(self.driver).move_to_element(element).perform()
 
             return element
 

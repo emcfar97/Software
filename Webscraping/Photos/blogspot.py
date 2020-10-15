@@ -1,5 +1,6 @@
+import time
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests, time
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 SITE = 'blogspot'
 url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
@@ -41,11 +42,11 @@ def page_handler(hrefs):
             get_tags(DRIVER, name) + ' casual_nudity',
             custom=True, rating=True, exif=True
             )
-        save_image(name, href, exif, exists=True)
+        save_image(name, href, exif)
         hash_ = get_hash(name)
         
-        CONNECTION.execute(UPDATE[3], (
-            name, ' ', tags, rating, href, hash_, href),
+        CONNECTION.execute(UPDATE[3],
+            (str(name), ' ', tags, rating, href, hash_, href),
             commit=1
             )
 
@@ -59,8 +60,6 @@ def start():
     html = bs4.BeautifulSoup(page_source, 'lxml')
 
     for page in html.findAll('li'): initialize(page.contents[0].get('href'))
-    
-    try: page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
-    except Exception as error: print(f'\n{SITE}: {error}')
+    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
         
     DRIVER.close()

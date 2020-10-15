@@ -1,4 +1,4 @@
-from . import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
+from . import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
 from .utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
 import time
 from PIL import ImageFile
@@ -61,7 +61,11 @@ def page_handler(hrefs, mode):
                 f'https://{mode[0]}.sankakucomplex.com{href}'
                 ).content   
             html = bs4.BeautifulSoup(page_source, 'lxml')
-        image = f'https:{html.find(id="highres", href=True).get("href")}'
+        try: image = f'https:{html.find(id="highres", href=True).get("href")}'
+        except AttributeError:
+            if html.find(text='404: Page Not Found'): 
+                CONNECTION.execute(DELETE[0], (href,), commit=1)
+            continue
         name = get_name(image.split('/')[-1].split('?e=')[0], mode[1]-1, 0)
             
         metadata = ' '.join(

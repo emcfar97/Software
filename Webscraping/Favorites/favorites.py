@@ -50,7 +50,7 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         if saved and src is None: os.remove(path)
         CONNECTION.execute(UPDATE[4], (1, saved, path), commit=1)
 
-        print(progress)
+    print(progress)
      
 def upload(path, href, src, site, artists):
 
@@ -154,7 +154,7 @@ def start():
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(wait=30)
+    DRIVER = WEBDRIVER(0,wait=30)
     initialize()
 
     DRIVER.login('gelbooru')
