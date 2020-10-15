@@ -1,6 +1,5 @@
-import qimage2ndarray
-from cv2 import VideoCapture
-from PyQt5.QtGui import QPixmap
+from . import get_frame
+from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -59,23 +58,20 @@ class Slideshow(QMainWindow):
             self.show_image(self.gallery[self.index][0])
     
     def show_image(self, path):
-        
-        if path.lower().endswith(('.jpg', '.png')):
-            
-            pixmap = QPixmap(path).scaled(
-                self.width(), self.height(), Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
-            path = None
-        
-        elif path.lower().endswith(('.gif', '.webm', '.mp4')):
-            
-            image = VideoCapture(path).read()[-1]
-            image = qimage2ndarray.array2qimage(image).rgbSwapped()
-            pixmap = QPixmap(image).scaled(
-                self.width(), self.height(), Qt.KeepAspectRatio
-                )
-                
+    
+        image = (
+            get_frame(path) 
+            if path.endswith(('.gif', '.mp4', '.webm')) else 
+            QImage(path)
+            )
+        if path.endswith(('.jpg', '.png')): path = None
+
+        image = image.scaled(
+            self.width(), self.height(), Qt.KeepAspectRatio, 
+            transformMode=Qt.SmoothTransformation
+            )
+        pixmap = QPixmap(image)
+
         self.label.setPixmap(pixmap)
         self.stack.setCurrentIndex(0)
         self.video.update(path)

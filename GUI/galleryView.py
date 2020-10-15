@@ -64,6 +64,7 @@ class Gallery(QWidget):
 
     def populate(self, sender=None, limit=10000, op='[<>=!]=?'):
         
+        self.images.update([])
         self.images.clearSelection()
         string = self.ribbon.tags.text()
         if string: string = self.ribbon.update(string)
@@ -74,14 +75,7 @@ class Gallery(QWidget):
             }
         order = self.get_order()
         
-        if re.search('duplicates:true', string):
-
-            filter = f'hash HAVING COUNT(hash) > 1 ORDER BY hash'
-            self.thread.statement = f"{BASE} WHERE {query['']} GROUP BY {filter} LIMIT {limit}"
-            self.thread.start()
-            return
-        
-        elif self.title == 'Gesture Draw':
+        if self.title == 'Gesture Draw':
             
             query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
 
@@ -120,6 +114,11 @@ class Gallery(QWidget):
 
         filter = " AND ".join(val for val in query.values() if val)
         
+        if 'duplicates' in query:
+
+            filter += f'GROUP BY hash HAVING COUNT(hash) > 1'
+            order = 'ORDER BY hash'
+
         self.thread.statement = f'{BASE} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
 
@@ -142,8 +141,7 @@ class Gallery(QWidget):
             select = f'{select} image selected' if (select == 1) else f'{select} images selected'
         else: select = ''
         
-        try: self.parent().statusbar.showMessage(f'   {total}     {select}')
-        except: self.parent().parent().statusbar.showMessage(f'   {total}     {select}')
+        self.parent().statusbar.showMessage(f'   {total}     {select}')
     
     def keyPressEvent(self, sender):
     
@@ -206,7 +204,7 @@ class Ribbon(QWidget):
         self.layout.addLayout(self.select, 0)
         
         self.tags = QLineEdit(self)
-        self.tags.setFixedWidth(300)
+        self.tags.setFixedWidth(250)
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().populate)

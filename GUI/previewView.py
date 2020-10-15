@@ -1,5 +1,4 @@
-import qimage2ndarray
-from cv2 import VideoCapture
+from . import UPDATE, CONNECTION, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QWidget, QLabel
@@ -51,12 +50,9 @@ class Preview(QWidget):
         self.timer.setText('{}:{:02}'.format(*divmod(time, 60)))
         self.timer.timer.start(1000)                
                 
-    def show_image(self, path, pixmap=QPixmap()):
+    def show_image(self, path):
         
-        if path.endswith(('.mp4', '.webm')):
-            
-            image = VideoCapture(path).read()[-1]
-            path = qimage2ndarray.array2qimage(image).rgbSwapped()
+        if path and path.endswith(('.mp4', '.webm')): path = get_frame(path)
         
         pixmap = QPixmap(path).scaled(
             self.width(), self.height(), Qt.KeepAspectRatio, 

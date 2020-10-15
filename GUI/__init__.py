@@ -1,6 +1,9 @@
+import qimage2ndarray
 from pathlib import Path
 from datetime import date
+from cv2 import VideoCapture
 import mysql.connector as sql
+from PyQt5.QtGui import QPixmap
 from configparser import ConfigParser
 
 class CONNECT:
@@ -36,11 +39,19 @@ class CONNECT:
             
             except sql.errors.DatabaseError: self.__init__()
 
-            except Exception as error: print(error)
+            except Exception as error: 
+                print(error)
+                return list()
 
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
+
+def get_frame(path):
+
+    image = VideoCapture(path).read()[-1]
+    if image is None: return QPixmap()
+    return qimage2ndarray.array2qimage(image).rgbSwapped()
 
 ROOT = Path().cwd().drive
 CONNECTION = CONNECT()
