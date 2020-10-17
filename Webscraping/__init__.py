@@ -72,13 +72,14 @@ class CONNECT:
                 return 1
 
             except sql.errors.OperationalError as error: 
-                print(error.errno)
-                if error.errno == 2055: self.__init__()
+                if '2055' in error.msg: self.__init__()
                 else: continue
             
             except sql.errors.ProgrammingError as error: raise error
 
             except sql.errors.DatabaseError: self.__init__()
+            
+            except ReferenceError: self.__init__()
 
     def commit(self): self.DATAB.commit()
     
