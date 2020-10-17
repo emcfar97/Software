@@ -39,7 +39,7 @@ class Gallery(QWidget):
                 0, 0, 
                 int(size.width() // 2), size.height()
                 )
-            self.layout.setContentsMargins(6, 6, 6, 47)
+            self.layout.setContentsMargins(6, 6, 6, 50)
                     
         elif self.parent().windowTitle() == 'Gesture Draw':
 
@@ -47,7 +47,7 @@ class Gallery(QWidget):
                 0, 0, 
                 size.width(), size.height()
                 )
-            self.layout.setContentsMargins(6, 6, 6, 9)
+            self.layout.setContentsMargins(6, 6, 6, 0)
                     
     def create_widgets(self):
         
@@ -66,8 +66,9 @@ class Gallery(QWidget):
         
         self.images.update([])
         self.images.clearSelection()
+
         string = self.ribbon.tags.text()
-        if string: string = self.ribbon.update(string)
+        if string: self.ribbon.update(string)
         query = {
             '': 'path LIKE "C:%"',
             'type': TYPE[self.type.checkedAction().text()],
@@ -79,7 +80,7 @@ class Gallery(QWidget):
             
             query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
 
-        for token in re.findall(f'\w+{op}[\w\*]+', string):
+        for token in re.findall(f'\w+{op}[\w\*]+', string, re.IGNORECASE):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
@@ -101,10 +102,10 @@ class Gallery(QWidget):
         
         if string.strip(): # Get tags
     
-            string = re.sub('not ', '-', string.strip())
-            string = re.sub('(-?\w+( or -?\w+)+)', r'(\1)', string)
+            string = re.sub('(-?\w+( OR -?\w+)+)', r'(\1)', string)
+            string = re.sub('NOT ', '-', string.strip())
             string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
-            string = re.sub('(\+and|or) ', '', string)
+            string = re.sub('(\+AND|OR) ', '', string)
             string = re.sub('-\+', '-', string)
             if not re.search('\+\w+', string): string += ' qwd'
 
@@ -141,7 +142,8 @@ class Gallery(QWidget):
             select = f'{select} image selected' if (select == 1) else f'{select} images selected'
         else: select = ''
         
-        self.parent().statusbar.showMessage(f'   {total}     {select}')
+        try: self.parent().parent().statusbar.showMessage(f'   {total}     {select}')
+        except: self.parent().statusbar.showMessage(f'   {total}     {select}')
     
     def keyPressEvent(self, sender):
     
@@ -231,6 +233,7 @@ class Ribbon(QWidget):
             )
         self.refresh.clicked.connect(self.parent().populate)
         self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
+        self.tags.setFocus()
         
     def update(self, string=''):
 
@@ -259,8 +262,6 @@ class Ribbon(QWidget):
         
         self.tags.setText(self.undo[-1])
         
-        return string.lower()
-
     def menuEvent(self, sender):
 
         action = sender.text()
@@ -614,7 +615,10 @@ class Worker(QThread):
         self.statusbar = parent.statusbar
         self.images = parent.images
     
-    def __del__(self): self.wait()
+    def __del__(self): 
+        
+        try: self.wait()
+        except: pass
     
     def run(self):
 

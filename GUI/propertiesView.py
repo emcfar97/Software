@@ -1,12 +1,14 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
 
 class Properties(QMainWindow):
 
     def __init__(self, parent, indexes):
         
-        super().__init__(parent)
-        self.parent().properties.add(self)
+        super().__init__()
+        self.parent = parent
+        self.parent.properties.add(self)
         self.setWindowTitle('Properties')
         self.configure_gui()
         self.create_widgets()
@@ -18,6 +20,7 @@ class Properties(QMainWindow):
         self.setCentralWidget(self.tabs)
         self.props = QWidget()
         self.stats = QWidget()
+        
         self.tabs.addTab(self.props, 'Properties')
         self.tabs.addTab(self.stats, 'Stats')
         self.prop_layout = QVBoxLayout()
@@ -25,10 +28,9 @@ class Properties(QMainWindow):
         self.props.setLayout(self.prop_layout)
         self.stats.setLayout(self.stat_layout)
 
-        size = self.parent().size()
         self.setGeometry(
-            size.width() * .3, size.height() * .3, 
-            size.width() * .45,  size.height() * .50
+            QCursor().pos().x(), QCursor().pos().y(), 
+            self.parent.width() * .45,  self.parent.height() * .50
             )  
         
     def create_widgets(self):
@@ -104,10 +106,10 @@ class Properties(QMainWindow):
         rating = self.rating.currentIndex()
         type = self.type.currentIndex()
         
-        self.close()
+        self.parent.remove(self)
 
         if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
-            self.parent().parent().change_records(
+            self.parent.parent().change_records(
                 gallery, tags, artist, stars, rating, type
                 )
         

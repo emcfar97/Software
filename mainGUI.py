@@ -14,7 +14,6 @@ class App(QMainWindow):
         self.setWindowTitle('Custom GUI')
         self.configure_gui()
         self.create_widgets()
-        self.windows = []
         self.show()
         
     def configure_gui(self):
@@ -43,6 +42,7 @@ class App(QMainWindow):
         
     def create_widgets(self, height=75):
         
+        self.windows = {}
         size = self.frame.width() * .9, height
         self.options = {
             'Manage Data': ManageData, 
@@ -57,8 +57,11 @@ class App(QMainWindow):
     def select(self, title):
         
         self.hide()
-        self.options[title](self)
-        self.windows.append(title)
+        self.windows[title] = (
+            self.windows.get(title, []) + [self.options[title](self)]
+            )
+
+    def is_empty(self): return sum(self.windows.values(), [])
 
     def keyPressEvent(self, sender):
 
@@ -74,7 +77,10 @@ class App(QMainWindow):
 
         elif key_press == Qt.Key_Escape: self.close()
 
-    def closeEvent(self, sender): CONNECTION.close()
+    def closeEvent(self, sender):
+        
+        CONNECTION.close()
+        Qapp.quit()
  
 class Option(QWidget):
 
@@ -226,9 +232,8 @@ class ManageData(QMainWindow):
     def closeEvent(self, sender):
 
         self.slideshow.close()
-        self.parent().windows.remove(self.windowTitle())
-        if not self.parent().windows:
-            self.parent().show()
+        self.parent().windows[self.windowTitle()].remove(self)
+        if not self.parent().is_empty(): self.parent().show()
  
 class GestureDraw(QMainWindow):
     
@@ -261,10 +266,19 @@ class GestureDraw(QMainWindow):
         self.stack.addWidget(self.gallery)
         self.stack.addWidget(self.preview)
         self.setStatusBar(self.statusbar)
-
-        self.gallery.setParent(self)
-        self.preview.setParent(self)
         self.statusbar.setFixedHeight(25)
+        
+        # self.gallery = galleryView.Gallery(self)
+        # self.preview = previewView.Preview(self)
+        # self.statusbar = QStatusBar()
+     
+        # self.stack.addWidget(self.gallery)
+        # self.stack.addWidget(self.preview)
+        # self.setStatusBar(self.statusbar)
+
+        # self.gallery.setParent(self)
+        # self.preview.setParent(self)
+        # self.statusbar.setFixedHeight(25)
         
     def start_session(self):
         
@@ -307,9 +321,8 @@ class GestureDraw(QMainWindow):
 
     def closeEvent(self, sender):
     
-        self.parent().windows.remove(self.windowTitle())
-        if not self.parent().windows:
-            self.parent().show()
+        self.parent().windows[self.windowTitle()].remove(self)
+        if not self.parent().is_empty(): self.parent().show()
  
 class MachineLearning(QMainWindow):
     
@@ -352,6 +365,7 @@ class MachineLearning(QMainWindow):
 Qapp = QApplication([])
 
 app = App()
+Qapp.setQuitOnLastWindowClosed(False)
 
 Qapp.exec_()
 
