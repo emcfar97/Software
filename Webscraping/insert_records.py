@@ -7,11 +7,16 @@ EXT = 'jp.*g|png|gif|webm|mp4'
 
 def extract_files(path):
     
-    source = path / 'Generic'
-
-    for file in source.iterdir():
-
-        delete = True
+    errors = []
+    errors_txt = path / 'Errors.txt'
+    if errors_txt.exists():
+        for image in errors_txt.read_text().split('\n'):
+            image = image.strip()
+            name = path.parent / image.split('/')[-1]
+            save_image(name, image)
+        errors_txt.unlink()
+    
+    for file in path.iterdir():
         
         urls = [
             value for window in 
@@ -23,7 +28,7 @@ def extract_files(path):
                 
             title = url['title'].split('/')[-1].split()[0]
             if not re.search(EXT, title): title = url['url'].split('/')[-1]
-            name = path / title
+            name = path.parent / title
             if name.suffix == '.png': name = name.with_suffix('.jpg')
             if name.exists(): continue
             image = (
@@ -31,17 +36,18 @@ def extract_files(path):
                 if url['url'] == 'about:blank' else 
                 url['url']
                 )
-            if not save_image(name, image): 
-                delete = False
+            if not save_image(name, image): errors.append(image)
         
-        if delete: file.unlink()
+        file.unlink()
+    
+    errors_txt.write_text('\n'.join(errors))
 
 def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
 
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
     
-    extract_files(path)
+    extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.is_file()]
     progress = Progress(len(files) - 2, 'Files')
 
