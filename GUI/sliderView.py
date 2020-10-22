@@ -9,7 +9,8 @@ class Slideshow(QMainWindow):
     
     def __init__(self, parent):
         
-        super().__init__()
+        super(Slideshow, self).__init__()
+        self.setWindowTitle('Slideshow')
         self.parent = parent
         self.configure_gui()
         self.create_widgets()
@@ -42,35 +43,21 @@ class Slideshow(QMainWindow):
             lambda: self.setCursor(Qt.BlankCursor)
             )               
 
-    def update(self, gallery, index):
-
-        self.gallery = gallery
-        self.index = index
-        self.move(0)
-        self.showFullScreen()
-
     def move(self, delta):
         
         self.index = (self.index + delta) % len(self.gallery)
-        try: self.show_image(self.gallery[self.index][0])
-        except (FileNotFoundError, ValueError):
-            del self.gallery[self.index]
-            self.show_image(self.gallery[self.index][0])
-    
-    def show_image(self, path):
-    
-        image = (
-            get_frame(path) 
-            if path.endswith(('.gif', '.mp4', '.webm')) else 
-            QImage(path)
-            )
-        if path.endswith(('.jpg', '.png')): path = None
+        path = self.gallery[self.index][0]
 
-        image = image.scaled(
-            self.width(), self.height(), Qt.KeepAspectRatio, 
+        if path.endswith(('.jpg', '.png')): 
+            image = QImage(path)
+            path = None
+        elif path.endswith(('gif', '.mp4', '.webm')): 
+            image = get_frame(path)
+        
+        pixmap = QPixmap(image).scaled(
+            self.size(), Qt.KeepAspectRatio, 
             transformMode=Qt.SmoothTransformation
             )
-        pixmap = QPixmap(image)
 
         self.label.setPixmap(pixmap)
         self.stack.setCurrentIndex(0)

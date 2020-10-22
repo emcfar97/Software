@@ -1,109 +1,90 @@
-from . import UPDATE, CONNECTION, get_frame
+from . import GESTURE, CONNECTION, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QWidget, QLabel
+from PyQt5.QtWidgets import QLabel, QSizePolicy
 
-class Preview(QWidget):
+class Preview(QLabel):
     
-    def __init__(self, parent):
+    def __init__(self, parent, color):
         
-        super().__init__(parent)
-        self.configure_gui()
-        self.create_widgets()
-    
-    def configure_gui(self):
-            
-        size = self.parent().size() 
-        
-        if self.parent().windowTitle() == 'Manage Data':
-            self.setGeometry(
-                int(size.width() // 2), 0, 
-                int(size.width() // 2), size.height() - 15
-                )
-            self.setStyleSheet('background: white')
-            
-        elif self.parent().windowTitle() == 'Gesture Draw':
-            self.setGeometry(
-                0, 0, size.width(), size.height()
-                ) 
-            self.setStyleSheet('background: black')
-    
-    def create_widgets(self):
-        
-        self.label = QLabel(self)
-        self.label.setGeometry(0, 0, self.width(), self.height())
-        self.label.setAlignment(Qt.AlignCenter)
-        self.timer = Countdown(self)
-        
-    def start(self, gallery, time):
-    
-        self.gallery = gallery
-        self.path = next(self.gallery)
-        self.show_image(self.path)
-        
-        self.time = self.timer.time = time
-        self.timer.setGeometry(
-            self.width() * .8, self.height() * .8, 
-            75, 75
+        super(Preview, self).__init__(parent)
+        self.title = parent.windowTitle()
+        self.setAlignment(Qt.AlignCenter)
+        self.setStyleSheet(f'background: {color}')
+        self.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding
             )
-        self.timer.setStyleSheet('background: white; font: 20px')
-        self.timer.setText('{}:{:02}'.format(*divmod(time, 60)))
-        self.timer.timer.start(1000)                
-                
+        
     def show_image(self, path):
         
-        if path and path.endswith(('.mp4', '.webm')): path = get_frame(path)
+        if path is None: path = QPixmap()
+        
+        elif path.endswith(('.mp4', '.webm')):
+            path = get_frame(path)
         
         pixmap = QPixmap(path).scaled(
-            self.width(), self.height(), Qt.KeepAspectRatio, 
+            self.size(), Qt.KeepAspectRatio, 
             transformMode=Qt.SmoothTransformation
             )
-        # ratio = pixmap.width() / pixmap.height()
-        # scrollbar.(not (.5 <= ratio <= 2))
 
-        self.label.setPixmap(pixmap)
-    
-    def pause(self):
-
-        if self.timer.timer.isActive(): 
-            self.timer.timer.stop()
-        else: self.timer.timer.start(1000)
-                                
-class Countdown(QLabel):
+        self.setPixmap(pixmap)
+                     
+class Timer(QLabel):
     
     def __init__(self, parent):
         
-        super().__init__(parent)
+        super(QLabel, self).__init__(parent)
+        
         self.timer = QTimer()
-        self.setAlignment(Qt.AlignCenter)
         self.timer.timeout.connect(self.countdown)
+        self.setAlignment(Qt.AlignCenter)
 
+    def start(self, gallery,  time):
+        
+        parent = self.parent()
+        self.gallery = gallery
+        self.current = next(self.gallery)
+        parent.show_image(self.current)
+        
+        self.setGeometry(
+            parent.width() * .85, parent.height() * .85, 
+            75, 75
+            )
+        self.setStyleSheet('background: white; font: 20px')
+        
+        self.time = [time, time]
+        self.updateText()
+        self.timer.start(1000)
+
+    def updateText(self):
+
+        self.setText('{}:{:02}'.format(*divmod(self.time[1], 60)))
+        self.setStyleSheet(f'''
+            background: white; font: 20px;
+            color: {"red" if self.time[1] <= 5 else "black"}
+            ''')   
+
+    def pause(self):
+
+        if self.timer.isActive(): self.timer.stop()
+        else: self.timer.start(1000)
+           
     def countdown(self):
         
-        if self.time:
-            
-            self.time -= 1
-            self.setText('{}:{:02}'.format(*divmod(self.time, 60)))
-            self.setStyleSheet(
-                f'''background: white; 
-                color: {"red" if self.time <= 5 else "black"}; 
-                font: 20px'''
-                )   
+        if self.time[1]:
+
+            self.time[1] -= 1
+            self.updateText()
         
         else:
             parent = self.parent()
-            CONNECTION.execute(UPDATE, (parent.path,), commit=1)
+            CONNECTION.execute(GESTURE, (self.current,), commit=1)
             
             try:
-                parent.path = next(parent.gallery)
-                parent.show_image(parent.path)
-                self.time = parent.time
-                self.setText('{}:{:02}'.format(*divmod(self.time, 60)))
-                self.setStyleSheet(
-                    f'''background: white; 
-                    color: {"red" if self.time <= 5 else "black"}; 
-                    font: 20px'''
-                    )  
+                self.current = next(self.gallery)
+                parent.show_image(self.current)
+                self.time[1] = self.time[0]
+                self.updateText()
 
             except StopIteration:
 
@@ -114,6 +95,6 @@ class Countdown(QLabel):
                     'background: black; color: white; font: 17px'
                     )
                 self.setGeometry(
-                    int(parent.width() * .4), int(parent.height() * .1),
+                    parent.width() * .4, parent.height() * .1,
                     125, 75
                     )

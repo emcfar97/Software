@@ -3,7 +3,7 @@ from . import CONNECTION, BASE, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractScrollArea, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QMessageBox, QStyle
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QMessageBox, QStyle
 
 TYPE = {
     'All': '',
@@ -21,37 +21,15 @@ class Gallery(QWidget):
      
     def __init__(self, parent):
          
-        super().__init__(parent)
+        super(Gallery, self).__init__(parent)
         self.title = parent.windowTitle()
-        self.configure_gui()
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(5, 0, 0, 0)
         self.create_widgets()
-     
-    def configure_gui(self):
-               
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-        self.layout.setAlignment(Qt.AlignTop)
-        size = self.parent().size()
-        
-        if self.parent().windowTitle() == 'Manage Data':
-
-            self.setGeometry(
-                0, 0, 
-                int(size.width() // 2), size.height()
-                )
-            self.layout.setContentsMargins(6, 6, 6, 50)
-                    
-        elif self.parent().windowTitle() == 'Gesture Draw':
-
-            self.setGeometry(
-                0, 0, 
-                size.width(), size.height()
-                )
-            self.layout.setContentsMargins(6, 6, 6, 0)
                     
     def create_widgets(self):
         
-        self.properties = set()
+        self.windows = set()
         self.ribbon = Ribbon(self)
         self.images = ImageView(self)
         self.thread = Worker(self)
@@ -64,11 +42,10 @@ class Gallery(QWidget):
 
     def populate(self, sender=None, limit=10000, op='[<>=!]=?'):
         
-        self.images.update([])
         self.images.clearSelection()
-
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
+        
         query = {
             '': 'path LIKE "C:%"',
             'type': TYPE[self.type.checkedAction().text()],
@@ -80,7 +57,9 @@ class Gallery(QWidget):
             
             query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
 
-        for token in re.findall(f'\w+{op}[\w\*]+', string, re.IGNORECASE):
+        else: self.parent().parent().preview.show_image(None)
+
+        for token in re.findall(f'\w+{op}[\w\*]+', string):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
@@ -113,13 +92,13 @@ class Gallery(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
 
-        filter = " AND ".join(val for val in query.values() if val)
-        
         if 'duplicates' in query:
 
-            filter += f'GROUP BY hash HAVING COUNT(hash) > 1'
-            order = 'ORDER BY hash'
-
+            del query['duplicates'] 
+            order = f'GROUP BY hash HAVING COUNT(hash) > 2 ' + order
+        
+        filter = " AND ".join(val for val in query.values() if val)
+        
         self.thread.statement = f'{BASE} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
 
@@ -142,8 +121,7 @@ class Gallery(QWidget):
             select = f'{select} image selected' if (select == 1) else f'{select} images selected'
         else: select = ''
         
-        try: self.parent().parent().statusbar.showMessage(f'   {total}     {select}')
-        except: self.parent().statusbar.showMessage(f'   {total}     {select}')
+        self.parent().parent().statusbar.showMessage(f'   {total}     {select}')
     
     def keyPressEvent(self, sender):
     
@@ -175,8 +153,7 @@ class Ribbon(QWidget):
          
         self.undo = ['']
         self.redo = []
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
+        self.layout = QHBoxLayout(self)
 
     def create_widgets(self):
         
@@ -188,15 +165,13 @@ class Ribbon(QWidget):
         self.forward = QPushButton()
         self.menu = QPushButton()
         
-        for button, icon, event in zip(
+        for button, event, icon in zip(
             [self.back, self.forward, self.menu],
-            ['SP_ArrowBack', 'SP_ArrowForward', 'SP_ArrowDown'],
-            [self.go_back, self.go_forward, self.menu.showMenu]
+            [self.go_back, self.go_forward, self.menu.showMenu],
+            [QStyle.SP_ArrowBack, QStyle.SP_ArrowForward, QStyle.SP_ArrowDown]
             ):
             
-            button.setIcon(
-                self.style().standardIcon(getattr(QStyle, icon))
-                )
+            button.setIcon(self.style().standardIcon(icon))
             button.clicked.connect(event)
             button.setEnabled(False)
             self.history.addWidget(button)
@@ -210,10 +185,10 @@ class Ribbon(QWidget):
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().populate)
-        self.tags.textChanged.connect(lambda x: self.timer.start(750))
+        self.tags.textChanged.connect(lambda: self.timer.start(750))
         self.select.addRow('Search:', self.tags)
         
-        if self.parent().parent().windowTitle() == 'Manage Data':
+        if self.parent().title == 'Manage Data':
             self.tags.returnPressed.connect(self.parent().populate)
             
         else:
@@ -228,9 +203,7 @@ class Ribbon(QWidget):
             self.select.addRow('Time:', self.time)
     
         self.refresh = QPushButton()
-        self.refresh.setIcon(
-            self.style().standardIcon(getattr(QStyle, 'SP_BrowserReload'))
-            )
+        self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh.clicked.connect(self.parent().populate)
         self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
         self.tags.setFocus()
@@ -287,6 +260,14 @@ class Ribbon(QWidget):
         if self.redo:
             self.undo.append(self.redo.pop())
             if update: self.update()
+    
+    def keyPressEvent(self, sender):
+    
+        key_press = sender.key()
+
+        if key_press == Qt.Key_Return: pass
+
+        else: self.parent().keyPressEvent(sender)
 
 class ImageView(QTableView):
 
@@ -294,24 +275,21 @@ class ImageView(QTableView):
 
         super().__init__(parent)
         self.menu = self.create_menu()
-        # self.table = Test(self, parent.width())   
-        self.table = Model(self, parent.width())   
+        self.table = Model(self)   
         self.setModel(self.table)
         for header in [self.horizontalHeader(), self.verticalHeader()]:
             header.setSectionResizeMode(header.ResizeToContents)
             header.hide()
-        self.setGridStyle(0)
-
-        if parent.parent().windowTitle() == 'Manage Data':
-            self.doubleClicked.connect(parent.parent().open_slideshow)
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.contextMenuEvent)
+        
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.setSizeAdjustPolicy(
-            QAbstractScrollArea.AdjustToContentsOnFirstShow
-            )
         self.setVerticalScrollMode(1)
+        self.setGridStyle(0)
+
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.contextMenuEvent)
+        if parent.title == 'Manage Data':
+            self.doubleClicked.connect(parent.parent().start_slideshow)
         
     def create_menu(self):
         
@@ -321,7 +299,7 @@ class ImageView(QTableView):
         temp_menu, sortMenu = self.create_submenu(
             menu, 'Sort by', 
             ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'], 
-            check=0 if parent.parent().windowTitle() == 'Manage Data' else 5,
+            check=0 if parent.title == 'Manage Data' else 5,
             get_menu=True
             )
         sortMenu.addSeparator()
@@ -421,15 +399,14 @@ class ImageView(QTableView):
     def selectionChanged(self, select, deselect):
         
         if not self.table.images: return
-        parent = self.parent().parent()
         select, deselect = select.indexes(), deselect.indexes()
         
-        if parent.windowTitle() == 'Manage Data':
+        if self.parent().title == 'Manage Data':
             if not select:
                 index = self.selectedIndexes()
-                image = index[-1].data(Qt.UserRole) if index else None
+                image = index[0].data(Qt.UserRole) if index else None
             else: image = select[0].data(Qt.UserRole)
-            parent.preview.show_image(image)
+            self.parent().parent().parent().preview.show_image(image)
         
         self.parent().statusbar(self.total(), len(self.selectedIndexes()))
 
@@ -532,13 +509,15 @@ class ImageView(QTableView):
 
 class Model(QAbstractTableModel):
 
-    def __init__(self, parent, width):
+    def __init__(self, parent):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
-        self.size = int(width * .1889)
+        self.size = QSize(
+            parent.width() * 1.3, parent.width() * 1.3
+            )
         self.images = []
-
+        
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
     def rowCount(self, parent=None):
@@ -555,7 +534,7 @@ class Model(QAbstractTableModel):
 
         if not index.isValid() or ind >= len(self.images): return QVariant()
         
-        if role == Qt.SizeHintRole: return QSize(self.size, self.size)
+        if role == Qt.SizeHintRole: return self.size
         
         elif role == Qt.DecorationRole:
     
@@ -568,7 +547,7 @@ class Model(QAbstractTableModel):
                 )
 
             image = image.scaled(
-                self.size, self.size, Qt.KeepAspectRatio, 
+                self.size, Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
             
@@ -611,16 +590,17 @@ class Worker(QThread):
     
     def __init__(self, parent):
         
-        QThread.__init__(self)
+        super(Worker, self).__init__(parent)
         self.statusbar = parent.statusbar
         self.images = parent.images
     
-    def __del__(self): 
+    def __del__(self):
         
         try: self.wait()
         except: pass
     
     def run(self):
 
+        self.images.update([])
         self.images.update(CONNECTION.execute(self.statement, fetch=1))
         self.statusbar(self.images.total())

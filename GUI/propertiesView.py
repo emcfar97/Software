@@ -6,17 +6,16 @@ class Properties(QMainWindow):
 
     def __init__(self, parent, indexes):
         
-        super().__init__()
-        self.parent = parent
-        self.parent.properties.add(self)
+        super(Properties, self).__init__()
         self.setWindowTitle('Properties')
+        self.parent = parent
         self.configure_gui()
         self.create_widgets()
         self.display(indexes)
 
     def configure_gui(self):
         
-        self.tabs = QTabWidget()
+        self.tabs = QTabWidget(self)
         self.setCentralWidget(self.tabs)
         self.props = QWidget()
         self.stats = QWidget()
@@ -30,7 +29,7 @@ class Properties(QMainWindow):
 
         self.setGeometry(
             QCursor().pos().x(), QCursor().pos().y(), 
-            self.parent.width() * .45,  self.parent.height() * .50
+            self.parent.width() * .5, self.parent.height() * .5
             )  
         
     def create_widgets(self):
@@ -93,6 +92,7 @@ class Properties(QMainWindow):
         if rating: self.rating.setCurrentText(rating.pop())
         if type: self.type.setCurrentText(type.pop())
 
+        self.parent.windows.add(self)
         self.place = tags, artist
         self.tags.setFocus()
         self.show()
@@ -106,10 +106,10 @@ class Properties(QMainWindow):
         rating = self.rating.currentIndex()
         type = self.type.currentIndex()
         
-        self.parent.remove(self)
+        self.parent.windows.discard(self)
 
         if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
-            self.parent.parent().change_records(
+            self.parent.parent().parent().change_records(
                 gallery, tags, artist, stars, rating, type
                 )
         

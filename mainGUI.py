@@ -1,16 +1,18 @@
 from os import remove
 from subprocess import Popen
 from GUI import ROOT, CONNECTION, MODIFY, DELETE, NEZUMI
-from GUI import galleryView, previewView, sliderView
+from GUI.galleryView import Gallery
+from GUI.previewView import Preview, Timer
+from GUI.sliderView import Slideshow
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QLabel, QMessageBox, QStatusBar
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGroupBox,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QPushButton, QSizePolicy
 from PyQt5.QtCore import Qt
 
 class App(QMainWindow):
     
     def __init__(self):
         
-        super().__init__()
+        super(App, self).__init__()
         self.setWindowTitle('Custom GUI')
         self.configure_gui()
         self.create_widgets()
@@ -25,41 +27,45 @@ class App(QMainWindow):
             int(width * .34), int(height * .29),
             int(width * .35), int(height * .48)
             )
-        
-        self.layout = QVBoxLayout()        
-        self.frame = QWidget(self)
-        self.frame.setLayout(self.layout)
-        self.frame.setFixedSize(int(width * .32), int(height * .35))
-        self.frame.setStyleSheet('''
-            border-style: inset;
-            border-width: 2px;
-            border-color: #C0C0C0
-            ''')
-        
-        self.layout.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        self.setContentsMargins(20, 10, 20, 20)
+        self.frame = QGroupBox()
+        self.layout = QVBoxLayout(self)
+        self.frame.setLayout(self.layout) 
+
+        self.layout.setAlignment(Qt.AlignHCenter)
+        self.setContentsMargins(10, 10, 10, 15)
+        self.frame.setFixedHeight(height // 3)
         self.setCentralWidget(self.frame)
         
-    def create_widgets(self, height=75):
+    def create_widgets(self):
         
         self.windows = {}
-        size = self.frame.width() * .9, height
-        self.options = {
+        options = {
             'Manage Data': ManageData, 
             'Gesture Draw': GestureDraw, 
             'Machine Learning': MachineLearning
             }
-        for name in self.options.keys():
+        for name, app in options.items():
             
-            option = Option(self.frame, name, size=size)
+            option = QPushButton(name, self)
+            option.setStyleSheet('''
+                QPushButton::hover {background: #b0caef;};
+                padding: 25px;
+                font: 12px;
+                text-align: left;
+                ''')
+            option.clicked.connect(
+                lambda checked, x=name, y=app: self.select(x, y)
+                )
+            option.setSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Expanding
+                )
+            
             self.layout.addWidget(option)
     
-    def select(self, title):
-        
+    def select(self, title, app):
+
         self.hide()
-        self.windows[title] = (
-            self.windows.get(title, []) + [self.options[title](self)]
-            )
+        self.windows[title] = self.windows.get(title, []) + [app(self)]
 
     def is_empty(self): return sum(self.windows.values(), [])
 
@@ -71,9 +77,9 @@ class App(QMainWindow):
 
         if ctrl:
 
-            if key_press == Qt.Key_1: self.select('Manage Data')
+            if key_press == Qt.Key_1: self.select('Manage Data', ManageData)
 
-            elif key_press == Qt.Key_2: self.select('Gesture Draw')
+            elif key_press == Qt.Key_2: self.select('Gesture Draw', GestureDraw)
 
         elif key_press == Qt.Key_Escape: self.close()
 
@@ -81,36 +87,6 @@ class App(QMainWindow):
         
         CONNECTION.close()
         Qapp.quit()
- 
-class Option(QWidget):
-
-    def __init__(self, parent, target, size):
-        
-        super().__init__(parent)
-        self.target = target
-        self.label = QLabel(target, self)
-        self.label.setAlignment(Qt.AlignCenter)
-
-        width, height = size
-        self.widget = QLabel(self)
-        self.label.setFixedSize(int(width * .25), height)
-        self.widget.setFixedSize(int(width * .75), height)
-        
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
-        self.layout.setSpacing(0)
-        self.layout.addWidget(self.label)
-        self.layout.addWidget(self.widget)
-
-    def enterEvent(self, sender): self.setStyleSheet('background: #b0caef')
-
-    def leaveEvent(self, sender): self.setStyleSheet('background: #f0f0f0')
-    
-    def mousePressEvent(self, sender): 
-        
-        if sender.button() == Qt.LeftButton:
-
-            self.parent().parent().select(self.target)
 
 class ManageData(QMainWindow):
             
@@ -121,7 +97,7 @@ class ManageData(QMainWindow):
 
     def __init__(self, parent):
         
-        super().__init__(parent)
+        super(ManageData, self).__init__(parent)
         self.setWindowTitle('Manage Data')
         self.configure_gui()
         self.create_widgets()
@@ -130,37 +106,39 @@ class ManageData(QMainWindow):
 
     def configure_gui(self):
         
-        self.layout = QHBoxLayout()
-        self.center = QWidget()
+        self.center = QWidget(self)
+        self.layout = QHBoxLayout(self)
+
         self.center.setLayout(self.layout)
         self.setCentralWidget(self.center)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         resolution = Qapp.desktop().screenGeometry()
-        self.setGeometry(
-            0, 0, 
-            resolution.width(),  resolution.height()
-            )  
+        width, height = resolution.width(),  resolution.height()
+        self.setGeometry(0, 0, width, height)
 
     def create_widgets(self):
+            
+        self.gallery = Gallery(self)
+        self.preview = Preview(self, 'white')
+        self.slideshow = Slideshow(self)
         
-        self.gallery = galleryView.Gallery(self)
-        self.preview = previewView.Preview(self)
-        self.slideshow = sliderView.Slideshow(self)
-        self.statusbar = QStatusBar()
-
         self.layout.addWidget(self.gallery)
         self.layout.addWidget(self.preview)
+        
+        self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
-
-        self.gallery.setParent(self)
-        self.preview.setParent(self)
-        self.statusbar.setFixedHeight(25)
+        self.statusbar.setFixedHeight(30)
     
-    def open_slideshow(self, index=None):
+    def start_slideshow(self, index=None):
 
         view = self.gallery.images
-        if index is None: index = view.currentIndex()
-        self.slideshow.update(view.table.images, sum(index.data(100)))
+        self.slideshow.gallery = view.table.images
+        index = index if index else view.currentIndex()
+        try: self.slideshow.index = sum(index.data(100))
+        except: return
+        self.slideshow.move(0)
+        self.slideshow.showFullScreen()
 
     def change_records(self, gallery, *args):
         
@@ -221,7 +199,7 @@ class ManageData(QMainWindow):
 
         key_press = sender.key()
 
-        if key_press == Qt.Key_Return: self.open_slideshow()
+        if key_press == Qt.Key_Return: self.start_slideshow()
 
         elif key_press == Qt.Key_Delete: self.delete_records()
                         
@@ -239,7 +217,7 @@ class GestureDraw(QMainWindow):
     
     def __init__(self, parent):
         
-        super().__init__(parent)
+        super(GestureDraw, self).__init__(parent)
         self.setWindowTitle('Gesture Draw')
         self.configure_gui()
         self.create_widgets()
@@ -249,36 +227,26 @@ class GestureDraw(QMainWindow):
 
     def configure_gui(self):
         
-        self.stack = QStackedWidget()
-        self.setCentralWidget(self.stack)
+        self.stack = QStackedWidget(self)
+        self.setCentralWidget(self.stack)  
+        self.stack.setContentsMargins(0, 0, 0, 0)
+
         resolution = Qapp.desktop().screenGeometry()
-        self.setGeometry(
-            0, 0, 
-            resolution.width() // 2,  resolution.height()
-            )   
+        width, height = resolution.width(),  resolution.height()
+        self.setGeometry(0, 0, width // 2, height)
 
     def create_widgets(self):
         
-        self.gallery = galleryView.Gallery(self)
-        self.preview = previewView.Preview(self)
-        self.statusbar = QStatusBar()
+        self.gallery = Gallery(self)
+        self.preview = Preview(self, 'black')
+        self.timer = Timer(self.preview)
      
         self.stack.addWidget(self.gallery)
         self.stack.addWidget(self.preview)
-        self.setStatusBar(self.statusbar)
-        self.statusbar.setFixedHeight(25)
         
-        # self.gallery = galleryView.Gallery(self)
-        # self.preview = previewView.Preview(self)
-        # self.statusbar = QStatusBar()
-     
-        # self.stack.addWidget(self.gallery)
-        # self.stack.addWidget(self.preview)
-        # self.setStatusBar(self.statusbar)
-
-        # self.gallery.setParent(self)
-        # self.preview.setParent(self)
-        # self.statusbar.setFixedHeight(25)
+        self.statusbar = QStatusBar(self)
+        self.setStatusBar(self.statusbar)
+        self.statusbar.setFixedHeight(30)
         
     def start_session(self):
         
@@ -290,14 +258,15 @@ class GestureDraw(QMainWindow):
         
         if gallery and time:
 
+            self.statusbar.hide()
+
             if ':' in time:
                 min, sec = time.split(':')
                 time = (int(min) * 60) + int(sec)
             else: time = int(time)
             
-            self.preview.start(gallery, time)
-            self.statusbar.hide()
             self.stack.setCurrentIndex(1)
+            self.timer.start(gallery, time)
    
     def keyPressEvent(self, sender):
         
@@ -305,15 +274,16 @@ class GestureDraw(QMainWindow):
 
         if key_press == Qt.Key_Return: self.start_session()
 
-        elif key_press == Qt.Key_Space: self.preview.pause()
+        elif key_press == Qt.Key_Space: self.timer.pause()
 
         elif key_press == Qt.Key_Escape:
 
             if self.stack.currentIndex():
                 
+                self.statusbar.showMessage('')
+                self.stack.setCurrentIndex(0)
                 self.gallery.populate()
                 self.statusbar.show()
-                self.stack.setCurrentIndex(0)
                             
             else: self.close()
         
