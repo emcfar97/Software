@@ -338,6 +338,3 @@ app = App()
 Qapp.setQuitOnLastWindowClosed(False)
 
 Qapp.exec_()
-
-# animated -dancing -sex -sports -casual_nudity -masturbation -lactation -exercise -pregnant rating=safe type=photograph
-# -from_behind -from_below -from_above -from_side
