@@ -47,7 +47,6 @@ class Gallery(QWidget):
         if string: self.ribbon.update(string)
         
         query = {
-            '': 'path LIKE "C:%"',
             'type': TYPE[self.type.checkedAction().text()],
             'rating': RATING[self.rating.checkedAction().text()],
             }
@@ -79,7 +78,7 @@ class Gallery(QWidget):
 
             query[col] = token
         
-        if string.strip(): # Get tags
+        if string.strip():
     
             string = re.sub('(-?\w+( OR -?\w+)+)', r'(\1)', string)
             string = re.sub('NOT ', '-', string.strip())
@@ -96,6 +95,8 @@ class Gallery(QWidget):
 
             del query['duplicates'] 
             order = f'GROUP BY hash HAVING COUNT(hash) > 2 ' + order
+
+        if not any(query.values()): query[''] = 'path LIKE "C:%"'
         
         filter = " AND ".join(val for val in query.values() if val)
         
@@ -273,7 +274,7 @@ class ImageView(QTableView):
 
     def __init__(self, parent):
 
-        super().__init__(parent)
+        super(QTableView, self).__init__(parent)
         self.menu = self.create_menu()
         self.table = Model(self)   
         self.setModel(self.table)
@@ -513,10 +514,8 @@ class Model(QAbstractTableModel):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
-        self.size = QSize(
-            parent.width() * 1.3, parent.width() * 1.3
-            )
         self.images = []
+        self.size = 5.17
         
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
@@ -534,12 +533,17 @@ class Model(QAbstractTableModel):
 
         if not index.isValid() or ind >= len(self.images): return QVariant()
         
-        if role == Qt.SizeHintRole: return self.size
+        if role == Qt.SizeHintRole: 
+            
+            width = self.parent().parent().width() // self.size
+            
+            return QSize(width, width)
         
         elif role == Qt.DecorationRole:
     
             path = self.images[ind][0]
-                
+            width = self.parent().parent().width() // self.size
+            
             image = (
                 get_frame(path) 
                 if path.endswith(('.mp4', '.webm')) else 
@@ -547,7 +551,7 @@ class Model(QAbstractTableModel):
                 )
 
             image = image.scaled(
-                self.size, Qt.KeepAspectRatio, 
+                QSize(width, width), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
             
