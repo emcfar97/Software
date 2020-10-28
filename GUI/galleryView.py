@@ -2,7 +2,7 @@ import re, textwrap
 from . import CONNECTION, BASE, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
+from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QMessageBox, QStyle
 
 TYPE = {
@@ -42,6 +42,7 @@ class Gallery(QWidget):
 
     def populate(self, sender=None, limit=10000, op='[<>=!]=?'):
         
+        self.images.update([])
         self.images.clearSelection()
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
@@ -279,8 +280,9 @@ class ImageView(QTableView):
         self.table = Model(self)   
         self.setModel(self.table)
         for header in [self.horizontalHeader(), self.verticalHeader()]:
-            header.setSectionResizeMode(header.ResizeToContents)
+            header.setSectionResizeMode(header.Stretch)
             header.hide()
+        else: header.setSectionResizeMode(header.ResizeToContents)
         
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -395,7 +397,8 @@ class ImageView(QTableView):
 
     def update(self, images):
         
-        self.table.images = list() if images is None else images
+        self.table.images = images
+        self.parent().statusbar(len(images))
     
     def selectionChanged(self, select, deselect):
         
@@ -533,7 +536,7 @@ class Model(QAbstractTableModel):
 
         if not index.isValid() or ind >= len(self.images): return QVariant()
         
-        if role == Qt.SizeHintRole: 
+        if role == Qt.SizeHintRole:
             
             width = self.parent().parent().width() // self.size
             
@@ -542,6 +545,7 @@ class Model(QAbstractTableModel):
         elif role == Qt.DecorationRole:
     
             path = self.images[ind][0]
+            if path is None: return QVariant()
             width = self.parent().parent().width() // self.size
             
             image = (
@@ -592,19 +596,12 @@ class Model(QAbstractTableModel):
 
 class Worker(QThread):
     
-    def __init__(self, parent):
+    def __init__(self, parent): 
         
         super(Worker, self).__init__(parent)
-        self.statusbar = parent.statusbar
-        self.images = parent.images
-    
-    def __del__(self):
-        
-        try: self.wait()
-        except: pass
-    
-    def run(self):
 
-        self.images.update([])
-        self.images.update(CONNECTION.execute(self.statement, fetch=1))
-        self.statusbar(self.images.total())
+    def run(self):
+    
+        self.parent().images.update(
+            CONNECTION.execute(self.statement, fetch=1)
+            )
