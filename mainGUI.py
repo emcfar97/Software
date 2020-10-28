@@ -28,7 +28,7 @@ class App(QMainWindow):
             int(width * .35), int(height * .48)
             )
         self.frame = QGroupBox()
-        self.layout = QVBoxLayout(self)
+        self.layout = QVBoxLayout()
         self.frame.setLayout(self.layout) 
 
         self.layout.setAlignment(Qt.AlignHCenter)
@@ -48,7 +48,7 @@ class App(QMainWindow):
             
             option = QPushButton(name, self)
             option.setStyleSheet('''
-                QPushButton::hover {background: #b0caef;};
+                QPushButton::focus:!hover {background: #b0caef};
                 padding: 25px;
                 font: 12px;
                 text-align: left;
@@ -64,9 +64,9 @@ class App(QMainWindow):
     
     def select(self, title, app):
 
-        self.hide()
         self.windows[title] = self.windows.get(title, []) + [app(self)]
-
+        self.hide()
+        
     def is_empty(self): return sum(self.windows.values(), [])
 
     def keyPressEvent(self, sender):
@@ -81,6 +81,8 @@ class App(QMainWindow):
 
             elif key_press == Qt.Key_2: self.select('Gesture Draw', GestureDraw)
 
+        elif key_press == Qt.Key_Return: self.focusWidget().click()
+
         elif key_press == Qt.Key_Escape: self.close()
 
     def closeEvent(self, sender):
@@ -90,10 +92,11 @@ class App(QMainWindow):
 
 class ManageData(QMainWindow):
             
-    TYPE = {
-        'エラティカ ニ': 'エラティカ 三',
-        'エラティカ 三': 'エラティカ ニ'
-        }
+    TYPE = [
+        None,
+        'エラティカ ニ',
+        'エラティカ 三'
+        ]
 
     def __init__(self, parent):
         
@@ -107,7 +110,7 @@ class ManageData(QMainWindow):
     def configure_gui(self):
         
         self.center = QWidget(self)
-        self.layout = QHBoxLayout(self)
+        self.layout = QHBoxLayout()
 
         self.center.setLayout(self.layout)
         self.setCentralWidget(self.center)
@@ -134,16 +137,18 @@ class ManageData(QMainWindow):
 
         view = self.gallery.images
         self.slideshow.gallery = view.table.images
+        
         index = index if index else view.currentIndex()
         try: self.slideshow.index = sum(index.data(100))
         except: return
+        
         self.slideshow.move(0)
-        self.slideshow.showFullScreen()
+        self.slideshow.showMaximized()
 
     def change_records(self, gallery, *args):
         
         parameters = []
-        tags, artists, stars, rating, type = args
+        tags, artists, stars, rating, type_ = args
 
         if tags:
             for tag in tags[0]:
@@ -159,14 +164,12 @@ class ManageData(QMainWindow):
 
         if stars: parameters.append(f'stars={stars}')
         if rating: parameters.append(f'rating={rating}')
-        if type: 
-            parameters.append(f'type={type}')
+        if type_: 
+            parameters.append(f'type={type_}')
             # for path, in gallery:
             #     path = ROOT / path
-            #     old = path.parts[4]
-            #     new = ManageData.TYPE[old]
-            #     parent = path.parent.parent
-            #     path.rename(parent / old / path.name)
+            #     old, new = path.parts[5], self.TYPE[type_]
+            #     path.rename(path.parent.parent / new / path.name)
             # parameters.append(f'path=REPACE(path, {old}, {new})')
 
         CONNECTION.execute(
