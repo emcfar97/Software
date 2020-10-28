@@ -17,15 +17,16 @@ class Preview(QLabel):
         
     def show_image(self, path):
         
-        if path is None: path = QPixmap()
+        if path is None: pixmap = QPixmap()
         
-        elif path.endswith(('.mp4', '.webm')):
-            path = get_frame(path)
-        
-        pixmap = QPixmap(path).scaled(
-            self.size(), Qt.KeepAspectRatio, 
-            transformMode=Qt.SmoothTransformation
-            )
+        else:
+            if path.endswith(('.mp4', '.webm')):
+                path = get_frame(path)
+            
+            pixmap = QPixmap(path).scaled(
+                self.size(), Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
 
         self.setPixmap(pixmap)
                      
