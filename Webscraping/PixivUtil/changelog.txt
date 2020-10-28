@@ -1,3 +1,126 @@
+20200915
+- Fix Issue #778: "'list' object has no attribute 'startswith'" process_tags_list().
+- Update #777: add s_tag and date_d param value
+- Fix Issue #772: Pixiv Sketch tz_info
+- Update #768: enhance the error message
+- Implement #726: file extension filter for batch job
+- Merge: Disable blacklist for the download by image id option (#791) by byjtje.
+- Merge: Update PixivBrowserFactory.py (#790) by amatuerCoder.
+- Merge: Fixed avatar/background default file extension and background urlfilename (#789) by byjtje.
+- Implement #782: add filename in the warning message.
+- Merge: Removed unneccessary check from check_version and made the browser opening opt-in (#779) by byjtje.
+
+20200824
+- Implement #650: open default browser to release page if checkNewVersion=True in config.ini
+- Merge: Add run on repl.it badge to README (#770) by cyleja1234
+- Merge: Added date update for artists with no pictures (#766) by byjtje
+- Merge: Switched the check from last image to last downloaded to avoid always checking when it doesn't download any images (#764) by byjtje
+- Merge: Minor changes to PixivFanboxHandler, PixivUtil2, readme (#763) by amatuerCoder
+- Merge: Regex Title Filtering + Date updates and a few minor changes (#759) by byjtje
+- Merge: Update readme.md (#754) by amatuerCoder
+- Merge: proper checkUpdatedLimit check  (#753) by byjtje
+- Implement #749: Pixiv Sketch support.
+
+20200726
+- Update #592: dns over socks proxy handling.
+- Merge: Fix shebang of PixivUtil2.py (#739) by RoestVrijStaal
+- Merge: Dockerfile (#740) by DenDen047
+- Merge: Fixed handle tags (#741) by byjtje
+- Fix Issue #743: add error message in config item, add colorama.
+- Implement #718: add ffmpegExt in config.ini to control the file extension.
+- Merge: Update Fanbox Handling (#746) by amatuerCoder
+- Refactor process FANBOX to PixivFanboxHandler
+- Add update check for refresh_token for writing config.ini 
+- Merge: Update PixivFanboxHandler.py (#747) by amatuerCoder
+
+20200712
+- Merge Added a filter for Titles and added a condition to prevent unnecessary blacklist checks (#737) by byjtje.
+- Implement #716: include soundcloud provider support.
+- Implement : add joboption for r18mode for batch.
+- Implement #719: update message for menu_download_from_online_image_bookmark().
+- Fanbox related fixes by amatuerCoder.
+- update readme.md.
+
+20200524
+- Fix #697 bookmark filtering for premium user
+- Fix #713 allow %search_tag% format in option 6
+- Merged HTML style adjustment for FANBOX (#711) by amatuerCoder.
+
+20200502
+- Merged FANBOX download enhancement (#680) by amatuerCoder.
+- Merged Optimize Query `insertMangaImage` & Typo Fix (#678) by Jared Shields.
+- Merged Simplify(?) codes with reflection(?) thoughts (#676) by amatuerCoder.
+- Fix Issue #684: cannot use pixiv and fanbox cookie together.
+- Fix Issue #687: merged When artist is None (#683) by amatuerCoder.
+- Merged Indent/print-out adjustment & new method to update FANBOX cookie (#694) by amatuerCoder.
+- Implement #197: new option 'b' to download from batch_job.json
+  See https://github.com/Nandaka/PixivUtil2/wiki/Using-Batch-Job-(Experimental) for the sample template.
+- Refactor out codes for handling batch job.
+- Fix Issue #696: wrong import for PixivException
+- Merged FANBOX database patch (#695) by amatuerCoder.
+
+202000424
+- Try to fix #658, #662: login detection.
+- Try to fix #654: explicitly call close() when writing config.ini.tmp
+- Implement #652: Enable filter by bookmark count for Pixiv Premium.
+- Merged #656 (#659) by amatuerCoder: Download fanbox articles in HTML.
+  - set writeHtml = True to enable.
+  - modifieable template based on pattern.html
+- Merged #660 by wmjdgla: Simplified print_progress and fixed jerky progress bar for indeterminate case.
+- Merged #647 by Alex: Refactor sanitize_filename in PixivHelper.
+- Merged #671 by amatuerCoder: Html improvements for Fanbox.
+- Merged #670 by Jared Shields: Update autoAddMember.
+- Fix Issue #663: handle directory name for filename formats.
+- Merged #661 by amatuerCoder: Added logic for links if links token was in p blocks
+- Update test cases and other small fixes (see the commit history for more details).
+
+20200307
+- Fix Issue #648: Can't download Ugoiras when "downloadresized" is active.
+
+20200228
+- Fix Issue #641: update API endpoints for Pixiv FANBOX.
+- Implement #639: add option to download the resized image, rather than original size.
+                  set `downloadResized = True` at `[DownloadControl]` section in config.ini to enable.
+
+20200125 - Happy CNY 2020!
+- Update #623: change default local to '', if exists then use the current locale.
+- Update test cases.
+- Implement #625: Add option to automatically add downloaded member to DB.
+                  Set 'autoaddmember = True' in config.ini to enable.
+- Implement #526: Add menu to import list.txt on demand.
+- Implement #575: Add option for filename format for manga's info.
+                  Configure 'filenamemangainfoformat' in config.ini to enable.
+- Update #622: use new API endpoint for option 5.
+- Fix Issue #627: sanizite trailing '.' in the filename.
+- Fix Issue #626: remove redundant message for option 4.
+- Update #611: avoid duplicate file for Pixiv FANBOX.
+
+20200112
+- Fix Issue #611: updated FANBOX post parser to support old post.
+- Fix Issue #612: moved wait statement due to #609 changes.
+- Fix Issue #613: updated logic check due to #609 changes.
+- Merge #615 and #617: updated utf8 supported FS check on linux.
+- Fix Issue #618: update requirements.txt, replace socksipy-branch to PySocks.
+- Fix Issue #622, #623, and Merge #624: update bookmark and image bookmark handler.
+
+20200101 - Happy New Year!
+- Fix Issue #607: fix db path for parseBookmark call.
+- Fix Issue #608: handle user suspended for Fanbox.
+- Implement #567: add minFileSize and maxFileSize in config.ini, set 0 to disable.
+- Reorder some settings in config.ini to new section [DownloadControl]
+  - overwrite = False
+  - backupOldFile = False
+  - dayLastUpdated = 7
+  - alwaysCheckFileSize = False
+  - checkUpdatedLimit = 0
+  - useBlacklistTags = False
+  - dateDiff = 0
+  - enableInfiniteLoop = False
+  - useBlacklistMembers = False
+- Implement #609: separate 'checkUpdatedLimit' and 'alwaysCheckFileSize' validation.
+- Fix Issue #606: set encoding to utf8.
+- Implement #595: implement SSL bypass for most connection.
+
 20191221
 - Fix Issue #600: update for login detection.
 

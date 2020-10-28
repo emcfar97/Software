@@ -57,33 +57,29 @@ class CONNECT:
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
         for _ in range(10):
-
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
 
-                if commit:  return self.DATAB.commit()
-                elif fetch: return self.CURSOR.fetchall()
-                else: return 1
-
-            except sql.errors.IntegrityError:
-                self.CURSOR.execute(DELETE[0], (arguments[-1],))
-                self.DATAB.commit()
+                if commit: return self.DATAB.commit()
+                if fetch: return self.CURSOR.fetchall()
                 return 1
 
-            except sql.errors.OperationalError as error: 
-                if '2055' in error.msg: self.__init__()
-                else: continue
-            
-            except sql.errors.ProgrammingError as error: raise error
+            except (sql.errors.OperationalError, sql.errors.DatabaseError):
+                
+                self.reconnect()
 
-            except sql.errors.DatabaseError: self.__init__()
+            except sql.errors.IntegrityError:
+                
+                self.execute(DELETE[0], (arguments[-1],), commit=1)
             
-            except ReferenceError: self.__init__()
-
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
+
+    def reconnect(self, attempts=5, time=5):
+
+        self.DATAB.reconnect(attempts, time)
 
 class WEBDRIVER:
     

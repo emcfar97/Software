@@ -1,7 +1,7 @@
-import sqlite3, json
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import PATH, Progress, get_tags, generate_tags, bs4, requests, re
-import os, time
+import os, time, sqlite3, json
+from urllib.parse import urlparse
 
 EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'

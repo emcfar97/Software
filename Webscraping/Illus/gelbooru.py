@@ -1,6 +1,7 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import Progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
 from PIL import ImageFile
+from urllib.parse import urlparse
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 CONNECTION = CONNECT()
@@ -60,15 +61,19 @@ def page_handler(hrefs):
             )
         
         type_ = 0 if 'photo_(medium)' in tags else 1
-        image = html.find(href=True, text='Original image').get('href')
-        name = get_name(image.split('/')[-1], type_, 0)
-        if not save_image(name, image, exif): continue
-        hash_ = get_hash(name)
-        
-        CONNECTION.execute(UPDATE[3], (
-            str(name), ' '.join(artists), tags, rating, image, hash_, href
-            ), commit=1
+        image = urlparse(
+            html.find(href=True, text='Original image').get('href')
             )
+        name = get_name(image.path[14:], type_, 0)
+        hash_ = get_hash(image.geturl())
+        
+        if save_image(name, image.geturl(), exif): 
+
+            CONNECTION.execute(
+                UPDATE[3], 
+                (str(name), ' '.join(artists), tags, rating, image.geturl(), hash_, href),
+                commit=1
+                )
 
     print(progress)
 

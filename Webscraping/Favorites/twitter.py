@@ -1,7 +1,7 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, Progress, bs4, re
-import time
-import itertools
+from ..utils import PATH, Progress
+import time, bs4, re, itertools
+from urllib.parse import urlparse
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
@@ -77,9 +77,9 @@ def page_handler(hrefs):
         if len(images) != 1: continue
         for image in images:
 
-            image = image.get('src').replace('small', 'large')
-            name = image.replace('?format=', '.').split('/')[-1]
-            name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
+            image = urlparse(image.get('src').replace('small', 'large'))
+            name = image
+            name = PATH / 'Images' / SITE / f'{artist} - {name}'
 
             CONNECTION.execute(UPDATE[1], (name, hash_, image, href), commit=1)
                               

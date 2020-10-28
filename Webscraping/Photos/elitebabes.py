@@ -56,13 +56,12 @@ def page_handler(hrefs):
         tags, rating, exif = generate_tags(
             tags, custom=True, artists=artist, rating=True
             )
-        if not save_image(name, image, exif): continue
-        hash_ = get_hash(name) 
+        hash_ = get_hash(image) 
     
-        CONNECTION.execute(UPDATE[3].replace('href', 'src'), (
-            name, artist, tags, rating, image, hash_, image),
-            commit=1
+        CONNECTION.execute(UPDATE[3].replace('href', 'src'), 
+            (name, artist, tags, rating, image, hash_, image),
             )
+        if save_image(name, image, exif): CONNECTION.commit()
     
     print(progress)
 
