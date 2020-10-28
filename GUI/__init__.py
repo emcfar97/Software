@@ -24,28 +24,27 @@ class CONNECT:
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
         for _ in range(10):
-
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
 
                 if commit: return self.DATAB.commit()
-                elif fetch: return self.CURSOR.fetchall()
-                else: return list()
+                if fetch: return self.CURSOR.fetchall()
+                return list()
 
-            except sql.errors.OperationalError as error: continue
+            except (sql.errors.OperationalError, sql.errors.DatabaseError): 
+                
+                self.reconnect()
             
             except sql.errors.ProgrammingError: return list()
             
-            except sql.errors.DatabaseError: self.__init__()
-
-            except Exception as error: 
-                print(error)
-                return list()
-
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
+
+    def reconnect(self, attempts=5, time=5):
+
+        self.DATAB.reconnect(attempts, time)
 
 def get_frame(path):
 
@@ -53,7 +52,7 @@ def get_frame(path):
     if image is None: return QPixmap()
     return qimage2ndarray.array2qimage(image).rgbSwapped()
 
-ROOT = Path().cwd().drive
+ROOT = Path(Path().cwd().drive)
 CONNECTION = CONNECT()
 BASE = f'SELECT REPLACE(path, "C:", "{ROOT}"), tags, artist, stars, rating, type, src FROM imageData'
 GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=REPLACE(%s, "{ROOT}", "C:")'
