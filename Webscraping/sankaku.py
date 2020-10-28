@@ -1,8 +1,7 @@
 from . import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
-from .utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags
-import time, bs4, requests, re
+from .utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
+import time
 from PIL import ImageFile
-from urllib.parse import urlparse
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 SITE = 'sankaku'
@@ -18,7 +17,7 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
         except: return False
 
     if not query:
-         query = set(
+        query = set(
             CONNECTION.execute(
                 f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1
                 )
@@ -62,6 +61,12 @@ def page_handler(hrefs, mode):
                 f'https://{mode[0]}.sankakucomplex.com{href}'
                 ).content   
             html = bs4.BeautifulSoup(page_source, 'lxml')
+        try: image = f'https:{html.find(id="highres", href=True).get("href")}'
+        except AttributeError:
+            if html.find(text='404: Page Not Found'): 
+                CONNECTION.execute(DELETE[0], (href,), commit=1)
+            continue
+        name = get_name(image.split('/')[-1].split('?e=')[0], mode[1]-1, 0)
             
         metadata = ' '.join(
             '_'.join(tag.text.split()[:-2]) for tag in 
@@ -75,33 +80,19 @@ def page_handler(hrefs, mode):
             '_'.join(artist.text.split()[:-2]) for artist in 
             html.findAll(class_=re.compile('tag-type-artist|idol|studio'))
             ]
-        
-        try: 
-            image = urlparse(
-                f'https:{html.find(id="highres", href=True).get("href")}'
-                )
-        except AttributeError:
-            if html.find(text='404: Page Not Found'): 
-                CONNECTION.execute(DELETE[0], (href,), commit=1)
-            continue
-        
-        name = get_name(image.path[12:], mode[1]-1, 0)        
-        hash_ = get_hash(image.geturl())
-
         if len(tags.split()) < 10:
-            save_image(name, image.geturl())
-            tags = ' '.join((tags, get_tags(DRIVER, name)))
+            save_image(name, image)
+            tags += get_tags(DRIVER, name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
-            )
+            )        
+        if not save_image(name, image, exif): continue
+        hash_ = get_hash(name)
 
-        if save_image(name, image.geturl(), exif):
-             
-            CONNECTION.execute(
-                UPDATE[3],
-                (str(name), ' '.join(artists), tags, rating, image.geturl(), hash_, href), 
-                commit=1
-                )
+        CONNECTION.execute(UPDATE[3],
+            (str(name), ' '.join(artists), tags, rating, image, hash_, href),
+            commit=1
+            )
     
     print(progress)
 
@@ -112,11 +103,11 @@ def start(mode=1, initial=True):
     DRIVER = WEBDRIVER()
     mode = MODE[mode]
 
-    if initial: 
-        try: initialize(mode)
-        except: pass
+    if initial: initialize(mode)
     page_handler(
-        CONNECTION.execute(f'{SELECT[2]} AND type=%s',(SITE, mode[1]),fetch=1), 
+        CONNECTION.execute(
+            f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1
+            ), 
         mode
         )
     DRIVER.close()

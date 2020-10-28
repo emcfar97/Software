@@ -65,7 +65,7 @@ def page_handler(hrefs):
                 except: # Image unavailable
                     status = DRIVER.find('statusCode', type_=7, fetch=1).text
                     if status in ('403', '404'):
-                        CONNECTION.execute(DELETE[0], (href,), commit=1)
+                        CONNECTION.execute(DELETE, (href,), commit=1)
                 break
             
             except (exceptions.WebDriverException, AttributeError): continue
@@ -78,15 +78,14 @@ def page_handler(hrefs):
         tags, rating, exif = generate_tags(
             general=get_tags(DRIVER, name), custom=True, rating=True, exif=True
             )
-        hash_ = get_hash(image) 
+        if name.suffix == '.jpg': save_image(name, image, exif)
+        hash_ = get_hash(name) 
         
-        if save_image(name, image, exif): 
-
-            CONNECTION.execute(
-                UPDATE[3], 
-                (str(name), ' ', tags, rating, image, hash_, href),
-                commit=1
-                )
+        CONNECTION.execute(
+            UPDATE[3], 
+            (str(name), ' ', tags, rating, image, hash_, href),
+            commit=1
+            )
     
     print(progress)
 

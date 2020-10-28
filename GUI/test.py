@@ -1,7 +1,7 @@
 import qimage2ndarray
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QWidget, QSlider, QPushButton, QButtonGroup, QSizePolicy
+from PyQt5.QtWidgets import QSlider, QPushButton,  QMainWindow, QWidget
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 # from . import *
@@ -219,24 +219,24 @@ class Controls(QWidget):
         self.setLayout(self.layout)
         self.layout.addWidget(self.timeline)
         self.layout.addLayout(self.options)
-        self.setFixedHeight(75)
+        self.setFixedHeight(150)
         # self.setMouseTracking(True)
         
     def create_widgets(self):
         
-        self.play = self.create_button(QStyle.SP_MediaPlay, self.playback, 1)
-        self.pause = self.create_button(QStyle.SP_MediaPause, self.playback, 2)
-        self.stop = self.create_button(QStyle.SP_MediaStop, self.playback, 3)
+        self.play = self.create_button('SP_MediaPlay', self.playback, 1)
+        self.pause = self.create_button('SP_MediaPause', self.playback, 2)
+        self.stop = self.create_button('SP_MediaStop', self.playback, 3)
 
-        self.seek_b = self.create_button(QStyle.SP_MediaSkipBackward, self.seek, 0)
-        self.skip_b = self.create_button(QStyle.SP_MediaSeekBackward, self.skip, 0)
-        self.seek_f = self.create_button(QStyle.SP_MediaSeekForward, self.seek, 1)
-        self.skip_f = self.create_button(QStyle.SP_MediaSkipForward, self.skip, 1)
+        self.seek_b = self.create_button('SP_MediaSkipBackward', self.seek, 0)
+        self.skip_b = self.create_button('SP_MediaSeekBackward', self.skip, 0)
+        self.seek_f = self.create_button('SP_MediaSeekForward', self.seek, 1)
+        self.skip_f = self.create_button('SP_MediaSkipForward', self.skip, 1)
 
         self.time = QLabel('00:00:000 / 00:00:000')
         self.options.addWidget(self.time)
         
-        self.sound = self.create_button(QStyle.SP_MediaVolume, self.mute)
+        self.sound = self.create_button('SP_MediaVolume', self.mute)
         self.volume = QSlider(Qt.Horizontal)
         self.volume.setFixedWidth(50)
         self.volume.valueChanged.connect(self.volumeChanged)
@@ -245,14 +245,12 @@ class Controls(QWidget):
     def create_button(self, icon, slot, lamb=None):
 
         button = QPushButton(self)
-        if lamb: button.clicked.connect(lambda: slot(lamb))
+        if lamb: button.clicked.connect(lambda: slot(lam))
         else: button.clicked.connect(slot)
-        button.setIcon(self.style().standardIcon(icon))
+        button.setIcon(
+            self.style().standardIcon(getattr(QStyle, icon))
+            )
         self.options.addWidget(button)
-        
-        policy = button.sizePolicy()
-        policy.setHeightForWidth(True)
-        button.setSizePolicy(policy)
 
         return button
 
@@ -296,9 +294,9 @@ class Test(QMainWindow):
         super().__init__()
         self.setWindowTitle('Test')
         self.paths = paths        
-        # resolution = Qapp.desktop().screenGeometry()
-        # width, height = resolution.width(),  resolution.height()
-        # self.setGeometry(0, 0, resolution.width(), resolution.height())
+        resolution = Qapp.desktop().screenGeometry()
+        width, height = resolution.width(),  resolution.height()
+        self.setGeometry(0, 0, resolution.width(), resolution.height())
         
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
@@ -312,8 +310,8 @@ class Test(QMainWindow):
         self.controls.setParent(self)
         self.video = videoPlayer(self)
         self.video.setParent(self)
-        
         self.video.update(self.paths[0])
+        self.video.setParent(self)
         self.stack.addWidget(self.controls)
         self.stack.addWidget(self.video)
         
@@ -325,45 +323,13 @@ if __name__ == '__main__':
     from PyQt5.QtCore import Qt
     
     paths = [
-        r"E:\Users\Emc11\Dropbox\ん\エラティカ 三\bd12888ec1548ef0af7e5d6f87ba9f22.gif", 
-        r"E:\Users\Emc11\Dropbox\ん\エラティカ 三\284936fd8f83c61bdb04bc7a4ed3385f.gif", 
-        r"E:\Users\Emc11\Dropbox\ん\エラティカ 三\a07cc1a653a47ac90dbd394c1ebefbaa.gif"
+        r"E:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\bd12888ec1548ef0af7e5d6f87ba9f22.gif", 
+        r"E:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\284936fd8f83c61bdb04bc7a4ed3385f.gif", 
+        r"E:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三\a07cc1a653a47ac90dbd394c1ebefbaa.gif"
         ]
 
     Qapp = QApplication([])
 
-    # app = Test(paths)
-    
-    h = Controls(None)
-    h.show()
-    
-    def f(x): 
-        print(playback.id(x))
-
-    window = QWidget()
-    
-    playback = QButtonGroup(window)
-    play_layout = QHBoxLayout(window)
-    window.setLayout(play_layout)
-    
-    play = QPushButton(window)
-    pause = QPushButton(window)
-    stop = QPushButton(window)
-    
-    play.setIcon(window.style().standardIcon(QStyle.SP_MediaPlay))
-    pause.setIcon(window.style().standardIcon(QStyle.SP_MediaPause))
-    stop.setIcon(window.style().standardIcon(QStyle.SP_MediaStop))
-    
-    play_layout.addWidget(play)
-    play_layout.addWidget(pause)
-    play_layout.addWidget(stop)
-    
-    playback.addButton(play, 0)
-    playback.addButton(pause, 1)
-    playback.addButton(stop, 2)
-    
-    playback.buttonClicked.connect(f)
-    
-    window.show()
+    app = Test(paths)
 
     Qapp.exec_()

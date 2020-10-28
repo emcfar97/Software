@@ -3,21 +3,20 @@ else: from . import *
 
 def make_model(input_shape, classes, chckpnt=False, load=False):
 
-    if isinstance(load, str): 
-        model = keras.models.load_model(MODELS / f'{load}.hdf5')
-     
-    else:   
-        inputs = keras.Input(shape=(None, None, 3))
-        x = data_augmentation(inputs)
-        x = layers.experimental.preprocessing.Rescaling(1./255)(x)
-        x = layers.experimental.preprocessing.Resizing(*input_shape)(x)
+    inputs = keras.Input(shape=(*input_shape, 3))
+    x = data_augmentation(inputs)
+    x = layers.experimental.preprocessing.Rescaling(1./255)(x)
     
+    if isinstance(load, str): 
+        model = keras.models.load_model(MODELS / f'{load}.hdf5')(x)
+    
+    else:
         if load == 0:
-            x = layers.Conv2D(32, 3, activation='relu')(x)
-            x = layers.MaxPooling2D()(x)
-            x = layers.Conv2D(32, 3, activation='relu')(x)
+            x = layers.Conv2D(64, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
             x = layers.Conv2D(64, 3, activation='relu')(x)
+            x = layers.MaxPooling2D()(x)
+            x = layers.Conv2D(128, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
             x = layers.Flatten()(x)
             x = layers.Dense(128, activation='relu')(x)
@@ -100,12 +99,12 @@ def save_model(epoch, logs):
                 MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5'
                 )
 
-NAME, VERSION = 'Medium', 7
+NAME, VERSION = 'Medium', 6
 DATA = Path(r'E:\Users\Emc11\Training') / NAME
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 EPOCHS, INITIAL = 16, 0
-IMAGE_SIZE = 256, 256
-BATCH = 8
+IMAGE_SIZE = 180, 180
+BATCH = 32
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
     str(DATA), validation_split=0.2, subset='training', 
@@ -148,7 +147,7 @@ model.compile(
     metrics=['accuracy']
     )
 model.fit(
-    train_ds, validation_data=val_ds, epochs=EPOCHS + INITIAL, 
+    train_ds, validation_data=val_ds, epochs=EPOCHS, 
     callbacks=[checkpoint, tensorboard, save_callback], 
     initial_epoch=INITIAL, verbose=0
     )

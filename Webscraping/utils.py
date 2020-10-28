@@ -16,11 +16,9 @@ EXT = 'jp.*g|png|gif|webp|webm|mp4|JP.*G|PNG|GIF|WEBP|WEBM|MP4'
 
 METADATA = {
     'audio':'audio|has_audio',
-    '3d_cg': '3d',
-    '': 'uncensored'
+    '3d_cg': '3d'
     }
 GENERAL = {
-    '': 'solo_focus|uncensored',
     '3d_cg': '3d',
     'age_difference': 'age_difference|teenage_girl_and_younger_boy',
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
@@ -140,25 +138,21 @@ def get_name(path, type_, hasher=1, fetch=0):
 
     return PATH / TYPE[type_] / stem.replace('png', 'jpg').replace('jpeg','jpg')
 
-def get_hash(image):
+def get_hash(image, src=False):
     '''Return perceptual hash of image'''
         
-    if image.startswith('http'):
+    if src:
         
-        if re.search('jp.*g|png|gif', image.lower()):
-            image = Image.open(
-                BytesIO(requests.get(image, headers=HEADERS).content)
-                )
-        else: 
-            video_capture = VideoCapture(image).read()[-1]
-            image = cvtColor(video_capture, COLOR_BGR2RGB)
-            image = Image.fromarray(image)
+        # ext = f".{image.split('.')[-1]}"
+        # temp = tempfile.TemporaryFile(suffix=ext)
+        # temp.write(requests.get(image).content)
+        image = Image.open(BytesIO(requests.get(image).content))
     
-    elif re.search('jp.*g|png|gif', image.suffix.lower()): 
+    elif re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
         
         image = Image.open(image)
 
-    elif re.search('webm|mp4', image.suffix.lower()):
+    elif re.search('webm|mp4', image.suffix, re.IGNORECASE):
         
         video_capture = VideoCapture(str(image)).read()[-1]
         image = cvtColor(video_capture, COLOR_BGR2RGB)
@@ -169,11 +163,12 @@ def get_hash(image):
 
     return f'{imagehash.dhash(image)}'
 
-def get_tags(driver, path, video=False):
+def get_tags(driver, path):
 
     tags = set()
     frames = []
-    video = path.suffix in ('.gif', '.webm', '.mp4')
+    try: video = path.suffix in ('.gif', '.webm', '.mp4')
+    except: video = False
 
     if video:
 
@@ -218,6 +213,12 @@ def get_tags(driver, path, video=False):
     
     else:
         if video: temp_dir.cleanup()
+        tags.discard('rating:safe')
+        tags.discard('rating:questionable')
+        tags.discard('rating:explicit')
+        tags.discard('photorealistic')
+        tags.discard('realistic')
+        tags.discard('3d')
     
     return ' '.join(tags)
 

@@ -1,12 +1,14 @@
 def Controller():
     
-    from pathlib import Path
-    from Webscraping import start, insert_records#, Favorites, Photos, Illus
-    # from Webscraping.twitter import main
+    import Webscraping
+    from Webscraping import WEBDRIVER, Photos, Illus, insert_records
+    # from Webscraping.Photos import imagefap, pinterest
+    # from Webscraping.Illus import gelbooru
 
-    # Photos.toplesspulp.start()
-    # Favorites.favorites.start()
-    # start()
+    # pinterest.start()
+    # imagefap.start()
+    # Photos.start()
+    Illus.start()
     # insert_records.start()
 
 def Artist_statistics():
@@ -53,12 +55,11 @@ def Remove_redundancies():
 
     CONNECTION.commit()
 
-def Normalize_database():
-    
-    from pathlib import Path
-    from Webscraping import CONNECT
+def Normalize_dataset():
 
-    CONNECTION = CONNECT()
+    from pathlib import Path
+    from Webscraping import CONNECTION
+
     DELETE = 'DELETE FROM imageData WHERE path=%s'
 
     database = set(
@@ -67,13 +68,13 @@ def Normalize_database():
             )
         )
     windows = set(
-        Path(r'C:\Users\Emc11\Dropbox\ん').glob('エラティカ */*')
+        Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*')
         )
     y = windows - database
     x = database - windows
     
     for num1, file in enumerate(y, 1):
-        file.replace(Path(r'C:\Users\Emc11\Downloads\Images') / file.name)
+        file.replace(Path(r'C:\Users\Emc11\Downloads\Images\Test') / file.name)
     else: 
         try: print(f'{num1} files moved')
         except: print('0 files moved')
@@ -88,9 +89,7 @@ def Find_symmetric_videos():
 
     from pathlib import Path
     from cv2 import VideoCapture
-    from Webscraping import CONNECT
-    
-    CONNECTION = CONNECT()
+    from Webscraping import CONNECTION 
 
     def compare(seq):
         
@@ -121,25 +120,24 @@ def Find_symmetric_videos():
             success, frame = vidcap.read()
             
         if symmetric(frames): print(path)
-    
-    # path=6cc7368796da38a173b09a67c45dfd0
 
-def Get_images_dataset():
-    
+def Get_images_database():
+
     import tempfile, hashlib   
     from math import log
     from PIL import Image 
     from pathlib import Path
-    from Webscraping.utils import Progress
-    from cv2 import VideoCapture, imencode
+    from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
     HASHER = hashlib.md5()
-    DEST = Path(r'E:\Users\Emc11\Training\New folder')
 
-    def save_images(path, dest, crop_=False, gray_=False):
+    def save_images(path, dest):
         
+        # for file in path.iterdir():
         for file in path:
-            print(progress)
+            
+            new = dest / file.with_suffix('.jpg').name
+            if len(list(dest.glob('*'))) > 100500: break
             
             try:
                 
@@ -168,14 +166,12 @@ def Get_images_dataset():
                 for file in images:
                     
                     image = Image.open(file)
-                    if crop_: image = crop(image)
-                    if gray_: file, image = gray(image, file)
+                    image = crop(image)
                     image.thumbnail([512, 512])
-                    image.save(dest / file.name)
+                    if image.size == (512, 512):
+                        image.save(dest / file.name)
                 
             except: continue
-        
-        print(progress)
 
     def crop(image):
         
@@ -183,56 +179,41 @@ def Get_images_dataset():
         standard //= 2
         center = image.size[0] // 2, image.size[1] // 2
         
-        left  = center[0] - standard
+        left = center[0] - standard
         upper = center[1] - standard
         right = center[0] + standard
         lower = center[1] + standard
 
         return image.crop((left, upper, right, lower))
 
-    def gray(image, file):
-        
-        image = image.convert('L')
-        HASHER.update(image.tobytes())
-        name = file.with_name(f'{HASHER.hexdigest()}.jpg')
-        
-        return name, image
-    
-    images = [
-    ]
-    # images = list(Path(r'E:\Users\Emc11\Training\Temp').iterdir())
-    progress = Progress(len(images), '')
-    save_images(images, DEST)
+    paths = [
+        Path(r'E:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ'),
+        Path(r'E:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三')
+        ]
+    dests = [
+        Path(r'E:\Users\Emc11\Training\Medium\Photographs'),
+        Path(r'E:\Users\Emc11\Training\Medium\Illustrations')
+        ]
 
-def Get_images():
-    
-    from Webscraping import get_images
-    
-    # get_images.unsplash(1000, r'')
-    # get_images.shutterstock(2000, r'Medium\Illustration', 'landscape', 'illustration')
-    # get_images.boards = ['your-pinterest-likes'], ['']
-    # get_images.pinterest(125, r'Medium\Photograph', boards, 0)
-    # get_images.pinterest(220, r'Medium\Illustration', boards, 1)
-    # get_images.fineartamerica(500, r'Medium\Illustration', 'paintings')
-    # get_images.localfiles(1000, r'Medium', r'Medium\Illustration')
-    get_images.turbosquid(3000, r'Medium\3-Dimensional', 'low-poly')
+    num = 1
+    path = []
+    save_images(path, dests[num])
+    # save_images(paths[num], dests[num])
 
 def Clean_dataset():
     
     from pathlib import Path
     
     j = Path(r'E:\Users\Emc11\Training')
-    k = j / r'New folder\Illustrations'
-    l = j / r'New folder\Photographs'
+    k = j / r'Medium\Illustrations'
+    l = j / r'Medium\Photographs'
 
-    move = [
-    ]
-    delete = [
-    ]
+    move = []
+    delete = []
     
-    while move:
-        path = move.pop()
-        photo = l / path
+    for path in move:
+
+        # photo = l / path
         illus = k / path
         if illus.exists(): illus.replace(j / path)
         
@@ -243,9 +224,12 @@ def Clean_dataset():
         # else:
         #     if not photo.exists(): illus.replace(photo)
             
-    while delete:
-        
-        path = delete.pop()
+        move.remove(path)
+
+    print(move)
+
+    for path in delete:
+    
         photo = l / path
         illus = k / path
 
@@ -257,60 +241,31 @@ def Clean_dataset():
             if illus.exists(): illus.unlink()
             elif photo.exists(): photo.unlink()
         
+        delete.remove(path)
+
+    print(delete)
+
 def Check_Predictions():
     
     import cv2, random
-    import numpy as np
     from PIL import Image
-    from MachineLearning import Model, Path
+    from MachineLearning import Model, Path, np
 
-    model = Model('Medium-07.hdf5')
-    path = Path(r'E:\Users\Emc11\Dropbox\ん')
-    glob = path.glob('エラティカ *\*jpg')
+    model = Model('medium-01.hdf5')
+    path = Path(r'C:\Users\Emc11\Dropbox\Videos\ん')
+    glob = list(path.glob('エラティカ *\*jpg'))
 
-    for image in random.choices(list(glob), k=25):
+    for image in random.choices(glob, k=25):
 
         prediction = model.predict(image)
 
-        image = np.array(Image.open(image))
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-        cv2.imshow(prediction, image)
+        image_ = np.array(Image.open(image))
+        image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
+        cv2.imshow(prediction, image_)
         cv2.waitKey(0)
 
-def Pyqt5_mysql():
-    
-    from configparser import ConfigParser
-    from PyQt5.QtWidgets import QApplication
-    from PyQt5.QtSql import QSqlDatabase
-    
-    class Database():
-
-        def __init__(self):
-        
-            credentials = ConfigParser(delimiters='=') 
-            credentials.read('credentials.ini')
-
-            self.db=QSqlDatabase.addDatabase("QMYSQL")
-            self.db.setHostName(credentials.get('mysql', 'hostname'))
-            self.db.setUserName(credentials.get('mysql', 'username'))
-            self.db.setPassword(credentials.get('mysql', 'password'))
-            self.db.setDatabaseName(credentials.get('mysql', 'database'))
-            ok = self.db.open()
-
-    Qapp = QApplication([])
-
-    mydb = Database()
-
-    Qapp.exec_()
-
-    # pip install --ignore-installed pyqt5==5.12.6
-    
 # Controller()
 # Find_symmetric_videos()
 # Normalize_database() 
 # Get_images_dataset()
 # Clean_dataset()
-# Check_Predictions()
-# Get_images()
-Pyqt5_mysql()

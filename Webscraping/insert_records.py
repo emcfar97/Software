@@ -1,8 +1,7 @@
 import json
 from PIL import Image
-from urllib.parse import urlparse
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
-from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image
+from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image, re
 
 EXT = 'jp.*g|png|gif|webm|mp4'
 
@@ -12,9 +11,9 @@ def extract_files(path):
     errors_txt = path / 'Errors.txt'
     if errors_txt.exists():
         for image in errors_txt.read_text().split('\n'):
-            image = urlparse(image.strip())
-            name = path.parent / image.path.split('?')[0][1:]
-            save_image(name, image.geturl())
+            image = image.strip()
+            name = path.parent / image.split('/')[-1]
+            save_image(name, image)
         errors_txt.unlink()
     
     for file in path.iterdir():
@@ -26,8 +25,10 @@ def extract_files(path):
             ]
 
         for url in urls:
-            
-            name = path.parent / urlparse(url['url']).path[1:]
+                
+            title = url['title'].split('/')[-1].split()[0]
+            if not re.search(EXT, title): title = url['url'].split('/')[-1]
+            name = path.parent / title
             if name.suffix == '.png': name = name.with_suffix('.jpg')
             if name.exists(): continue
             image = (
@@ -39,14 +40,14 @@ def extract_files(path):
         
         file.unlink()
     
-    if errors: errors_txt.write_text('\n'.join(errors))
+    errors_txt.write_text('\n'.join(errors))
 
 def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
 
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
     
-    # extract_files(path / 'Generic')
+    extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.is_file()]
     progress = Progress(len(files) - 2, 'Files')
 
@@ -89,3 +90,4 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
     DRIVER.close()
 
     print('\nDone')
+
