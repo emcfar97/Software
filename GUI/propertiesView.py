@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
 
@@ -26,10 +26,20 @@ class Properties(QMainWindow):
         self.stat_layout = QVBoxLayout()
         self.props.setLayout(self.prop_layout)
         self.stats.setLayout(self.stat_layout)
+        
+        pos_y = QCursor().pos().y()
+        height = self.parent.height() * .5
+        screen = QDesktopWidget().screenGeometry(-1).height()
+
+        pos_y = ( 
+            pos_y + displacement 
+            if (displacement := screen - (height + pos_y)) < 0 else 
+            pos_y
+            )
 
         self.setGeometry(
-            QCursor().pos().x(), QCursor().pos().y(), 
-            self.parent.width() * .5, self.parent.height() * .5
+            QCursor().pos().x(), pos_y,
+            self.parent.width() * .5, height
             )  
         
     def create_widgets(self):
