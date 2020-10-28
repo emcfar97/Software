@@ -105,7 +105,7 @@ while True:
             url = input('Enter url: ')
             name = f'{url.split("/")[3]}.mp4'
             ffmpeg.input(url).output(
-                str(Path().home() / r'Downloads\Images\{name}')
+                str(Path().home() / rf'Downloads\Images\{name}')
                 ).run()
 
         elif user_input == '5': # check directories
