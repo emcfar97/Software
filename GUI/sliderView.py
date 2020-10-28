@@ -3,7 +3,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel 
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QStackedWidget, QLabel, QSizePolicy
 
 class Slideshow(QMainWindow):
     
@@ -12,30 +12,24 @@ class Slideshow(QMainWindow):
         super(Slideshow, self).__init__()
         self.setWindowTitle('Slideshow')
         self.parent = parent
-        self.configure_gui()
-        self.create_widgets()
-    
-    def configure_gui(self):
-        
-        self.stack = QStackedWidget()
+        self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
-
-        self.setGeometry(
-            0, 0, self.parent.width(),  self.parent.height()
-            )
-        self.setStyleSheet('background: black')
+        self.create_widgets()
           
     def create_widgets(self):
         
         self.label = QLabel(self)
         self.video = videoPlayer(self)
         self.label.setAlignment(Qt.AlignCenter)
+        self.label.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding
+            )
         self.stack.addWidget(self.label)
         self.stack.addWidget(self.video)
         
         self.setMouseTracking(True)
-        self.label.setMouseTracking(True)
-        self.video.setMouseTracking(True)
+        # self.label.setMouseTracking(True)
+        # self.video.setMouseTracking(True)
         
         self.timer = QTimer()
         self.setCursor(Qt.BlankCursor)
@@ -94,11 +88,25 @@ class Slideshow(QMainWindow):
         
         elif video and key_press == Qt.Key_M: self.video.mute()
         
+        elif key_press == Qt.Key_F11:
+
+            if self.isMaximized(): 
+                self.setStyleSheet('background: black')
+                self.showFullScreen()
+            else:
+                self.setStyleSheet('background: ')
+                self.showMaximized()
+
         elif key_press == Qt.Key_Escape:
             
-            if video: self.video.update(None)
-            self.hide()
-            
+            if self.isMaximized():
+                self.setStyleSheet('background: ')
+                self.video.update(None)
+                self.hide()
+            else: 
+                self.setStyleSheet('background: ')
+                self.showMaximized()
+
     def mouseMoveEvent(self, sender):
         
         self.timer.stop()
