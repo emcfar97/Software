@@ -103,9 +103,9 @@ class ManageData(QMainWindow):
 
     def __init__(self, parent):
         
-        super(ManageData, self).__init__(parent)
+        super(ManageData, self).__init__()
         self.setWindowTitle('Manage Data')
-        self.setWindowFlags(Qt.Window)
+        self.parent = parent
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
@@ -156,28 +156,34 @@ class ManageData(QMainWindow):
 
         for key, vals in kwargs.items():
             
-            if key in ('tags', 'artist'):
-                
-                for val in vals[0]:
-                    parameters.append(f'{key}=CONCAT({key}, "{val} ")')
-                for val in vals[1]:
-                    parameters.append(f'{key}=REPLACE({key}, " {val} ", " ")')
-                
-            elif key in ('stars', 'rating', 'type'):
-                
-                parameters.append(f'{key}={vals}')
-                
-            # if key == 'type':
-                
-            #     for path, in gallery:
-            #         path = ROOT / path
-            #         new = path.parts[5], self.TYPE[vals]
-            #         path.rename(path.parent.parent / new / path.name)
+            if vals:
+                if key in ('tags', 'artist'):
+                    
+                    for val in vals[0]:
+                        parameters.append(
+                            f'{key}=CONCAT({key}, "{val} ")'
+                            )
+                    for val in vals[1]:
+                        parameters.append(
+                            f'{key}=REPLACE({key}, " {val} ", " ")'
+                            )
+                    
+                elif key in ('stars', 'rating', 'type'):
+                    
+                    parameters.append(f'{key}={vals}')
+                    
+                    if key == 'type':
+                        
+                        for path, in gallery:
+                            path = ROOT / path
+                            new = self.TYPE[vals]
+                            dropbox = path.parent.parent
+                            path.rename(dropbox / new / path.name)
 
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
-        x = set(kwargs)
+        x = set(arg for arg in kwargs if kwargs[arg])
         y = set(self.gallery.query)
         z = x & y
         self.gallery.populate()
@@ -213,21 +219,21 @@ class ManageData(QMainWindow):
                         
         elif key_press == Qt.Key_Escape: self.close()
     
-        else: self.parent().keyPressEvent(event)
+        else: self.parent.keyPressEvent(event)
 
     def closeEvent(self, event):
 
         self.slideshow.close()
-        self.parent().windows[self.windowTitle()].remove(self)
-        if not self.parent().is_empty(): self.parent().show()
+        self.parent.windows[self.windowTitle()].remove(self)
+        if not self.parent.is_empty(): self.parent.show()
  
 class GestureDraw(QMainWindow):
     
     def __init__(self, parent):
         
-        super(GestureDraw, self).__init__(parent)
+        super(GestureDraw, self).__init__()
         self.setWindowTitle('Gesture Draw')
-        self.setWindowFlags(Qt.Window)
+        self.parent = parent
         self.configure_gui()
         self.create_widgets()
         self.show()
@@ -295,12 +301,12 @@ class GestureDraw(QMainWindow):
                             
             else: self.close()
         
-        else: self.parent().keyPressEvent(event)
+        else: self.parent.keyPressEvent(event)
 
     def closeEvent(self, event):
     
-        self.parent().windows[self.windowTitle()].remove(self)
-        if not self.parent().is_empty(): self.parent().show()
+        self.parent.windows[self.windowTitle()].remove(self)
+        if not self.parent.is_empty(): self.parent.show()
  
 class MachineLearning(QMainWindow):
     
