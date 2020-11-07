@@ -3,8 +3,9 @@ from pathlib import Path
 from ffprobe import FFProbe
 
 EXT = '.mp4', '.flv', '.mkv'
-SOURCE = Path().home() / r'Videos\Captures'
-DEST = Path().home() / r'Dropbox\Videos\Captures'
+DRIVE = Path(Path().cwd().drive)
+SOURCE = DRIVE / r'\Users\Emc11\Videos\Captures'
+DEST = DRIVE / r'\Users\Emc11\Dropbox\Videos\Captures'
 
 def get_stream(files, text):
         
@@ -69,7 +70,7 @@ while True:
             
             text = 1 if input('Overlay text? ').lower() in 'yes' else 0
             
-            for folder in SOURCE.glob(f'*[{get_folders()}]'):
+            for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
                 
                 files = [folder / file for file in folder.iterdir()]
                 new, stream = get_stream(files, text)
@@ -82,7 +83,7 @@ while True:
             
             text = 1 if input('Overlay text? ').lower() in 'yes' else 0
 
-            for folder in SOURCE.glob(f'*[{get_folders()}]'):
+            for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
 
                 files = [folder / file for file in folder.iterdir()]
                 new, stream = get_stream(files, text)
@@ -105,7 +106,7 @@ while True:
             url = input('Enter url: ')
             name = f'{url.split("/")[3]}.mp4'
             ffmpeg.input(url).output(
-                str(Path().home() / rf'Downloads\Images\{name}')
+                str(DRIVE / rf'\Users\Emc11\Downloads\Images\{name}')
                 ).run()
 
         elif user_input == '5': # check directories
