@@ -1,6 +1,6 @@
 from os import remove
 from subprocess import Popen
-from GUI import ROOT, CONNECTION, MODIFY, DELETE, NEZUMI
+from GUI import ROOT, CONNECTION, MODIFY, DELETE
 from GUI.galleryView import Gallery
 from GUI.previewView import Preview, Timer
 from GUI.sliderView import Slideshow
@@ -69,10 +69,10 @@ class App(QMainWindow):
         
     def is_empty(self): return sum(self.windows.values(), [])
 
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
 
-        key_press = sender.key()
-        modifiers = sender.modifiers()
+        key_press = event.key()
+        modifiers = event.modifiers()
         ctrl = modifiers == Qt.ControlModifier
 
         if ctrl:
@@ -81,11 +81,13 @@ class App(QMainWindow):
 
             elif key_press == Qt.Key_2: self.select('Gesture Draw', GestureDraw)
 
-        elif key_press == Qt.Key_Return: self.focusWidget().click()
+        elif key_press in (Qt.Key_Return, Qt.Key_Enter): 
+            
+            self.focusWidget().click()
 
         elif key_press == Qt.Key_Escape: self.close()
 
-    def closeEvent(self, sender):
+    def closeEvent(self, event):
         
         CONNECTION.close()
         Qapp.quit()
@@ -95,13 +97,15 @@ class ManageData(QMainWindow):
     TYPE = [
         None,
         'エラティカ ニ',
-        'エラティカ 三'
+        'エラティカ 三',
+        'エラティカ 四'
         ]
 
     def __init__(self, parent):
         
         super(ManageData, self).__init__(parent)
         self.setWindowTitle('Manage Data')
+        self.setWindowFlags(Qt.Window)
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
@@ -131,7 +135,7 @@ class ManageData(QMainWindow):
         
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
-        self.statusbar.setFixedHeight(30)
+        self.statusbar.setFixedHeight(25)
     
     def start_slideshow(self, index=None):
 
@@ -143,41 +147,42 @@ class ManageData(QMainWindow):
         except: return
         
         self.slideshow.move(0)
-        self.slideshow.showMaximized()
+        if self.slideshow.isHidden():
+            self.slideshow.showMaximized()
 
-    def change_records(self, gallery, *args):
+    def change_records(self, gallery, **kwargs):
         
         parameters = []
-        tags, artists, stars, rating, type_ = args
 
-        if tags:
-            for tag in tags[0]:
-                parameters.append(f'tags=CONCAT(tags, "{tag} ")')
-            for tag in tags[1]:
-                parameters.append(f'tags=REPLACE(tags, " {tag} ", " ")')
-
-        if artists:
-            for artist in artists[0]:
-                parameters.append(f'artist=CONCAT(artist, "{artist} ")')
-            for artist in artists[1]:
-                parameters.append(f'artist=REPLACE(artist, " {artist} ", " ")')
-
-        if stars: parameters.append(f'stars={stars}')
-        if rating: parameters.append(f'rating={rating}')
-        if type_: 
-            parameters.append(f'type={type_}')
-            # for path, in gallery:
-            #     path = ROOT / path
-            #     old, new = path.parts[5], self.TYPE[type_]
-            #     path.rename(path.parent.parent / new / path.name)
-            # parameters.append(f'path=REPACE(path, {old}, {new})')
+        for key, vals in kwargs.items():
+            
+            if key in ('tags', 'artist'):
+                
+                for val in vals[0]:
+                    parameters.append(f'{key}=CONCAT({key}, "{val} ")')
+                for val in vals[1]:
+                    parameters.append(f'{key}=REPLACE({key}, " {val} ", " ")')
+                
+            elif key in ('stars', 'rating', 'type'):
+                
+                parameters.append(f'{key}={vals}')
+                
+            # if key == 'type':
+                
+            #     for path, in gallery:
+            #         path = ROOT / path
+            #         new = path.parts[5], self.TYPE[vals]
+            #         path.rename(path.parent.parent / new / path.name)
 
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
+        x = set(kwargs)
+        y = set(self.gallery.query)
+        z = x & y
         self.gallery.populate()
     
-    def delete_records(self, sender=None):
+    def delete_records(self, event=None):
         
         message = QMessageBox.question(
             self, 'Delete', 'Are you sure you want to delete this?',
@@ -186,21 +191,21 @@ class ManageData(QMainWindow):
         
         if message == QMessageBox.Yes: 
 
-            gallery = gallery = [
+            gallery = [
                 (index.data(Qt.UserRole),) for index in 
                 self.gallery.images.selectedIndexes()
                 ]
             for path, in gallery: 
                 try: remove(path)
-                except PermissionError: return
                 except FileNotFoundError: pass
-                except TypeError: pass
+                except (PermissionError, TypeError): 
+                    gallery.remove((path,))
             CONNECTION.execute(DELETE, gallery, many=1, commit=1)
             self.gallery.populate()
     
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
 
-        key_press = sender.key()
+        key_press = event.key()
 
         if key_press == Qt.Key_Return: self.start_slideshow()
 
@@ -208,9 +213,9 @@ class ManageData(QMainWindow):
                         
         elif key_press == Qt.Key_Escape: self.close()
     
-        else: self.parent().keyPressEvent(sender)
+        else: self.parent().keyPressEvent(event)
 
-    def closeEvent(self, sender):
+    def closeEvent(self, event):
 
         self.slideshow.close()
         self.parent().windows[self.windowTitle()].remove(self)
@@ -222,11 +227,11 @@ class GestureDraw(QMainWindow):
         
         super(GestureDraw, self).__init__(parent)
         self.setWindowTitle('Gesture Draw')
+        self.setWindowFlags(Qt.Window)
         self.configure_gui()
         self.create_widgets()
         self.show()
         self.gallery.populate()
-        Popen([NEZUMI])
 
     def configure_gui(self):
         
@@ -249,7 +254,7 @@ class GestureDraw(QMainWindow):
         
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
-        self.statusbar.setFixedHeight(30)
+        self.statusbar.setFixedHeight(25)
         
     def start_session(self):
         
@@ -271,9 +276,9 @@ class GestureDraw(QMainWindow):
             self.stack.setCurrentIndex(1)
             self.timer.start(gallery, time)
    
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
         
-        key_press = sender.key()
+        key_press = event.key()
 
         if key_press == Qt.Key_Return: self.start_session()
 
@@ -290,9 +295,9 @@ class GestureDraw(QMainWindow):
                             
             else: self.close()
         
-        else: self.parent().keyPressEvent(sender)
+        else: self.parent().keyPressEvent(event)
 
-    def closeEvent(self, sender):
+    def closeEvent(self, event):
     
         self.parent().windows[self.windowTitle()].remove(self)
         if not self.parent().is_empty(): self.parent().show()
@@ -326,11 +331,11 @@ class MachineLearning(QMainWindow):
         self.stack.addWidget(self.train)
         self.stack.setCurrentIndex(1)
         
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
                 
-        if sender.key() == Qt.Key_Escape: self.close()
+        if event.key() == Qt.Key_Escape: self.close()
 
-    def closeEvent(self, sender):
+    def closeEvent(self, event):
     
         self.close()
         self.parent().show()
