@@ -32,17 +32,23 @@ class CONNECT:
                 if fetch: return self.CURSOR.fetchall()
                 return list()
 
-            except (sql.errors.OperationalError, sql.errors.DatabaseError): 
+            except (
+                sql.errors.OperationalError,
+                sql.errors.InterfaceError,
+                sql.errors.DatabaseError
+                ): 
                 
                 self.reconnect()
             
-            except sql.errors.ProgrammingError: return list()
-            
+            except sql.errors.ProgrammingError: return list() 
+
+        return list()
+
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
 
-    def reconnect(self, attempts=5, time=5):
+    def reconnect(self, attempts=5, time=15):
 
         self.DATAB.reconnect(attempts, time)
 
@@ -54,8 +60,14 @@ def get_frame(path):
 
 ROOT = Path(Path().cwd().drive)
 CONNECTION = CONNECT()
-BASE = f'SELECT REPLACE(path, "C:", "{ROOT}"), tags, artist, stars, rating, type, src FROM imageData'
+path = r'''
+    case type
+	when 1 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ ニ\\", path)
+	when 2 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 三\\", path)
+	when 3 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 四\\", path)
+    end as path
+    '''.format(ROOT)
+BASE = f'SELECT {path}, tags, artist, stars, rating, type, src FROM imageData'
 GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=REPLACE(%s, "{ROOT}", "C:")'
-MODIFY = f'UPDATE imageData SET {{}} WHERE path=REPLACE(%s, "{ROOT}", "C:")'
-DELETE = f'DELETE FROM imageData WHERE path=REPLACE(%s, "{ROOT}", "C:")'
-NEZUMI = rf'{ROOT}\Program Files (x86)\Lazy Nezumi Pro\LazyNezumiPro.exe'
+MODIFY = f'UPDATE imageData SET {{}} WHERE path=SUBSTRING(%s, 34)'
+DELETE = f'DELETE FROM imageData WHERE path=SUBSTRING(%s, 34)'
