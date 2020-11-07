@@ -40,14 +40,13 @@ class Gallery(QWidget):
             self.images.table.layoutChanged.emit
             )
 
-    def populate(self, sender=None, limit=10000, op='[<>=!]=?'):
+    def populate(self, event=None, limit=50000, op='[<>=!]=?'):
         
-        self.images.update([])
         self.images.clearSelection()
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
         
-        query = {
+        self.query = {
             'type': TYPE[self.type.checkedAction().text()],
             'rating': RATING[self.rating.checkedAction().text()],
             }
@@ -55,8 +54,7 @@ class Gallery(QWidget):
         
         if self.title == 'Gesture Draw':
             
-            query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
-
+            self.query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
         else: self.parent().parent().preview.show_image(None)
 
         for token in re.findall(f'\w+{op}[\w\*]+', string):
@@ -77,7 +75,7 @@ class Gallery(QWidget):
                 token = f'src={val}'
                 order = self.get_order(1)
 
-            query[col] = token
+            self.query[col] = token
         
         if string.strip():
     
@@ -88,23 +86,18 @@ class Gallery(QWidget):
             string = re.sub('-\+', '-', string)
             if not re.search('\+\w+', string): string += ' qwd'
 
-            query['tags'] = (
+            self.query['tags'] = (
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
 
-        if 'duplicates' in query:
-
-            del query['duplicates'] 
-            order = f'GROUP BY hash HAVING COUNT(hash) > 2 ' + order
-
-        if not any(query.values()): query[''] = 'path LIKE "C:%"'
+        if not any(self.query.values()): self.query[''] = 'NOT ISNULL(path)'
         
-        filter = " AND ".join(val for val in query.values() if val)
+        filter = " AND ".join(val for val in self.query.values() if val)
         
         self.thread.statement = f'{BASE} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
 
-    def get_order(self,type_=0,ORDER={'Ascending': 'ASC', 'Descending':'DESC'}):
+    def get_order(self, type_=0, ORDER={'Ascending':'ASC','Descending':'DESC'}):
         
         order = self.order[1].checkedAction().text()
         column = self.order[0].checkedAction().text()
@@ -120,15 +113,19 @@ class Gallery(QWidget):
          
         total = f'{total} image' if (total == 1) else f'{total} images'
         if select:
-            select = f'{select} image selected' if (select == 1) else f'{select} images selected'
+            select = (
+                f'{select} image selected' 
+                if (select == 1) else 
+                f'{select} images selected'
+                )
         else: select = ''
         
         self.parent().parent().statusbar.showMessage(f'   {total}     {select}')
     
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
     
-        key_press = sender.key()
-        modifiers = sender.modifiers()
+        key_press = event.key()
+        modifiers = event.modifiers()
         alt = modifiers == Qt.AltModifier
 
         if alt:
@@ -141,7 +138,7 @@ class Gallery(QWidget):
         
         elif key_press == Qt.Key_F5: self.populate()
 
-        else: self.parent().keyPressEvent(sender)
+        else: self.parent().keyPressEvent(event)
 
 class Ribbon(QWidget):
      
@@ -185,6 +182,7 @@ class Ribbon(QWidget):
         self.tags = QLineEdit(self)
         self.tags.setFixedWidth(250)
         self.timer = QTimer(self.tags)
+        
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().populate)
         self.tags.textChanged.connect(lambda: self.timer.start(750))
@@ -208,6 +206,7 @@ class Ribbon(QWidget):
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh.clicked.connect(self.parent().populate)
         self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
+        
         self.tags.setFocus()
         
     def update(self, string=''):
@@ -237,9 +236,9 @@ class Ribbon(QWidget):
         
         self.tags.setText(self.undo[-1])
         
-    def menuEvent(self, sender):
+    def menuEvent(self, event):
 
-        action = sender.text()
+        action = event.text()
 
         if action in self.undo:
 
@@ -251,25 +250,25 @@ class Ribbon(QWidget):
         
         self.update()
 
-    def go_back(self, sender=None, update=True):
+    def go_back(self, event=None, update=True):
         
-        if self.undo:
+        if len(self.undo) > 1:
             self.redo.append(self.undo.pop())
             if update: self.update()
 
-    def go_forward(self, sender=None, update=True):
+    def go_forward(self, event=None, update=True):
         
         if self.redo:
             self.undo.append(self.redo.pop())
             if update: self.update()
     
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
     
-        key_press = sender.key()
+        key_press = event.key()
 
         if key_press == Qt.Key_Return: pass
 
-        else: self.parent().keyPressEvent(sender)
+        else: self.parent().keyPressEvent(event)
 
 class ImageView(QTableView):
 
@@ -365,7 +364,7 @@ class ImageView(QTableView):
         if get_menu: return action_group, menu
         return action_group
     
-    def find_by_artist(self, sender):
+    def find_by_artist(self, event):
 
         artist = self.currentIndex().data(1000)[2].pop()
         if artist: self.parent().ribbon.tags.setText(artist)
@@ -373,7 +372,7 @@ class ImageView(QTableView):
             self, 'Artist', 'This image has no artist'
             )
 
-    def read_comic(self, sender):
+    def read_comic(self, event):
 
         self.parent().ribbon.tags.setText(
             f'comic:{self.currentIndex().data(200)}'
@@ -402,26 +401,32 @@ class ImageView(QTableView):
     
     def selectionChanged(self, select, deselect):
         
-        if not self.table.images: return
-        select, deselect = select.indexes(), deselect.indexes()
-        
-        if self.parent().title == 'Manage Data':
-            if not select:
-                index = self.selectedIndexes()
-                image = index[0].data(Qt.UserRole) if index else None
-            else: image = select[0].data(Qt.UserRole)
-            self.parent().parent().parent().preview.show_image(image)
-        
-        self.parent().statusbar(self.total(), len(self.selectedIndexes()))
+        if self.table.images:
 
-    def contextMenuEvent(self, sender): self.menu.popup(sender)
-    
-    def keyPressEvent(self, sender):
+            if self.parent().title == 'Manage Data':
+
+                if select := select.indexes(): 
+                    image = select[0].data(Qt.UserRole)
+                else: 
+                    index = sorted(
+                        self.selectedIndexes(), key=lambda x: x.data(300)
+                        )
+                    image = index[0].data(Qt.UserRole) if index else None
+
+                self.parent().parent().parent().preview.show_image(image)
+            
+            self.parent().statusbar(self.total(), len(self.selectedIndexes()))
+
+    def contextMenuEvent(self, event):
         
-        key_press = sender.key()
+        self.menu.popup(self.mapToGlobal(event))
+    
+    def keyPressEvent(self, event):
+        
+        key_press = event.key()
         mode = QItemSelectionModel()
         selection = QItemSelection()
-        modifier = sender.modifiers()
+        modifier = event.modifiers()
         ctrl = modifier == Qt.ControlModifier
         shift = modifier == Qt.ShiftModifier
         alt = modifier == Qt.AltModifier
@@ -434,7 +439,7 @@ class ImageView(QTableView):
             
             elif key_press in (Qt.Key_Right, Qt.Key_Left): 
                 
-                self.parent().keyPressEvent(sender)
+                self.parent().keyPressEvent(event)
         
         elif ctrl:
 
@@ -509,7 +514,7 @@ class ImageView(QTableView):
 
             else: self.setCurrentIndex(new)
 
-        else: self.parent().keyPressEvent(sender)
+        else: self.parent().keyPressEvent(event)
 
 class Model(QAbstractTableModel):
 
@@ -518,7 +523,7 @@ class Model(QAbstractTableModel):
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
         self.images = []
-        self.size = 5.17
+        self.size = 5.18
         
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
@@ -530,7 +535,7 @@ class Model(QAbstractTableModel):
 
     def columnCount(self, parent=None): return 5
 
-    def data(self, index, role, type=0):
+    def data(self, index, role):
         
         ind = (index.row() * 5) + index.column()
 
@@ -544,27 +549,27 @@ class Model(QAbstractTableModel):
         
         elif role == Qt.DecorationRole:
     
-            path = self.images[ind][0]
-            if path is None: return QVariant()
-            width = self.parent().parent().width() // self.size
-            
-            image = (
-                get_frame(path) 
-                if path.endswith(('.mp4', '.webm')) else 
-                QImage(path)
-                )
+            if path := self.images[ind][0]: 
 
-            image = image.scaled(
-                QSize(width, width), Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
-            
-            return QPixmap(image)
+                width = self.parent().parent().width() // self.size
+                
+                image = (
+                    get_frame(path) 
+                    if path.endswith(('.mp4', '.webm')) else 
+                    QImage(path)
+                    )
+
+                image = image.scaled(
+                    width, width, Qt.KeepAspectRatio, 
+                    transformMode=Qt.SmoothTransformation
+                    )
+                
+                return QPixmap(image)
 
         elif role == Qt.ToolTipRole:
             
             tag, art, sta, rat, typ, = self.images[ind][1:6]
-
+            
             tags = self.wrapper.wrap(
                 ' '.join(sorted(tag.replace('qwd ', '').split()))
                 )
@@ -578,7 +583,9 @@ class Model(QAbstractTableModel):
         elif role == 100: return (index.row() * 5), index.column()
         
         elif role == 200: return self.images[ind][6]
-            
+        
+        elif role == 300: return ind    
+        
         elif role == 1000:
             
             data = self.images[ind]
