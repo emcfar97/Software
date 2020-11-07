@@ -1,15 +1,13 @@
 def Controller():
     
     import Webscraping
-    from Webscraping import WEBDRIVER, Photos, Illus, insert_records
-    # from Webscraping.Photos import imagefap, pinterest
-    # from Webscraping.Illus import gelbooru
+    from Webscraping import Photos, insert_records
 
     # pinterest.start()
-    # imagefap.start()
-    # Photos.start()
-    Illus.start()
+    # Webscraping.Photos.imagefap.start()
+    Photos.metart.start()
     # insert_records.start()
+    # Webscraping.start()
 
 def Artist_statistics():
 
@@ -37,18 +35,13 @@ def Artist_statistics():
 def Remove_redundancies():
 
     from Webscraping import CONNECT
-    from os.path import exists
 
     CONNECTION = CONNECT()        
     SELECT = 'SELECT path, artist, tags FROM imageData WHERE path Like "C%"'
     UPDATE = 'UPDATE imageData SET artist=%s, tags=%s WHERE path=%s'
-    DELETE = 'DELETE FROM imageData WHERE path=%s'
 
     for (path, artist, tags,) in CONNECTION.execute(SELECT, fetch=1):
 
-        if not exists(path): 
-            CONNECTION.execute(DELETE, (path,))
-            continue
         artist = f' {" ".join(set(artist.split()))} '
         tags = f' {" ".join(set(tags.split()))} '
         CONNECTION.execute(UPDATE, (artist, tags, path))
@@ -59,13 +52,16 @@ def Normalize_dataset():
 
     from pathlib import Path
     from Webscraping import CONNECTION
-
-    DELETE = 'DELETE FROM imageData WHERE path=%s'
+    
+    SELECT = '''SELECT case type
+        when 1 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ ニ\\", path)
+        when 2 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 三\\", path)
+        when 3 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 四\\", path)
+        end as path FROM imageData'''
+    DELETE = 'DELETE FROM imageData WHERE path=SUBSTRING(%s, 34)'
 
     database = set(
-        Path(path) for path, in CONNECTION.execute(
-            'SELECT path FROM imageData WHERE path LIKE "C:%"', fetch=1
-            )
+        Path(path) for path, in CONNECTION.execute(SELECT, fetch=1)
         )
     windows = set(
         Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*')
@@ -264,8 +260,9 @@ def Check_Predictions():
         cv2.imshow(prediction, image_)
         cv2.waitKey(0)
 
-# Controller()
+Controller()
 # Find_symmetric_videos()
+# Remove_redundancies()
 # Normalize_database() 
 # Get_images_dataset()
 # Clean_dataset()
