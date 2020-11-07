@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QDesktopWidget, QApplication, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
 
@@ -27,20 +27,21 @@ class Properties(QMainWindow):
         self.props.setLayout(self.prop_layout)
         self.stats.setLayout(self.stat_layout)
         
-        pos_y = QCursor().pos().y()
-        height = self.parent.height() * .5
-        screen = QDesktopWidget().screenGeometry(-1).height()
+        # app = QApplication([])
+        size = self.parent.width() * .5, self.parent.height() * .5
+        screen_num = QDesktopWidget().screenNumber(self.parent)
+        # screen = app.screens()[screen_num]
+        position = [
+            QCursor().pos().x(), QCursor().pos().y()
+            ]
+        resolution = QDesktopWidget().screenGeometry(screen_num)
+        screen = resolution.width(), resolution.height()
 
-        pos_y = ( 
-            pos_y + displacement 
-            if (displacement := screen - (height + pos_y)) < 0 else 
-            pos_y
-            )
+        for num, (i, j, k) in enumerate(zip(size, position, screen)):
+            if (displacement := k - (i + j)) < 0: 
+                position[num] += displacement
 
-        self.setGeometry(
-            QCursor().pos().x(), pos_y,
-            self.parent.width() * .5, height
-            )  
+        self.setGeometry(*position, *size)  
         
     def create_widgets(self):
         
@@ -107,39 +108,32 @@ class Properties(QMainWindow):
         self.tags.setFocus()
         self.show()
     
-    def output(self, sender=None):
-
-        gallery = [(index[0].pop(),) for index in self.data if index[0]]
-        tags = self.validate(0)
-        artist = self.validate(1)
-        stars = self.stars.currentIndex()
-        rating = self.rating.currentIndex()
-        type = self.type.currentIndex()
+    def output(self, event=None):
         
         self.parent.windows.discard(self)
 
-        if gallery and (tags or artist or (0 < stars <= 5) or rating or type):
-            self.parent.parent().parent().change_records(
-                gallery, tags, artist, stars, rating, type
-                )
-        
-    def validate(self, type_):
-        
-        target = (
-            set(self.artist.text().split())
-            if type_ else 
-            set(self.tags.text().split())
+        self.parent.parent().parent().change_records(
+            [(index[0].pop(),) for index in self.data if index[0]], 
+            tags=self.validate(self.tags, self.place[0]), 
+            artist=self.validate(self.artist, self.place[1]), 
+            stars=self.stars.currentIndex(), 
+            rating=self.rating.currentIndex(), 
+            type=self.type.currentIndex()
             )
-        insert = target - self.place[type_]
-        remove = self.place[type_] - target
+        
+    def validate(self, query, place):
+        
+        target = set(query.text().split())
+        insert = target - place
+        remove = place - target
 
+        return insert, remove
         return (insert, remove) if any([insert, remove]) else tuple()
     
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
         
-        key_press = sender.key()
-        ctrl = sender.modifiers()
+        key_press = event.key()
 
-        if key_press == Qt.Key_Return: self.output()
+        if key_press in (Qt.Key_Return, Qt.Key_Enter): self.output()
         
         if key_press == Qt.Key_Escape: self.close()
