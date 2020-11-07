@@ -3,7 +3,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QStackedWidget, QLabel, QSizePolicy
+from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel, QSizePolicy, QWidget
 
 class Slideshow(QMainWindow):
     
@@ -22,17 +22,12 @@ class Slideshow(QMainWindow):
         self.video = videoPlayer(self)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding
+            QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding
             )
         self.stack.addWidget(self.label)
         self.stack.addWidget(self.video)
         
-        self.setMouseTracking(True)
-        # self.label.setMouseTracking(True)
-        # self.video.setMouseTracking(True)
-        
         self.timer = QTimer()
-        self.setCursor(Qt.BlankCursor)
         self.timer.timeout.connect(
             lambda: self.setCursor(Qt.BlankCursor)
             )               
@@ -42,26 +37,29 @@ class Slideshow(QMainWindow):
         self.index = (self.index + delta) % len(self.gallery)
         path = self.gallery[self.index][0]
 
-        if path.endswith(('.jpg', '.png')): 
-            image = QImage(path)
-            path = None
-        elif path.endswith(('gif', '.mp4', '.webm')): 
-            image = get_frame(path)
-        
-        pixmap = QPixmap(image).scaled(
-            self.size(), Qt.KeepAspectRatio, 
-            transformMode=Qt.SmoothTransformation
-            )
+        if path is None: pixmap = QPixmap()
+        else:
+            if path.endswith('.jpg'): 
+                image = QImage(path)
+                path = None
+            elif path.endswith(('gif', '.mp4', '.webm')):
+                image = get_frame(path)
+            else: print(path)
+            
+            pixmap = QPixmap(image).scaled(
+                self.size(), Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
 
         self.label.setPixmap(pixmap)
         self.stack.setCurrentIndex(0)
         self.video.update(path)
         
-    def keyPressEvent(self, sender):
+    def keyPressEvent(self, event):
 
-        key_press = sender.key()
+        key_press = event.key()
         video = self.stack.currentIndex()
-        ctrl = sender.modifiers() == Qt.ControlModifier
+        ctrl = event.modifiers() == Qt.ControlModifier
             
         if key_press in (Qt.Key_Right, Qt.Key_Left):
             
@@ -90,41 +88,62 @@ class Slideshow(QMainWindow):
         
         elif key_press == Qt.Key_F11:
 
-            if self.isMaximized(): 
-                self.setStyleSheet('background: black')
-                self.showFullScreen()
-            else:
-                self.setStyleSheet('background: ')
+            fullscreen = self.isFullScreen()
+            self.setMouseTracking(fullscreen)
+            
+            if fullscreen:
+                self.video.setStyleSheet('background: ')
+                self.setStyleSheet('background: ')   
                 self.showMaximized()
+            else:
+                self.video.setStyleSheet('background: black')
+                self.setStyleSheet('background: black')
+                self.setCursor(Qt.BlankCursor)
+                self.showFullScreen()
 
         elif key_press == Qt.Key_Escape:
             
-            if self.isMaximized():
-                self.setStyleSheet('background: ')
+            if self.isFullScreen():
+                self.video.setStyleSheet('background: ')
+                self.setStyleSheet('background: ') 
+                self.showMaximized()
+            else: 
                 self.video.update(None)
                 self.hide()
-            else: 
-                self.setStyleSheet('background: ')
-                self.showMaximized()
 
-    def mouseMoveEvent(self, sender):
+    def mouseMoveEvent(self, event):
         
-        self.timer.stop()
-        self.setCursor(Qt.ArrowCursor)
-        self.timer.start(1500)
+        if self.isFullScreen():
+
+            self.timer.stop()
+            self.setCursor(Qt.ArrowCursor)
+            self.timer.start(1500)
     
-    def wheelEvent(self, sender):
+    def resizeEvent(self, event):
+
+        if self.stack.currentIndex(): pass
         
-        self.video.volume(sender.angleDelta().y() // 12)  
+        else:
+            pixmap = self.label.pixmap().scaled(
+                event.size(), Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
+            self.label.setPixmap(pixmap)
+
+    def closeEvent(self, event): self.video.update(None)
+
+class ImageViewer(QWidget):
     
-    def closeEvent(self, sender): self.video.update(None)
+    def __init__(self, parent):
+        
+        super(QWidget, self).__init__(parent)
 
 class videoPlayer(QVideoWidget):
 
     def __init__(self, parent):
         
-        super().__init__(parent)
-        self.player = QMediaPlayer()
+        super(QVideoWidget, self).__init__(parent)
+        self.player = QMediaPlayer(self)
         self.player.setVolume(50) 
         self.player.setVideoOutput(self)
         self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
@@ -166,3 +185,7 @@ class videoPlayer(QVideoWidget):
         elif status not in (2, 1):
 
             self.parent().setCurrentIndex(1)
+            
+    def wheelEvent(self, event):
+        
+        self.volume(event.angleDelta().y() // 12)  
