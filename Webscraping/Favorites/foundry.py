@@ -47,7 +47,7 @@ def page_handler(hrefs):
             PATH / 'Images' / SITE / (artist + re.findall('-[^f\d]+', image)[0])
             )
 
-        CONNECTION.execute(UPDATE[1], (str(name), image, href), commit=1)
+        CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
     
     print(progress)
 

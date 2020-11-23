@@ -28,11 +28,11 @@ def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
     html = bs4.BeautifulSoup(page_source, 'lxml')
     try:
         hrefs = [
-            (target.get('href'), mode[1], SITE) for target in 
+            (target.get('href'), SITE) for target in 
             html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
             if (target.get('href'),) not in query
             ]
-        CONNECTION.execute(INSERT[0], hrefs, 2)
+        CONNECTION.execute(INSERT[0], hrefs, many=1)
         
         next = next_page(html.find('div', {'next-page-url': True}))   
         if hrefs and next: initialize(mode, next, query)
@@ -80,19 +80,18 @@ def page_handler(hrefs, mode):
             '_'.join(artist.text.split()[:-2]) for artist in 
             html.findAll(class_=re.compile('tag-type-artist|idol|studio'))
             ]
-        if len(tags.split()) < 10:
-            save_image(name, image)
-            tags += get_tags(DRIVER, name)
+        if len(tags.split()) < 10 and save_image(name, image):
+            tags += ' ' + get_tags(DRIVER, name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )        
-        if not save_image(name, image, exif): continue
-        hash_ = get_hash(name)
+        hash_ = get_hash(image, 1)
 
-        CONNECTION.execute(UPDATE[3],
-            (str(name), ' '.join(artists), tags, rating, image, hash_, href),
-            commit=1
-            )
+        if CONNECTION.execute(UPDATE[0], (
+            name.name, ' '.join(artists), tags, rating, mode[1], image, hash_, href
+            )):
+            if save_image(name, image, exif): CONNECTION.commit()
+            else: CONNECTION.rollback()
     
     print(progress)
 

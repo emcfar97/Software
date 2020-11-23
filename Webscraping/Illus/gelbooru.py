@@ -3,8 +3,6 @@ from ..utils import Progress, save_image, get_hash, get_name, generate_tags, bs4
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER
 SITE = 'gelbooru'
     
 def initialize(url='?page=favorites&s=view&id=173770&pid=0', query=0):
@@ -21,7 +19,7 @@ def initialize(url='?page=favorites&s=view&id=173770&pid=0', query=0):
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
     hrefs = [
-        (target.get('href'), 2, SITE) for target in 
+        (target.get('href'), SITE) for target in 
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
@@ -51,6 +49,7 @@ def page_handler(hrefs):
             '_'.join(tag.text.split(' ')[1:-1]) for tag in 
             html.findAll(class_='tag-type-general')
             )
+        type_ = 1 if 'photo_(medium)' in tags else 2
         artists = [
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
@@ -59,16 +58,15 @@ def page_handler(hrefs):
             tags, metadata, True, artists, True
             )
         
-        type_ = 0 if 'photo_(medium)' in tags else 1
         image = html.find(href=True, text='Original image').get('href')
-        name = get_name(image.split('/')[-1], type_, 0)
-        if not save_image(name, image, exif): continue
-        hash_ = get_hash(name)
+        name = get_name(image.split('/')[-1], type_-1, 0)
+        hash_ = get_hash(image, 1)
         
-        CONNECTION.execute(UPDATE[3], (
-            str(name), ' '.join(artists), tags, rating, image, hash_, href
-            ), commit=1
-            )
+        if CONNECTION.execute(UPDATE[0], (
+            name.name, ' '.join(artists), tags, rating, type_, image, hash_, href
+            )):
+            if save_image(name, image, exif): CONNECTION.commit()
+            else: CONNECTION.rollback()
 
     print(progress)
 
@@ -78,7 +76,8 @@ def start(initial=True):
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
     
-    DRIVER.login(SITE)
-    if initial: initialize()
+    if initial: 
+        DRIVER.login(SITE)
+        initialize()
     DRIVER.close()
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))

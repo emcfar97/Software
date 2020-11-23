@@ -1,31 +1,29 @@
 import time
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4
+from selenium.webdriver.common.keys import Keys
 
-SITE = 'blogspot'
-url = 'http://publicnudityproject.blogspot.com/p/blog-page.html'
+SITE = 'topless'
 
-def initialize(url, query=0):
+def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
     
-    def next_page(page):
-             
-        try: return page.get('href')
-        except AttributeError: return False
-
     if not query: query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
 
-    page_source = requests.get(url).content
-    html = bs4.BeautifulSoup(page_source, 'lxml')
+    DRIVER.get(f'{url}{year}')
+    for _ in range(10): 
+        DRIVER.find('html', Keys.END, type_=6)
+        time.sleep(1)
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+
     hrefs = [
-        (target.get('href'), SITE) for target in 
-        html.findAll('a', href=re.compile('.+://\d.bp.blogspot.com+'))
-        if (target.get('href'),) not in query
+        (target.find(href=True).get('href'), SITE) 
+        for target in html.findAll('figure')
+        if (target.find(href=True).get('href'),) not in query
         ]
     CONNECTION.execute(INSERT[0], hrefs, 1)
-        
-    next = next_page(html.find(title='Older Posts'))
-    if hrefs and next: initialize(next, query)
-    else: CONNECTION.commit()
+       
+    initialize(year-1, query)
+    CONNECTION.commit()
 
 def page_handler(hrefs):
 
@@ -54,12 +52,9 @@ def start():
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(0)
     
-    page_source = requests.get(url).content
-    html = bs4.BeautifulSoup(page_source, 'lxml')
-
-    for page in html.findAll('li'): initialize(page.contents[0].get('href'))
+    initialize()
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
         
     DRIVER.close()

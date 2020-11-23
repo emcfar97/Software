@@ -81,7 +81,7 @@ def page_handler(hrefs):
             name = image.replace('?format=', '.').split('/')[-1]
             name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
-            CONNECTION.execute(UPDATE[1], (name, hash_, image, href), commit=1)
+            CONNECTION.execute(UPDATE[2], (name, hash_, image, href), commit=1)
                               
 def xpath_soup(element):
     """

@@ -1,5 +1,5 @@
-import json, time
-from .. import ROOT, CONNECT, WEBDRIVER, INSERT, SELECT, UPDATE, WEBDRIVER
+import json
+from .. import ROOT, CONNECT, WEBDRIVER, INSERT
 from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
@@ -50,8 +50,7 @@ def page_handler(url, title):
                 )
 
         hash_ = get_hash(name)
-        CONNECTION.execute(
-            INSERT[5], 
+        CONNECTION.execute(INSERT[3], 
             (str(name), artist, tags, rating, 1, hash_, None, SITE), 
             commit=1
             )

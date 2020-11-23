@@ -1,8 +1,8 @@
 import time
 from pathlib import Path
 import mysql.connector as sql
-from selenium import webdriver
 from configparser import ConfigParser
+from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.action_chains import ActionChains
@@ -23,20 +23,19 @@ SELECT = [
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
-    'INSERT IGNORE INTO imageData(href, type, site) VALUES(%s, %s, %s)',
-    'INSERT IGNORE INTO favorites(href, site) VALUES(%s, %s)',
-    f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT IGNORE INTO imageData(artist, type, src, site) VALUES(%s, %s, %s, %s)',
-    f'INSERT IGNORE INTO imageData(path, artist, tags, rating, type, hash, src, page) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
-    f'INSERT IGNORE INTO imageData(path, artist, tags, rating, type, hash, src, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)'
+    'INSERT INTO imageData(href, site) VALUES(%s, %s)',
+    'INSERT INTO favorites(href, site) VALUES(%s, %s)',
+    f'INSERT INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
+    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
+    'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)'
     ]
 UPDATE = [
-    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s, hash=%s, type=%s WHERE href=%s',
+    f'UPDATE imageData SET path=%s, artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
+    f'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s WHERE href=%s',
-    f'REPLACE INTO imageData(path, hash, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"),%s,%s,%s)',
-    f'UPDATE imageData SET path=REPLACE(%s, "{ROOT}", "C:"), artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, src=%s, hash=%s WHERE href=%s',
-    f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
-    f'INSERT INTO favorites(path, hash, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s, %s)'
+    f'INSERT INTO imageData(path, hash, href, site) VALUES(%s, %s, %s, %s)',
+    f'UPDATE favorites SET checked=%s, saved=%s WHERE path=%s',
+    f'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, %s)'
     ]
 DELETE = [
     'DELETE FROM imageData WHERE href=%s AND ISNULL(path)'
@@ -55,35 +54,43 @@ class CONNECT:
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
-        
-        for _ in range(10):
 
+        for _ in range(10):
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
 
-                if commit:  return self.DATAB.commit()
-                elif fetch: return self.CURSOR.fetchall()
-                else: return 1
-
-            except sql.errors.IntegrityError:
-                self.CURSOR.execute(DELETE[0], (arguments[-1],))
-                self.DATAB.commit()
+                if commit: return self.DATAB.commit()
+                if fetch: return self.CURSOR.fetchall()
                 return 1
 
-            except sql.errors.OperationalError as error: 
-                if '2055' in error.msg: self.__init__()
-                else: continue
+            except sql.errors.ProgrammingError:
             
-            except sql.errors.ProgrammingError as error: raise error
+                break
 
-            except sql.errors.DatabaseError: self.__init__()
+            except sql.errors.IntegrityError:
+                
+                if statement.startswith('UPDATE'):
+                    self.execute(DELETE[0], (arguments[-1],), commit=1)
+                    return 1
+                elif statement.startswith('INSERT'): break
+
+            except (sql.errors.OperationalError, sql.errors.DatabaseError):
+                
+                self.reconnect()
+
+        return 0
             
-            except ReferenceError: self.__init__()
-
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
+
+    def rollback(self): self.DATAB.rollback()
+
+    def reconnect(self, attempts=5, time=15):
+
+        try: self.DATAB.reconnect(attempts, time)
+        except sql.errors.InterfaceError: return 0
 
 class WEBDRIVER:
     
@@ -107,7 +114,7 @@ class WEBDRIVER:
             8: self.driver.find_element_by_css_selector,
             }
 
-    def get(self, url, retry=3): 
+    def get(self, url, retry=3):
         
         for _ in range(retry):
             try: self.driver.get(url)
@@ -118,10 +125,9 @@ class WEBDRIVER:
         try:
             element = self.options[type_](address)
             
-            if keys: element.send_keys(keys)
             if click: element.click()
-            if move:
-                ActionChains(self.driver).move_to_element(element).perform()
+            if keys: element.send_keys(keys)
+            if move: ActionChains(self.driver).move_to_element(element).perform()
 
             return element
 
@@ -152,11 +158,6 @@ class WEBDRIVER:
 
     def refresh(self): self.driver.refresh()
 
-    def close(self):
-        
-        try: self.driver.close()
-        except: pass
-
     def login(self, site, type_=0):
 
         if site == 'flickr':
@@ -169,28 +170,13 @@ class WEBDRIVER:
                 self.find('login-password', Keys.RETURN, type_=2)
                 time.sleep(2.5)
 
-        elif site == 'metarthunter':
+        elif site in ('metarthunter', 'femjoyhunter', 'elitebabes'):
 
-            self.get('https://www.metarthunter.com/members/')
+            self.get(f'https://www.{site}.com/members/')
             self.find('//*[@id="user_login"]', CREDENTIALS.get(site, 'user'))
             self.find('//*[@id="user_pass"]', CREDENTIALS.get(site, 'pass'))
-            while self.current_url() == 'https://www.metarthunter.com/members/': 
-                time.sleep(2)
-                
-        elif site == 'femjoyhunter':
-
-            self.get('https://www.femjoyhunter.com/members/')
-            self.find('//*[@id="user_login"]', CREDENTIALS.get(site, 'user'))
-            self.find('//*[@id="user_pass"]', CREDENTIALS.get(site, 'pass'))
-            while self.current_url() == 'https://www.femjoyhunter.com/members/': 
-                time.sleep(2)
-                
-        elif site == 'elitebabes':
-
-            self.get('https://www.elitebabes.com/members/')
-            self.find('//*[@id="user_login"]', CREDENTIALS.get(site, 'user'))
-            self.find('//*[@id="user_pass"]', CREDENTIALS.get(site, 'pass'))
-            while self.current_url() == 'https://www.elitebabes.com/members/': 
+            self.find('//*[@id="user_pass"]', Keys.RETURN)
+            while self.current_url() ==f'https://www.{site}.com/members/': 
                 time.sleep(2)
 
         elif site == 'instagram':
@@ -203,7 +189,9 @@ class WEBDRIVER:
 
         elif site== 'gelbooru':
 
-            self.get('https://gelbooru.com/index.php?page=account&s=login&code=00')
+            self.get(
+                'https://gelbooru.com/index.php?page=account&s=login&code=00'
+                )
             self.find('//body/div[4]/div[4]/div/div/form/input[1]', CREDENTIALS.get(site, 'user'))
             self.find('//body/div[4]/div[4]/div/div/form/input[2]', CREDENTIALS.get(site, 'pass'))
             self.find('//body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
@@ -214,8 +202,12 @@ class WEBDRIVER:
             self.get(f'https://{type_}.sankakucomplex.com/user/login')
             
             while self.current_url().endswith('/user/login'):
-                self.find('//*[@id="user_name"]', CREDENTIALS.get(site, 'user').lower())
-                self.find('//*[@id="user_password"]', CREDENTIALS.get(site, 'pass'))
+                self.find(
+                    '//*[@id="user_name"]',CREDENTIALS.get(site, 'user').lower()
+                    )
+                self.find(
+                    '//*[@id="user_password"]', CREDENTIALS.get(site, 'pass')
+                    )
                 self.find('//*[@id="user_password"]', Keys.RETURN)
                 time.sleep(1)
         
@@ -274,6 +266,11 @@ class WEBDRIVER:
             self.find('//*[@id="password"]', Keys.RETURN)
             time.sleep(5)
     
+    def close(self):
+        
+        try: self.driver.close()
+        except: pass
+
 def start():
     
     import threading

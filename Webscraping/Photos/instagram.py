@@ -17,7 +17,7 @@ def initialize(url='/chairekakia/saved/', retry=0):
 
         html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
         hrefs = [
-            (target.get('href'), 1, SITE) for target in 
+            (target.get('href'), SITE) for target in 
             html.findAll('a', href=re.compile('/p/.+'))
             if (target.get('href'),) not in query
             ]
@@ -59,7 +59,7 @@ def page_handler(hrefs):
         if name.endswith(('jpg', 'jpeg')): save_image(name, image, exif)
         hash_ = get_hash(name) 
         
-        CONNECTION.execute(UPDATE[3], (
+        CONNECTION.execute(UPDATE[0], (
             name, ' ', tags, rating, image, hash_, href),
             commit=1
             )

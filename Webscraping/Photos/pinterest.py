@@ -42,8 +42,9 @@ def page_handler(hrefs, section):
         if section not in tags: tags += f' {section}'
         hash_ = get_hash(src, True)
 
-        CONNECTION.execute(
-            INSERT[5], (str(name), '', tags, rating, 0, hash_, src, SITE), commit=1
+        CONNECTION.execute(INSERT[3], 
+            (name.name, '', tags, rating, 1, hash_, src, SITE), 
+            commit=1
             )
         
     print(progress)

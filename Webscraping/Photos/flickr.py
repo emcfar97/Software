@@ -23,7 +23,7 @@ def initialize(url='/photos/140284163@N04/favorites/page1', query=0):
 
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
-        (target.get('href'), 1, SITE) for target in 
+        (target.get('href'), SITE) for target in 
         html.findAll(class_='overlay', href=re.compile('/photos/.+/\Z'))
         if (target.get('href'),) not in query
         ]
@@ -82,8 +82,8 @@ def page_handler(hrefs):
         hash_ = get_hash(name) 
         
         CONNECTION.execute(
-            UPDATE[3], 
-            (str(name), ' ', tags, rating, image, hash_, href),
+            UPDATE[0], 
+            (name.name, ' ', tags, rating, 1, image, hash_, href),
             commit=1
             )
     
