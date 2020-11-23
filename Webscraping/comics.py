@@ -4,43 +4,54 @@ from .utils import Progress, get_name, get_hash, get_tags, generate_tags
 
 CONNECTION = CONNECT()
 DRIVER = WEBDRIVER(True)
-path = ROOT.parent / r'Downloads\Images\Comics'
+path = ROOT / r'\Users\Emc11\Downloads\Images\Comics'
+
+def get_artist(text):
+
+    targets = re.findall(r'[^[]*\[([^]]*)\]', text)
+    targets = sum([i.split() for i in targets], [])
+    targets = [i for i in targets if i not in ['decensored', 'digital']]
+    targets = '_'.join([i.replace(',', '') for i in targets])
+
+    return targets.replace('_)', ')')
 
 def start():
-
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
     
-    folders = path.iterdir()
-    progress = Progress(len(hrefs), '\nComic')
+    folders = list(path.iterdir())
+    progress = Progress(len(folders), '\nComic')
 
-    for href, in hrefs:
+    for folder in folders:
         
         print(progress)
-
-        targets = re.findall('\[.+\]|\(\w+\)', folder.stem.lower())
-        artist = ' '.join('_'.join(i[1:-1].split()) for i in targets)
+        
+        commit = 1
+        artist = get_artist(folder.stem.lower())
         images = [
             (num, shutil.copy(file, get_name(file, 2, 1)))
             for num, file in enumerate(folder.iterdir())
             ]
         cover = images[0][1]
 
-        size_ = len(images)
         for num, image in images:
 
-            progress(size_, num, artist)
-
-            hash_ = get_hash(image)
+            try: hash_ = get_hash(image)
+            except: break
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, image), custom=True, rating=True, exif=False
+                general=get_tags(DRIVER, image), 
+                custom=True, rating=True, exif=False
                 )
-            CONNECTION.execute(
-                INSERT[4], 
-                (str(image), artist, tags, rating, 2, hash_, cover.stem, num)
-                )
-        CONNECTION.commit()
-        shutil.rmtree(folder)
-
+            if not (
+                CONNECTION.execute(INSERT[3], 
+                    (image.name, artist, tags, 
+                    rating, 3, hash_, None, None)
+                    )
+                or CONNECTION.execute(INSERT[4], (
+                    image.name, cover.name, num)
+                    )
+                ): commit = 0
+        if commit: 
+            CONNECTION.commit()
+            shutil.rmtree(folder)
+        
+    print(progress)
     DRIVER.close()
