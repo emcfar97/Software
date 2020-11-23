@@ -3,7 +3,7 @@ from pathlib import Path
 from ffprobe import FFProbe
 
 EXT = '.mp4', '.flv', '.mkv'
-DRIVE = Path(Path().cwd().drive)
+DRIVE = Path(Path(__file__).drive)
 SOURCE = DRIVE / r'\Users\Emc11\Videos\Captures'
 DEST = DRIVE / r'\Users\Emc11\Dropbox\Videos\Captures'
 
@@ -42,7 +42,7 @@ while True:
     try:
         if   user_input == '1': # convert vidoes
                 
-            text = 1 if input('Overlay text? ').lower() in 'yes' else 0
+            text = input('Overlay text? ').lower() in 'yes'
 
             files = [
                 (
@@ -68,7 +68,7 @@ while True:
 
         elif user_input == '2': # concat videos
             
-            text = 1 if input('Overlay text? ').lower() in 'yes' else 0
+            text = input('Overlay text? ').lower() in 'yes'
             
             for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
                 
@@ -81,7 +81,7 @@ while True:
 
         elif user_input == '3': # change framerate
             
-            text = 1 if input('Overlay text? ').lower() in 'yes' else 0
+            text = input('Overlay text? ').lower() in 'yes'
 
             for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
 
@@ -110,7 +110,8 @@ while True:
                 ).run()
 
         elif user_input == '5': # check directories
-        
+            
+            print(DRIVE)
             for file in SOURCE.iterdir():
                 if file.is_dir():
                     print(f'{file}: {[str(i) for i in file.iterdir()]}')
