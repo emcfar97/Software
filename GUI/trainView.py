@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget
 
-class Dataset(QWidget):
+class Train(QWidget):
 
     def __init__(self, parent):
         
