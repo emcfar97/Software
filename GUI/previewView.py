@@ -10,7 +10,6 @@ class Preview(QLabel):
         super(Preview, self).__init__(parent)
         self.title = parent.windowTitle()
         self.setAlignment(Qt.AlignCenter)
-        self.setContentsMargins(0, 0, 0, 0)
         self.setStyleSheet(f'background: {color}')
         self.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding
