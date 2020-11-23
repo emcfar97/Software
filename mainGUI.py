@@ -1,12 +1,14 @@
-from os import remove
-from subprocess import Popen
 from GUI import ROOT, CONNECTION, MODIFY, DELETE
 from GUI.galleryView import Gallery
 from GUI.previewView import Preview, Timer
-from GUI.sliderView import Slideshow
+from GUI.slideshowView import Slideshow
+from GUI.designView import Design
+from GUI.datasetView import Dataset
+from GUI.trainView import Train
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGroupBox,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QPushButton, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QAction, QSizePolicy
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 
 class App(QMainWindow):
     
@@ -49,9 +51,9 @@ class App(QMainWindow):
             option = QPushButton(name, self)
             option.setStyleSheet('''
                 QPushButton::focus:!hover {background: #b0caef};
+                text-align: left;
                 padding: 25px;
                 font: 12px;
-                text-align: left;
                 ''')
             option.clicked.connect(
                 lambda checked, x=name, y=app: self.select(x, y)
@@ -81,6 +83,8 @@ class App(QMainWindow):
 
             elif key_press == Qt.Key_2: self.select('Gesture Draw', GestureDraw)
 
+            elif key_press == Qt.Key_3: self.select('Machine Learning', MachineLearning)
+
         elif key_press in (Qt.Key_Return, Qt.Key_Enter): 
             
             self.focusWidget().click()
@@ -100,6 +104,11 @@ class ManageData(QMainWindow):
         'エラティカ 三',
         'エラティカ 四'
         ]
+    # TYPE = {
+    #     'Photograph': 'エラティカ ニ',
+    #     'Illustration': 'エラティカ 三',
+    #     'Comic': 'エラティカ 四'
+    #     }
 
     def __init__(self, parent):
         
@@ -149,6 +158,7 @@ class ManageData(QMainWindow):
         self.slideshow.move(0)
         if self.slideshow.isHidden():
             self.slideshow.showMaximized()
+        self.slideshow.activateWindow()
 
     def change_records(self, gallery, **kwargs):
         
@@ -178,14 +188,24 @@ class ManageData(QMainWindow):
                             path = ROOT / path
                             new = self.TYPE[vals]
                             dropbox = path.parent.parent
-                            path.rename(dropbox / new / path.name)
 
+                            try: path.rename(dropbox / new / path.name)
+                            except PermissionError as error:
+                                message = QMessageBox.question(
+                                    self, error.msg, 
+                                    QMessageBox.Retry | QMessageBox.Cancel
+                                    )
+                                if message == QMessageBox.Retry:
+                                    path.rename(dropbox / new / path.name)
+                                    
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
-        x = set(arg for arg in kwargs if kwargs[arg])
-        y = set(self.gallery.query)
-        z = x & y
+        # x = {
+        #     f'{key}={val}' for key, val in kwargs.items() if val
+        #     }
+        # y = set(self.gallery.query.values())
+        # z = x & y
         self.gallery.populate()
     
     def delete_records(self, event=None):
@@ -197,17 +217,23 @@ class ManageData(QMainWindow):
         
         if message == QMessageBox.Yes: 
 
+            images = self.gallery.images.table.images
             gallery = [
-                (index.data(Qt.UserRole),) for index in 
+                (images.pop(index.data(300))[0],) for index in 
                 self.gallery.images.selectedIndexes()
                 ]
             for path, in gallery: 
-                try: remove(path)
+                try: (ROOT / path).unlink()
                 except FileNotFoundError: pass
                 except (PermissionError, TypeError): 
                     gallery.remove((path,))
+                    
+                print(path[34:])
+
             CONNECTION.execute(DELETE, gallery, many=1, commit=1)
-            self.gallery.populate()
+            
+            self.gallery.statusbar(self.gallery.images.total())
+            self.gallery.images.clearSelection()
     
     def keyPressEvent(self, event):
 
@@ -243,7 +269,7 @@ class GestureDraw(QMainWindow):
         
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)  
-        self.stack.setContentsMargins(0, 0, 0, 0)
+        self.stack.setContentsMargins(0, 0, 5, 0)
 
         resolution = Qapp.desktop().screenGeometry()
         width, height = resolution.width(),  resolution.height()
@@ -294,10 +320,10 @@ class GestureDraw(QMainWindow):
 
             if self.stack.currentIndex():
                 
+                self.statusbar.show()
                 self.statusbar.showMessage('')
                 self.stack.setCurrentIndex(0)
                 self.gallery.populate()
-                self.statusbar.show()
                             
             else: self.close()
         
@@ -312,39 +338,125 @@ class MachineLearning(QMainWindow):
     
     def __init__(self, parent):
         
-        super().__init__(parent)
+        super(MachineLearning, self).__init__()
         self.setWindowTitle('Machine Learning')
+        self.parent = parent
         self.configure_gui()
+        self.create_menu()
         self.create_widgets()
         self.showMaximized()
 
     def configure_gui(self):
         
-        self.stack = QStackedWidget()
-        self.setCentralWidget(self.stack)
+        self.stack = QStackedWidget(self)
+        self.setCentralWidget(self.stack)  
+        # self.stack.setContentsMargins(0, 0, 5, 0)
+
         resolution = Qapp.desktop().screenGeometry()
-        self.setGeometry(
-            0, 0, 
-            resolution.width(),  resolution.height()
-            )  
+        width, height = resolution.width(),  resolution.height()
+        self.setGeometry(0, 0, width, height)
+
+    def create_menu(self):
+        
+        self.menubar = self.menuBar()
+        self.tooblar = self.addToolBar('')
+
+        # File
+        file = self.menubar.addMenu('File')
+        self.create_action(
+            file, ['New...', 'Create new project'], self.menuAction, 'Ctrl+N'
+            )
+        self.create_action(
+            file, ['Open...', 'Load project from file'], self.menuAction, 'Ctrl+O'
+            )
+        file.addMenu('Open recent')
+        file.addSeparator()
+        self.create_action(
+            file, ['Save', 'Save project to file'], self.menuAction, 'Ctrl+S'
+            )
+        file.addAction('Save As...', self.menuAction, shortcut='Ctrl+Shift+S')
+        file.addAction('Save a Copy...', self.menuAction)
+        file.addAction('Save Selection...', self.menuAction)
+        file.addAction('Export...', self.menuAction)
+        file.addSeparator()
+        file.addAction('Close', self.menuAction, shortcut='Ctrl+F4')
+        file.addSeparator()
+        file.addAction('Properties', self.menuAction)
+        file.addSeparator()
+        file.addAction('Quit', self.menuAction, shortcut='Ctrl+Q')
+
+        # Edit
+        edit = self.menubar.addMenu('Edit')
+        edit.addAction('Undo', self.menuAction, shortcut='Ctrl+Z')
+        edit.addAction('Redo', self.menuAction, shortcut='Ctrl+Y')
+        edit.addSeparator()
+        edit.addAction('Cut', self.menuAction, shortcut='Ctrl+X')
+        edit.addAction('Copy', self.menuAction, shortcut='Ctrl+C')
+        edit.addAction('Paste', self.menuAction, shortcut='Ctrl+V')
+        edit.addAction('Delete', self.menuAction, shortcut='Del')
+        edit.addSeparator()
+        edit.addAction('Select All', self.menuAction, shortcut='Ctrl+A')
+        edit.addAction('Find', self.menuAction, shortcut='Ctrl+F')
+        edit.addSeparator()
+        edit.addAction('Preferences', self.menuAction)
+
+        # View
+        view = self.menubar.addMenu('View')
+        view.addAction('Palettes', self.menuAction, shortcut='F9')
+        view.addAction('Inspector', self.menuAction, shortcut='F8')
+        view.addSeparator()
+        view.addAction('Zoom in', self.menuAction, shortcut='Ctrl++')
+        view.addAction('Zoom out', self.menuAction, shortcut='Ctrl+-')
+        view.addSeparator()
+        view.addAction('Fulscreen', self.menuAction, shortcut='F11')
+
+        # Layer
+        layer = self.menubar.addMenu('Layer')
+
+        # Tools
+        tools = self.menubar.addMenu('Tools')
+
+        # Help
+        help = self.menubar.addMenu('Help')
+
+    def create_action(self, menu, text, slot, shortcut): 
+        
+        if isinstance(text, list): 
+            menu.addAction(text[0], self.menuAction, shortcut=shortcut)
+            self.tooblar.addAction(
+                QAction(QIcon('new.bmp'), f'{text[1]} ({shortcut})', self)
+                )
+        else:
+            menu.addAction(text, self.menuAction, shortcut=shortcut)
 
     def create_widgets(self):
         
-        self.main = mainView.Main(self)
-        self.train = trainView.Training(self)
+        self.design = Design(self)
+        self.dataset = Dataset(self)
+        self.train = Train(self)
         
-        self.stack.addWidget(self.main)
+        self.stack.addWidget(self.design)
+        self.stack.addWidget(self.dataset)
         self.stack.addWidget(self.train)
-        self.stack.setCurrentIndex(1)
-        
+
+        self.statusbar = QStatusBar(self)
+        self.setStatusBar(self.statusbar)
+        self.statusbar.setFixedHeight(25)
+
+    def menuAction(self, action):
+
+        print(action)
+
     def keyPressEvent(self, event):
+        
+        key_press = event.key()
                 
-        if event.key() == Qt.Key_Escape: self.close()
+        if key_press == Qt.Key_Escape: self.close()
 
     def closeEvent(self, event):
-    
-        self.close()
-        self.parent().show()
+        
+        self.parent.windows[self.windowTitle()].remove(self)
+        if not self.parent.is_empty(): self.parent.show()
 
 Qapp = QApplication([])
 
