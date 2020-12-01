@@ -15,3 +15,5 @@ MachineLearning/Models
 MachineLearning/Logs
 Webscraping/PixivUtil
 GUI/test.py
+Webscraping/PixivUtil/config.ini
+Webscraping/PixivUtil/Data.sqlite
