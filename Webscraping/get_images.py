@@ -1,6 +1,6 @@
-import re, time, os
+import os
 from . import WEBDRIVER, ROOT
-from .utils import bs4, requests, Image, BytesIO
+from .utils import bs4, requests, re, time, Image, BytesIO
 from selenium.webdriver.common.keys import Keys
 
 path =  ROOT / r'E:\Users\Emc11\Training\New folder'
