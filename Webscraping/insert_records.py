@@ -1,9 +1,8 @@
 import json
 from PIL import Image
+from urllib.parse import urlparse
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
-from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image, re
-
-EXT = 'jp.*g|png|gif|webm|mp4'
+from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image
 
 def extract_files(path):
     
@@ -26,9 +25,7 @@ def extract_files(path):
 
         for url in urls:
                 
-            title = url['title'].split('/')[-1].split()[0]
-            if not re.search(EXT, title): title = url['url'].split('/')[-1]
-            name = path.parent / title
+            name = path.parent / urlparse(url['url']).path[1:]
             if name.suffix == '.png': name = name.with_suffix('.jpg')
             if name.exists(): continue
             image = (
@@ -36,6 +33,9 @@ def extract_files(path):
                 if url['url'] == 'about:blank' else 
                 url['url']
                 )
+            if name.suffix == '.gifv': 
+                name = name.with_suffix('.mp4')
+                image = image.replace('gifv', 'mp4')
             if not save_image(name, image): errors.append(image)
         
         file.unlink()
@@ -43,13 +43,13 @@ def extract_files(path):
     errors_txt.write_text('\n'.join(errors))
 
 def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
-
-    CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
     
     extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.is_file()]
     progress = Progress(len(files) - 2, 'Files')
+    
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER()
 
     for file in files:
         
@@ -77,12 +77,11 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
                     custom=True, rating=True, exif=False
                     )
 
-            CONNECTION.execute(
-                INSERT[5], 
-                (str(dest), '', tags, rating, 1, hash_, None, None), 
-                commit=1
-                )
-            file.replace(dest)
+            if CONNECTION.execute(INSERT[3], (
+                dest.name, '', tags, rating, 1, hash_, None, None
+                )):
+                if file.replace(dest): CONNECTION.commit()
+                else: CONNECTION.rollback()
             
         except Exception as error: print('\n', error)
     
