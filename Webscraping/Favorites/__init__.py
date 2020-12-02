@@ -5,7 +5,7 @@ def start():
 
     process = subprocess.Popen([
         r'Webscraping\PixivUtil\PixivUtil2.exe',
-        '-s', '6', 'y', '0', '7', '-x'
+        '-s', '6', 'y', '', '0', '400', '', '-x'
         #              start end  stop
         ])
     

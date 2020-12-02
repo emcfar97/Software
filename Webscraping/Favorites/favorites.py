@@ -154,7 +154,7 @@ def start():
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0,wait=30)
+    DRIVER = WEBDRIVER(wait=30)
     initialize()
 
     DRIVER.login('gelbooru')
