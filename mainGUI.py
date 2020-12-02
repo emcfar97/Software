@@ -105,10 +105,10 @@ class ManageData(QMainWindow):
         'エラティカ 四'
         ]
     # TYPE = {
-    #     'Photograph': 'エラティカ ニ',
-    #     'Illustration': 'エラティカ 三',
-    #     'Comic': 'エラティカ 四'
-    #     }
+        # 'Photograph': 'エラティカ ニ',
+        # 'Illustration': 'エラティカ 三',
+        # 'Comic': 'エラティカ 四'
+        # }
 
     def __init__(self, parent):
         
@@ -215,25 +215,20 @@ class ManageData(QMainWindow):
             QMessageBox.Yes | QMessageBox.No
             )
         
-        if message == QMessageBox.Yes: 
+        if message == QMessageBox.Yes:
 
-            images = self.gallery.images.table.images
             gallery = [
-                (images.pop(index.data(300))[0],) for index in 
-                self.gallery.images.selectedIndexes()
+                (index.data(Qt.UserRole),) for index in 
+                self.gallery.images.selectedIndexes() 
                 ]
             for path, in gallery: 
                 try: (ROOT / path).unlink()
-                except FileNotFoundError: pass
-                except (PermissionError, TypeError): 
-                    gallery.remove((path,))
+                except (FileNotFoundError, TypeError): pass
                     
-                print(path[34:])
-
             CONNECTION.execute(DELETE, gallery, many=1, commit=1)
             
-            self.gallery.statusbar(self.gallery.images.total())
-            self.gallery.images.clearSelection()
+            self.gallery.images.update([])
+            self.gallery.populate()
     
     def keyPressEvent(self, event):
 
