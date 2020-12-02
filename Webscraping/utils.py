@@ -16,7 +16,7 @@ EXT = 'jp.*g|png|gif|webp|webm|mp4|JP.*G|PNG|GIF|WEBP|WEBM|MP4'
 
 METADATA = {
     'audio':'audio|has_audio',
-    '3d_cg': '3d'
+    '3d_cg': '3d',
     }
 GENERAL = {
     '3d_cg': '3d',
@@ -40,7 +40,7 @@ GENERAL = {
     'pussy': 'pussy|vagina', 
     'pussy_juice': 'pussy_juice|pussy_juices|pussy_juice_trail|pussy_juice_puddle|pussy_juice_stain|pussy_juice_drip_through_clothes', 
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
-    'sex': 'sex|vaginal|anal|facial|oral|fellatio|cunnilingus|handjob|frottage|tribadism|group_sex|hetero', 
+    'sex': 'sex|aftersex|vaginal|anal|facial|oral|fellatio|cunnilingus|handjob|frottage|tribadism|group_sex|hetero', 
     'sex_toys': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
     'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls))', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
@@ -60,9 +60,9 @@ CUSTOM = {
     'underwear': 'underwear|panties|bra|briefs'
     }
 RATING = {
-    3: 'sex|hetero|vaginal|anal|cum|penis|vagina|pussy|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion', 
-    2: 'NOT (sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))',
-    1: 'NOT (sex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))'
+    3: 'sex|aftersex|hetero|vaginal|anal|cum|penis|vagina|pussy|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion', 
+    2: 'NOT (sex OR aftersex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))',
+    1: 'NOT (sex OR aftersex OR hetero OR vaginal OR anal OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))'
     }
 
 class Progress:
@@ -143,14 +143,13 @@ def get_hash(image, src=False):
         
     if src:
         
-        # ext = f".{image.split('.')[-1]}"
-        # temp = tempfile.TemporaryFile(suffix=ext)
-        # temp.write(requests.get(image).content)
-        image = Image.open(BytesIO(requests.get(image).content))
+        try: image = Image.open(BytesIO(requests.get(image).content))
+        except: return None
     
     elif re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
         
-        image = Image.open(image)
+        try: image = Image.open(image)
+        except: return None
 
     elif re.search('webm|mp4', image.suffix, re.IGNORECASE):
         
@@ -185,7 +184,7 @@ def get_tags(driver, path):
             frames.append(temp)
             success, frame = vidcap.read()
 
-        else: 
+        else:
             step = round(90 * log((len(frames) * .0007) + 1) + 1)
             frames = frames[::step]
     
@@ -201,8 +200,7 @@ def get_tags(driver, path):
             html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
             try:
                 tags.update([
-                    tag.text for tag in 
-                    html.find('tbody').findAll(href=True)
+                    tag.text for tag in html.find('tbody').findAll(href=True)
                     ])
                 break
             except AttributeError: 
@@ -213,11 +211,6 @@ def get_tags(driver, path):
     
     else:
         if video: temp_dir.cleanup()
-        tags.discard('rating:safe')
-        tags.discard('rating:questionable')
-        tags.discard('rating:explicit')
-        tags.discard('photorealistic')
-        tags.discard('realistic')
         tags.discard('3d')
     
     return ' '.join(tags)
@@ -225,7 +218,7 @@ def get_tags(driver, path):
 def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
     
     general = re.sub(
-        '(photorealistic)|(realistic)|((rating|score):\w+)', '', general
+        '(photorealistic|photo|realistic|(rating|score):\w+|solo_focus|uncensored|vagina|hetero) ', '', f' {general} '
         )
     tags = ['qwd']
 
@@ -277,7 +270,7 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
 
     else: 
 
-        tags = ' '.join(list(set(tags + general.split())))
+        tags = ' '.join(set(tags + general.split()))
         if rating is not None: tags = (tags, rating)
         
     return tags
@@ -295,7 +288,7 @@ def evaluate(tags, pattern):
                 
         return parse(tags.split(), query)
 
-    else: return re.search(f'\s({pattern})\s', tags)
+    else: return re.search(f' ({pattern}) ', tags)
 
 def parse(tags, search):
     
