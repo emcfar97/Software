@@ -1,4 +1,4 @@
-import shutil, re
+import shutil, re, send2trash
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
 from .utils import Progress, get_name, get_hash, get_tags, generate_tags
 
@@ -40,18 +40,20 @@ def start():
                 general=get_tags(DRIVER, image), 
                 custom=True, rating=True, exif=False
                 )
+            
             if not (
                 CONNECTION.execute(INSERT[3], 
                     (image.name, artist, tags, 
                     rating, 3, hash_, None, None)
                     )
-                or CONNECTION.execute(INSERT[4], (
+                and 
+                CONNECTION.execute(INSERT[4], (
                     image.name, cover.name, num)
                     )
                 ): commit = 0
         if commit: 
             CONNECTION.commit()
-            shutil.rmtree(folder)
+            send2trash.send2trash(str(folder))
         
     print(progress)
     DRIVER.close()
