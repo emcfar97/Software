@@ -1,9 +1,9 @@
 import re, textwrap
-from . import CONNECTION, BASE, get_frame
+from . import CONNECTION, BASE, COMIC, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QMessageBox, QStyle
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle
 
 TYPE = {
     'All': '',
@@ -51,29 +51,32 @@ class Gallery(QWidget):
             'rating': RATING[self.rating.checkedAction().text()],
             }
         order = self.get_order()
+        join = ''
         
         if self.title == 'Gesture Draw':
             
             self.query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
         else: self.parent().parent().preview.show_image(None)
 
-        for token in re.findall(f'\w+{op}[\w\*]+', string):
+        for token in re.findall(f'\w+{op}[\w\*\.]+', string):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
+
+            if col == 'comic': 
+                
+                del self.query['rating']
+                token = f'parent="{val}"'
+                order = self.get_order(1)
+                join = 'JOIN comic ON comic.path_=imageData.path'
             
-            if re.search('\*', val): 
+            elif re.search('\*', val):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
 
             elif re.search('\D', val):
 
                 token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
-            
-            elif col == 'comic': 
-                
-                token = f'src={val}'
-                order = self.get_order(1)
 
             self.query[col] = token
         
@@ -91,10 +94,14 @@ class Gallery(QWidget):
                 )
 
         if not any(self.query.values()): self.query[''] = 'NOT ISNULL(path)'
+
+        if '3' in self.query['type'] and 'comic' not in self.query:
+            join = 'JOIN comic ON comic.path_=imageData.path'
+            self.query['pages'] = 'page=0'
         
         filter = " AND ".join(val for val in self.query.values() if val)
         
-        self.thread.statement = f'{BASE} WHERE {filter} {order} LIMIT {limit}'
+        self.thread.statement = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
 
     def get_order(self, type_=0, ORDER={'Ascending':'ASC','Descending':'DESC'}):
@@ -133,6 +140,8 @@ class Gallery(QWidget):
             if key_press == Qt.Key_Left: self.ribbon.go_back()
                 
             elif key_press == Qt.Key_Right: self.ribbon.go_forward()
+            
+            else: self.parent().keyPressEvent(event)
 
         elif key_press == Qt.Key_F4: self.ribbon.tags.setFocus()
         
@@ -144,7 +153,7 @@ class Ribbon(QWidget):
      
     def __init__(self, parent):
          
-        super().__init__(parent)
+        super(Ribbon, self).__init__(parent)
         self.configure_gui()
         self.create_widgets()
         
@@ -202,14 +211,18 @@ class Ribbon(QWidget):
                 )
             self.select.addRow('Time:', self.time)
     
-        self.refresh = QPushButton()
+        self.refresh = QPushButton(self)
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh.clicked.connect(self.parent().populate)
         self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
         
+        self.multi = QCheckBox('Multi-selection', self)
+        self.multi.clicked.connect(self.changeSelectionMode)
+        self.layout.addWidget(self.multi, 1, Qt.AlignLeft)
+
         self.tags.setFocus()
         
-    def update(self, string=''):
+    def update(self, string='', check=1):
 
         if string:
 
@@ -229,13 +242,39 @@ class Ribbon(QWidget):
         for state in reversed(self.undo[1:] + self.redo[::-1]):
             
             action = QAction(state, menu, checkable=True)
-            if state == string: action.setChecked(True)
+            if state == string and check: 
+                action.setChecked(True)
+                check=0
             menu.addAction(action)
 
         else: self.menu.setMenu(menu)
         
         self.tags.setText(self.undo[-1])
+    
+    def go_back(self, event=None, update=True):
         
+        if len(self.undo) > 1:
+            self.redo.append(self.undo.pop())
+            if update: self.update()
+
+    def go_forward(self, event=None, update=True):
+        
+        if self.redo:
+            self.undo.append(self.redo.pop())
+            if update: self.update()
+    
+    def changeSelectionMode(self, event):
+        
+        if event:
+            self.parent().images.setSelectionMode(
+                QAbstractItemView.MultiSelection
+                )
+        else:
+            self.parent().images.setSelectionMode(
+                QAbstractItemView.ExtendedSelection
+                )
+            self.parent().images.clearSelection()
+    
     def menuEvent(self, event):
 
         action = event.text()
@@ -250,18 +289,6 @@ class Ribbon(QWidget):
         
         self.update()
 
-    def go_back(self, event=None, update=True):
-        
-        if len(self.undo) > 1:
-            self.redo.append(self.undo.pop())
-            if update: self.update()
-
-    def go_forward(self, event=None, update=True):
-        
-        if self.redo:
-            self.undo.append(self.redo.pop())
-            if update: self.update()
-    
     def keyPressEvent(self, event):
     
         key_press = event.key()
@@ -275,9 +302,9 @@ class ImageView(QTableView):
     def __init__(self, parent):
 
         super(QTableView, self).__init__(parent)
-        self.menu = self.create_menu()
         self.table = Model(self)   
         self.setModel(self.table)
+        self.menu = self.create_menu()
         for header in [self.horizontalHeader(), self.verticalHeader()]:
             header.setSectionResizeMode(header.Stretch)
             header.hide()
@@ -297,6 +324,7 @@ class ImageView(QTableView):
         
         menu = QMenu(self)
         parent = self.parent()
+        self.comic = QAction('Read comic', menu, triggered=self.read_comic)
         
         temp_menu, sortMenu = self.create_submenu(
             menu, 'Sort by', 
@@ -324,16 +352,10 @@ class ImageView(QTableView):
                     )
                 )                
             menu.addSeparator()
-            menu.addAction(
-                QAction(
-                    'Find more by artist', menu, triggered=self.find_by_artist
-                    )
+            self.artist = QAction(
+                'Find more by artist', menu, triggered=self.find_by_artist
                 )
-            menu.addAction(
-                QAction(
-                    'Read comic', menu, triggered=self.read_comic                    
-                    )
-                )
+            menu.addAction(self.artist)
             menu.addSeparator()
             menu.addAction(
                 QAction(
@@ -374,9 +396,10 @@ class ImageView(QTableView):
 
     def read_comic(self, event):
 
-        self.parent().ribbon.tags.setText(
-            f'comic:{self.currentIndex().data(200)}'
+        parent, = CONNECTION.execute(
+            COMIC, (self.currentIndex().data(Qt.UserRole),), fetch=1
             )
+        self.parent().ribbon.tags.setText(f'comic={parent[0]}')
     
     def duplicates(self):
 
@@ -402,16 +425,16 @@ class ImageView(QTableView):
     def selectionChanged(self, select, deselect):
         
         if self.table.images:
-
+            
             if self.parent().title == 'Manage Data':
 
-                if select := select.indexes(): 
+                if select := select.indexes():
                     image = select[0].data(Qt.UserRole)
-                else: 
-                    index = sorted(
-                        self.selectedIndexes(), key=lambda x: x.data(300)
-                        )
-                    image = index[0].data(Qt.UserRole) if index else None
+                
+                elif self.selectedIndexes(): 
+                    image = min(self.selectedIndexes()).data(Qt.UserRole)
+                
+                else: image = None
 
                 self.parent().parent().parent().preview.show_image(image)
             
@@ -419,6 +442,9 @@ class ImageView(QTableView):
 
     def contextMenuEvent(self, event):
         
+        if self.parent().title == 'Manage Data' and self.currentIndex().data(200) == 'Comic':
+            self.menu.insertAction(self.artist, self.comic)
+        else: self.menu.removeAction(self.comic)
         self.menu.popup(self.mapToGlobal(event))
     
     def keyPressEvent(self, event):
@@ -437,15 +463,15 @@ class ImageView(QTableView):
             
                 Properties(self.parent(), self.selectedIndexes())
             
-            elif key_press in (Qt.Key_Right, Qt.Key_Left): 
-                
-                self.parent().keyPressEvent(event)
+            else: self.parent().keyPressEvent(event)
         
         elif ctrl:
 
             if key_press == Qt.Key_A: self.selectAll()
                     
             elif key_press == Qt.Key_C: self.copy_path()
+            
+            else: self.parent().keyPressEvent(event)
             
         elif key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
             
@@ -541,13 +567,7 @@ class Model(QAbstractTableModel):
 
         if not index.isValid() or ind >= len(self.images): return QVariant()
         
-        if role == Qt.SizeHintRole:
-            
-            width = self.parent().parent().width() // self.size
-            
-            return QSize(width, width)
-        
-        elif role == Qt.DecorationRole:
+        if role == Qt.DecorationRole:
     
             if path := self.images[ind][0]: 
 
@@ -566,7 +586,7 @@ class Model(QAbstractTableModel):
                 
                 return QPixmap(image)
 
-        elif role == Qt.ToolTipRole:
+        if role == Qt.ToolTipRole:
             
             tag, art, sta, rat, typ, = self.images[ind][1:6]
             
@@ -578,15 +598,21 @@ class Model(QAbstractTableModel):
                 )
             return '\n'.join(tags + rest)
 
-        elif role == Qt.UserRole: return QVariant(self.images[ind][0])
+        if role == Qt.SizeHintRole:
+            
+            width = self.parent().parent().width() // self.size
+            
+            return QSize(width, width)
         
-        elif role == 100: return (index.row() * 5), index.column()
+        if role == Qt.UserRole: return self.images[ind][0]
         
-        elif role == 200: return self.images[ind][6]
+        if role == 100: return (index.row() * 5), index.column()
         
-        elif role == 300: return ind    
+        if role == 200: return self.images[ind][5]
         
-        elif role == 1000:
+        if role == 300: return ind
+
+        if role == 1000:
             
             data = self.images[ind]
             path = {data[0]} if data[0] else set()
