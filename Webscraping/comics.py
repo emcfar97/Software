@@ -18,6 +18,7 @@ def get_artist(text):
 def start():
     
     folders = list(path.iterdir())
+    if not len(folders): return
     progress = Progress(len(folders), '\nComic')
 
     for folder in folders:
