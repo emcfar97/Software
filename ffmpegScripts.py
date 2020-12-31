@@ -11,7 +11,7 @@ def get_stream(files, text):
         
     new = DEST / files[0].with_suffix('.mp4').name
 
-    if text:
+    if text and text in 'yes':
         stream = [
             ffmpeg.input(str(file)).drawtext(
                 text=file.stem, fontsize=45, 
@@ -42,7 +42,7 @@ while True:
     try:
         if   user_input == '1': # convert vidoes
                 
-            text = input('Overlay text? ').lower() in 'yes'
+            text = input('Overlay text? ').lower()
 
             files = [
                 (
@@ -53,7 +53,7 @@ while True:
             
             for file, mp4 in files:
                 try: 
-                    if text:
+                    if text and text in 'yes':
                         metadata = FFProbe(str(file)).streams[0]
                         ffmpeg.input(str(file)).drawtext(
                             text=file.stem, fontsize=45, 
@@ -68,7 +68,7 @@ while True:
 
         elif user_input == '2': # concat videos
             
-            text = input('Overlay text? ').lower() in 'yes'
+            text = input('Overlay text? ').lower()
             
             for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
                 
@@ -84,7 +84,7 @@ while True:
 
         elif user_input == '3': # change framerate
             
-            text = input('Overlay text? ').lower() in 'yes'
+            text = input('Overlay text? ').lower()
 
             for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
 
@@ -101,7 +101,7 @@ while True:
                     )
                 try:
                     ffmpeg.concat(*stream).setpts(
-                        f'{desired / duration:.4f}*PTS') \
+                        f'{(desired - 1) / duration:.4f}*PTS') \
                         .output(str(new), crf=20, preset='fast'
                         ).run()
                 except Exception as error: print(error); continue
