@@ -1,11 +1,16 @@
-import json
+import json, cv2
 from PIL import Image
 from urllib.parse import urlparse
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
 from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image
 
-def extract_files(path):
+EXT = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.webm', '.mp4'
+MATCH = cv2.imread(r'Webscraping\match.jpg')
+
+def extract_files(path, dest=None):
     
+    if dest is None: dest = path.parent
+
     errors = []
     errors_txt = path / 'Errors.txt'
     if errors_txt.exists():
@@ -24,9 +29,9 @@ def extract_files(path):
             ]
 
         for url in urls:
-                
-            name = path.parent / urlparse(url['url']).path[1:]
-            if name.suffix == '.png': name = name.with_suffix('.jpg')
+            
+            path = urlparse(url['url']).path[1:]
+            name = dest / path.split('/')[-1]
             if name.exists(): continue
             image = (
                 f'https://{url["title"]}'
@@ -42,11 +47,24 @@ def extract_files(path):
     
     errors_txt.write_text('\n'.join(errors))
 
+def similarity(path):
+
+    if path.suffix in EXT[:2]: 
+        image = cv2.imread(str(path))
+    else:
+        image = cv2.VideoCapture(str(path)).read()[-1]
+
+    if image.shape == MATCH.shape:
+        k = cv2.subtract(image, MATCH)
+        return (k.min() + k.max()) == 0
+
+    return False
+
 def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
     
     extract_files(path / 'Generic')
-    files = [file for file in path.iterdir() if file.is_file()]
-    progress = Progress(len(files) - 2, 'Files')
+    files = [file for file in path.iterdir() if file.suffix in EXT]
+    progress = Progress(len(files), 'Files')
     
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
@@ -56,13 +74,13 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
         print(progress)
         
         try:
-            if (dest := get_name(file, 0, 1)).exists():
+            if (dest := get_name(file, 0, 1)).exists() or similarity(file):
                 file.unlink()
                 continue
             
-            hash_ = get_hash(file)
+            if not (hash_ := get_hash(file)): continue
 
-            if dest.suffix.lower() == '.jpg':
+            if dest.suffix.lower() ('.jpg', '.png'):
 
                 tags, rating, exif = generate_tags(
                     general=get_tags(DRIVER, file), 
@@ -83,7 +101,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
                 if file.replace(dest): CONNECTION.commit()
                 else: CONNECTION.rollback()
             
-        except Exception as error: print('\n', error)
+        except Exception as error: print(error, '\n')
     
     print(progress)
     DRIVER.close()
