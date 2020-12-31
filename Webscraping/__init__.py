@@ -7,6 +7,8 @@ from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.action_chains import ActionChains
 
+CREDENTIALS = ConfigParser(delimiters='=') 
+CREDENTIALS.read('credentials.ini')
 ROOT = Path(Path().cwd().drive)
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
@@ -15,7 +17,7 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
     f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
     f'''
-        SELECT REPLACE(save_name, "{ROOT}", "C:"),'/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
+        SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
         ''',
     f'SELECT * FROM imagedata WHERE path=%s'
@@ -25,7 +27,8 @@ INSERT = [
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
-    'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)'
+    'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
+    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s. %s)',
     ]
 UPDATE = [
     f'UPDATE imageData SET path=%s, artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
@@ -36,14 +39,20 @@ UPDATE = [
     f'INSERT INTO favorites(path, hash, src, href, site) VALUES(%s, %s, %s, %s, %s)'
     ]
 DELETE = [
-    'DELETE FROM imageData WHERE href=%s AND ISNULL(path)'
+    'DELETE FROM imageData WHERE href=%s AND ISNULL(path)',
+    'DELETE FROM favorites WHERE href=%s AND ISNULL(path)'
     ]
 
 class CONNECT:
 
     def __init__(self):
 
-        self.DATAB = sql.connect(option_files='self.credentials.ini')
+        self.DATAB = sql.connect(
+            user=CREDENTIALS.get('mysql', 'username'), 
+            password=CREDENTIALS.get('mysql', 'password'), 
+            database=CREDENTIALS.get('mysql', 'database'), 
+            host=CREDENTIALS.get('mysql', 'hostname')
+            )
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
@@ -64,7 +73,8 @@ class CONNECT:
             except sql.errors.IntegrityError:
                 
                 if statement.startswith('UPDATE'):
-                    self.execute(DELETE[0], (arguments[-1],), commit=1)
+                    index = 0 if 'imageD' in statement else 1
+                    self.execute(DELETE[index], (arguments[-1],), commit=1)
                     return 1
                 elif statement.startswith('INSERT'): break
 
@@ -94,7 +104,6 @@ class WEBDRIVER:
             )
         options = webdriver.firefox.options.Options()
         options.headless = headless
-        
         self.driver = webdriver.Firefox(firefox_binary=binary, options=options)
         self.driver.implicitly_wait(wait)
         self.options = {
@@ -107,9 +116,6 @@ class WEBDRIVER:
             7: self.driver.find_element_by_class_name,
             8: self.driver.find_element_by_css_selector,
             }
-        
-        self.self.credentials = ConfigParser(delimiters='=') 
-        self.self.credentials.read('self.credentials.ini')
 
     def get(self, url, retry=3):
         
@@ -117,7 +123,7 @@ class WEBDRIVER:
             try: self.driver.get(url)
             except exceptions.TimeoutException: continue
     
-    def find(self, address, keys=None, click=None, move=None, type_=1, fetch=0):
+    def find(self, address, keys=None, click=None, move=None, type_=1, enter=0, fetch=0):
         
         try:
             element = self.options[type_](address)
@@ -125,6 +131,7 @@ class WEBDRIVER:
             if click: element.click()
             if keys: element.send_keys(keys)
             if move:ActionChains(self.driver).move_to_element(element).perform()
+            if enter: element.send_keys(Keys.RETURN)
 
             return element
 
@@ -158,37 +165,34 @@ class WEBDRIVER:
 
             self.get('https://identity.flickr.com/login')
             while self.current_url() == 'https://identity.flickr.com/login':
-                self.find('login-email', self.credentials.get(site, 'user'), type_=2)
+                self.find('login-email', CREDENTIALS.get(site, 'user'), type_=2)
                 self.find('login-email', Keys.RETURN, type_=2)
-                self.find('login-password', self.credentials.get(site,'pass'), type_=2)
-                self.find('login-password', Keys.RETURN, type_=2)
+                self.find('login-password', CREDENTIALS.get(site,'pass', enter=1), type_=2)
                 time.sleep(2.5)
 
         elif site in ('metarthunter', 'femjoyhunter', 'elitebabes'):
 
             self.get(f'https://www.{site}.com/members/')
-            self.find('//*[@id="user_login"]', self.credentials.get(site, 'user'))
-            self.find('//*[@id="user_pass"]', self.credentials.get(site, 'pass'))
-            self.find('//*[@id="user_pass"]', Keys.RETURN)
+            self.find('//*[@id="user_login"]', CREDENTIALS.get(site, 'user'))
+            self.find('//*[@id="user_pass"]', CREDENTIALS.get(site, 'pass'), enter=1)
             while self.current_url() ==f'https://www.{site}.com/members/': 
                 time.sleep(2)
 
         elif site == 'instagram':
         
             self.get('https://www.instagram.com/')
-            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div[2]/div/label/input', self.credentials.get(site, 'email'))
-            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', self.credentials.get(site, 'pass'))
-            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div[3]/div/label/input', Keys.RETURN)
-            time.sleep(2)
+            time.sleep(1)
+            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div/div[1]/div/label/input', CREDENTIALS.get(site, 'email'))
+            self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div/div[2]/div/label/input', CREDENTIALS.get(site, 'pass'), enter=1)
+            time.sleep(3)
 
         elif site== 'gelbooru':
 
             self.get(
                 'https://gelbooru.com/index.php?page=account&s=login&code=00'
                 )
-            self.find('//body/div[4]/div[4]/div/div/form/input[1]', self.credentials.get(site, 'user'))
-            self.find('//body/div[4]/div[4]/div/div/form/input[2]', self.credentials.get(site, 'pass'))
-            self.find('//body/div[4]/div[4]/div/div/form/input[2]', Keys.RETURN)
+            self.find('//body/div[4]/div[4]/div/div/form/input[1]', CREDENTIALS.get(site, 'user'))
+            self.find('//body/div[4]/div[4]/div/div/form/input[2]', CREDENTIALS.get(site, 'pass'), enter=1)
             time.sleep(1)
 
         elif site == 'sankaku':
@@ -197,26 +201,25 @@ class WEBDRIVER:
             
             while self.current_url().endswith('/user/login'):
                 self.find(
-                    '//*[@id="user_name"]',self.credentials.get(site, 'user').lower()
+                    '//*[@id="user_name"]',CREDENTIALS.get(site, 'user').lower()
                     )
                 self.find(
-                    '//*[@id="user_password"]', self.credentials.get(site, 'pass')
+                    '//*[@id="user_password"]', CREDENTIALS.get(site, 'pass', enter=1)
                     )
-                self.find('//*[@id="user_password"]', Keys.RETURN)
                 time.sleep(1)
         
         elif site == 'furaffinity':
 
             self.get('https://www.furaffinity.net/login/')
-            self.find('//*[@id="login"]', self.credentials.get(site, 'user'))
-            self.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', self.credentials.get(site, 'pass'))
+            self.find('//*[@id="login"]', CREDENTIALS.get(site, 'user'))
+            self.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', CREDENTIALS.get(site, 'pass'), enter=1)
             while self.current_url() == 'https://www.furaffinity.net/login/': 
                 time.sleep(2)
         
         elif site == 'twitter':
 
-            email = self.credentials.get(site, 'email')
-            passw = self.credentials.get(site, 'pass')
+            email = CREDENTIALS.get(site, 'email')
+            passw = CREDENTIALS.get(site, 'pass')
 
             self.get('https://twitter.com/login')
             element = '//body/div[1]/div[2]/div/div/div[1]/form/fieldset/div[{}]/input'  
@@ -224,15 +227,13 @@ class WEBDRIVER:
                 try:  
                     self.find('session[username_or_email]', email, type_=3)
                     time.sleep(.75)
-                    self.find('session[password]', passw, type_=3)
-                    self.find('session[password]', Keys.RETURN, type_=3)
+                    self.find('session[password]', passw, type_=3, enter=1)
                     time.sleep(5)
 
                 except:
                     self.find(element.format(1), email)
                     time.sleep(.75)
-                    self.find(element.format(2), passw)
-                    self.find(element.format(2), Keys.RETURN)
+                    self.find(element.format(2), passw, enter=1)
                     time.sleep(5)
 
         elif site == 'posespace':
@@ -240,24 +241,21 @@ class WEBDRIVER:
             self.get('https://www.posespace.com/')
             self.find("//body/form[1]/div[3]/div[1]/nav/div/div[2]/ul[2]/li[6]/a", click=True)
             self.find("popModal", click=True, type_=7)
-            self.find("loginUsername", self.credentials.get(site, 'email'), type_=2)
-            self.find("loginPassword", self.credentials.get(site, 'pass'), type_=2)
-            self.find("btnLoginSubmit", click=True, type_=2)
+            self.find("loginUsername", CREDENTIALS.get(site, 'email'), type_=2)
+            self.find("loginPassword", CREDENTIALS.get(site, 'pass'), type_=2, enter=1)
 
         elif site == 'pinterest':
             
             self.get('https://www.pinterest.com/login/')
-            self.find('//*[@id="email"]', self.credentials.get(site, 'email'))
-            self.find('//*[@id="password"]', self.credentials.get(site, 'pass'))
-            self.find('//*[@id="password"]', Keys.RETURN)
+            self.find('//*[@id="email"]', CREDENTIALS.get(site, 'email'))
+            self.find('//*[@id="password"]', CREDENTIALS.get(site, 'pass'), enter=1)
             time.sleep(5)
             
         elif site == 'deviantArt':
 
             self.get('https://www.deviantart.com/users/login')
-            self.find('//*[@id="username"]', self.credentials.get(site, 'email'))
-            self.find('//*[@id="password"]', self.credentials.get(site, 'pass'))
-            self.find('//*[@id="password"]', Keys.RETURN)
+            self.find('//*[@id="username"]', CREDENTIALS.get(site, 'email'))
+            self.find('//*[@id="password"]', CREDENTIALS.get(site, 'pass'), enter=1)
             time.sleep(5)
     
     def close(self):
@@ -273,7 +271,7 @@ def start():
     threads = [
         threading.Thread(target=Photos.start),
         threading.Thread(target=Illus.start),
-        # threading.Thread(target=comics.start)
+        threading.Thread(target=comics.start)
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
