@@ -1,8 +1,8 @@
 import imagehash, piexif, bs4, requests, re, tempfile, hashlib, sys, ast
 from . import ROOT
 from math import log
-from PIL import Image
 from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
 PATH = ROOT / r'\Users\Emc11\Dropbox\ん'
@@ -90,28 +90,30 @@ class Progress:
         
         return f'{self.site}  —  {bar} {percent:>4.0%} {ratio}'
 
-def save_image(name, image, exif=b''):
+def save_image(name, image=None, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
     try:
-        if re.search('jp.*g|png', image, re.IGNORECASE):
+        if re.search('jp.*g|png', name.suffix):
 
             if image.endswith('jpeg'): name = name.with_suffix('.jpg')
-            try: Image.open(name).save(name, exif=exif)
-            except:
-                img = Image.open(
-                    BytesIO(requests.get(image, headers=HEADERS).content)
-                    )
+            if image:
+                img = Image.open(BytesIO(
+                        requests.get(image, headers=HEADERS).content
+                    ))
                 img.thumbnail(RESIZE)
-                img.save(name, exif=exif)
+            else: img = Image.open(name)
+            img.save(name, exif=exif)
 
-        elif re.search('gif|webm|mp4', image, re.IGNORECASE):
+        elif re.search('gif|webm|mp4', name.suffix):
             
             data = requests.get(image, headers=HEADERS, stream=True)
             with open(name, 'wb') as file: 
                 for chunk in data.iter_content(chunk_size=1024):
                     if chunk: file.write(chunk)
     
+    except UnidentifiedImageError: return False
+    except OSError: img.save(name.with_suffix('.gif'))
     except: return False
     return name.exists()
     
@@ -119,8 +121,9 @@ def get_name(path, type_, hasher=1, fetch=0):
     '''Return pathname (from optional hash of image)'''
 
     if hasher:
-        try: data = requests.get(path, headers=HEADERS).content
-        except: data = path.read_bytes()
+        if isinstance(path, str): 
+            data = requests.get(path, headers=HEADERS).content
+        else: data = path.read_bytes()
         HASHER.update(data)
 
         if fetch: return HASHER.hexdigest()
