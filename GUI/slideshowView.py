@@ -1,16 +1,17 @@
+from pathlib import Path
 from . import get_frame
+from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QMainWindow, QWidget, QMenu, QStackedWidget, QLabel, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMenu, QStackedWidget, QLabel, QAction
 
 class Slideshow(QMainWindow):
     
     def __init__(self, parent):
         
         super(Slideshow, self).__init__()
-        self.setWindowTitle('Slideshow')
         self.parent = parent
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
@@ -29,11 +30,23 @@ class Slideshow(QMainWindow):
             lambda: self.setCursor(Qt.BlankCursor)
             )
         
+        # self.image.setParent(self)
         self.menu = self.create_menu()
     
     def create_menu(self):
 
         menu = QMenu(self)
+        menu.addAction(QAction(
+            'Copy', menu, triggered=self.copy
+            ))
+        menu.addAction(QAction(
+            'Delete', menu, triggered=self.delete
+            ))
+        menu.addAction(QAction(
+            'Properties', menu, 
+            triggered=lambda self: Properties(self, self.path)
+            ))
+        menu.addSeparator()
         self.full = QAction(
             'Fullscreen', menu, triggered=self.fullscreen
             )
@@ -44,11 +57,12 @@ class Slideshow(QMainWindow):
     def move(self, delta):
         
         self.index = (self.index + delta) % len(self.gallery)
-        path = self.gallery[self.index][0]
+        self.path = path = self.gallery[self.index][0]
+        self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
         else:
-            if path.endswith('.jpg'): 
+            if path.endswith(('.jpg', '.png')): 
                 image = QImage(path)
                 path = None
             elif path.endswith(('gif', '.mp4', '.webm')):
@@ -64,20 +78,28 @@ class Slideshow(QMainWindow):
         self.stack.setCurrentIndex(0)
         self.video.update(path)
     
+    def copy(self):
+        
+        cb = QApplication.clipboard()
+        cb.clear(mode=cb.Clipboard)
+        cb.setText(self.path, mode=cb.Clipboard)
+
+    def delete(self): pass
+
     def fullscreen(self):
 
-        if self.isMaximized():
-            self.image.setStyleSheet('background: black')
-            self.full.setText('Exit fullscreen')
-            self.setCursor(Qt.BlankCursor)
-            self.showFullScreen()
-
-        else:
+        if self.isFullScreen():
             self.timer.stop()
             self.image.setStyleSheet('background: ')
             self.full.setText('Fullscreen')
             self.setCursor(Qt.ArrowCursor)
-            self.showMaximized()
+            self.show()
+
+        else:
+            self.image.setStyleSheet('background: black')
+            self.full.setText('Exit fullscreen')
+            self.setCursor(Qt.BlankCursor)
+            self.showFullScreen()
         
     def contextMenuEvent(self, event):
         
@@ -88,8 +110,11 @@ class Slideshow(QMainWindow):
         key_press = event.key()
         video = self.stack.currentIndex()
         ctrl = event.modifiers() == Qt.ControlModifier
-            
-        if key_press in (Qt.Key_Right, Qt.Key_Left):
+        
+        if ctrl:
+            if key_press == Qt.Key_C: self.copy()
+
+        elif key_press in (Qt.Key_Right, Qt.Key_Left):
             
             self.move(1 if key_press == Qt.Key_Right else -1)
             
@@ -118,12 +143,7 @@ class Slideshow(QMainWindow):
 
         elif key_press == Qt.Key_Escape:
             
-            if self.isFullScreen():
-                self.video.setStyleSheet('background: ')
-                self.setStyleSheet('background: ') 
-                self.timer.stop()
-                self.setCursor(Qt.ArrowCursor)
-                self.showMaximized()
+            if self.isFullScreen(): self.fullscreen()
             else: 
                 self.video.update(None)
                 self.hide()
@@ -143,26 +163,33 @@ class imageViewer(QLabel):
         
         super(QWidget, self).__init__(parent)
         self.setAlignment(Qt.AlignCenter)
-        # self.setSizePolicy(
-        #     QSizePolicy.Minimum, QSizePolicy.Minimum
-        #     )
+        self.setMinimumSize(150, 150)
+        # self.setScaledContents(True)
     
     def update(self, pixmap): self.setPixmap(pixmap)
     
+    # def hasHeightForWidth(self):
+
+    #     return self.pixmap() is not None
+
+    # def heightForWidth(self, w):
+
+    #     if self.pixmap():
+
+    #         return int(w * (self.pixmap().height() / self.pixmap().width()))
+
     def resizeEvent(self, event):
 
-        if self.parent().parent().stack.currentIndex(): pass
-        
-        else:
-            pixmap = self.pixmap().scaled(
+        if not self.parent().parent().stack.currentIndex(): 
+
+            image = QImage(self.parent().parent().path)
+            
+            pixmap = QPixmap(image).scaled(
                 event.size(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
+                
             self.setPixmap(pixmap)
-    
-    def contextMenuEvent(self, event):
-        
-        self.parent().contextMenuEvent(event)
 
 class videoPlayer(QVideoWidget):
 
@@ -211,11 +238,7 @@ class videoPlayer(QVideoWidget):
         elif status not in (2, 1):
 
             self.parent().setCurrentIndex(1)
-            
-    def contextMenuEvent(self, event):
-        
-        self.parent().contextMenuEvent(event)
-
+    
     def wheelEvent(self, event):
         
         self.volume(event.angleDelta().y() // 12)  
