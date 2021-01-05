@@ -2,8 +2,8 @@ import re, textwrap
 from . import CONNECTION, BASE, COMIC, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle
+from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
+from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle, QCompleter
 
 TYPE = {
     'All': '',
@@ -149,6 +149,11 @@ class Gallery(QWidget):
 
         else: self.parent().keyPressEvent(event)
 
+    def resizeEvent(self, event):
+
+        table = self.images.table
+        table.width = event.size().width() // table.size
+        
 class Ribbon(QWidget):
      
     def __init__(self, parent):
@@ -467,7 +472,10 @@ class ImageView(QTableView):
         
         elif ctrl:
 
-            if key_press == Qt.Key_A: self.selectAll()
+            if shift:
+                if key_press == Qt.Key_A: self.clearSelection()
+
+            elif key_press == Qt.Key_A: self.selectAll()
                     
             elif key_press == Qt.Key_C: self.copy_path()
             
@@ -550,6 +558,7 @@ class Model(QAbstractTableModel):
         self.wrapper = textwrap.TextWrapper(width=70)
         self.images = []
         self.size = 5.18
+        self.width = self.parent().parent().width() // self.size
         
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
@@ -568,41 +577,34 @@ class Model(QAbstractTableModel):
         if not index.isValid() or ind >= len(self.images): return QVariant()
         
         if role == Qt.DecorationRole:
-    
-            if path := self.images[ind][0]: 
+            
+            path = self.data(index, Qt.UserRole)
+            image = (
+                get_frame(path) 
+                if path.endswith(('.mp4', '.webm')) else 
+                QImage(path)
+                )
 
-                width = self.parent().parent().width() // self.size
-                
-                image = (
-                    get_frame(path) 
-                    if path.endswith(('.mp4', '.webm')) else 
-                    QImage(path)
-                    )
-
-                image = image.scaled(
-                    width, width, Qt.KeepAspectRatio, 
-                    transformMode=Qt.SmoothTransformation
-                    )
-                
-                return QPixmap(image)
+            image = image.scaled(
+                self.width, self.width, Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
+            
+            return QPixmap(image)
 
         if role == Qt.ToolTipRole:
             
-            tag, art, sta, rat, typ, = self.images[ind][1:6]
+            art, tag, rat, sta, typ, sit, = self.images[ind][1:7]
             
             tags = self.wrapper.wrap(
                 ' '.join(sorted(tag.replace('qwd ', '').split()))
                 )
             rest = self.wrapper.wrap(
-                f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()}'
+                f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()} Site: {sit}'
                 )
             return '\n'.join(tags + rest)
 
-        if role == Qt.SizeHintRole:
-            
-            width = self.parent().parent().width() // self.size
-            
-            return QSize(width, width)
+        if role == Qt.SizeHintRole: return QSize(self.width, self.width)
         
         if role == Qt.UserRole: return self.images[ind][0]
         
@@ -616,16 +618,20 @@ class Model(QAbstractTableModel):
             
             data = self.images[ind]
             path = {data[0]} if data[0] else set()
-            tags = set(data[1].split()) if data[1] else set()
-            artist = set(data[2].split()) if data[2] else set()
-            stars = {data[3]}
-            rating = {data[4]}
+            artist = set(data[1].split()) if data[2] else set()
+            tags = set(data[2].split()) if data[1] else set()
+            rating = {data[3]}
+            stars = {data[4]}
             type = {data[5]}
+            site = {data[6]}
             tags.discard('qwd')
             
-            return path, tags, artist, stars, rating, type
+            return path, tags, artist, stars, rating, type, site
         
         return QVariant()
+
+    # def setData(self, index, value, role): 
+        # return super().setData(index, value, role=role)
 
 class Worker(QThread):
     
