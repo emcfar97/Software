@@ -54,15 +54,18 @@ def similarity(path):
     else:
         image = cv2.VideoCapture(str(path)).read()[-1]
 
-    if image.shape == MATCH.shape:
-        k = cv2.subtract(image, MATCH)
-        return (k.min() + k.max()) == 0
+    try: 
+        if image.shape == MATCH.shape:
+            k = cv2.subtract(image, MATCH)
+            return (k.min() + k.max()) == 0
+            
+    except: return True
 
     return False
 
-def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
+def start(path=ROOT / r'\Users\Emc11\Downloads\Images', extract=True):
     
-    extract_files(path / 'Generic')
+    if extract: extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.suffix in EXT]
     progress = Progress(len(files), 'Files')
     
@@ -80,7 +83,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images'):
             
             if not (hash_ := get_hash(file)): continue
 
-            if dest.suffix.lower() ('.jpg', '.png'):
+            if dest.suffix.lower() in ('.jpg', '.png'):
 
                 tags, rating, exif = generate_tags(
                     general=get_tags(DRIVER, file), 
