@@ -167,7 +167,7 @@ class WEBDRIVER:
             while self.current_url() == 'https://identity.flickr.com/login':
                 self.find('login-email', CREDENTIALS.get(site, 'user'), type_=2)
                 self.find('login-email', Keys.RETURN, type_=2)
-                self.find('login-password', CREDENTIALS.get(site,'pass', enter=1), type_=2)
+                self.find('login-password', CREDENTIALS.get(site, 'pass'), type_=2, enter=1)
                 time.sleep(2.5)
 
         elif site in ('metarthunter', 'femjoyhunter', 'elitebabes'):
@@ -204,7 +204,7 @@ class WEBDRIVER:
                     '//*[@id="user_name"]',CREDENTIALS.get(site, 'user').lower()
                     )
                 self.find(
-                    '//*[@id="user_password"]', CREDENTIALS.get(site, 'pass', enter=1)
+                    '//*[@id="user_password"]', CREDENTIALS.get(site, 'pass'), enter=1
                     )
                 time.sleep(1)
         
