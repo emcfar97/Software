@@ -1,9 +1,10 @@
-import threading
 from .. import sankaku
-from . import flickr, posespace, erotica, imagefap, instagram, pinterest, blogspot
+from . import flickr, imagefap, posespace, erotica, instagram, pinterest, blogspot
 
 def start():
 
+    import threading 
+    
     threads = [
         # threading.Thread(target=erotica.start, args=(0,)),
         # threading.Thread(target=erotica.start, args=(1,)),

@@ -4,7 +4,7 @@ from .. import Favorites, sankaku
 
 def start():
 
-    # Favorites.start()
+    Favorites.start()
 
     threads = [
         threading.Thread(target=gelbooru.start),
