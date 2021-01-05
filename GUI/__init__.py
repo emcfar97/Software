@@ -4,12 +4,22 @@ from datetime import date
 from cv2 import VideoCapture
 import mysql.connector as sql
 from PyQt5.QtGui import QPixmap
+from configparser import ConfigParser
 
 class CONNECT:
     
     def __init__(self):
 
         self.DATAB = sql.connect(option_files='credentials.ini')
+        
+        CREDENTIALS = ConfigParser(delimiters='=') 
+        CREDENTIALS.read('credentials.ini')
+        self.DATAB = sql.connect(
+            user=CREDENTIALS.get('mysql', 'username'), 
+            password=CREDENTIALS.get('mysql', 'password'), 
+            database=CREDENTIALS.get('mysql', 'database'), 
+            host=CREDENTIALS.get('mysql', 'hostname')
+            )
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
@@ -23,25 +33,17 @@ class CONNECT:
                 if fetch: return self.CURSOR.fetchall()
                 return list()
             
-            # except sql.errors.ProgrammingError: return list() 
-
-            except (
-                # sql.errors.OperationalError,
-                # sql.errors.InterfaceError,
-                sql.errors.DatabaseError
-                ): 
-                
-                self.reconnect()
+            except sql.errors.DatabaseError: self.reconnect()
 
         return list()
-
-    def commit(self): self.DATAB.commit()
-    
-    def close(self): self.DATAB.close()
 
     def reconnect(self, attempts=5, time=15):
 
         self.DATAB.reconnect(attempts, time)
+
+    def commit(self): self.DATAB.commit()
+    
+    def close(self): self.DATAB.close()
 
 def get_frame(path):
 
@@ -58,7 +60,7 @@ CASE = r'''
     when 3 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 四\\", path)
     end as path
     '''.format(ROOT)
-BASE = f'SELECT {CASE}, tags, artist, stars, rating, type, src FROM imageData'
+BASE = f'SELECT {CASE}, artist, tags, rating, stars, type, site FROM imageData'
 COMIC = 'SELECT parent FROM comic WHERE path_=SUBSTRING(%s, 34)'
 GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=SUBSTRING(%s, 34)'
 MODIFY = f'UPDATE imageData SET {{}} WHERE path=SUBSTRING(%s, 34)'
