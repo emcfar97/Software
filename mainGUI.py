@@ -87,7 +87,7 @@ class App(QMainWindow):
 
         elif key_press in (Qt.Key_Return, Qt.Key_Enter): 
             
-            self.focusWidget().click()
+            if not self.isHidden(): self.focusWidget().click()
 
         elif key_press == Qt.Key_Escape: self.close()
 
@@ -98,17 +98,14 @@ class App(QMainWindow):
 
 class ManageData(QMainWindow):
             
-    TYPE = [
-        None,
-        'エラティカ ニ',
-        'エラティカ 三',
-        'エラティカ 四'
-        ]
-    # TYPE = {
-        # 'Photograph': 'エラティカ ニ',
-        # 'Illustration': 'エラティカ 三',
-        # 'Comic': 'エラティカ 四'
-        # }
+    TYPE = {
+        'Photograph': 'エラティカ ニ',
+        'Illustration': 'エラティカ 三',
+        'Comic': 'エラティカ 四',
+        1: 'エラティカ ニ',
+        2: 'エラティカ 三',
+        3: 'エラティカ 四'
+        }
 
     def __init__(self, parent):
         
@@ -128,6 +125,7 @@ class ManageData(QMainWindow):
         self.center.setLayout(self.layout)
         self.setCentralWidget(self.center)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
 
         resolution = Qapp.desktop().screenGeometry()
         width, height = resolution.width(),  resolution.height()
@@ -166,47 +164,38 @@ class ManageData(QMainWindow):
 
         for key, vals in kwargs.items():
             
-            if vals:
-                if key in ('tags', 'artist'):
-                    
-                    for val in vals[0]:
-                        parameters.append(
-                            f'{key}=CONCAT({key}, "{val} ")'
-                            )
-                    for val in vals[1]:
-                        parameters.append(
-                            f'{key}=REPLACE({key}, " {val} ", " ")'
-                            )
-                    
-                elif key in ('stars', 'rating', 'type'):
-                    
-                    parameters.append(f'{key}={vals}')
-                    
-                    if key == 'type':
-                        
-                        for path, in gallery:
-                            path = ROOT / path
-                            new = self.TYPE[vals]
-                            dropbox = path.parent.parent
+            if isinstance(vals, tuple):
+                
+                for val in vals[0]:
+                    parameters.append(
+                        f'{key}=CONCAT({key}, "{val} ")'
+                        )
+                for val in vals[1]:
+                    parameters.append(
+                        f'{key}=REPLACE({key}, " {val} ", " ")'
+                        )
+                
+            else: parameters.append(f'{key}={vals}')
+                
+        if 'Type' in kwargs:
+            
+            for path, in gallery:
+                path = ROOT / path
+                dropbox = path.parent.parent
+                new = self.TYPE[kwargs['Type']]
 
-                            try: path.rename(dropbox / new / path.name)
-                            except PermissionError as error:
-                                message = QMessageBox.question(
-                                    self, error.msg, 
-                                    QMessageBox.Retry | QMessageBox.Cancel
-                                    )
-                                if message == QMessageBox.Retry:
-                                    path.rename(dropbox / new / path.name)
-                                    
+                try: path.rename(dropbox / new / path.name)
+                except PermissionError as error:
+                    message = QMessageBox.question(
+                        self, 'Permission Error', 
+                        str(error), QMessageBox.Ok
+                        )
+                    return 0
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
-        # x = {
-        #     f'{key}={val}' for key, val in kwargs.items() if val
-        #     }
-        # y = set(self.gallery.query.values())
-        # z = x & y
         self.gallery.populate()
+        return 1
     
     def delete_records(self, event=None):
         
@@ -243,9 +232,10 @@ class ManageData(QMainWindow):
         else: self.parent.keyPressEvent(event)
 
     def closeEvent(self, event):
-
+        
         self.slideshow.close()
-        self.parent.windows[self.windowTitle()].remove(self)
+        try: self.parent.windows[self.windowTitle()].remove(self)
+        except: pass
         if not self.parent.is_empty(): self.parent.show()
  
 class GestureDraw(QMainWindow):
@@ -454,7 +444,6 @@ class MachineLearning(QMainWindow):
         if not self.parent.is_empty(): self.parent.show()
 
 Qapp = QApplication([])
-
 app = App()
 Qapp.setQuitOnLastWindowClosed(False)
 
