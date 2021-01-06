@@ -113,7 +113,10 @@ def save_image(name, image=None, exif=b''):
                     if chunk: file.write(chunk)
     
     except UnidentifiedImageError: return False
-    except OSError: img.save(name.with_suffix('.gif'))
+    except OSError as error: 
+        if 'trunc' not in error.args[0]: 
+            img.save(name.with_suffix('.gif'))
+        else: return False
     except: return False
     return name.exists()
     
