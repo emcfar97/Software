@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import PATH, Progress, get_hash, bs4, re
 
@@ -43,9 +44,8 @@ def page_handler(hrefs):
 
         artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
         image = f'http:{html.find(class_="center", src=True).get("src")}'
-        name = (
-            PATH / 'Images' / SITE / (artist + re.findall('-[^f\d]+', image)[0])
-            )
+        name = re.sub(f'{artist}-\d+', f'{artist}', image.split('/')[-1])
+        name = PATH / 'Images' / SITE / name
 
         CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
     

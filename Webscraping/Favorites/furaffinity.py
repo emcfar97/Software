@@ -46,10 +46,10 @@ def page_handler(hrefs):
             'a', href=re.compile('/user/+(?!chairekakia)'), id=False
             ).get('href').split('/')[2]
         image = html.find("a", href=re.compile("//d.+")).get("href")
-        name = '-'.join(artist, re.findall('_.+', image)[0][1:])
+        name = '-'.join((artist, re.findall('_.+', image)[0][1:]))
         name = PATH / 'Images' / SITE / name
 
-        CONNECTION.execute(UPDATE[2], (name, image, href), commit=1)
+        CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
     
     print(progress)
 
@@ -59,7 +59,7 @@ def start(initial=True):
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(False)
     
-    # DRIVER.login(SITE)
-    # if initial: initialize()
+    DRIVER.login(SITE)
+    if initial: initialize()
     page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
