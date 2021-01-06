@@ -13,6 +13,6 @@ geckodriver.exe
 MachineLearning/Checkpoints
 MachineLearning/Models
 MachineLearning/Logs
-Webscraping/PixivUtil/*.*
 OBScripts/*.*
 GUI/test.py
+Webscraping/PixivUtil/*.*
