@@ -1,35 +1,52 @@
 from . import GESTURE, CONNECTION, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QLabel, QSizePolicy
+from PyQt5.QtWidgets import QLabel, QScrollArea, QSizePolicy
 
-class Preview(QLabel):
+class Preview(QScrollArea):
     
     def __init__(self, parent, color):
         
         super(Preview, self).__init__(parent)
-        self.title = parent.windowTitle()
-        self.setAlignment(Qt.AlignCenter)
-        self.setStyleSheet(f'background: {color}')
-        self.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding
-            )
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setStyleSheet(f'background: {color}')
+        self.setWidget(self.label)
+        self.setWidgetResizable(True)
+        self.setStyleSheet('''
+            border: none;
+            
+            ''')
+        self.setContentsMargins(0, 0, 0, 0)
         
     def show_image(self, path):
         
+        self.verticalScrollBar().setSliderPosition(0)
+        self.horizontalScrollBar().setSliderPosition(0)
+
         if path is None: pixmap = QPixmap()
         
         else:
-            if path.endswith(('.mp4', '.webm')):
-                path = get_frame(path)
-            
-            pixmap = QPixmap(path).scaled(
+            if path.endswith(('.mp4', '.webm')): path = get_frame(path)
+
+            pixmap = QPixmap(path)
+            aspect_ratio = (
+                pixmap.width() / pixmap.height() 
+                if pixmap.height() > pixmap.width() else
+                pixmap.height() / pixmap.width()
+                )
+
+            if aspect_ratio < .6: 
+                if pixmap.height() < pixmap.width():
+                    pixmap.scaledToHeight(self.height())
+                else: pixmap.scaledToWidth(self.width())
+            else: pixmap = QPixmap(path).scaled(
                 self.size(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
 
-        self.setPixmap(pixmap)
-                     
+        self.label.setPixmap(pixmap)
+
 class Timer(QLabel):
     
     def __init__(self, parent):
