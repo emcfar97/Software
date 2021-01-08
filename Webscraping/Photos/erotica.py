@@ -4,6 +4,11 @@ from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate
 
 SITE = 'metarthunter', 'femjoyhunter', 'elitebabes'
 
+def next_page(page):
+             
+    try: return page.contents[0].get('href').split('/')[-2]
+    except IndexError: return False
+
 def page_handler(hrefs, artist):
 
     progress = Progress(len(hrefs), 'Images')
@@ -30,11 +35,6 @@ def page_handler(hrefs, artist):
             )
     
     print(progress)
-
-def next_page(page):
-             
-    try: return page.contents[0].get('href').split('/')[-2]
-    except IndexError: return False
 
 def start(mode, page=1):
         
