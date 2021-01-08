@@ -6,10 +6,10 @@ from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
 
-def initialize(retry=0):
+def initialize(url, retry=0):
 
     query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
-    DRIVER.get('https://twitter.com/Chairekakia1/likes')
+    DRIVER.get(f'https://twitter.com/{url}/likes')
     time.sleep(4)    
 
     while True:
@@ -108,9 +108,9 @@ def start(initial=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(False)
+    DRIVER = WEBDRIVER(0)
     
-    DRIVER.login(SITE)
-    if initial: initialize()
+    url = DRIVER.login(SITE)
+    if initial: initialize(url)
     page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()

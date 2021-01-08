@@ -6,7 +6,7 @@ import selenium.common.exceptions as exceptions
 
 SITE = 'flickr'
 
-def initialize(url='/photos/140284163@N04/favorites/page1', query=0):
+def initialize(url, query=0):
     
     def next_page(page):
              
@@ -95,7 +95,7 @@ def start(initial=True):
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER()
     
-    DRIVER.login(SITE)
-    if initial: initialize()
+    url = DRIVER.login(SITE)
+    if initial: initialize(url)
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

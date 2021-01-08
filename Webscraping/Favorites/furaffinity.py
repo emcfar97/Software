@@ -3,7 +3,7 @@ from ..utils import PATH, Progress, bs4, re
 
 SITE = 'furaffinity'
 
-def initialize(url='/favorites/chairekakia', query=0):
+def initialize(url, query=0):
     
     def next_page(pages):
         
@@ -59,7 +59,7 @@ def start(initial=True):
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(False)
     
-    DRIVER.login(SITE)
-    if initial: initialize()
+    url = DRIVER.login(SITE)
+    if initial: initialize(url)
     page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()

@@ -1,11 +1,11 @@
 import time
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
 from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'instagram'
 
-def initialize(url='/chairekakia/saved/', retry=0):
+def initialize(url, retry=0):
     
     DRIVER.get(f'https://www.instagram.com{url}')
     query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
@@ -32,7 +32,7 @@ def initialize(url='/chairekakia/saved/', retry=0):
 
     CONNECTION.commit()
     
-def page_handler(hrefs):
+def page_handler(hrefs, retry=2):
 
     if not hrefs: return
     progress = Progress(len(hrefs), SITE)
@@ -41,38 +41,68 @@ def page_handler(hrefs):
         
         print(progress)
         DRIVER.get(f'https://www.instagram.com{href}')
-        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
-        artist = html.find('a', href=re.compile('/.+/')).text
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        artist = html.find(
+            alt=re.compile('.+ profile picture')
+            ).get('alt').split("'")[0]
+        url = DRIVER.current_url()
 
-        try:
-            image = html.find(
-                'img', src=re.compile('.+scontent.+'), style='object-fit: cover;'
+        DRIVER.get('https://www.w3toys.com/')
+        DRIVER.find('//*[@id="link"]', keys=url, enter=1)
+        time.sleep(5)
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        images = [
+            'https://www.w3toys.com/' + target.get('href') 
+            for target in html.findAll(
+                'a', href=True, text='Download file'
                 )
-        except: continue
+            ]
+        # while True:
+            
+            # html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+            # target = html.find('div', role='presentation')
+            # src = target.find('video', src=True).get('src')[5:]
+            # if not src: src = target.find('img', src=True).get('src')
+            # if src in images: 
+            #     if retry > 4: break
+            #     retry += 1
 
-        name = get_name(image, 0, 1)
-        save_image(name, image)
-        tags, rating, exif = generate_tags(
-            general=get_tags(DRIVER, name), 
-            custom=True, rating=True, exif=True
-            )
-        if name.endswith(('jpg', 'jpeg')): save_image(name, image, exif)
-        hash_ = get_hash(name) 
+            # else: images.add(src)
+            
+            # try: 
+            #     try: DRIVER.find(button, click=True, fetch=1)
+            #     except: DRIVER.find(button[:-3], click=True, fetch=1)
+            # except: break
+            # time.sleep(4)
         
-        CONNECTION.execute(UPDATE[0], (
-            name, ' ', tags, rating, image, hash_, href),
-            commit=1
-            )
+        for image in images:
+
+            name = get_name(image, 0, 1)
+            save_image(name, image)
+            hash_ = get_hash(name) 
+
+            tags, rating, exif = generate_tags(
+                general=get_tags(DRIVER, name), 
+                custom=True, rating=True, exif=True
+                )
+            if name.suffix.endswith(('jpg', 'png')): 
+                save_image(name, image, exif)
+
+            CONNECTION.execute(INSERT[0], (
+                name.name, artist, tags, rating, 1, hash_, image, SITE, href),
+                commit=1
+                )
+        else: CONNECTION.execute(DELETE[0], (href,), commit=1)
     
     print(progress)
 
-def setup(initial=True):
+def start(initial=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(0)
     
-    DRIVER.login(SITE)
-    if initial: initialize()
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    url = DRIVER.login(SITE)
+    if initial: initialize(url)
+    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1)[10:])
     DRIVER.close()

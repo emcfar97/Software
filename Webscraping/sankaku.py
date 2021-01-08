@@ -10,7 +10,7 @@ MODE = [
     ['chan', 2]
     ]
 
-def initialize(mode, url='?tags=fav%3Achairekakia', query=0):
+def initialize(mode, url, query=0):
     
     def next_page(pages):
         try: return pages.get('next-page-url')
@@ -88,7 +88,10 @@ def page_handler(hrefs, mode):
         hash_ = get_hash(image, 1)
 
         if CONNECTION.execute(UPDATE[0], (
-            name.name, ' '.join(artists), tags, rating, mode[1], image, hash_, href
+            name.name, 
+            ' '.join(artists).encode('ascii', 'ignore').decode(), 
+            tags.encode('ascii', 'ignore').decode(), 
+            rating, mode[1], image, hash_, href
             )):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
@@ -102,7 +105,9 @@ def start(mode=1, initial=True):
     DRIVER = WEBDRIVER()
     mode = MODE[mode]
 
-    if initial: initialize(mode)
+    if initial: 
+        url = DRIVER.login(SITE, mode[0])
+        initialize(mode, url)
     page_handler(
         CONNECTION.execute(
             f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1

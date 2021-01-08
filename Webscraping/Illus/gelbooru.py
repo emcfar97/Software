@@ -5,7 +5,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 SITE = 'gelbooru'
     
-def initialize(url='?page=favorites&s=view&id=173770&pid=0', query=0):
+def initialize(url, query=0):
     
     def next_page(pages):
 
@@ -54,9 +54,10 @@ def page_handler(hrefs):
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
-        tags, rating, exif = generate_tags(
+        try:tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
+        except:continue
         
         image = html.find(href=True, text='Original image').get('href')
         name = get_name(image.split('/')[-1], type_-1, 0)
@@ -77,7 +78,7 @@ def start(initial=True):
     DRIVER = WEBDRIVER()
     
     if initial: 
-        DRIVER.login(SITE)
-        initialize()
+        url = DRIVER.login(SITE)
+        initialize(url)
     DRIVER.close()
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
