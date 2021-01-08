@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox,QCompleter
 
 class Properties(QMainWindow):
 
@@ -46,6 +46,8 @@ class Properties(QMainWindow):
     def create_widgets(self):
         
         self.modified = {}
+        artist, tags = open(r'GUI\autocomplete.txt').readlines()
+
         self.path = QLineEdit(self)
         self.tags = LineEdit(self, 'tags')
         self.artist = LineEdit(self, 'artist')
@@ -55,6 +57,8 @@ class Properties(QMainWindow):
         self.site = LineEdit(self, 'site')
         
         self.path.setDisabled(True)
+        self.tags.setCompleter(QCompleter(tags.split()))
+        self.artist.setCompleter(QCompleter(artist.split()))
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration', 'Comic'])
@@ -141,6 +145,7 @@ class LineEdit(QLineEdit):
         super(LineEdit, self).__init__(parent)
         self.textEdited.connect(self.modify)
         self.modified = None
+        self.initial = set()
     
     def setText(self, text):
 

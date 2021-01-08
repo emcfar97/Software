@@ -153,7 +153,9 @@ class Gallery(QWidget):
 
         table = self.images.table
         table.width = event.size().width() // table.size
-        
+    
+    def closeEvent(self, event): self.windows.clear()
+
 class Ribbon(QWidget):
      
     def __init__(self, parent):
@@ -196,10 +198,13 @@ class Ribbon(QWidget):
         self.tags = QLineEdit(self)
         self.tags.setFixedWidth(250)
         self.timer = QTimer(self.tags)
+        self.tags.setPlaceholderText('Enter tags')
+        autocomplete = open(r'GUI\autocomplete.txt').readlines()
+        self.tags.setCompleter(QCompleter(autocomplete))
         
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().populate)
-        self.tags.textChanged.connect(lambda: self.timer.start(750))
+        self.tags.textChanged.connect(lambda: self.timer.start(1000))
         self.select.addRow('Search:', self.tags)
         
         if self.parent().title == 'Manage Data':
