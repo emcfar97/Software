@@ -1,7 +1,7 @@
-import sqlite3, json
+import sqlite3, json, os, time
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import PATH, Progress, get_tags, generate_tags, bs4, requests, re
-import os, time
+from selenium.common.exceptions import InvalidArgumentException
 
 EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
@@ -21,10 +21,14 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         print(progress)
         
         DRIVER.get('http://iqdb.org/')
-        if src: DRIVER.find('//*[@id="url"]', src)
-        else: DRIVER.find('//*[@id="file"]', path)
+        try:
+            if src: DRIVER.find('//*[@id="url"]', src, fetch=1)
+            else: DRIVER.find('//*[@id="file"]', path, fetch=1)
+        except InvalidArgumentException: 
+            CONNECTION.execute(UPDATE[4], (1, 0, path), commit=1)
+            continue
         DRIVER.find('//body/form/table[2]/tbody/tr[4]/td[1]/input', click=True)
-        if path.endswith(('gif', 'mp4', 'webm')): time.sleep(45)
+        if path.endswith(EXT): time.sleep(45)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         if html.find(text=re.compile(IGNORE)):
@@ -150,7 +154,7 @@ def initialize():
 
     CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
 
-def start():
+def start(index=1000):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
@@ -159,5 +163,5 @@ def start():
 
     DRIVER.login('gelbooru')
     DRIVER.login('sankaku', 'chan')
-    main(CONNECTION.execute(SELECT[4], fetch=1))
+    main(CONNECTION.execute(SELECT[4], fetch=1)[-index:])
     DRIVER.close()
