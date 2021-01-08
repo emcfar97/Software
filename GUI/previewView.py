@@ -36,7 +36,7 @@ class Preview(QScrollArea):
                 pixmap.height() / pixmap.width()
                 )
 
-            if aspect_ratio < .6: 
+            if aspect_ratio < .5: 
                 if pixmap.height() < pixmap.width():
                     pixmap.scaledToHeight(self.height())
                 else: pixmap.scaledToWidth(self.width())
