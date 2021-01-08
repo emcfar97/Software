@@ -1,10 +1,10 @@
 from pathlib import Path
 from . import get_frame
 from .propertiesView import Properties
-from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt5.QtGui import QImage, QPixmap, QTransform
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMenu, QStackedWidget, QLabel, QAction
 
 class Slideshow(QMainWindow):
@@ -36,25 +36,33 @@ class Slideshow(QMainWindow):
     def create_menu(self):
 
         menu = QMenu(self)
+        self.full = QAction(
+            'Fullscreen', menu, triggered=self.fullscreen
+            )
+        menu.addAction(self.full)
+        menu.addSeparator()
+        menu.addAction(QAction(
+            'Rotate right', menu, triggered=lambda: self.copy(+1)
+            ))
+        menu.addAction(QAction(
+            'Rotate left', menu, triggered=lambda: self.delete(-1)
+            ))
+        menu.addSeparator()
         menu.addAction(QAction(
             'Copy', menu, triggered=self.copy
             ))
         menu.addAction(QAction(
             'Delete', menu, triggered=self.delete
             ))
+        menu.addSeparator()
         menu.addAction(QAction(
             'Properties', menu, 
             triggered=lambda self: Properties(self, self.path)
             ))
-        menu.addSeparator()
-        self.full = QAction(
-            'Fullscreen', menu, triggered=self.fullscreen
-            )
-        menu.addAction(self.full)
 
         return menu
 
-    def move(self, delta):
+    def move(self, delta=0):
         
         self.index = (self.index + delta) % len(self.gallery)
         self.path = path = self.gallery[self.index][0]
@@ -78,6 +86,31 @@ class Slideshow(QMainWindow):
         self.stack.setCurrentIndex(0)
         self.video.update(path)
     
+    def fullscreen(self):
+
+        if self.isFullScreen():
+            self.timer.stop()
+            self.image.setStyleSheet('background: ')
+            self.full.setText('Fullscreen')
+            self.setCursor(Qt.ArrowCursor)
+            self.showNormal()
+
+        else:
+            self.image.setStyleSheet('background: black')
+            self.full.setText('Exit fullscreen')
+            self.setCursor(Qt.BlankCursor)
+            self.showFullScreen()
+
+    def rotate(self, direction):
+
+        if self.path.endswith(('jpg', 'png')):
+            QPixmap(self.path).transformed(
+                QTransform().rotate(45 * direction), 
+                Qt.SmoothTransformation
+                ).save()
+        else: pass
+        self.move()
+
     def copy(self):
         
         cb = QApplication.clipboard()
@@ -86,21 +119,6 @@ class Slideshow(QMainWindow):
 
     def delete(self): pass
 
-    def fullscreen(self):
-
-        if self.isFullScreen():
-            self.timer.stop()
-            self.image.setStyleSheet('background: ')
-            self.full.setText('Fullscreen')
-            self.setCursor(Qt.ArrowCursor)
-            self.show()
-
-        else:
-            self.image.setStyleSheet('background: black')
-            self.full.setText('Exit fullscreen')
-            self.setCursor(Qt.BlankCursor)
-            self.showFullScreen()
-        
     def contextMenuEvent(self, event):
         
         self.menu.popup(event.globalPos())
