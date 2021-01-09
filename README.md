@@ -10,7 +10,7 @@ A mostly experimental app for GUI-ifying the machine learning process, a la Perc
 # Machine Learning
 . Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
 # Music
-
+A suite if musuc related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
 # School
 
 # Webscraping
