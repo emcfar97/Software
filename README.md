@@ -12,5 +12,5 @@ A mostly experimental app for GUI-ifying the machine learning process, a la Perc
 # Music
 A suite if musuc related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
 # School
-
+A set of projects that I've developed, either individually or as a team, over the course of my college career.
 # Webscraping
