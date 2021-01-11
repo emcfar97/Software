@@ -1,7 +1,7 @@
 import sqlite3, json, os, time
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import PATH, Progress, get_tags, generate_tags, bs4, requests, re
-from selenium.common.exceptions import InvalidArgumentException
+import selenium.common.exceptions as exceptions
 
 EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
@@ -9,7 +9,7 @@ IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 def main(paths, upload=False, sankaku=0, gelbooru=0):
     
     if not paths: return
-    if upload: 
+    if upload:
         limit = get_limit()
         artists = json.load(open(
             r'Webscraping\artists.json', encoding='utf8'
@@ -24,7 +24,7 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         try:
             if src: DRIVER.find('//*[@id="url"]', src, fetch=1)
             else: DRIVER.find('//*[@id="file"]', path, fetch=1)
-        except InvalidArgumentException: 
+        except exceptions.InvalidArgumentException:
             CONNECTION.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         DRIVER.find('//body/form/table[2]/tbody/tr[4]/td[1]/input', click=True)
@@ -44,7 +44,9 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
             ]
         except: continue
         
-        if targets and not upload: saved = favorite(targets)
+        if targets and not upload: 
+            try: saved = favorite(targets)
+            except: saved = False
         elif upload and (sankaku < limit or gelbooru < 50):
             saved, type_ = upload(path, href, src, site, artists)  
             if type_: sankaku += 1
@@ -55,6 +57,24 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         CONNECTION.execute(UPDATE[4], (1, saved, path), commit=1)
 
     print(progress)
+
+def favorite(targets, saved=False):
+
+    for match in targets:
+        DRIVER.get(f'https:{match.get("href")}')
+        if'gelbooru' in match.get('href') and'list&'not in DRIVER.current_url():
+            DRIVER.find('Add to favorites', click=True, type_=4)
+        else:
+            element = DRIVER.find('//*[@title="Add to favorites"]')
+            try: element.click()
+            except exceptions.ElementClickInterceptedException: 
+                DRIVER.driver.switch_to.active_element.click()
+                element.click()
+            except exceptions.ElementNotInteractableException: pass
+
+        saved = True
+
+    return saved
      
 def upload(path, href, src, site, artists):
 
@@ -124,18 +144,6 @@ def get_limit():
     html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
     return int(html.find('strong').text)
 
-def favorite(targets, saved=False):
-
-    for match in targets:
-        DRIVER.get(f'https:{match.get("href")}')
-        if 'gelbooru' in match.get("href") and not 'list&' in DRIVER.current_url():
-            DRIVER.find('Add to favorites', click=True, type_=4)
-        else:
-            DRIVER.find('//*[@title="Add to favorites"]', click=True)
-        saved = True
-
-    return saved
-
 def initialize():
     
     data = sqlite3.connect(r'Webscraping\PixivUtil\Data.sqlite')
@@ -154,12 +162,12 @@ def initialize():
 
     CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
 
-def start(index=1000):
+def start(initial=1, index=1000):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(wait=30)
-    initialize()
+    if initial: initialize()
 
     DRIVER.login('gelbooru')
     DRIVER.login('sankaku', 'chan')
