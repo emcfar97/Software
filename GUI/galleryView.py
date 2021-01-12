@@ -398,8 +398,10 @@ class ImageView(QTableView):
     
     def find_by_artist(self, event):
 
-        artist = self.currentIndex().data(1000)[2].pop()
-        if artist: self.parent().ribbon.tags.setText(artist)
+        artist = self.currentIndex().data(1000)[2]
+        if artist: 
+            artist = ' OR '.join(artist.pop().split())
+            self.parent().ribbon.tags.setText(artist)
         else: QMessageBox.Information(
             self, 'Artist', 'This image has no artist'
             )
