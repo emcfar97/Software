@@ -25,7 +25,7 @@ SELECT = [
 INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
-    f'INSERT INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
+    f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
     'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
     'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s. %s)',
@@ -169,6 +169,8 @@ class WEBDRIVER:
                 self.find('login-email', Keys.RETURN, type_=2)
                 self.find('login-password', CREDENTIALS.get(site, 'pass'), type_=2, enter=1)
                 time.sleep(2.5)
+                
+            return CREDENTIALS.get(site, 'url')
 
         elif site in ('metarthunter', 'femjoyhunter', 'elitebabes'):
 
@@ -185,15 +187,19 @@ class WEBDRIVER:
             self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div/div[1]/div/label/input', CREDENTIALS.get(site, 'email'))
             self.find('//body/div[1]/section/main/article/div[2]/div[1]/div/form/div/div[2]/div/label/input', CREDENTIALS.get(site, 'pass'), enter=1)
             time.sleep(3)
+            
+            return CREDENTIALS.get(site, 'url')
 
         elif site== 'gelbooru':
 
             self.get(
                 'https://gelbooru.com/index.php?page=account&s=login&code=00'
                 )
-            self.find('//body/div[4]/div[4]/div/div/form/input[1]', CREDENTIALS.get(site, 'user'))
-            self.find('//body/div[4]/div[4]/div/div/form/input[2]', CREDENTIALS.get(site, 'pass'), enter=1)
+            self.find('//body/div[1]/main/div/div/form/input[1]', CREDENTIALS.get(site, 'user'))
+            self.find('//body/div[1]/main/div/div/form/input[2]', CREDENTIALS.get(site, 'pass'), enter=1)
             time.sleep(1)
+            
+            return CREDENTIALS.get(site, 'url')
 
         elif site == 'sankaku':
         
@@ -206,7 +212,9 @@ class WEBDRIVER:
                 self.find(
                     '//*[@id="user_password"]', CREDENTIALS.get(site, 'pass'), enter=1
                     )
-                time.sleep(1)
+                time.sleep(2)
+            
+            return CREDENTIALS.get(site, 'url')
         
         elif site == 'furaffinity':
 
@@ -215,6 +223,8 @@ class WEBDRIVER:
             self.find('//body/div[2]/div[2]/form/div/section[1]/div/input[2]', CREDENTIALS.get(site, 'pass'), enter=1)
             while self.current_url() == 'https://www.furaffinity.net/login/': 
                 time.sleep(2)
+            
+            return CREDENTIALS.get(site, 'url')
         
         elif site == 'twitter':
 

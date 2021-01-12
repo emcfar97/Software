@@ -86,7 +86,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images', extract=True):
             if dest.suffix.lower() in ('.jpg', '.png'):
 
                 tags, rating, exif = generate_tags(
-                    general=get_tags(DRIVER, file), 
+                    general=get_tags(DRIVER, file, True), 
                     custom=True, rating=True, exif=True
                     )
                 Image.open(file).save(file, exif=exif)
@@ -94,7 +94,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images', extract=True):
             elif dest.suffix.lower() in ('.gif', '.webm', '.mp4'):
                 
                 tags, rating = generate_tags(
-                    general=get_tags(DRIVER, file), 
+                    general=get_tags(DRIVER, file, True), 
                     custom=True, rating=True, exif=False
                     )
 

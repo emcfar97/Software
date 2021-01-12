@@ -67,7 +67,7 @@ RATING = {
     2: 'NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))',
     1: 'NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))'
     }
-
+    
 class Progress:
     
     def __init__(self, size, site, length=20):
@@ -114,7 +114,7 @@ def save_image(name, image=None, exif=b''):
     
     except UnidentifiedImageError: return False
     except OSError as error: 
-        if 'trunc' not in error.args[0]: 
+        if 'trunc' not in error.args: 
             img.save(name.with_suffix('.gif'))
         else: return False
     except: return False
@@ -137,7 +137,7 @@ def get_name(path, type_, hasher=1, fetch=0):
 
     return PATH / TYPE[type_] / stem.replace('jpeg','jpg')
 
-def get_hash(image, src=False):
+def get_hash(image, src=False, filter=False):
     '''Return perceptual hash of image'''
         
     if src:
@@ -161,7 +161,7 @@ def get_hash(image, src=False):
 
     return f'{imagehash.dhash(image)}'
 
-def get_tags(driver, path):
+def get_tags(driver, path, filter=False):
 
     tags = set()
     frames = []
@@ -210,14 +210,16 @@ def get_tags(driver, path):
     
     else:
         if video: temp_dir.cleanup()
-        tags.discard('3d')
-        tags.discard('censored')
-        tags.discard('mosaic_censoring')
-        tags.discard('cum')
-        tags.discard('sex')
-        tags.discard('doggystyle')
-        tags.discard('missionary')
-        tags.discard('cowgirl_position')
+        if filter:
+            tags.discard('3d')
+            tags.discard('cum')
+            tags.discard('sex')
+            tags.discard('censored')
+            tags.discard('doggystyle')
+            tags.discard('missionary')
+            tags.discard('cowgirl_position')
+            tags.discard('mosaic_censoring')
+            tags.discard('male_focus')
     
     return ' '.join(tags)
 
@@ -272,10 +274,10 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
         rating.append(exif)
     
     tags = re.sub(
-        '(photorealistic|photo|realistic|(rating|score):\w+|solo_focus|uncensored|vagina|hetero|3d) ', '', f' {" ".join(tags)} '
+        '(photorealistic|photo|realistic|(rating|score):\w+|solo_focus|uncensored|vagina|hetero) ', '', f' {" ".join(tags)} '
         )
         
-    return tags if rating is None else [tags, *rating]
+    return tags if rating is None else [tags] + rating
 
 def evaluate(tags, pattern):
     
