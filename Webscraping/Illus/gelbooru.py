@@ -54,10 +54,9 @@ def page_handler(hrefs):
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
-        try:tags, rating, exif = generate_tags(
+        tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
-        except:continue
         
         image = html.find(href=True, text='Original image').get('href')
         name = get_name(image.split('/')[-1], type_-1, 0)
