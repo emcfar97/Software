@@ -42,10 +42,10 @@ class Slideshow(QMainWindow):
         menu.addAction(self.full)
         menu.addSeparator()
         menu.addAction(QAction(
-            'Rotate right', menu, triggered=lambda: self.copy(+1)
+            'Rotate right', menu, triggered=lambda: self.rotate(+1)
             ))
         menu.addAction(QAction(
-            'Rotate left', menu, triggered=lambda: self.delete(-1)
+            'Rotate left', menu, triggered=lambda: self.rotate(-1)
             ))
         menu.addSeparator()
         menu.addAction(QAction(
@@ -105,9 +105,9 @@ class Slideshow(QMainWindow):
 
         if self.path.endswith(('jpg', 'png')):
             QPixmap(self.path).transformed(
-                QTransform().rotate(45 * direction), 
+                QTransform().rotate(90 * direction), 
                 Qt.SmoothTransformation
-                ).save()
+                ).save(self.path)
         else: pass
         self.move()
 
