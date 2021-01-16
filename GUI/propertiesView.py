@@ -11,7 +11,7 @@ class Properties(QMainWindow):
         self.parent = parent
         self.configure_gui()
         self.create_widgets()
-        self.display(indexes)
+        self.populate(indexes)
 
     def configure_gui(self):
         
@@ -27,7 +27,7 @@ class Properties(QMainWindow):
         self.props.setLayout(self.prop_layout)
         self.stats.setLayout(self.stat_layout)
         
-        size = self.parent.width() * .5, self.parent.height() * .5
+        size = self.parent.width() * .25, self.parent.height() * .5
         position = QCursor().pos()
         resolution = QDesktopWidget().screenGeometry(position)
         screen = resolution.width(), resolution.height()
@@ -40,7 +40,7 @@ class Properties(QMainWindow):
             ):
             if (displacement := l - (i + j)) < 0: 
                 position[num] += displacement
-
+        print(size)
         self.setGeometry(*position, *size)  
         
     def create_widgets(self):
@@ -49,12 +49,12 @@ class Properties(QMainWindow):
         artist, tags = open(r'GUI\autocomplete.txt').readlines()
 
         self.path = QLineEdit(self)
-        self.tags = LineEdit(self, 'tags')
-        self.artist = LineEdit(self, 'artist')
-        self.stars = ComboBox(self, 'stars')
-        self.rating = ComboBox(self, 'rating')
-        self.type = ComboBox(self, 'type')
-        self.site = LineEdit(self, 'site')
+        self.tags = LineEdit(self)
+        self.artist = LineEdit(self)
+        self.stars = ComboBox(self)
+        self.rating = ComboBox(self)
+        self.type = ComboBox(self)
+        self.site = LineEdit(self, True)
         
         self.path.setDisabled(True)
         self.tags.setCompleter(QCompleter(tags.split()))
@@ -91,20 +91,13 @@ class Properties(QMainWindow):
         self.type.activated.connect(lambda: option.setEnabled(True))
         self.site.textEdited.connect(lambda: option.setEnabled(True))
         
-    def display(self, indexes):
+    def populate(self, indexes):
         
-        self.data = [
-            i.data(1000) for i in indexes if i.data(1000) is not None
-            ]
-        paths = set.intersection(*[i[0] for i in self.data])
-        tags  = set.intersection(*[i[1] for i in self.data])
-        artist = set.intersection(*[i[2] for i in self.data])
-        stars = set.intersection(*[i[3] for i in self.data])
-        rating = set.intersection(*[i[4] for i in self.data])
-        type  = set.intersection(*[i[5] for i in self.data])
-        site  = set.intersection(*[i[6] for i in self.data])
+        path, tags, artist, stars, rating, type, site = (
+            set.intersection(*column) for column in zip(*indexes)
+            )
         
-        if paths: self.path.setText(paths.pop())
+        if path: self.path.setText(path.pop())
         if tags:  self.tags.setText(' '.join(sorted(tags)))
         if artist: self.artist.setText(' '.join(artist))
         if stars: self.stars.setCurrentIndex(stars.pop())
@@ -112,22 +105,20 @@ class Properties(QMainWindow):
         if type:  self.type.setCurrentText(type.pop())
         if site:  self.site.setText(site.pop())
 
+        self.paths = [(row[0].pop(),) for row in indexes]
         self.parent.windows.add(self)
         self.tags.setFocus()
         self.show()
     
     def output(self, event=None):
         
-        paths = [
-            (index[0].pop(),) for index in self.data if index[0]
-            ]
         modified = {
             self.form.itemAt(i, 0).widget().text(): 
             self.form.itemAt(i, 1).widget().text()
             for i in range(1, self.form.rowCount())
             if self.form.itemAt(i, 1).widget().text()
             }
-        if self.parent.parent().parent().change_records(paths, **modified):
+        if self.parent.update_records(self.paths, **modified):
             self.parent.windows.discard(self)
         
     def keyPressEvent(self, event):
@@ -140,12 +131,13 @@ class Properties(QMainWindow):
 
 class LineEdit(QLineEdit):
 
-    def __init__(self, parent, name):
+    def __init__(self, parent, type_=False):
 
         super(LineEdit, self).__init__(parent)
         self.textEdited.connect(self.modify)
-        self.modified = None
+        self.modified = set(), set()
         self.initial = set()
+        self.type = type_
     
     def setText(self, text):
 
@@ -154,7 +146,10 @@ class LineEdit(QLineEdit):
 
             return super().setText(text)
     
-    def text(self): return self.modified
+    def text(self): 
+        
+        if self.type: return self.modified[0]
+        return self.modified
 
     def modify(self, text):
 
@@ -166,7 +161,7 @@ class LineEdit(QLineEdit):
 
 class ComboBox(QComboBox):
 
-    def __init__(self, parent, name):
+    def __init__(self, parent):
 
         super(ComboBox, self).__init__(parent)
         self.activated.connect(self.modify)

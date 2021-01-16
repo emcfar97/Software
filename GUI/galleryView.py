@@ -29,7 +29,6 @@ class Gallery(QWidget):
                     
     def create_widgets(self):
         
-        self.windows = set()
         self.ribbon = Ribbon(self)
         self.images = ImageView(self)
         self.thread = Worker(self)
@@ -357,9 +356,7 @@ class ImageView(QTableView):
         menu.addAction(QAction('Copy', menu, triggered=self.copy_path))
         try:
             menu.addAction(
-                QAction(
-                    'Delete', menu, triggered=parent.parent().delete_records
-                    )
+                QAction('Delete', menu, triggered=self.delete)
                 )                
             menu.addSeparator()
             self.artist = QAction(
@@ -369,7 +366,7 @@ class ImageView(QTableView):
             menu.addSeparator()
             menu.addAction(
                 QAction(
-                    'Properties', menu, triggered=lambda: Properties(parent, self.selectedIndexes())
+                    'Properties', menu, triggered=lambda: self.openEditor(self.selectedIndexes())
                     )
                 )
         except AttributeError: pass
@@ -396,6 +393,10 @@ class ImageView(QTableView):
         if get_menu: return action_group, menu
         return action_group
     
+    def delete(self, event):
+
+        self.parent().parent().parent().delete_records(self.selectedIndexes())
+
     def find_by_artist(self, event):
 
         artist = self.currentIndex().data(1000)[2]
@@ -413,10 +414,6 @@ class ImageView(QTableView):
             )
         self.parent().ribbon.tags.setText(f'comic={parent[0]}')
     
-    def duplicates(self):
-
-        self.parent().ribbon.tags.setText(f'duplicates:True')
-
     def copy_path(self):
     
         cb = QApplication.clipboard()
@@ -434,6 +431,11 @@ class ImageView(QTableView):
         self.table.images = images
         self.parent().statusbar(len(images))
     
+    def openEditor(self, indexes):
+        
+        gallery = [index.data(1000) for index in indexes]
+        Properties(self.parent().parent().parent(), gallery)
+
     def selectionChanged(self, select, deselect):
         
         if self.table.images:
@@ -473,7 +475,7 @@ class ImageView(QTableView):
             
             if key_press == Qt.Key_Return and self.selectedIndexes():
             
-                Properties(self.parent(), self.selectedIndexes())
+                self.openEditor(self.selectedIndexes())
             
             else: self.parent().keyPressEvent(event)
         
@@ -624,19 +626,21 @@ class Model(QAbstractTableModel):
         if role == 1000:
             
             data = self.images[ind]
-            path = {data[0]} if data[0] else set()
-            artist = set(data[1].split()) if data[2] else set()
-            tags = set(data[2].split()) if data[1] else set()
+            
+            path = {data[0]}
+            artist = set(data[1].split())
+            tags = set(data[2].split())
             rating = {data[3]}
             stars = {data[4]}
             type = {data[5]}
             site = {data[6]}
+
             tags.discard('qwd')
             
             return path, tags, artist, stars, rating, type, site
         
         return QVariant()
-
+    
     # def setData(self, index, value, role): 
         # return super().setData(index, value, role=role)
 

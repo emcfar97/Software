@@ -56,8 +56,7 @@ class Slideshow(QMainWindow):
             ))
         menu.addSeparator()
         menu.addAction(QAction(
-            'Properties', menu, 
-            triggered=lambda self: Properties(self, self.path)
+            'Properties', menu, triggered=self.openEditor
             ))
 
         return menu
@@ -65,7 +64,7 @@ class Slideshow(QMainWindow):
     def move(self, delta=0):
         
         self.index = (self.index + delta) % len(self.gallery)
-        self.path = path = self.gallery[self.index][0]
+        path = self.gallery[self.index][0]
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
@@ -101,23 +100,48 @@ class Slideshow(QMainWindow):
             self.setCursor(Qt.BlankCursor)
             self.showFullScreen()
 
-    def rotate(self, direction):
+    def rotate(self, sign):
 
-        if self.path.endswith(('jpg', 'png')):
-            QPixmap(self.path).transformed(
-                QTransform().rotate(90 * direction), 
+        path = self.gallery[self.index][0]
+        if path.endswith(('jpg', 'png')):
+            QPixmap(path).transformed(
+                QTransform().rotate(90 * sign), 
                 Qt.SmoothTransformation
-                ).save(self.path)
+                ).save(path)
         else: pass
         self.move()
 
     def copy(self):
         
+        path = self.gallery[self.index][0]
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
-        cb.setText(self.path, mode=cb.Clipboard)
+        cb.setText(path, mode=cb.Clipboard)
 
-    def delete(self): pass
+    def delete(self):
+        
+        path = self.gallery[self.index]
+        self.move(1)
+        if self.parent.delete_records(path, 0):
+            del self.gallery[self.index]
+        else: self.move(-1)
+
+    def openEditor(self):
+            
+        data = self.gallery[self.index]
+        
+        path = {data[0]}
+        artist = set(data[1].split())
+        tags = set(data[2].split())
+        rating = {data[3]}
+        stars = {data[4]}
+        type = {data[5]}
+        site = {data[6]}
+
+        tags.discard('qwd')
+
+        index = path, tags, artist, stars, rating, type, site
+        Properties(self.parent, [index])
 
     def contextMenuEvent(self, event):
         
@@ -127,8 +151,15 @@ class Slideshow(QMainWindow):
 
         key_press = event.key()
         video = self.stack.currentIndex()
+        alt = event.modifiers() == Qt.AltModifier
         ctrl = event.modifiers() == Qt.ControlModifier
         
+        if alt:
+            
+            if key_press == Qt.Key_Return and self.selectedIndexes():
+            
+                self.openEditor(self.selectedIndexes())
+            
         if ctrl:
             if key_press == Qt.Key_C: self.copy()
 
@@ -173,7 +204,10 @@ class Slideshow(QMainWindow):
             self.setCursor(Qt.ArrowCursor)
             self.timer.start(1500)
         
-    def closeEvent(self, event): self.video.update(None)
+    def closeEvent(self, event):
+        
+        self.windows.clear()
+        self.video.update(None)
 
 class imageViewer(QLabel):
     
@@ -198,9 +232,10 @@ class imageViewer(QLabel):
 
     def resizeEvent(self, event):
 
-        if not self.parent().parent().stack.currentIndex(): 
-
-            image = QImage(self.parent().parent().path)
+        parent = self.parent().parent()
+        if not parent.stack.currentIndex(): 
+            
+            image = QImage(parent.gallery[parent.index][0])
             
             pixmap = QPixmap(image).scaled(
                 event.size(), Qt.KeepAspectRatio, 
