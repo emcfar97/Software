@@ -13,5 +13,9 @@ An exploratory dive into machine learning using Tensorflow and PyTorch. Due to m
 A suite if musuc related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
 # School
 A set of projects that I've developed, either individually or as a team, over the course of my college career.
+## 2017
+## 2018
+## 2019
+## 2020
 # Webscraping
 A group of functions for scraping images off of various websites, which are then used for the GUI and Machine Learning projects.
