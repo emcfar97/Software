@@ -50,13 +50,13 @@ class Gallery(QWidget):
             'rating': RATING[self.rating.checkedAction().text()],
             }
         order = self.get_order()
-        join = ''
         
         if self.title == 'Gesture Draw':
             
             self.query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
         else: self.parent().parent().preview.show_image(None)
 
+        # query parsing & tag parsing
         for token in re.findall(f'\w+{op}[\w\*\.]+', string):
             
             string = string.replace(token, '')
@@ -69,6 +69,10 @@ class Gallery(QWidget):
                 order = self.get_order(1)
                 join = 'JOIN comic ON comic.path_=imageData.path'
             
+            elif col == 'order':
+
+                order = f'ORDER BY {val}'
+
             elif re.search('\*', val):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
@@ -92,12 +96,14 @@ class Gallery(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
 
-        if not any(self.query.values()): self.query[''] = 'NOT ISNULL(path)'
-
+        # comic functionality
         if '3' in self.query['type'] and 'comic' not in self.query:
             join = 'JOIN comic ON comic.path_=imageData.path'
             self.query['pages'] = 'page=0'
+        else: join = ''
         
+        if not any(self.query.values()): self.query[''] = 'NOT ISNULL(path)'
+
         filter = " AND ".join(val for val in self.query.values() if val)
         
         self.thread.statement = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
@@ -153,8 +159,6 @@ class Gallery(QWidget):
         table = self.images.table
         table.width = event.size().width() // table.size
     
-    def closeEvent(self, event): self.windows.clear()
-
 class Ribbon(QWidget):
      
     def __init__(self, parent):
@@ -403,7 +407,7 @@ class ImageView(QTableView):
         if artist: 
             artist = ' OR '.join(artist.pop().split())
             self.parent().ribbon.tags.setText(artist)
-        else: QMessageBox.Information(
+        else: QMessageBox.information(
             self, 'Artist', 'This image has no artist'
             )
 
@@ -433,7 +437,10 @@ class ImageView(QTableView):
     
     def openEditor(self, indexes):
         
-        gallery = [index.data(1000) for index in indexes]
+        gallery = [
+            index.data(1000) for index in indexes 
+            if index.data(1000) is not None
+            ]
         Properties(self.parent().parent().parent(), gallery)
 
     def selectionChanged(self, select, deselect):
@@ -450,7 +457,9 @@ class ImageView(QTableView):
                 
                 else: image = None
 
-                self.parent().parent().parent().preview.show_image(image)
+                preview = self.parent().parent().parent().preview
+                try: preview.show_image(image)
+                except: preview.show_image(None)
             
             self.parent().statusbar(self.total(), len(self.selectedIndexes()))
 

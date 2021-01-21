@@ -40,7 +40,7 @@ class Properties(QMainWindow):
             ):
             if (displacement := l - (i + j)) < 0: 
                 position[num] += displacement
-        print(size)
+
         self.setGeometry(*position, *size)  
         
     def create_widgets(self):

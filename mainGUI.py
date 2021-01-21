@@ -1,3 +1,7 @@
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QAction, QSizePolicy
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+
 from GUI import ROOT, CONNECTION, MODIFY, DELETE
 from GUI.galleryView import Gallery
 from GUI.previewView import Preview, Timer
@@ -5,10 +9,6 @@ from GUI.slideshowView import Slideshow
 from GUI.designView import Design
 from GUI.datasetView import Dataset
 from GUI.trainView import Train
-
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QAction, QSizePolicy
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 
 class App(QMainWindow):
     
@@ -112,6 +112,7 @@ class ManageData(QMainWindow):
         super(ManageData, self).__init__()
         self.setWindowTitle('Manage Data')
         self.parent = parent
+        self.windows = set()
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
@@ -158,7 +159,7 @@ class ManageData(QMainWindow):
             self.slideshow.showMaximized()
         self.slideshow.activateWindow()
 
-    def change_records(self, gallery, **kwargs):
+    def update_records(self, gallery, **kwargs):
         
         parameters = []
 
@@ -191,13 +192,14 @@ class ManageData(QMainWindow):
                         str(error), QMessageBox.Ok
                         )
                     return 0
+        
         CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
         self.gallery.populate()
         return 1
     
-    def delete_records(self, event=None):
+    def delete_records(self, gallery, update=True):
         
         message = QMessageBox.question(
             self, 'Delete', 'Are you sure you want to delete this?',
@@ -207,17 +209,20 @@ class ManageData(QMainWindow):
         if message == QMessageBox.Yes:
 
             gallery = [
-                (index.data(Qt.UserRole),) for index in 
-                self.gallery.images.selectedIndexes() 
+                (index.data(Qt.UserRole),) 
+                for index in gallery
                 ]
-            for path, in gallery: 
+            for path, in gallery:
                 try: (ROOT / path).unlink()
                 except (FileNotFoundError, TypeError): pass
                     
             CONNECTION.execute(DELETE, gallery, many=1, commit=1)
             
-            self.gallery.images.update([])
-            self.gallery.populate()
+            if update:
+                self.gallery.images.update([])
+                self.gallery.populate()
+            
+            return 1
     
     def keyPressEvent(self, event):
 
@@ -225,7 +230,10 @@ class ManageData(QMainWindow):
 
         if key_press == Qt.Key_Return: self.start_slideshow()
 
-        elif key_press == Qt.Key_Delete: self.delete_records()
+        elif key_press == Qt.Key_Delete: 
+            
+            gallery = self.gallery.images.selectedIndexes() 
+            self.delete_records(gallery)
                         
         elif key_press == Qt.Key_Escape: self.close()
     
@@ -233,6 +241,7 @@ class ManageData(QMainWindow):
 
     def closeEvent(self, event):
         
+        self.windows.clear()
         self.slideshow.close()
         try: self.parent.windows[self.windowTitle()].remove(self)
         except: pass

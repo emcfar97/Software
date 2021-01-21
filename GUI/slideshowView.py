@@ -109,6 +109,7 @@ class Slideshow(QMainWindow):
                 Qt.SmoothTransformation
                 ).save(path)
         else: pass
+            # VideoFileClip(path).rotate(90 * sign)
         self.move()
 
     def copy(self):
@@ -156,9 +157,7 @@ class Slideshow(QMainWindow):
         
         if alt:
             
-            if key_press == Qt.Key_Return and self.selectedIndexes():
-            
-                self.openEditor(self.selectedIndexes())
+            if key_press == Qt.Key_Return: self.openEditor()
             
         if ctrl:
             if key_press == Qt.Key_C: self.copy()
@@ -188,6 +187,8 @@ class Slideshow(QMainWindow):
         
         elif video and key_press == Qt.Key_M: self.video.mute()
         
+        elif key_press == Qt.Key_Delete: self.delete()
+        
         elif key_press == Qt.Key_F11: self.fullscreen()
 
         elif key_press == Qt.Key_Escape:
@@ -204,10 +205,7 @@ class Slideshow(QMainWindow):
             self.setCursor(Qt.ArrowCursor)
             self.timer.start(1500)
         
-    def closeEvent(self, event):
-        
-        self.windows.clear()
-        self.video.update(None)
+    def closeEvent(self, event): self.video.update(None)
 
 class imageViewer(QLabel):
     
@@ -215,7 +213,9 @@ class imageViewer(QLabel):
         
         super(QWidget, self).__init__(parent)
         self.setAlignment(Qt.AlignCenter)
-        self.setMinimumSize(150, 150)
+        self.setMinimumSize(
+            self.parent().width() * .3, self.parent().height() * .3
+            )
         # self.setScaledContents(True)
     
     def update(self, pixmap): self.setPixmap(pixmap)
