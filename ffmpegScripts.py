@@ -37,7 +37,7 @@ def get_folders():
 
 while True:
     user_input = input(
-        'Choose from:\n1 - Convert videos\n2 - Concat videos\n3 - Change framerate\n4 - Split video\n5 - Download m3u8\n6 - Check directories\n7 - Exit\n'
+        'Choose from:\n1 - Convert videos\n2 - Concat videos\n3 - Change framerate\n4 - Split video\n5 - Download m3u8\n6 - Check directories\n7 - Change destination directory\n8 - Exit\n'
         )
     try:
         if   user_input == '1': # convert vidoes
@@ -147,6 +147,12 @@ while True:
                 elif file.suffix in EXT: print(str(file))
             print() 
         
-        elif user_input == '7': break
+        elif user_input == '7': # change destination
+
+            path = Path(input('Enter path: '))
+            if path.exists(): DEST = path
+            else: raise FileNotFoundError
+
+        elif user_input == '8': break
             
     except Exception as error: print(error, '\n')
