@@ -1,19 +1,29 @@
-import json
+import json, spacy
 from .. import ROOT, CONNECT, WEBDRIVER, INSERT
 from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
+REMOVE = 'gif.|girl.|sex.|pic.|ass|cock|naked|nude|pornstar|porn|&|\d'
 PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
-REMOVE = 'ass|big|cock|gifs|gif|girls|naked|nude|pics|pornstar|porn|sexy|&|\d'
+NLP = spacy.load('en_core_web_sm')
 SITE = 'imagefap'
 
-def page_handler(url, title):
+def get_artist(text):
     
+    text = re.split(',|-|~', re.sub(REMOVE, '', text))
+    entities = [NLP(text.strip()) for text in text]
+    artists = [
+        ents.text.replace(' ', '_')
+        for entity in entities for ents in entity.ents
+        if ents.label_ == 'PERSON'
+        ]
+                
+    return ' '.join(artists)
+
+def page_handler(url, title):
+
     try: url = f'{url}?gid={url.split("/")[4]}&view=2'
     except IndexError: url = f'https://{title}&view=2'
-    artist = ' '.join(
-        string.strip().replace(' ', '_') for string in 
-        re.split(',|-|~', re.sub(REMOVE, '', title.lower()))
-        )
+    artist = get_artist(title.lower())
 
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
@@ -37,7 +47,7 @@ def page_handler(url, title):
         if name.suffix in ('.jpg', '.jpeg'):
             
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name), 
+                general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=True
                 )
             save_image(name, src, exif)
@@ -45,23 +55,23 @@ def page_handler(url, title):
         elif name.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, name), 
+                general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=False
                 )
 
         hash_ = get_hash(name)
         CONNECTION.execute(INSERT[3], 
-            (str(name), artist, tags, rating, 1, hash_, None, SITE), 
+            (name.name, artist, tags, rating, 1, hash_, None, SITE), 
             commit=1
             )
     
     print(progress)
 
-def start():
+def start(headless=True):
         
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(headless)
     
     for file in PATH.iterdir():
 
