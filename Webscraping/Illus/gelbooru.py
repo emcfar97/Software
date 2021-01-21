@@ -38,8 +38,8 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         print(progress)
-        page_source = requests.get(f'https://gelbooru.com/{href}').content
-        html = bs4.BeautifulSoup(page_source, 'lxml')
+        page_source = requests.get(f'https://gelbooru.com/{href}')
+        html = bs4.BeautifulSoup(page_source.content, 'lxml')
 
         metadata = ' '.join(
             '_'.join(tag.text.split(' ')[1:-1]) for tag in 
@@ -49,11 +49,11 @@ def page_handler(hrefs):
             '_'.join(tag.text.split(' ')[1:-1]) for tag in 
             html.findAll(class_='tag-type-general')
             )
-        type_ = 1 if 'photo_(medium)' in tags else 2
         artists = [
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
+        type_ = 1 if 'photo_(medium)' in tags else 2
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
@@ -63,21 +63,23 @@ def page_handler(hrefs):
         hash_ = get_hash(image, 1)
         
         if CONNECTION.execute(UPDATE[0], (
-            name.name, ' '.join(artists), tags, rating, type_, image, hash_, href
+            name.name, ' '.join(artists), tags, 
+            rating, type_, image, hash_, href
             )):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
 
     print(progress)
 
-def start(initial=True):
+def start(initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
     
     if initial: 
+        DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
         initialize(url)
-    DRIVER.close()
+        DRIVER.close()
+
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))

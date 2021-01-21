@@ -51,11 +51,11 @@ def page_handler(hrefs):
     
     print(progress)
 
-def start(initial=True):
+def start(initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(headless)
     
     if initial: initialize()
     page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))

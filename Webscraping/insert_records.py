@@ -45,7 +45,7 @@ def extract_files(path, dest=None):
         
         file.unlink()
     
-    errors_txt.write_text('\n'.join(errors))
+    if errors: errors_txt.write_text('\n'.join(errors))
 
 def similarity(path):
 
@@ -57,7 +57,7 @@ def similarity(path):
     try: 
         if image.shape == MATCH.shape:
             k = cv2.subtract(image, MATCH)
-            return (k.min() + k.max()) == 0
+            return (k.min() + k.max()) < 10
             
     except: return True
 

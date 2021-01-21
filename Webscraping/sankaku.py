@@ -24,15 +24,17 @@ def initialize(mode, url, query=0):
             )
     page_source = requests.get(
         f'https://{mode[0]}.sankakucomplex.com/{url}'
-        ).content
-    html = bs4.BeautifulSoup(page_source, 'lxml')
+        )
+    html = bs4.BeautifulSoup(page_source.content, 'lxml')
     try:
         hrefs = [
-            (target.get('href'), SITE) for target in 
+            (target.get('href'), mode[1], SITE) for target in 
             html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
             if (target.get('href'),) not in query
             ]
-        CONNECTION.execute(INSERT[0], hrefs, many=1)
+        CONNECTION.execute(
+            'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1
+            )
         
         next = next_page(html.find('div', {'next-page-url': True}))   
         if hrefs and next: initialize(mode, next, query)
@@ -84,25 +86,24 @@ def page_handler(hrefs, mode):
             tags += ' ' + get_tags(DRIVER, name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
-            )        
+            )
+        tags = tags.encode('ascii', 'ignore').decode()
+        artists = ' '.join(artists).encode('ascii', 'ignore').decode()
         hash_ = get_hash(image, 1)
 
         if CONNECTION.execute(UPDATE[0], (
-            name.name, 
-            ' '.join(artists).encode('ascii', 'ignore').decode(), 
-            tags.encode('ascii', 'ignore').decode(), 
-            rating, mode[1], image, hash_, href
+            name.name, artists, tags, rating, mode[1], image, hash_, href
             )):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
     
     print(progress)
 
-def start(mode=1, initial=True):
+def start(mode=1, initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(headless)
     mode = MODE[mode]
 
     if initial: 

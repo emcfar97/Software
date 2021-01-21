@@ -12,7 +12,7 @@ def start():
     
     threads = [
         # threading.Thread(target=process.wait),
-        threading.Thread(target=furaffinity.start),
+        threading.Thread(target=furaffinity.start, args=(1, 0)),
         threading.Thread(target=foundry.start),
         # threading.Thread(target=twitter.start)
         ]

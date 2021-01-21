@@ -82,7 +82,7 @@ def page_handler(hrefs, retry=2):
             hash_ = get_hash(name) 
 
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name), 
+                general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=True
                 )
             if name.suffix.endswith(('jpg', 'png')): 
@@ -96,11 +96,11 @@ def page_handler(hrefs, retry=2):
     
     print(progress)
 
-def start(initial=True):
+def start(initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0)
+    DRIVER = WEBDRIVER(headless)
     
     url = DRIVER.login(SITE)
     if initial: initialize(url)

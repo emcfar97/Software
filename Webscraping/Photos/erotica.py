@@ -22,7 +22,7 @@ def page_handler(hrefs, artist):
         if not save_image(name, src): continue
 
         tags, rating, exif = generate_tags(
-            general=get_tags(DRIVER, name), 
+            general=get_tags(DRIVER, name, True), 
             custom=True, rating=True, exif=True
             )
         save_image(name, src, exif)
@@ -36,11 +36,11 @@ def page_handler(hrefs, artist):
     
     print(progress)
 
-def start(mode, page=1):
+def start(mode, page=1, headless):
         
     global CONNECTION, DRIVER, SITE
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0)
+    DRIVER = WEBDRIVER(headless)
     SITE = SITE[mode]
 
     DRIVER.login(SITE)

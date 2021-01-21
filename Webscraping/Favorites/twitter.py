@@ -104,11 +104,11 @@ def xpath_soup(element):
 
     return '/%s' % '/'.join(components)
 
-def start(initial=True):
+def start(initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0)
+    DRIVER = WEBDRIVER(headless)
     
     url = DRIVER.login(SITE)
     if initial: initialize(url)

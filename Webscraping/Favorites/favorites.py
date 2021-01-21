@@ -28,7 +28,7 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
             CONNECTION.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         DRIVER.find('//body/form/table[2]/tbody/tr[4]/td[1]/input', click=True)
-        if path.endswith(EXT): time.sleep(45)
+        if path.endswith(EXT): time.sleep(25)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         if html.find(text=re.compile(IGNORE)):
@@ -44,7 +44,7 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
             ]
         except: continue
         
-        if targets and not upload: 
+        if targets and not upload:
             try: saved = favorite(targets)
             except: saved = False
         elif upload and (sankaku < limit or gelbooru < 50):

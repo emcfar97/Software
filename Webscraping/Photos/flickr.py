@@ -76,7 +76,8 @@ def page_handler(hrefs):
         name = get_name(image, 0, 1)
         if not save_image(name, image): continue
         tags, rating, exif = generate_tags(
-            general=get_tags(DRIVER, name), custom=True, rating=True, exif=True
+            general=get_tags(DRIVER, name, True), 
+            custom=True, rating=True, exif=True
             )
         if name.suffix == '.jpg': save_image(name, image, exif)
         hash_ = get_hash(name) 
@@ -89,11 +90,11 @@ def page_handler(hrefs):
     
     print(progress)
 
-def start(initial=True):
+def start(initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(headless)
     
     url = DRIVER.login(SITE)
     if initial: initialize(url)

@@ -37,7 +37,7 @@ def page_handler(hrefs):
         name = get_name(href, 0, hasher=1)
         if not save_image(name, href): continue
         tags, rating, exif = generate_tags(
-            get_tags(DRIVER, name) + ' casual_nudity',
+            get_tags(DRIVER, name, True) + ' casual_nudity',
             custom=True, rating=True, exif=True
             )
         save_image(name, href, exif)
@@ -48,11 +48,11 @@ def page_handler(hrefs):
             commit=1
             )
 
-def start():
+def start(headless=True):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0)
+    DRIVER = WEBDRIVER(headless)
     
     initialize()
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))

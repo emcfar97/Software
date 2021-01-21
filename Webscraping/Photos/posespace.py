@@ -45,7 +45,7 @@ def page_handler(hrefs):
         for image in make_gif(image):
 
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, image) + ' reference', 
+                general=get_tags(DRIVER, image, True) + ' reference', 
                 custom=True, rating=True, exif=False
                 )
             name = get_name(image, 0)
@@ -152,11 +152,11 @@ def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
     return cv2.resize(image, dim, interpolation=inter)
 
 
-def start(initial=True):
+def start(initial=True, headless=True):
     
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(0)
+    DRIVER = WEBDRIVER(headless)
     
     if initial: initialize()
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))

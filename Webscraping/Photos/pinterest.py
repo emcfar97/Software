@@ -27,7 +27,7 @@ def page_handler(hrefs, section):
         if name.suffix in ('.jpg'):
 
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name), 
+                general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=True
                 )
             Image.open(name).save(name, exif=exif)
@@ -35,7 +35,7 @@ def page_handler(hrefs, section):
         elif name.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, name), 
+                general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=False
                 )
 
@@ -49,11 +49,11 @@ def page_handler(hrefs, section):
         
     print(progress)
     
-def start(retry=0):
+def start(retry=0, headless=True):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(headless)
     
     DRIVER.login(SITE)
     boards = {
