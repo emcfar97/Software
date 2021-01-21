@@ -30,14 +30,15 @@ class Preview(QScrollArea):
             if path.endswith(('.mp4', '.webm')): path = get_frame(path)
 
             pixmap = QPixmap(path)
+            height, width = pixmap.width(), pixmap.height()
             aspect_ratio = (
-                pixmap.width() / pixmap.height() 
-                if pixmap.height() > pixmap.width() else
-                pixmap.height() / pixmap.width()
+                width / height 
+                if height > width else
+                height / width
                 )
 
             if aspect_ratio < .5: 
-                if pixmap.height() < pixmap.width():
+                if height < width:
                     pixmap.scaledToHeight(self.height())
                 else: pixmap.scaledToWidth(self.width())
             else: pixmap = QPixmap(path).scaled(

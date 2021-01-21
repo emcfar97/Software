@@ -5,6 +5,7 @@ from cv2 import VideoCapture
 import mysql.connector as sql
 from PyQt5.QtGui import QPixmap
 from configparser import ConfigParser
+from PyQt5.QtWidgets import QCompleter
 
 class CONNECT:
     
@@ -44,6 +45,12 @@ class CONNECT:
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
+
+class MyCompleter(QCompleter):
+
+    def __def__(self, *args):
+        
+        super(MyCompleter, self).__init__( *args)
 
 def get_frame(path):
 
