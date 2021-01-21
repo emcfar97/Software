@@ -28,15 +28,13 @@ def start():
         commit = 1
         artist = get_artist(folder.stem.lower())
         images = [
-            (num, shutil.copy(file, get_name(file, 2, 1)))
+            (num, get_hash(file), shutil.copy(file, get_name(file, 2, 1)))
             for num, file in enumerate(folder.iterdir())
             ]
-        cover = images[0][1]
+        cover = images[0][2]
 
-        for num, image in images:
+        for num, hash_, image in images:
 
-            try: hash_ = get_hash(image)
-            except: break
             tags, rating = generate_tags(
                 general=get_tags(DRIVER, image), 
                 custom=True, rating=True, exif=False

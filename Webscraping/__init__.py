@@ -152,7 +152,8 @@ class WEBDRIVER:
         
         for _ in range(10):
             try: return self.driver.page_source
-            except exceptions.WebDriverException: pass
+            except exceptions.WebDriverException: 
+                self.refresh()
         raise exceptions.WebDriverException
     
     def current_url(self): return self.driver.current_url

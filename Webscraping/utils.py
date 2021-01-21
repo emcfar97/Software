@@ -19,6 +19,7 @@ METADATA = {
     '3d_cg': '3d',
     'game_cg':'game_cg',
     'official_art': 'official_art',
+    'novel_illustration':'novel_illustration',
     'nude_filter': 'nude_filter',
     }
 GENERAL = {
@@ -115,21 +116,20 @@ def save_image(name, image=None, exif=b''):
     except UnidentifiedImageError: return False
     except OSError as error: 
         if 'trunc' not in error.args: 
-            img.save(name.with_suffix('.gif'))
-        else: return False
-    except: return False
+            try: img.save(name.with_suffix('.gif'))
+            except: pass
+    except: pass
     return name.exists()
     
-def get_name(path, type_, hasher=1, fetch=0):
+def get_name(path, type_, hasher=1):
     '''Return pathname (from optional hash of image)'''
 
     if hasher:
-        if isinstance(path, str): 
+        if isinstance(path, str):
             data = requests.get(path, headers=HEADERS).content
         else: data = path.read_bytes()
         HASHER.update(data)
 
-        if fetch: return HASHER.hexdigest()
         try: stem = f'{HASHER.hexdigest()}{path.suffix.lower()}'
         except: stem = f'{HASHER.hexdigest()}.{re.findall(EXT, path)[0]}'
     
@@ -274,7 +274,7 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
         rating.append(exif)
     
     tags = re.sub(
-        '(photorealistic|photo|realistic|(rating|score):\w+|solo_focus|uncensored|vagina|hetero) ', '', f' {" ".join(tags)} '
+        '(photorealistic|photo|realistic|(rating|score):\w+|solo_focus|uncensored|vagina|hetero) ', '', ' '.join(tags)
         )
         
     return tags if rating is None else [tags] + rating
