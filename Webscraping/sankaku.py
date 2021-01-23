@@ -1,4 +1,4 @@
-from . import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
+from . import CONNECT, SELECT, UPDATE, DELETE, WEBDRIVER
 from .utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
 import time
 from PIL import ImageFile
@@ -32,17 +32,13 @@ def initialize(mode, url, query=0):
             html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
             if (target.get('href'),) not in query
             ]
-        CONNECTION.execute(
-            'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1
-            )
         
-        next = next_page(html.find('div', {'next-page-url': True}))   
-        if hrefs and next: initialize(mode, next, query)
+        next = next_page(html.find('div', {'next-page-url': True})) 
+        if hrefs and next: return hrefs + initialize(mode, next, query)
+        else: return hrefs
     except:
         time.sleep(60)   
         initialize(mode, url, query)
-
-    CONNECTION.commit()
 
 def page_handler(hrefs, mode):
 
@@ -108,7 +104,10 @@ def start(mode=1, initial=True, headless=True):
 
     if initial: 
         url = DRIVER.login(SITE, mode[0])
-        initialize(mode, url)
+        hrefs = initialize(mode, url)
+        CONNECTION.execute(
+            'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1, commit=1
+            )
     page_handler(
         CONNECTION.execute(
             f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1

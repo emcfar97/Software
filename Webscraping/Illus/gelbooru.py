@@ -23,13 +23,11 @@ def initialize(url, query=0):
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
-    CONNECTION.execute(INSERT[0], hrefs, many=1)
         
     next = next_page(html.find(id='paginator').contents)   
-    if hrefs and next: initialize(next, query)
+    if hrefs and next: return hrefs + initialize(next, query)
+    else: return hrefs
     
-    CONNECTION.commit()
-
 def page_handler(hrefs):
 
     if not hrefs: return
@@ -79,7 +77,8 @@ def start(initial=True, headless=True):
     if initial: 
         DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
-        initialize(url)
+        hrefs = initialize(url)
+        CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
         DRIVER.close()
 
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))

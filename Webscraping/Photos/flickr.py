@@ -27,13 +27,11 @@ def initialize(url, query=0):
         html.findAll(class_='overlay', href=re.compile('/photos/.+/\Z'))
         if (target.get('href'),) not in query
         ]
-    CONNECTION.execute(INSERT[0], hrefs, 1)
-        
-    next = next_page(html.find('a', {'data-track':'paginationRightClick'}))
-    if hrefs and next: initialize(next, query)
 
-    CONNECTION.commit()
-    
+    next = next_page(html.find('a', {'data-track':'paginationRightClick'}))
+    if hrefs and next: return hrefs + initialize(next, query)
+    else: return hrefs
+
 def page_handler(hrefs):
 
     if not hrefs: return
@@ -97,6 +95,8 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
     
     url = DRIVER.login(SITE)
-    if initial: initialize(url)
+    if initial: 
+        hrefs = initialize(url)
+        CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
