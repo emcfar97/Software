@@ -2,6 +2,7 @@ import imagehash, piexif, bs4, requests, re, tempfile, hashlib, sys, ast
 from . import ROOT
 from math import log
 from io import BytesIO
+from ffprobe import FFProbe
 from PIL import Image, UnidentifiedImageError
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
@@ -171,7 +172,11 @@ def get_tags(driver, path, filter=False):
     if video:
 
         tags.add('animated')
-        if path.suffix in ('.webm', '.mp4'): tags.add('audio')
+        if path.suffix in ('.webm', '.mp4'): 
+            for stream in FFProbe(str(path)).streams:
+                if stream.codec_type == 'audio': 
+                    tags.add('audio')
+                    break
         temp_dir = tempfile.TemporaryDirectory()
         vidcap = VideoCapture(str(path))
         success, frame = vidcap.read()
