@@ -36,7 +36,7 @@ def page_handler(hrefs, artist):
     
     print(progress)
 
-def start(mode, page=1, headless):
+def start(mode, page=1, headless=True):
         
     global CONNECTION, DRIVER, SITE
     CONNECTION = CONNECT()

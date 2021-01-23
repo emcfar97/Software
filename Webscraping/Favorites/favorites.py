@@ -1,5 +1,5 @@
 import sqlite3, json, os, time
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
 from ..utils import PATH, Progress, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 
@@ -161,12 +161,13 @@ def initialize():
             ]
 
     CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
+    CONNECTION.execute(DELETE[2], commit=1)
 
-def start(initial=1, index=1000):
+def start(initial=1, index=1000, headless=True):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(wait=30)
+    DRIVER = WEBDRIVER(headless, wait=30)
     if initial: initialize()
 
     DRIVER.login('gelbooru')
