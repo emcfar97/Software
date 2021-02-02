@@ -5,16 +5,14 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle, QCompleter
 
-TYPE = {
+ENUM = {
     'All': '',
     'Photo': 'type=1', 
     'Illus': 'type=2', 
     'Comic': 'type=3',
-    }
-RATING = {
     'Explicit': '',
     'Questionable': 'rating<3',
-    'Safe': 'rating=1' 
+    'Safe': 'rating=1',
     }
 
 class Gallery(QWidget):
@@ -41,15 +39,12 @@ class Gallery(QWidget):
 
     def populate(self, event=None, limit=50000, op='[<>=!]=?'):
         
+        self.query = {}
+        join = ''
+        order = self.get_order()
         self.images.clearSelection()
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
-        
-        self.query = {
-            'type': TYPE[self.type.checkedAction().text()],
-            'rating': RATING[self.rating.checkedAction().text()],
-            }
-        order = self.get_order()
         
         if self.title == 'Gesture Draw':
             
@@ -62,9 +57,8 @@ class Gallery(QWidget):
             string = string.replace(token, '')
             col, val = re.split(op, token)
 
-            if col == 'comic': 
+            if col == 'comic':
                 
-                del self.query['rating']
                 token = f'parent="{val}"'
                 order = self.get_order(1)
                 join = 'JOIN comic ON comic.path_=imageData.path'
@@ -76,6 +70,8 @@ class Gallery(QWidget):
             elif re.search('\*', val):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
+
+            elif val == 'NULL': token = f'{col} IS {val}'
 
             elif re.search('\D', val):
 
@@ -95,20 +91,23 @@ class Gallery(QWidget):
             self.query['tags'] = (
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 )
+        
+        for text, col in zip(['type', 'rating'], [self.type, self.rating]):
+            if (val:=ENUM[col.checkedAction().text()]) and text not in self.query:
+                self.query[text] = val
+        if not any(self.query): self.query[''] = 'NOT ISNULL(path)'
 
         # comic functionality
-        if '3' in self.query['type'] and 'comic' not in self.query:
-            join = 'JOIN comic ON comic.path_=imageData.path'
-            self.query['pages'] = 'page=0'
-        else: join = ''
-        
-        if not any(self.query.values()): self.query[''] = 'NOT ISNULL(path)'
+        if 'type' in self.query and 'comic' not in self.query:
+            if '3' in self.query['type']:
+                join = 'JOIN comic ON comic.path_=imageData.path'
+                self.query['pages'] = 'page=0'
 
         filter = " AND ".join(val for val in self.query.values() if val)
         
         self.thread.statement = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
-
+        
     def get_order(self, type_=0, ORDER={'Ascending':'ASC','Descending':'DESC'}):
         
         order = self.order[1].checkedAction().text()
@@ -450,10 +449,10 @@ class ImageView(QTableView):
             if self.parent().title == 'Manage Data':
 
                 if select := select.indexes():
-                    image = select[0].data(Qt.UserRole)
+                    image = select[0]
                 
                 elif self.selectedIndexes(): 
-                    image = min(self.selectedIndexes()).data(Qt.UserRole)
+                    image = min(self.selectedIndexes())
                 
                 else: image = None
 
@@ -592,7 +591,8 @@ class Model(QAbstractTableModel):
         
         ind = (index.row() * 5) + index.column()
 
-        if not index.isValid() or ind >= len(self.images): return QVariant()
+        if ind >= len(self.images) or not self.images[ind]:
+            return QVariant()
         
         if role == Qt.DecorationRole:
             
@@ -607,7 +607,7 @@ class Model(QAbstractTableModel):
                 self.width, self.width, Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
-            
+                
             return QPixmap(image)
 
         if role == Qt.ToolTipRole:
@@ -655,7 +655,7 @@ class Model(QAbstractTableModel):
 
 class Worker(QThread):
     
-    def __init__(self, parent): 
+    def __init__(self, parent):
         
         super(Worker, self).__init__(parent)
 
