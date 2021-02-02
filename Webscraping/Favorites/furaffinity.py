@@ -32,8 +32,6 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
-        print(progress)
-
         DRIVER.get(f'https://www.furaffinity.net{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
@@ -46,12 +44,12 @@ def page_handler(hrefs):
             'a', href=re.compile('/user/+(?!chairekakia)'), id=False
             ).get('href').split('/')[2]
         image = html.find("a", href=re.compile("//d.+")).get("href")
-        name = '-'.join((artist, re.findall('_.+', image)[0][1:]))
+        name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
         name = PATH / 'Images' / SITE / name
 
         CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
     
-    print(progress)
+        print(progress)
 
 def start(initial=True, headless=True):
     
@@ -59,7 +57,8 @@ def start(initial=True, headless=True):
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
-    url = DRIVER.login(SITE)
-    if initial: initialize(url)
+    if initial: 
+        url = DRIVER.login(SITE)
+        initialize(url)
     page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
