@@ -19,14 +19,16 @@ class Preview(QScrollArea):
             ''')
         self.setContentsMargins(0, 0, 0, 0)
         
-    def show_image(self, path):
+    def show_image(self, index):
         
         self.verticalScrollBar().setSliderPosition(0)
         self.horizontalScrollBar().setSliderPosition(0)
 
-        if path is None: pixmap = QPixmap()
+        if index is None: pixmap = QPixmap()
         
         else:
+            path = index.data(Qt.UserRole)
+            type_ = index.data(1000)[5].pop()
             if path.endswith(('.mp4', '.webm')): path = get_frame(path)
 
             pixmap = QPixmap(path)
@@ -37,7 +39,7 @@ class Preview(QScrollArea):
                 height / width
                 )
 
-            if aspect_ratio < .5: 
+            if (type_ == 3 and aspect_ratio < .6) or aspect_ratio < .3: 
                 if height < width:
                     pixmap.scaledToHeight(self.height())
                 else: pixmap.scaledToWidth(self.width())
