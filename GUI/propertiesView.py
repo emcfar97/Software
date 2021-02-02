@@ -146,10 +146,10 @@ class LineEdit(QLineEdit):
 
             return super().setText(text)
     
-    def text(self): 
+    def text(self):
         
         if self.type: return self.modified[0]
-        return self.modified
+        if any(self.modified): return self.modified
 
     def modify(self, text):
 
