@@ -1,4 +1,5 @@
 import json, cv2
+from os import path
 from PIL import Image
 from urllib.parse import urlparse
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
@@ -16,7 +17,7 @@ def extract_files(path, dest=None):
     if errors_txt.exists():
         for image in errors_txt.read_text().split('\n'):
             image = image.strip()
-            name = path.parent / image.split('/')[-1]
+            name = path.parent / image.split('/')[-1].split('?')[0]
             save_image(name, image)
         errors_txt.unlink()
     
@@ -63,18 +64,16 @@ def similarity(path):
 
     return False
 
-def start(path=ROOT / r'\Users\Emc11\Downloads\Images', extract=True):
+def start(path=ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images'), extract=True):
     
     if extract: extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.suffix in EXT]
     progress = Progress(len(files), 'Files')
     
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(profile=None)
 
     for file in files:
-        
-        print(progress)
         
         try:
             if (dest := get_name(file, 0, 1)).exists() or similarity(file):
@@ -106,8 +105,7 @@ def start(path=ROOT / r'\Users\Emc11\Downloads\Images', extract=True):
             
         except Exception as error: print(error, '\n')
     
-    print(progress)
+        print(progress)
+
     DRIVER.close()
-
     print('\nDone')
-
