@@ -41,7 +41,6 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
-        print(progress)
         DRIVER.get(f'https://www.flickr.com{href}')
         image = None
         
@@ -86,7 +85,7 @@ def page_handler(hrefs):
             commit=1
             )
     
-    print(progress)
+        print(progress)
 
 def start(initial=True, headless=True):
     

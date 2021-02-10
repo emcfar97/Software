@@ -35,7 +35,6 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
-        print(progress)
         page_source = requests.get(f'https://gelbooru.com/{href}')
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
 
@@ -67,7 +66,7 @@ def page_handler(hrefs):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
 
-    print(progress)
+        print(progress)
 
 def start(initial=True, headless=True):
     

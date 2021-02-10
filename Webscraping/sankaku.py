@@ -47,8 +47,6 @@ def page_handler(hrefs, mode):
 
     for href, in hrefs:
         
-        print(progress)
-        
         page_source = requests.get(
             f'https://{mode[0]}.sankakucomplex.com{href}'
             ).content      
@@ -93,7 +91,7 @@ def page_handler(hrefs, mode):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
     
-    print(progress)
+        print(progress)
 
 def start(mode=1, initial=True, headless=True):
     
@@ -103,7 +101,7 @@ def start(mode=1, initial=True, headless=True):
     mode = MODE[mode]
 
     if initial: 
-        url = DRIVER.login(SITE, mode[0])
+        url = DRIVER.login(SITE)
         hrefs = initialize(mode, url)
         CONNECTION.execute(
             'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1, commit=1

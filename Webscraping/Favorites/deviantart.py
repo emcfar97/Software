@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, time, re
+from ..utils import Progress, bs4, requests, time, re
 
 SITE = 'deviantArt'
 

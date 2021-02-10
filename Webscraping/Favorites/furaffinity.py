@@ -43,7 +43,7 @@ def page_handler(hrefs):
         artist = html.find(
             'a', href=re.compile('/user/+(?!chairekakia)'), id=False
             ).get('href').split('/')[2]
-        image = html.find("a", href=re.compile("//d.+")).get("href")
+        image = html.find('a', href=re.compile('//d.+')).get('href')
         name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
         name = PATH / 'Images' / SITE / name
 
