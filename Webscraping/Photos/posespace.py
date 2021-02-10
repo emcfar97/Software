@@ -7,28 +7,25 @@ SITE = 'posespace'
 
 def initialize(url='/posetool/favs.aspx'):
 
-    DRIVER.login(SITE)
-    database = set(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    query = set(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
 
     DRIVER.get(f'https://www.posespace.com{url}')
     time.sleep(1)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, SITE) for href in 
-        {(target.text,) for target in html.findAll(class_='emph')}
-        - database
+        {
+            (target.text,) for target in html.findAll(class_='emph')
+            } - query
         ]
     CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
         
-def page_handler(hrefs):
+def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
     
     if not hrefs: return
     progress = Progress(len(hrefs), SITE)
-    url = 'https://www.posespace.com/img/contact/'
 
     for href, in hrefs:
-        
-        print(progress)
 
         image_a = np.asarray(bytearray(
             requests.get(f'{url}{href}contacta.jpg').content)
@@ -56,10 +53,10 @@ def page_handler(hrefs):
                 (name.name, href[:-3], tags, rating, 1, hash_, None, SITE),
                 commit=1
                 )
-        CONNECTION.execute(DELETE[0], (href,), commit=1)
+        else: CONNECTION.execute(DELETE[0], (href,), commit=1)
         
-    print(progress)
-
+        print(progress)
+        
 def make_gif(image):
 
     def precedence(contour, cols, tolerance=30):
