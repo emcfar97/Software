@@ -1,4 +1,4 @@
-import ffmpeg
+import ffmpeg, re
 from pathlib import Path
 from ffprobe import FFProbe
 
@@ -113,7 +113,12 @@ while True:
 
             if file.exists():
                 
-                new = file.parent.parent / file.name
+                if re.search(' \d+', file.stem):
+                    num = int(*re.findall(' (\d+)', file.stem))
+                    new = re.sub(f' {num}+', f' {num+1:02}', file.stem)
+                else: new = f'{file.stem} Part 00'
+                new = file.with_stem(new)
+
                 start = input('Enter start time (seconds or hh:mm:ss): ')
                 end = input('Enter end time (seconds or hh:mm:ss): ')
                 
@@ -128,7 +133,7 @@ while True:
                         start=start, end=end
                         ).output(str(new), preset='fast').run()
 
-            else: print(f'File {file} does not exist')
+            else: raise FileNotFoundError
 
         elif user_input == '5': # download m3u8
             
@@ -150,7 +155,9 @@ while True:
         elif user_input == '7': # change destination
 
             path = Path(input('Enter path: '))
-            if path.exists(): DEST = path
+            if path.exists(): 
+                DEST = path
+                print('Success\n')
             else: raise FileNotFoundError
 
         elif user_input == '8': break
