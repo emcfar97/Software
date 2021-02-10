@@ -1,10 +1,11 @@
 import shutil, re, send2trash
+from os import path
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
 from .utils import Progress, get_name, get_hash, get_tags, generate_tags
 
 CONNECTION = CONNECT()
 DRIVER = WEBDRIVER(True)
-path = ROOT / r'\Users\Emc11\Downloads\Images\Comics'
+path = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images\Comics')
 
 def get_artist(text):
 

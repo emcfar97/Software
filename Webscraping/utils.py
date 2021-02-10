@@ -1,12 +1,13 @@
 import imagehash, piexif, bs4, requests, re, tempfile, hashlib, sys, ast
 from . import ROOT
+from os import path
 from math import log
 from io import BytesIO
 from ffprobe import FFProbe
 from PIL import Image, UnidentifiedImageError
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
-PATH = ROOT / r'\Users\Emc11\Dropbox\ん'
+PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 HEADERS = {
@@ -138,7 +139,7 @@ def get_name(path, type_, hasher=1):
 
     return PATH / TYPE[type_] / stem.replace('jpeg','jpg')
 
-def get_hash(image, src=False, filter=False):
+def get_hash(image, src=False):
     '''Return perceptual hash of image'''
         
     if src:

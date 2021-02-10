@@ -1,9 +1,9 @@
 import os
-from . import WEBDRIVER, ROOT
+from . import WEBDRIVER, USER
 from .utils import bs4, requests, re, time, Image, BytesIO
 from selenium.webdriver.common.keys import Keys
 
-path =  ROOT / r'E:\Users\Emc11\Training\New folder'
+path =  USER / r'\Training\New folder'
 
 def unsplash(images, folder, type_):
 

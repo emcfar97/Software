@@ -1,9 +1,10 @@
 import json, spacy
+from os import path
 from .. import ROOT, CONNECT, WEBDRIVER, INSERT
 from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 REMOVE = 'gif.|girl.|sex.|pic.|ass|cock|naked|nude|pornstar|porn|&|\d'
-PATH = ROOT / r'\Users\Emc11\Downloads\Images\Imagefap'
+PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images\Imagefap')
 NLP = spacy.load('en_core_web_sm')
 SITE = 'imagefap'
 
