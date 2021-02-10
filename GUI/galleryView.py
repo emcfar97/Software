@@ -481,7 +481,7 @@ class ImageView(QTableView):
 
         if alt:
             
-            if key_press == Qt.Key_Return and self.selectedIndexes():
+            if self.selectedIndexes() and key_press in (Qt.Key_Return, Qt.Key_Enter):
             
                 self.openEditor(self.selectedIndexes())
             
@@ -591,7 +591,7 @@ class Model(QAbstractTableModel):
         
         ind = (index.row() * 5) + index.column()
 
-        if ind >= len(self.images) or not self.images[ind]:
+        if ind >= len(self.images) or not self.images[ind][0]:
             return QVariant()
         
         if role == Qt.DecorationRole:

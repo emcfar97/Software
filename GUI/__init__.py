@@ -24,7 +24,7 @@ class CONNECT:
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
-
+        
         for _ in range(10):
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
@@ -38,7 +38,7 @@ class CONNECT:
 
         return list()
 
-    def reconnect(self, attempts=5, time=15):
+    def reconnect(self, attempts=5, time=6):
 
         self.DATAB.reconnect(attempts, time)
 
