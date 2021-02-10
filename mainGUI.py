@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QAction, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAction
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 
@@ -69,7 +69,7 @@ class App(QMainWindow):
         self.windows[title] = self.windows.get(title, []) + [app(self)]
         self.hide()
         
-    def is_empty(self): return sum(self.windows.values(), [])
+    def is_empty(self): return any(self.windows.values())
 
     def keyPressEvent(self, event):
 
@@ -112,7 +112,6 @@ class ManageData(QMainWindow):
         super(ManageData, self).__init__()
         self.setWindowTitle('Manage Data')
         self.parent = parent
-        self.windows = set()
         self.configure_gui()
         self.create_widgets()
         self.showMaximized()
@@ -134,6 +133,7 @@ class ManageData(QMainWindow):
 
     def create_widgets(self):
             
+        self.windows = set()
         self.gallery = Gallery(self)
         self.preview = Preview(self, 'white')
         self.slideshow = Slideshow(self)
@@ -162,6 +162,8 @@ class ManageData(QMainWindow):
     def update_records(self, gallery, **kwargs):
         
         parameters = []
+        query = set(self.gallery.query)
+        change = set(i.lower() for i in kwargs)
 
         for key, vals in kwargs.items():
             
@@ -186,17 +188,26 @@ class ManageData(QMainWindow):
                 new = self.TYPE[kwargs['Type']]
 
                 try: path.rename(dropbox / new / path.name)
-                except PermissionError as error:
+                except (FileExistsError, PermissionError) as error:
                     message = QMessageBox.question(
-                        self, 'Permission Error', 
+                        self, type(error).__name__, 
                         str(error), QMessageBox.Ok
                         )
                     return 0
         
-        CONNECTION.execute(
+        try: CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
-        self.gallery.populate()
+        except:
+            message = QMessageBox.question(
+                self, 'Interface Error', 
+                'Cannot connect to database', QMessageBox.Ok
+                )
+            return 0
+
+        if query & change: self.gallery.populate()
+        else: self.gallery.images.clearSelection()
+
         return 1
     
     def delete_records(self, gallery, update=True):
@@ -216,7 +227,13 @@ class ManageData(QMainWindow):
                 try: (ROOT / path).unlink()
                 except (FileNotFoundError, TypeError): pass
                     
-            CONNECTION.execute(DELETE, gallery, many=1, commit=1)
+            try: CONNECTION.execute(DELETE, gallery, many=1, commit=1)
+            except:
+                message = QMessageBox.question(
+                    self, 'Interface Error', 
+                    'Cannot connect to database', QMessageBox.Ok
+                    )
+                return 0
             
             if update:
                 self.gallery.images.update([])
