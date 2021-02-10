@@ -32,7 +32,7 @@ def last_modified(path):
 def get_version(paths):
 
     latest = str(sorted(paths)[-1])
-    version = int(*re.findall(' \d+', latest))
+    version = int(*re.findall(' - (\d+)', latest))
 
     return re.sub(' \d+', f' {version + 1:02}', latest)
 
