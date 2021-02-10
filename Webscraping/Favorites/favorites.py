@@ -1,7 +1,8 @@
-import sqlite3, json, os, time
+import sqlite3, json, os, time, tempfile
 from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
-from ..utils import PATH, Progress, get_tags, generate_tags, bs4, requests, re
+from ..utils import Progress, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
+from selenium.webdriver.common.keys import Keys
 
 EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
@@ -68,7 +69,7 @@ def favorite(targets, saved=False):
             element = DRIVER.find('//*[@title="Add to favorites"]')
             try: element.click()
             except exceptions.ElementClickInterceptedException: 
-                DRIVER.driver.switch_to.active_element.click()
+                DRIVER.active_element().click()
                 element.click()
             except exceptions.ElementNotInteractableException: pass
 
@@ -144,6 +145,34 @@ def get_limit():
     html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
     return int(html.find('strong').text)
 
+def edit(search, replace):
+    
+    address = '/html/body/div[4]/div/div[2]/div[8]/form/table/tfoot/tr/td/input'
+    driver = WEBDRIVER(0, None, wait=30)
+    driver.login('sankaku', 'chan')
+    driver.get(f'https://chan.sankakucomplex.com?tags={search}')
+    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    hrefs = [
+        target.get('href') for target in 
+        html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
+        ]
+
+    for href in hrefs:
+
+        driver.get(f'https://chan.sankakucomplex.com{href}')
+        time.sleep(6)
+        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        tags = html.find('textarea').contents[0]
+
+        text = re.sub(search.replace('*', '.*'), replace, tags)
+        driver.find('//*[@id="post_tags"]').clear()
+        driver.find('//*[@id="post_tags"]', keys=text)
+
+        try: element = driver.find(address, click=True)
+        except exceptions.ElementClickInterceptedException: 
+            driver.active_element().click()
+            element.click()
+        
 def initialize():
     
     data = sqlite3.connect(r'Webscraping\PixivUtil\Data.sqlite')
@@ -152,25 +181,23 @@ def initialize():
         )
     data.close()
     
-    paths = list()
-    for site in ['foundry', 'furaffinity', 'misc', 'twitter']:
+    # paths = list()
+    # for site in ['foundry', 'furaffinity', 'misc', 'twitter']:
 
-        paths += [
-            (str(path), None, site) for path in 
-            (PATH / 'Images' / site).iterdir()
-            ]
+    #     paths += [
+    #         (str(path), None, site) for path in 
+    #         (PATH / 'Images' / site).iterdir()
+    #         ]
 
-    CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
+    # CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
     CONNECTION.execute(DELETE[2], commit=1)
 
-def start(initial=1, index=1000, headless=True):
+def start(initial=1, index=10, headless=True):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(headless, wait=30)
+    
     if initial: initialize()
-
-    DRIVER.login('gelbooru')
-    DRIVER.login('sankaku', 'chan')
     main(CONNECTION.execute(SELECT[4], fetch=1)[-index:])
     DRIVER.close()
