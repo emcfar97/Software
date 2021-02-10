@@ -1,8 +1,7 @@
-
 from .. import CONNECT, WEBDRIVER, INSERT
 from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
-SITE = 'metarthunter', 'femjoyhunter', 'elitebabes'
+SITE = 'elitebabes'
 
 def next_page(page):
              
@@ -10,13 +9,12 @@ def next_page(page):
     except IndexError: return False
 
 def page_handler(hrefs, artist):
-
-    progress = Progress(len(hrefs), 'Images')
+    
+    if not hrefs: return
+    progress = Progress(len(hrefs), SITE)
 
     for href in hrefs:
         
-        print(progress)
-
         src = href.get('href')
         if (name:=get_name(src, 0, 1)).exists(): continue
         if not save_image(name, src): continue
@@ -34,16 +32,15 @@ def page_handler(hrefs, artist):
             commit=1
             )
     
-    print(progress)
+        print(progress)
 
-def start(mode, page=1, headless=True):
+def start(page=1, headless=True):
         
-    global CONNECTION, DRIVER, SITE
+    global CONNECTION, DRIVER
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(headless)
-    SITE = SITE[mode]
 
-    DRIVER.login(SITE)
+    # DRIVER.login(SITE)
     while page:
 
         DRIVER.get(f'https://www.{SITE}.com/my-favorite-galleries/page/{page}/')
