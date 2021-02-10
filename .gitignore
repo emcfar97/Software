@@ -14,5 +14,6 @@ MachineLearning/Checkpoints
 MachineLearning/Models
 MachineLearning/Logs
 OBScripts/*.*
-GUI/test.py
+GUI/test*.*
 Webscraping/PixivUtil/*.*
+Webscraping/pixivutil/LICENSE
