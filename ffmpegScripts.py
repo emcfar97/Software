@@ -1,11 +1,14 @@
-import ffmpeg, re
+import ffmpeg
+from os import path
 from pathlib import Path
 from ffprobe import FFProbe
+from re import search, sub, findall
 
 EXT = '.mp4', '.flv', '.mkv'
-DRIVE = Path(Path(__file__).drive)
-SOURCE = DRIVE / r'\Users\Emc11\Videos\Captures'
-DEST = DRIVE / r'\Users\Emc11\Dropbox\Videos\Captures'
+ROOT = Path(Path(__file__).drive)
+PATH = ROOT / path.expandvars(r'\Users\$USERNAME')
+SOURCE = PATH / r'\Videos\Captures'
+DEST = PATH / r'\Dropbox\Videos\Captures'
 
 def get_stream(files, text):
         
@@ -36,9 +39,11 @@ def get_folders():
     return targets
 
 while True:
+    
     user_input = input(
         'Choose from:\n1 - Convert videos\n2 - Concat videos\n3 - Change framerate\n4 - Split video\n5 - Download m3u8\n6 - Check directories\n7 - Change destination directory\n8 - Exit\n'
         )
+    
     try:
         if   user_input == '1': # convert vidoes
                 
@@ -113,9 +118,9 @@ while True:
 
             if file.exists():
                 
-                if re.search(' \d+', file.stem):
-                    num = int(*re.findall(' (\d+)', file.stem))
-                    new = re.sub(f' {num}+', f' {num+1:02}', file.stem)
+                if search(' \d+', file.stem):
+                    num = int(*findall(' (\d+)', file.stem))
+                    new = sub(f' {num}+', f' {num+1:02}', file.stem)
                 else: new = f'{file.stem} Part 00'
                 new = file.with_stem(new)
 
@@ -140,12 +145,12 @@ while True:
             url = input('Enter url: ')
             name = f'{url.split("/")[3]}.mp4'
             ffmpeg.input(url).output(
-                str(DRIVE / rf'\Users\Emc11\Downloads\Images\{name}')
+                str(PATH / r'\Downloads\Images' / name)
                 ).run()
 
         elif user_input == '6': # check directories
             
-            print(DRIVE)
+            print(ROOT)
             for file in SOURCE.iterdir():
                 if file.is_dir():
                     print(f'{file}: {[str(i) for i in file.iterdir()]}')
