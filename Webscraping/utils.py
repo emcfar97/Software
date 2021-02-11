@@ -174,10 +174,12 @@ def get_tags(driver, path, filter=False):
 
         tags.add('animated')
         if path.suffix in ('.webm', '.mp4'): 
-            for stream in FFProbe(str(path)).streams:
-                if stream.codec_type == 'audio': 
-                    tags.add('audio')
-                    break
+            try:
+                for stream in FFProbe(str(path)).streams:
+                    if stream.codec_type == 'audio': 
+                        tags.add('audio')
+                        break
+            except: pass
         temp_dir = tempfile.TemporaryDirectory()
         vidcap = VideoCapture(str(path))
         success, frame = vidcap.read()
