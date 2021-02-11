@@ -1,4 +1,5 @@
 import qimage2ndarray
+from os import path
 from pathlib import Path
 from datetime import date
 from cv2 import VideoCapture
@@ -11,16 +12,7 @@ class CONNECT:
     
     def __init__(self):
 
-        self.DATAB = sql.connect(option_files='credentials.ini')
-        
-        CREDENTIALS = ConfigParser(delimiters='=') 
-        CREDENTIALS.read('credentials.ini')
-        self.DATAB = sql.connect(
-            user=CREDENTIALS.get('mysql', 'username'), 
-            password=CREDENTIALS.get('mysql', 'password'), 
-            database=CREDENTIALS.get('mysql', 'database'), 
-            host=CREDENTIALS.get('mysql', 'hostname')
-            )
+        self.DATAB = sql.connect(option_files=r'GUI\credentials.ini')
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
@@ -60,14 +52,15 @@ def get_frame(path):
 
 CONNECTION = CONNECT()
 ROOT = Path(Path().cwd().drive)
+PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
 CASE = r'''
     case type
-    when 1 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ ニ\\", path)
-    when 2 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 三\\", path)
-    when 3 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 四\\", path)
-    end as path
-    '''.format(ROOT)
-BASE = f'SELECT {CASE}, artist, tags, rating, stars, type, site FROM imageData'
+    when 1 then CONCAT('{0}\エラティカ ニ\', path)
+    when 2 then CONCAT('{0}\エラティカ 三\', path)
+    when 3 then CONCAT('{0}\エラティカ 四\', path)
+    end
+    '''.format(PATH).replace('\\', '\\\\')
+BASE = f'SELECT {CASE} as path, artist, tags, rating, stars, type, site FROM imageData'
 COMIC = 'SELECT parent FROM comic WHERE path_=SUBSTRING(%s, 34)'
 GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=SUBSTRING(%s, 34)'
 MODIFY = f'UPDATE imageData SET {{}} WHERE path=SUBSTRING(%s, 34)'
