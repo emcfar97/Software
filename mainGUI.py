@@ -188,7 +188,11 @@ class ManageData(QMainWindow):
                 new = self.TYPE[kwargs['Type']]
 
                 try: path.rename(dropbox / new / path.name)
-                except (FileExistsError, PermissionError) as error:
+                except (
+                    FileExistsError, 
+                    FileNotFoundError, 
+                    PermissionError
+                    ) as error:
                     message = QMessageBox.question(
                         self, type(error).__name__, 
                         str(error), QMessageBox.Ok
