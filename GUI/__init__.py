@@ -5,7 +5,6 @@ from datetime import date
 from cv2 import VideoCapture
 import mysql.connector as sql
 from PyQt5.QtGui import QPixmap
-from configparser import ConfigParser
 from PyQt5.QtWidgets import QCompleter
 
 class CONNECT:

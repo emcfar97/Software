@@ -120,6 +120,7 @@ class Properties(QMainWindow):
             }
         if self.parent.update_records(self.paths, **modified):
             self.parent.windows.discard(self)
+        else: self.activateWindow()
         
     def keyPressEvent(self, event):
         
