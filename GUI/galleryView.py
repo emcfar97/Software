@@ -37,7 +37,7 @@ class Gallery(QWidget):
             self.images.table.layoutChanged.emit
             )
 
-    def populate(self, event=None, limit=50000, op='[<>=!]=?'):
+    def populate(self, event=None, limit=10000, op='[<>=!]=?'):
         
         self.query = {}
         join = ''
@@ -586,6 +586,19 @@ class Model(QAbstractTableModel):
         return rows + bool(cols)
 
     def columnCount(self, parent=None): return 5
+
+    # def canFetchMore(self, index):
+        
+        # return CONNECTION.CURSOR.rowcount > len(self.images)
+
+    # def fetchMore(self, index, fetch=10000):
+        
+        # self.beginInsertRows(
+        #     index, len(self.images), len(self.images) + fetch
+        #     )
+        # self.images += CONNECTION.CURSOR.fetchmany(fetch)
+        # self.endInsertRows()
+        # self.numberPopulated.emit(self.images[:-fetch])
 
     def data(self, index, role):
         
