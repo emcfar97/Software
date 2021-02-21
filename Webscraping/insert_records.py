@@ -39,10 +39,16 @@ def extract_files(path, dest=None):
                 if url['url'] == 'about:blank' else 
                 url['url']
                 )
+            
             if name.suffix == '.gifv': 
                 name = name.with_suffix('.mp4')
                 image = image.replace('gifv', 'mp4')
+            elif name.suffix == '.webp':
+                name = name.with_suffix('.jpg')
+            
             if not save_image(name, image): errors.append(image)
+            elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
+                name.rename(name.with_suffix('.mp4'))
         
         file.unlink()
     
@@ -56,13 +62,11 @@ def similarity(path):
         image = cv2.VideoCapture(str(path)).read()[-1]
 
     try: 
-        if image.shape == MATCH.shape:
-            k = cv2.subtract(image, MATCH)
-            return (k.min() + k.max()) < 10
+        image = cv2.resize(image, MATCH.shape)
+        k = cv2.subtract(image, MATCH)
+        return (k.min() + k.max()) < 10
             
-    except: return True
-
-    return False
+    except: return False
 
 def start(path=ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images'), extract=True):
     
