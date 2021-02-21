@@ -34,7 +34,7 @@ def get_version(paths):
     latest = str(sorted(paths)[-1])
     version = int(*re.findall(' - (\d+)', latest))
 
-    return re.sub(' \d+', f' {version + 1:02}', latest)
+    return re.sub(' - \d+', f' - {version + 1:02}', latest)
 
 for drive in get_drives():
     
@@ -48,7 +48,7 @@ for drive in get_drives():
         
         for path in root.iterdir():
             
-            dropbox = head / re.sub(r' - \d+', '', path.name)
+            dropbox = head / re.sub(r' - \d+', '', path.stem)
             if dropbox.suffix == '.scriv':
                 
                 dropbox = dropbox.parent.with_suffix(dropbox.suffix)
