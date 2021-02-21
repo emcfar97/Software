@@ -1,5 +1,5 @@
 import sqlite3, json, os, time, tempfile
-from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import Progress, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
@@ -190,14 +190,13 @@ def initialize():
     #         ]
 
     # CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
-    CONNECTION.execute(DELETE[2], commit=1)
 
-def start(initial=1, index=10, headless=True):
+def start(initial=1, headless=True, index=0):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(CONNECTION.execute(SELECT[4], fetch=1)[-index:])
+    main(CONNECTION.execute(SELECT[4] + ' AND site="pixiv"', fetch=1)[-index:])
     DRIVER.close()
