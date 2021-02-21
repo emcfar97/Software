@@ -20,9 +20,10 @@ METADATA = {
     'audio':'audio|has_audio',
     '3d_cg': '3d',
     'game_cg':'game_cg',
-    'official_art': 'official_art',
+    'official_art':'official_art',
     'novel_illustration':'novel_illustration',
-    'nude_filter': 'nude_filter',
+    'nude_filter':'nude_filter',
+    'screen_capture':'screencap',
     }
 GENERAL = {
     '3d_cg': '3d',
