@@ -1,4 +1,4 @@
-import time
+import os, time
 from pathlib import Path
 import mysql.connector as sql
 from configparser import ConfigParser
@@ -10,6 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 CREDENTIALS = ConfigParser(delimiters='=') 
 CREDENTIALS.read('credentials.ini')
 ROOT = Path(Path().cwd().drive)
+USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
 SELECT = [
     'SELECT href FROM imageData WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
@@ -19,6 +20,7 @@ SELECT = [
     f'''
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
+        WHERE SUBSTR(save_name, -3) IN ("gif", "jpg", "png")
         ''',
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
@@ -36,12 +38,11 @@ UPDATE = [
     f'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s WHERE href=%s',
     f'INSERT INTO imageData(path, hash, href, site) VALUES(%s, %s, %s, %s)',
-    f'UPDATE favorites SET checked=%s, saved=%s WHERE path=%s',
+    f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
     ]
 DELETE = [
     'DELETE FROM imageData WHERE href=%s AND ISNULL(path)',
     'DELETE FROM favorites WHERE href=%s AND ISNULL(path)',
-    'DELETE FROM favorites WHERE NOT (path LIKE "%jpg" OR path LIKE "%jpeg" OR path LIKE "%png" OR path LIKE "%gif" OR path LIKE "%webm" OR path LIKE "%mp4")'
     ]
 
 class CONNECT:
@@ -98,16 +99,19 @@ class CONNECT:
 
 class WEBDRIVER:
     
+    PATH = Path(r'C:\Program Files\Mozilla Firefox')
+
     def __init__(self, headless=True, profile=True, wait=15):
 
         if profile: profile = webdriver.FirefoxProfile(self.get_profile())
         binary = webdriver.firefox.firefox_binary.FirefoxBinary(
-            r'C:\Program Files\Mozilla Firefox\firefox.exe'
+            str(WEBDRIVER.PATH / 'firefox.exe')
             )
         options = webdriver.firefox.options.Options()
         options.headless = headless
         self.driver = webdriver.Firefox(
-            firefox_profile=profile, firefox_binary=binary, options=options
+            firefox_profile=profile, firefox_binary=binary, options=options, 
+            service_log_path=None, executable_path=WEBDRIVER.PATH / 'geckodriver.exe'
             )
         self.driver.implicitly_wait(wait)
         self.options = {
