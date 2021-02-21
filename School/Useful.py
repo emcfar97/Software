@@ -45,11 +45,8 @@ def transpose():
 sub = [chr(i) for i in range(8320, 8330)]
 
 matrix = sympy.Matrix([
-    [1,2],
-    [3,4],
-    [5,6]
+    [],
     ])
 
 sympy.pprint(matrix)
-addition(1,2,-3)
-print(matrix.rref())
+print('\n', matrix.rref())
