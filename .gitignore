@@ -7,13 +7,9 @@
 .vscode
 ffmpeg-20190824-1cfba7f-win64-static
 Music
-Pythonista
-geckodriver.log
-geckodriver.exe
 MachineLearning/Checkpoints
 MachineLearning/Models
 MachineLearning/Logs
 OBScripts/*.*
 GUI/test*.*
-Webscraping/PixivUtil/*.*
-Webscraping/pixivutil/LICENSE
+Webscraping/pixivutil/*
