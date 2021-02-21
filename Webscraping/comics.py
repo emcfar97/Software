@@ -3,8 +3,6 @@ from os import path
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
 from .utils import Progress, get_name, get_hash, get_tags, generate_tags
 
-CONNECTION = CONNECT()
-DRIVER = WEBDRIVER(True)
 path = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images\Comics')
 
 def get_artist(text):
@@ -16,7 +14,10 @@ def get_artist(text):
 
     return targets.replace('_)', ')')
 
-def start():
+def start(headless=True):
+    
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER(headless)
     
     folders = list(path.iterdir())
     if not len(folders): return
