@@ -69,7 +69,7 @@ def page_handler(hrefs):
         
         for image in images:
 
-            image = re.sub('name=.+', 'name=large', image.get('src'))
+            image = re.sub('(name)=.+', r'\1=large', image.get('src'))
             name = image.replace('?format=', '.').split('/')[-1]
             name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
