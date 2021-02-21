@@ -191,12 +191,12 @@ def initialize():
 
     # CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
 
-def start(initial=1, headless=True, index=0):
+def start(initial=1, headless=True):
 
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(CONNECTION.execute(SELECT[4] + ' AND site="pixiv"', fetch=1)[-index:])
+    main(CONNECTION.execute(SELECT[4], fetch=1))
     DRIVER.close()
