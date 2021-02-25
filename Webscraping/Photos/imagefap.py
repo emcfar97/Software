@@ -72,7 +72,7 @@ def start(headless=True):
         
     global CONNECTION, DRIVER
     CONNECTION = CONNECT()
-    DRIVER = WEBDRIVER(headless)
+    DRIVER = WEBDRIVER(headless, None)
     
     for file in PATH.iterdir():
 
