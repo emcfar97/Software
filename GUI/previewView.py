@@ -1,7 +1,7 @@
 from . import GESTURE, CONNECTION, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QLabel, QScrollArea, QSizePolicy
+from PyQt5.QtWidgets import QLabel, QScrollArea
 
 class Preview(QScrollArea):
     
