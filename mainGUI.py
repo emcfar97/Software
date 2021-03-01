@@ -194,18 +194,20 @@ class ManageData(QMainWindow):
                     PermissionError
                     ) as error:
                     message = QMessageBox.question(
-                        self, type(error).__name__, 
-                        str(error), QMessageBox.Ok
+                        self, type(error).__name__, str(error), 
+                        QMessageBox.Ignore | QMessageBox.Ok
                         )
-                    return 0
+                    if message == QMessageBox.Ok: return 0
         
-        try: CONNECTION.execute(
+        busy = CONNECTION.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
-        except:
-            message = QMessageBox.question(
-                self, 'Interface Error', 
-                'Cannot connect to database', QMessageBox.Ok
+        if busy:
+            parent = self.slideshow if self.isActiveWindow() else self
+            QMessageBox.information(
+                parent, 'The database is busy', 
+                'There is a transaction currently taking place',
+                QMessageBox.Ok
                 )
             return 0
 
@@ -214,10 +216,10 @@ class ManageData(QMainWindow):
 
         return 1
     
-    def delete_records(self, gallery, update=True):
+    def delete_records(self, parent, gallery, update=True):
         
         message = QMessageBox.question(
-            self, 'Delete', 'Are you sure you want to delete this?',
+            parent, 'Delete', 'Are you sure you want to delete this?',
             QMessageBox.Yes | QMessageBox.No
             )
         
@@ -227,15 +229,14 @@ class ManageData(QMainWindow):
                 (index.data(Qt.UserRole),) 
                 for index in gallery
                 ]
-            for path, in gallery:
-                try: (ROOT / path).unlink()
-                except (FileNotFoundError, TypeError): pass
+            for path, in gallery: (ROOT / path).unlink(True)
                     
-            try: CONNECTION.execute(DELETE, gallery, many=1, commit=1)
-            except:
-                message = QMessageBox.question(
-                    self, 'Interface Error', 
-                    'Cannot connect to database', QMessageBox.Ok
+            busy = CONNECTION.execute(DELETE, gallery, many=1, commit=1)
+            if busy:
+                QMessageBox.information(
+                    parent, 'The database is busy', 
+                    'There is a transaction currently taking place',
+                    QMessageBox.Ok
                     )
                 return 0
             
@@ -254,7 +255,7 @@ class ManageData(QMainWindow):
         elif key_press == Qt.Key_Delete: 
             
             gallery = self.gallery.images.selectedIndexes() 
-            self.delete_records(gallery)
+            self.delete_records(self, gallery)
                         
         elif key_press == Qt.Key_Escape: self.close()
     
