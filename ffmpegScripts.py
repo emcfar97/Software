@@ -6,9 +6,9 @@ from re import search, sub, findall
 
 EXT = '.mp4', '.flv', '.mkv'
 ROOT = Path(Path(__file__).drive)
-PATH = ROOT / path.expandvars(r'\Users\$USERNAME')
-SOURCE = PATH / r'\Videos\Captures'
-DEST = PATH / r'\Dropbox\Videos\Captures'
+DOWN = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images')
+SOURCE = ROOT / path.expandvars(r'\Users\$USERNAME\Videos\Captures')
+DEST = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\Videos\Captures')
 
 def get_stream(files, text):
         
@@ -144,9 +144,7 @@ while True:
             
             url = input('Enter url: ')
             name = f'{url.split("/")[3]}.mp4'
-            ffmpeg.input(url).output(
-                str(PATH / r'\Downloads\Images' / name)
-                ).run()
+            ffmpeg.input(url).output(str(DOWN / name)).run()
 
         elif user_input == '6': # check directories
             
