@@ -1,13 +1,17 @@
-def Controller():
+def Controller(arg=None):
     
     import Webscraping
-    from Webscraping import Photos, insert_records
+    from Webscraping import insert_records
+    from Webscraping.Photos import elitebabes, posespace, blogspot
 
-    # pinterest.start()
-    # Webscraping.Photos.imagefap.start()
-    Photos.metart.start()
-    # insert_records.start()
-    # Webscraping.start()
+    elitebabes.start()
+    # posespace.start(0)
+    # blogspot.start(1, 0)
+    
+    if arg == 0: Webscraping.start()
+    elif arg == 1:
+        insert_records.start()
+        Update_Autocomplete()
 
 def Artist_statistics():
 
@@ -15,7 +19,7 @@ def Artist_statistics():
 
     CONNECTION = CONNECT()
 
-    SELECT = 'SELECT DISTINCT artist FROM imagedata GROUP BY artist HAVING COUNT(artist) > 100 ORDER BY artist'
+    SELECT = 'SELECT artist FROM imagedata GROUP BY artist HAVING COUNT(artist) > 100 ORDER BY artist'
     STATS = '''SELECT (
         SELECT COUNT(*) FROM imagedata 
         WHERE MATCH(tags, artist) AGAINST(%s IN BOOLEAN MODE) AND stars
@@ -48,38 +52,128 @@ def Remove_redundancies():
 
     CONNECTION.commit()
 
-def Normalize_dataset():
+def Normalize_database():
 
+    from os import path
     from pathlib import Path
-    from Webscraping import CONNECTION
+    from Webscraping import CONNECT, ROOT
     
-    SELECT = '''SELECT case type
-        when 1 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ ニ\\", path)
-        when 2 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 三\\", path)
-        when 3 then CONCAT("{0}\\Users\\Emc11\\Dropbox\\ん\\エラティカ 四\\", path)
-        end as path FROM imageData'''
+    CONNECTION = CONNECT()
+    DROPBOX = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
+    CASE = r'''
+        case type
+        when 1 then CONCAT('{0}\エラティカ ニ\', path)
+        when 2 then CONCAT('{0}\エラティカ 三\', path)
+        when 3 then CONCAT('{0}\エラティカ 四\', path)
+        end
+        '''.format(DROPBOX).replace('\\', '\\\\')
+    SELECT = f'SELECT {CASE} FROM imageData WHERE NOT ISNULL(path)'
     DELETE = 'DELETE FROM imageData WHERE path=SUBSTRING(%s, 34)'
 
     database = set(
         Path(path) for path, in CONNECTION.execute(SELECT, fetch=1)
         )
     windows = set(
-        Path(r'C:\Users\Emc11\Dropbox\Videos\ん').glob('エラティカ */*')
+        DROPBOX.glob('エラティカ */*')
         )
     y = windows - database
     x = database - windows
     
-    for num1, file in enumerate(y, 1):
-        file.replace(Path(r'C:\Users\Emc11\Downloads\Images\Test') / file.name)
-    else: 
-        try: print(f'{num1} files moved')
+    for num, file in enumerate(y, 1):
+        file.replace(USER / r'\Downloads\Test' / file.name)
+    else:
+        try: print(f'{num} files moved')
         except: print('0 files moved')
     
-    for num2, file in enumerate(x, 1):
+    for num, file in enumerate(x, 1):
         CONNECTION.execute(DELETE, (str(file),), commit=1)
-    else: 
-        try: print(f'{num2} records deleted')
+    else:
+        try: print(f'{num} records deleted')
         except: print('0 records deleted')
+
+def Check_Predictions():
+    
+    import cv2, random
+    from PIL import Image
+    from MachineLearning import Model, USER, np
+
+    model = Model('medium-01.hdf5')
+    path = USER / r'\Dropbox\ん'
+    glob = list(path.glob('エラティカ *\*jpg'))
+
+    for image in random.choices(glob, k=25):
+
+        prediction = model.predict(image)
+
+        image_ = np.aray(Image.open(image))
+        image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
+        cv2.imshow(prediction, image_)
+        cv2.waitKey(0)
+
+def Update_Autocomplete():
+
+    from pathlib import Path
+    from Webscraping import CONNECT
+
+    CONNECTION = CONNECT()
+    CONNECTION.execute('SET GLOBAL group_concat_max_len=10000000')
+    artist, tags = CONNECTION.execute(
+        '''SELECT 
+        GROUP_CONCAT(DISTINCT artist ORDER BY artist SEPARATOR ""), 
+        GROUP_CONCAT(DISTINCT tags ORDER BY tags SEPARATOR "") 
+        FROM imagedata''',
+        fetch=1)[0]
+    text = (
+        ' '.join(sorted(set(artist.split()))), 
+        ' '.join(sorted(set(tags.split())))
+        )
+    text = ('\n'.join(text)).encode('ascii', 'ignore')
+    Path(r'GUI\autocomplete.txt').write_text(text.decode())
+
+def iterate():
+
+    import requests, bs4
+    from Webscraping import CONNECT
+    from Webscraping.utils import METADATA, IncrementalBar
+
+    def fetch_row():
+
+        while True:
+            row = CONNECTION.CURSOR.fetchone()
+            if not row: break
+            yield row
+
+    METADATA = set(METADATA.keys())
+    CONNECTION = CONNECT()
+    SELECT = 'SELECT {} FROM imageData WHERE site IN ("sankaku", "gelbooru") AND type=2'
+    UPDATE = 'UPDATE imageData SET tags=CONCAT(tags, %s) WHERE path=%s'
+    progress = IncrementalBar(
+        '', max=CONNECTION.execute(SELECT.format('COUNT(*)',), fetch=1)[0]
+        )
+    CONNECTION.execute(SELECT.format('path, tags, href, site',))
+
+    for (path, tags, href, site,) in fetch_row():
+
+        progress.next()
+        if site == 'sankaku':
+            page_source = requests.get(f'https://chan.sankakucomplex.com{href}')
+            html = bs4.BeautifulSoup(page_source.content, 'lxml')
+            metadata = set(
+                '_'.join(tag.text.split()[:-2]) for tag in 
+                html.findAll(class_='tag-type-medium')
+                )
+        else:
+            page_source = requests.get(f'https://gelbooru.com/{href}')
+            html = bs4.BeautifulSoup(page_source.content, 'lxml')
+            metadata = set(
+                '_'.join(tag.text.split(' ')[1:-1]) for tag in 
+                html.findAll(class_='tag-type-metadata')
+                )
+        
+        tags = ' '.join((metadata & METADATA) - set(tags.split()))
+        if tags:
+            CONNECTION.execute(UPDATE, (f'{tags} ', path), commit=1)
+            CONNECTION.execute(SELECT.format('path, tags, href, site',))
 
 def Find_symmetric_videos():
 
@@ -117,152 +211,109 @@ def Find_symmetric_videos():
             
         if symmetric(frames): print(path)
 
-def Get_images_database():
+def parsing_test():
+    
+    import pyparsing as pp
 
-    import tempfile, hashlib   
-    from math import log
-    from PIL import Image 
+    # arithOp = pp.oneOf("AND OR NOT")
+    # number = pp.pyparsing_common.number()
+    # word = pp.Word(pp.alphas, pp.alphanums + "_-*(1234567890,)")
+    # term = word | number | pp.quotedString
+    # expression = 
+    # condition = pp.Group(term + arithOp + term)
+
+    lparen = pp.Suppress("(")
+    rparen = pp.Suppress(")")
+
+    and_ = pp.Literal("AND")
+    or_ = pp.Literal("OR")
+    not_ = pp.Literal("NOT")
+
+    operator = pp.oneOf(("=", "!=", ">", ">=", "<", "<="))
+
+    alphaword = pp.Word(pp.alphanums + "_")
+    string = pp.QuotedString(quoteChar="'")
+
+    number = (
+        pp.Word(pp.nums) + pp.Optional("." + pp.OneOrMore(pp.Word(pp.nums)))
+        )
+
+    identifier = alphaword
+
+    expr = pp.Forward()
+
+    condition = pp.Group(
+        identifier + (operator + (string | number))
+        )
+    condition = condition | (lparen + expr + rparen)
+
+    and_condition = (condition + pp.ZeroOrMore(and_ + condition))
+
+    expr << (and_condition + pp.ZeroOrMore(or_ + and_condition))
+
+    expr = pp.operatorPrecedence(condition,
+        [('NOT', 1, pp.opAssoc.RIGHT,),
+        ('AND', 2, pp.opAssoc.LEFT,),
+        ('OR', 2, pp.opAssoc.LEFT,)]
+        )
+
+    query = 'a AND b OR x AND y' 
+    print(expr.parseString(query))
+
+def make_stitch():
+    
+    import cv2
     from pathlib import Path
-    from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
+    from Webscraping import USER
 
-    HASHER = hashlib.md5()
-
-    def save_images(path, dest):
+    def get_frames(path):
         
-        # for file in path.iterdir():
-        for file in path:
+        frames = []
+        vidcap = cv2.VideoCapture(str(path))
+        success, frame = vidcap.read()
+
+        while success: 
             
-            new = dest / file.with_suffix('.jpg').name
-            if len(list(dest.glob('*'))) > 100500: break
-            
-            try:
-                
-                if file.suffix in (('.jpeg', '.jpg', '.png')): images = [file]
-                
-                elif file.suffix in (('.gif', '.mp4', '.webm', '.mp4')):
-                    
-                    images = []
-                    temp_dir = tempfile.TemporaryDirectory()
-                    vidcap = VideoCapture(str(file))
-                    success, frame = vidcap.read()
-            
-                    while success:
-                        
-                        data = imencode('.jpg', frame)[-1]
-                        HASHER.update(data)
-                        temp = Path(temp_dir.name) / f'{HASHER.hexdigest()}.jpg'
-                        temp.write_bytes(data)
-                        images.append(temp)
-                        success, frame = vidcap.read()
-
-                    else: 
-                        step = round(90 * log((len(images) * .0007) + 1) + 1)
-                        images = images[::step]
-                
-                for file in images:
-                    
-                    image = Image.open(file)
-                    image = crop(image)
-                    image.thumbnail([512, 512])
-                    if image.size == (512, 512):
-                        image.save(dest / file.name)
-                
-            except: continue
-
-    def crop(image):
+            frames.append(frame)
+            success, frame = vidcap.read()
         
-        standard = image.height if image.height < image.width else image.width
-        standard //= 2
-        center = image.size[0] // 2, image.size[1] // 2
-        
-        left = center[0] - standard
-        upper = center[1] - standard
-        right = center[0] + standard
-        lower = center[1] + standard
+        return tuple(frames)
 
-        return image.crop((left, upper, right, lower))
-
-    paths = [
-        Path(r'E:\Users\Emc11\Dropbox\Videos\ん\エラティカ ニ'),
-        Path(r'E:\Users\Emc11\Dropbox\Videos\ん\エラティカ 三')
-        ]
-    dests = [
-        Path(r'E:\Users\Emc11\Training\Medium\Photographs'),
-        Path(r'E:\Users\Emc11\Training\Medium\Illustrations')
-        ]
-
-    num = 1
-    path = []
-    save_images(path, dests[num])
-    # save_images(paths[num], dests[num])
-
-def Clean_dataset():
+    test = USER / r'Downloads\Test'
+    stitcher = cv2.Stitcher.create(cv2.Stitcher_SCANS)
+    stitcher.setPanoConfidenceThresh(0.1)
     
-    from pathlib import Path
-    
-    j = Path(r'E:\Users\Emc11\Training')
-    k = j / r'Medium\Illustrations'
-    l = j / r'Medium\Photographs'
+    folder = Path(input('Enter path: '))
+    for num, path in enumerate(folder.iterdir()):
+        status, image = stitcher.stitch(get_frames(path))
+        cv2.imwrite(str(test / f'{num:03}'), image)
 
-    move = []
-    delete = []
-    
-    for path in move:
+def Get_Starred():
 
-        # photo = l / path
-        illus = k / path
-        if illus.exists(): illus.replace(j / path)
-        
-        # if photo.exists() == illus.exists(): 
-        #     photo.replace(photo.parent)
-        #     illus.replace(illus.parent)
+    from Webscraping import WEBDRIVER, CONNECT
+    import bs4, time
 
-        # else:
-        #     if not photo.exists(): illus.replace(photo)
-            
-        move.remove(path)
+    CONNECTION = CONNECT()
+    DRIVER = WEBDRIVER(0)
+    UPDATE = 'UPDATE imageData SET stars=4 WHERE path=%s AND stars=0'
+    address = '//body/div[1]/div[6]/div/div/div[1]/div/div/main/div/section[3]/div[2]/div/div[1]/div[1]/div[1]/button'
 
-    print(move)
+    DRIVER.get('https://www.dropbox.com/h')
+    time.sleep(5)
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
-    for path in delete:
-    
-        photo = l / path
-        illus = k / path
+    while starred:=html.findAll(class_='starred-item__content'):
 
-        if photo.exists() == illus.exists(): 
-            photo.replace(k.parent / path)
-            illus.replace(k.parent / path)
-    
-        else:
-            if illus.exists(): illus.unlink()
-            elif photo.exists(): photo.unlink()
-        
-        delete.remove(path)
-
-    print(delete)
-
-def Check_Predictions():
-    
-    import cv2, random
-    from PIL import Image
-    from MachineLearning import Model, Path, np
-
-    model = Model('medium-01.hdf5')
-    path = Path(r'C:\Users\Emc11\Dropbox\Videos\ん')
-    glob = list(path.glob('エラティカ *\*jpg'))
-
-    for image in random.choices(glob, k=25):
-
-        prediction = model.predict(image)
-
-        image_ = np.array(Image.open(image))
-        image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
-        cv2.imshow(prediction, image_)
-        cv2.waitKey(0)
+        paths = [(target.text,) for target in starred]
+        CONNECTION.execute(UPDATE, paths, many=1, commit=1)
+        [
+            DRIVER.find(address, click=True) for _ in range(5)
+            ]
 
 Controller()
-# Find_symmetric_videos()
 # Remove_redundancies()
 # Normalize_database() 
-# Get_images_dataset()
 # Clean_dataset()
+# Find_symmetric_videos()
+# make_stitch()
+# Get_Starred()
