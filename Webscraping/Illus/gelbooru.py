@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, generate_tags, bs4, requests, re
+from ..utils import IncrementalBar, save_image, get_hash, get_name, generate_tags, bs4, requests, re
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -31,7 +31,7 @@ def initialize(url, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
 
     for href, in hrefs:
         
@@ -66,7 +66,7 @@ def page_handler(hrefs):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
 
-        print(progress)
+        progress.next()
 
 def start(initial=True, headless=True):
     

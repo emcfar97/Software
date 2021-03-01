@@ -1,7 +1,7 @@
 import shutil, re, send2trash
 from os import path
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
-from .utils import Progress, get_name, get_hash, get_tags, generate_tags
+from .utils import IncrementalBar, get_name, get_hash, get_tags, generate_tags
 
 path = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images\Comics')
 
@@ -21,11 +21,9 @@ def start(headless=True):
     
     folders = list(path.iterdir())
     if not len(folders): return
-    progress = Progress(len(folders), '\nComic')
+    progress = IncrementalBar('Comic', max=len(folders))
 
     for folder in folders:
-        
-        print(progress)
         
         commit = 1
         artist = get_artist(folder.stem.lower())
@@ -45,7 +43,7 @@ def start(headless=True):
             if not (
                 CONNECTION.execute(INSERT[3], 
                     (image.name, artist, tags, 
-                    rating, 3, hash_, None, None)
+                    rating, 3, hash_, None, None, None)
                     )
                 and 
                 CONNECTION.execute(INSERT[4], (
@@ -56,5 +54,6 @@ def start(headless=True):
             CONNECTION.commit()
             send2trash.send2trash(str(folder))
         
-    print(progress)
+        progress.next()
+
     DRIVER.close()

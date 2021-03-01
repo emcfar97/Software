@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, Progress, bs4, re
+from ..utils import PATH, IncrementalBar, bs4, re
 
 SITE = 'furaffinity'
 
@@ -28,7 +28,7 @@ def initialize(url, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
 
     for href, in hrefs:
         
@@ -49,7 +49,7 @@ def page_handler(hrefs):
 
         CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
     
-        print(progress)
+        progress.next()
 
 def start(initial=True, headless=True):
     

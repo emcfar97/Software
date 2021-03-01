@@ -1,6 +1,6 @@
 import time
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'instagram'
@@ -35,11 +35,11 @@ def initialize(url, retry=0):
 def page_handler(hrefs, retry=2):
 
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
 
     for href, in hrefs:
         
-        print(progress)
+        progress.next()
         DRIVER.get(f'https://www.instagram.com{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         artist = html.find(
@@ -94,7 +94,7 @@ def page_handler(hrefs, retry=2):
                 )
         else: CONNECTION.execute(DELETE[0], (href,), commit=1)
     
-    print(progress)
+    progress.next()
 
 def start(initial=True, headless=True):
     

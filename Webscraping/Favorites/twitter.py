@@ -1,6 +1,6 @@
 import time
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import PATH, Progress, bs4, re
+from ..utils import PATH, IncrementalBar, bs4, re
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
@@ -37,7 +37,7 @@ def initialize(url, retry=0):
 def page_handler(hrefs):
     
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
 
     for href, in hrefs:
 
@@ -76,7 +76,7 @@ def page_handler(hrefs):
             CONNECTION.execute(INSERT[6], (str(name), image, href, SITE))
         else: CONNECTION.execute(DELETE[1], (href,), commit=1)
         
-        print(progress)
+        progress.next()
 
 def start(initial=True, headless=True):
     

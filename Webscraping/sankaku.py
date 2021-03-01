@@ -1,5 +1,5 @@
 from . import CONNECT, SELECT, UPDATE, DELETE, WEBDRIVER
-from .utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
+from .utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
 import time
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -12,8 +12,8 @@ MODE = [
 
 def initialize(mode, url, query=0):
     
-    def next_page(pages):
-        try: return pages.get('next-page-url')
+    def next_page(page):
+        try: return page.get('next-page-url')
         except: return False
 
     if not query:
@@ -43,7 +43,7 @@ def initialize(mode, url, query=0):
 def page_handler(hrefs, mode):
 
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
 
     for href, in hrefs:
         
@@ -91,7 +91,7 @@ def page_handler(hrefs, mode):
             if save_image(name, image, exif): CONNECTION.commit()
             else: CONNECTION.rollback()
     
-        print(progress)
+        progress.next()
 
 def start(mode=1, initial=True, headless=True):
     

@@ -1,7 +1,7 @@
 import json, spacy
 from os import path
 from .. import ROOT, CONNECT, WEBDRIVER, INSERT
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 REMOVE = 'gif.|girl.|sex.|pic.|ass|cock|naked|nude|pornstar|porn|&|\d'
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images\Imagefap')
@@ -29,11 +29,11 @@ def page_handler(url, title):
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     images = html.findAll(href=re.compile('/photo/.+'))
-    progress = Progress(len(images), 'Images')
+    progress = IncrementalBar('Images', max=len(images))
 
     for image in images:
         
-        print(progress)
+        progress.next()
 
         href = f'https://www.imagefap.com/{image.get("href")}'
         page_source = requests.get(href).content
@@ -62,11 +62,11 @@ def page_handler(url, title):
 
         hash_ = get_hash(name)
         CONNECTION.execute(INSERT[3], 
-            (name.name, artist, tags, rating, 1, hash_, None, SITE), 
+            (name.name, artist, tags, rating, 1, hash_, None, SITE, None), 
             commit=1
             )
     
-    print(progress)
+    progress.next()
 
 def start(headless=True):
         

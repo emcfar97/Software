@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, WEBDRIVER
-from ..utils import Progress, get_hash, get_name, get_tags, generate_tags, bs4, re, save_image
+from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, bs4, re, save_image
 import time
 from PIL import Image
 from selenium.webdriver.common.keys import Keys
@@ -8,11 +8,11 @@ SITE = 'pinterest'
 
 def page_handler(hrefs, section):
     
-    progress = Progress(len(hrefs), section)
+    progress = IncrementalBar(section, max=len(hrefs))
 
     for href in hrefs:
         
-        print(progress)
+        progress.next()
 
         DRIVER.get(f'https://www.pinterest.com{href.get("href")}')
         time.sleep(1)
@@ -43,11 +43,11 @@ def page_handler(hrefs, section):
         hash_ = get_hash(src, True)
 
         CONNECTION.execute(INSERT[3], 
-            (name.name, '', tags, rating, 1, hash_, src, SITE), 
+            (name.name, '', tags, rating, 1, hash_, src, SITE, None), 
             commit=1
             )
         
-    print(progress)
+    progress.next()
     
 def start(retry=0, headless=True):
 

@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re
 import time
 from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions as exceptions
@@ -35,7 +35,7 @@ def initialize(url, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
     view = 'view.photo-notes-scrappy-view'
     target = 'view.photo-well-scrappy-view.requiredToShowOnServer'
 
@@ -85,7 +85,7 @@ def page_handler(hrefs):
             commit=1
             )
     
-        print(progress)
+        progress.next()
 
 def start(initial=True, headless=True):
     
@@ -93,9 +93,8 @@ def start(initial=True, headless=True):
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
-    url = DRIVER.login(SITE)
     if initial: 
-        hrefs = initialize(url)
+        hrefs = initialize(DRIVER.login(SITE))
         CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
     page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

@@ -3,7 +3,7 @@ from os import path
 from PIL import Image
 from urllib.parse import urlparse
 from . import ROOT, CONNECT, INSERT, WEBDRIVER
-from .utils import Progress, get_hash, get_name, get_tags, generate_tags, save_image
+from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
 EXT = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.webm', '.mp4'
 MATCH = cv2.imread(r'Webscraping\match.jpg')
@@ -62,17 +62,19 @@ def similarity(path):
         image = cv2.VideoCapture(str(path)).read()[-1]
 
     try: 
-        image = cv2.resize(image, MATCH.shape)
-        k = cv2.subtract(image, MATCH)
-        return (k.min() + k.max()) < 10
+        if image.shape == MATCH.shape:
+            k = cv2.subtract(image, MATCH)
+            return (k.min() + k.max()) < 20
             
-    except: return False
+    except: return True
 
-def start(path=ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images'), extract=True):
+    return False
+
+def start(extract=True, path=ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images')):
     
     if extract: extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.suffix in EXT]
-    progress = Progress(len(files), 'Files')
+    progress = IncrementalBar('Files', max=len(files))
     
     CONNECTION = CONNECT()
     DRIVER = WEBDRIVER(profile=None)
@@ -102,14 +104,14 @@ def start(path=ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images'), ext
                     )
 
             if CONNECTION.execute(INSERT[3], (
-                dest.name, '', tags, rating, 1, hash_, None, None
+                dest.name, '', tags, rating, 1, hash_, None, None, None
                 )):
                 if file.replace(dest): CONNECTION.commit()
                 else: CONNECTION.rollback()
             
         except Exception as error: print(error, '\n')
     
-        print(progress)
+        progress.next()
 
     DRIVER.close()
     print('\nDone')

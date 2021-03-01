@@ -1,7 +1,7 @@
 import cv2, imutils, pathlib, time
 import numpy as np
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import Progress, get_hash, get_name, get_tags, generate_tags, bs4, requests, save_image, tempfile
+from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, bs4, requests, save_image, tempfile
 
 SITE = 'posespace'
 
@@ -23,7 +23,7 @@ def initialize(url='/posetool/favs.aspx'):
 def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
     
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, max=len(hrefs))
 
     for href, in hrefs:
 
@@ -50,12 +50,11 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
             image.replace(name)
 
             CONNECTION.execute(INSERT[3], 
-                (name.name, href[:-3], tags, rating, 1, hash_, None, SITE),
-                commit=1
+                (name.name, href[:-3], tags, rating, 1, hash_, None, SITE, None)
                 )
         else: CONNECTION.execute(DELETE[0], (href,), commit=1)
         
-        print(progress)
+        progress.next()
         
 def make_gif(image):
 

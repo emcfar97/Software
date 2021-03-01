@@ -1,6 +1,6 @@
 import time
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, save_image, get_hash, get_name, get_tags, generate_tags, bs4
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'topless'
@@ -28,11 +28,11 @@ def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    progress = Progress(len(hrefs), SITE)
+    progress = IncrementalBar(SITE, len(hrefs))
 
     for href, in hrefs:
         
-        print(progress)
+        progress.next()
 
         name = get_name(href, 0, hasher=1)
         if not save_image(name, href): continue

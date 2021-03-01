@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, bs4, requests, time, re
+from ..utils import IncrementalBar, bs4, requests, time, re
 
 SITE = 'deviantArt'
 

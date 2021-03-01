@@ -1,6 +1,6 @@
 import sqlite3, json, os, time, tempfile
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import Progress, get_tags, generate_tags, bs4, requests, re
+from ..utils import IncrementalBar, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
 
@@ -15,11 +15,11 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         artists = json.load(open(
             r'Webscraping\artists.json', encoding='utf8'
             ))
-    progress = Progress(len(paths), 'favorites')
+    progress = IncrementalBar('favorites', max=len(paths))
 
     for (path, href, src, site,) in paths:
         
-        print(progress)
+        progress.next()
         
         DRIVER.get('http://iqdb.org/')
         try:
@@ -38,7 +38,7 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         try:
             targets = [
             target.find(href=re.compile('/gelbooru|/chan.san')) 
-            for target in html.find(id='pages', class_='pages').contents 
+            for target in html.find(id='pages').contents 
             if type(target) != bs4.element.NavigableString and 
             target.findAll(href=re.compile('/gelbooru|/chan.san')) and 
             target.findAll(text=re.compile('(Best)|(Additional) match'))
