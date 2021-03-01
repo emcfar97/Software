@@ -17,5 +17,6 @@ A set of projects that I've developed, either individually or as a team, over th
 ## 2018
 ## 2019
 ## 2020
+## 2021
 # Webscraping
 A group of functions for scraping images off of various websites, which are then used for the GUI and Machine Learning projects.
