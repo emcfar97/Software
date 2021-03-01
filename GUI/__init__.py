@@ -13,13 +13,19 @@ class CONNECT:
 
         self.DATAB = sql.connect(option_files=r'GUI\credentials.ini')
         self.CURSOR = self.DATAB.cursor(buffered=True)
+        self.transaction = False
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
+        if self.transaction: return self.transaction
+
+        self.transaction = True
+
         for _ in range(10):
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
+                self.transaction = False
 
                 if commit: return self.DATAB.commit()
                 if fetch: return self.CURSOR.fetchall()
@@ -27,6 +33,7 @@ class CONNECT:
             
             except sql.errors.DatabaseError: self.reconnect()
 
+        self.transaction = False
         return list()
 
     def reconnect(self, attempts=5, time=6):
