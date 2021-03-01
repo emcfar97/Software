@@ -1,9 +1,8 @@
 *.ini
 *.v2
-*.pyc
 *.hdf5
-*__pychache__
 *.pyd
+__pycache__
 .vscode
 ffmpeg-20190824-1cfba7f-win64-static
 Music
@@ -12,4 +11,4 @@ MachineLearning/Models
 MachineLearning/Logs
 OBScripts/*.*
 GUI/test*.*
-Webscraping/pixivutil/*
+Webscraping/pixivutil
