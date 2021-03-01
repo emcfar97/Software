@@ -28,9 +28,8 @@ INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s)',
+    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
     'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s. %s)',
     f'INSERT IGNORE INTO favorites(path, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s)',
     ]
 UPDATE = [
