@@ -123,7 +123,7 @@ class Slideshow(QMainWindow):
         
         path = self.gallery[self.index]
         self.move(1)
-        if self.parent.delete_records(path, 0):
+        if self.parent.delete_records(self, path, 0):
             del self.gallery[self.index]
         else: self.move(-1)
 

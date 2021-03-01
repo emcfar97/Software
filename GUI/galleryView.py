@@ -431,6 +431,7 @@ class ImageView(QTableView):
 
     def update(self, images):
         
+        if isinstance(images, bool): images = list()
         self.table.images = images
         self.parent().statusbar(len(images))
     
