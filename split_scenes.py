@@ -5,10 +5,7 @@ from Webscraping import USER
 from scenedetect import VideoManager
 from scenedetect import SceneManager
 from scenedetect import FrameTimecode
-from scenedetect.detectors import ContentDetector
-
-SOURCE = USER / r'Downloads\Test'
-DEST = USER / r'Downloads\Images\Clips'
+from scenedetect.detectors import ContentDetector, ThresholdDetector
 
 def find_scenes(video_path, framerate):
     # Create our video & scene managers, then add the detector.
@@ -87,11 +84,11 @@ def trim(input_path, output_path, start, end):
     output.run()
 
 parser = argparse.ArgumentParser(
-    prog='scene_split', description='Splits videos into multiple scenes'
+    prog='scene_splits', description='Splits videos into multiple scenes'
     )
 parser.add_argument(
     '-p', '--path', type=str,
-    help='Path to video', default=SOURCE
+    help='Path to video', default=''
     )
 parser.add_argument(
     '-d', '--downscale', type=int,
@@ -109,6 +106,16 @@ parser.add_argument(
     '-b', '--debug', type=bool,
     help='Print timecodes', default=False, 
     )
+parser.add_argument(
+    '-s', '--source', type=str,
+    help='File path to source folder',
+    default=USER / r'Downloads\Test', 
+    )
+parser.add_argument(
+    '-de', '--destination', type=str,
+    help='File path to destination folder',
+    default=USER / r'Downloads\Images\Clips', 
+    )
 args = parser.parse_args()
 
 VIDEO = Path(args.path)
@@ -116,6 +123,8 @@ DOWNSCALE = args.downscale
 THRESHOLD = args.threshold
 MINIMUM = args.minimum
 DEBUG = args.debug
+SOURCE = args.source
+DEST = args.destination
 
-if VIDEO.is_file(): split_scenes(VIDEO)
+if VIDEO: split_scenes(VIDEO)
 else: [split_scenes(video) for video in VIDEO.glob('*mp4')]
