@@ -48,7 +48,7 @@ for drive in get_drives():
         
         for path in root.iterdir():
             
-            dropbox = head / re.sub(r' - \d+', '', path.stem)
+            dropbox = head / re.sub(r' - \d+', '', path.name)
             if dropbox.suffix == '.scriv':
                 
                 dropbox = dropbox.parent.with_suffix(dropbox.suffix)
