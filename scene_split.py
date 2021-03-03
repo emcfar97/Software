@@ -95,11 +95,11 @@ parser.add_argument(
     )
 parser.add_argument(
     '-d', '--downscale', type=int,
-    help='Downscale factor', default=2, 
+    help='Downscale factor', default=50, 
     )
 parser.add_argument(
     '-t', '--threshold', type=int,
-    help='Threshold value', default=30, 
+    help='Threshold value', default=50, 
     )
 parser.add_argument(
     '-m', '--minimum', type=int,
