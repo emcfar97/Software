@@ -398,7 +398,9 @@ class ImageView(QTableView):
     
     def delete(self, event):
 
-        self.parent().parent().parent().delete_records(self.selectedIndexes())
+        self.parent().parent().parent().delete_records(
+            self.parent().parent(), self.selectedIndexes()
+            )
 
     def find_by_artist(self, event):
 

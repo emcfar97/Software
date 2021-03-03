@@ -6,8 +6,8 @@ from GUI import ROOT, CONNECTION, MODIFY, DELETE
 from GUI.galleryView import Gallery
 from GUI.previewView import Preview, Timer
 from GUI.slideshowView import Slideshow
-from GUI.designView import Design
 from GUI.datasetView import Dataset
+from GUI.designView import Design
 from GUI.trainView import Train
 
 class App(QMainWindow):
