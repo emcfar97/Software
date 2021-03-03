@@ -134,9 +134,10 @@ while True:
 
                 else:
                     
-                    ffmpeg.input(str(file)).trim(
-                        start=start, end=end
-                        ).output(str(new), preset='fast').run()
+                    ffmpeg.input(str(file)) \
+                        .trim(start=start, end=end) \
+                        .setpts('PTS-STARTPTS') \
+                        .output(str(new), preset='fast').run()
 
             else: raise FileNotFoundError
 
