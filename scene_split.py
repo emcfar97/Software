@@ -4,6 +4,7 @@ from ffprobe import FFProbe
 from Webscraping import USER
 from scenedetect import VideoManager
 from scenedetect import SceneManager
+from scenedetect import FrameTimecode
 from scenedetect.detectors import ContentDetector
 
 SOURCE = USER / r'Downloads\Test'
@@ -30,32 +31,60 @@ def split_scenes(video):
     
     path = SOURCE / video.name
     name = DEST / video.name
+
     stream = FFProbe(str(path)).streams[0]
-    start_time = convert_time(stream.start_time)
-    duration = convert_time(stream.duration)
+    start_time = get_time(stream.start_time)
+    duration = get_time(stream.duration)
+
     scenes = find_scenes(path, stream.framerate)
 
-    for num, (start, end) in enumerate(scenes):
+    for num, (start, end) in enumerate(scenes, start=1):
         
-        if num == 0: start = start_time
-        elif isinstance(start, int): start = convert_time(start)
-        else: start = start.get_timecode()
+        if num == 0: 
+            start, end = start_time, get_time(end)
 
-        if num == len(scenes) - 1: end = duration
-        elif isinstance(end, int): end = convert_time(end)
-        else: end = end.get_timecode()
+        elif num == len(scenes):
+            start, end = get_time(start), duration
 
-        file = name.with_stem(f'{name.stem} - {num:02}')
-        ffmpeg.input(str(path)).trim(
-            start=start, end=end
-            ).output(str(file), preset='fast').run()
+        else: 
+            start, end = get_time(start), get_time(end)
 
-def convert_time(time):
+        if DEBUG: print(start, end); continue
+
+        file = name.with_name(f'{name.stem} - {num:02}.mp4')
+        trim(str(path), str(file), start, end)
+
+def get_time(time):
+
+    if isinstance(time, FrameTimecode):
+        
+        return time.get_timecode()
 
     min, sec = divmod(float(time), 60)
     hour, min = divmod(min, 60)
 
     return f'{hour:02.0f}:{min:02.0f}:{sec:06.3f}'
+
+def trim(input_path, output_path, start, end):
+
+    input_stream = ffmpeg.input(input_path)
+
+    vid = (
+        input_stream.video
+        .trim(start=start, end=end)
+        .setpts('PTS-STARTPTS')
+        )
+    aud = (
+        input_stream.audio
+        .filter_('atrim', start=start, end=end)
+        .filter_('asetpts', 'PTS-STARTPTS')
+        )
+
+    joined = ffmpeg.concat(vid, aud, v=1, a=1).node
+    output = ffmpeg.output(
+        joined[0], joined[1], output_path, preset='fast'
+        )
+    output.run()
 
 parser = argparse.ArgumentParser(
     prog='scene_split', description='Splits videos into multiple scenes'
@@ -76,12 +105,17 @@ parser.add_argument(
     '-m', '--minimum', type=int,
     help='Minimum scene length', default=15, 
     )
+parser.add_argument(
+    '-b', '--debug', type=bool,
+    help='Print timecodes', default=False, 
+    )
 args = parser.parse_args()
 
-VIDEO = Path(args.path.strip())
+VIDEO = Path(args.path)
 DOWNSCALE = args.downscale
 THRESHOLD = args.threshold
 MINIMUM = args.minimum
+DEBUG = args.debug
 
 if VIDEO.is_file(): split_scenes(VIDEO)
 else: [split_scenes(video) for video in VIDEO.glob('*mp4')]
