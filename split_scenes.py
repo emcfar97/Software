@@ -5,7 +5,51 @@ from Webscraping import USER
 from scenedetect import VideoManager
 from scenedetect import SceneManager
 from scenedetect import FrameTimecode
-from scenedetect.detectors import ContentDetector, ThresholdDetector
+from scenedetect.detectors import ContentDetector
+
+parser = argparse.ArgumentParser(
+    prog='scene_splits', 
+    description='Splits videos into multiple scenes'
+    )
+parser.add_argument(
+    '-p', '--path', type=str,
+    help='Path to video', default=''
+    )
+parser.add_argument(
+    '-d', '--downscale', type=int,
+    help='Downscale factor', default=50, 
+    )
+parser.add_argument(
+    '-t', '--threshold', type=int,
+    help='Threshold value', default=50, 
+    )
+parser.add_argument(
+    '-m', '--minimum', type=int,
+    help='Minimum scene length', default=15, 
+    )
+parser.add_argument(
+    '-b', '--debug', type=bool,
+    help='Print timecodes', default=False, 
+    )
+parser.add_argument(
+    '-s', '--source', type=str,
+    help='File path to source folder',
+    default=USER / r'Downloads\Test', 
+    )
+parser.add_argument(
+    '-de', '--destination', type=str,
+    help='File path to destination folder',
+    default=USER / r'Downloads\Images\Clips', 
+    )
+args = parser.parse_args()
+
+VIDEO = Path(args.path)
+DOWNSCALE = args.downscale
+THRESHOLD = args.threshold
+MINIMUM = args.minimum
+DEBUG = args.debug
+SOURCE = args.source
+DEST = args.destination
 
 def find_scenes(video_path, framerate):
     # Create our video & scene managers, then add the detector.
@@ -82,49 +126,6 @@ def trim(input_path, output_path, start, end):
         joined[0], joined[1], output_path, preset='fast'
         )
     output.run()
-
-parser = argparse.ArgumentParser(
-    prog='scene_splits', description='Splits videos into multiple scenes'
-    )
-parser.add_argument(
-    '-p', '--path', type=str,
-    help='Path to video', default=''
-    )
-parser.add_argument(
-    '-d', '--downscale', type=int,
-    help='Downscale factor', default=50, 
-    )
-parser.add_argument(
-    '-t', '--threshold', type=int,
-    help='Threshold value', default=50, 
-    )
-parser.add_argument(
-    '-m', '--minimum', type=int,
-    help='Minimum scene length', default=15, 
-    )
-parser.add_argument(
-    '-b', '--debug', type=bool,
-    help='Print timecodes', default=False, 
-    )
-parser.add_argument(
-    '-s', '--source', type=str,
-    help='File path to source folder',
-    default=USER / r'Downloads\Test', 
-    )
-parser.add_argument(
-    '-de', '--destination', type=str,
-    help='File path to destination folder',
-    default=USER / r'Downloads\Images\Clips', 
-    )
-args = parser.parse_args()
-
-VIDEO = Path(args.path)
-DOWNSCALE = args.downscale
-THRESHOLD = args.threshold
-MINIMUM = args.minimum
-DEBUG = args.debug
-SOURCE = args.source
-DEST = args.destination
 
 if VIDEO: split_scenes(VIDEO)
 else: [split_scenes(video) for video in VIDEO.glob('*mp4')]
