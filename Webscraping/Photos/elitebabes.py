@@ -16,9 +16,11 @@ def initialize(url=1, query=0):
     DRIVER.get(f'https://www.{SITE}.com/my-favorite-galleries/page/{url}/')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
-        (target.get('href').split('/')[-2][:-6], SITE) for target in 
+        (href, SITE) for target in 
         html.find(class_='gallery-a e').findAll(href=True)
-        if (target.get('href').split('/')[-2][:-6],) not in query
+        if (
+            href := re.sub('(.+)-\d+', r'\1', target.get('href').split('/')[-2]),
+            ) not in query
         ]
 
     next = next_page(html.find(class_='next'))
@@ -33,13 +35,16 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         page_source = requests.get(f'https://www.{SITE}.com/{href}')
-        html = bs4.BeautifulSoup(page_source.content, 'lxml')
-        artist = html.find(href=re.compile(
-            f'https://www.{SITE}.com/model/.+'
-            )).get('href')
-        artist = artist.split('/')[-2].replace('-', '_')
+        try:
+            html = bs4.BeautifulSoup(page_source.content, 'lxml')
+            artist = html.find(href=re.compile(
+                f'https://www.{SITE}.com/model/.+'
+                )).get('href')
+            artist = artist.split('/')[-2].replace('-', '_')
+            images = html.find(class_='list-justified-container').findAll('a')
+        except: continue
 
-        for image in html.find(class_='list-justified-container').findAll('a'):
+        for image in images:
 
             src = image.get('href')
             name = get_name(src, 0, 1)
