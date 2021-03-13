@@ -14,8 +14,7 @@ def page_handler(hrefs, section):
         
         progress.next()
 
-        DRIVER.get(f'https://www.pinterest.com{href.get("href")}')
-        time.sleep(1)
+        DRIVER.get(f'https://www.pinterest.com{href.get("href")}', wait=1)
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         target = html.find('a', href=True, attrs={'data-test-id':'image-link'})
         try: src = target.findAll('img', src=re.compile('.+pinimg.+'))[-1].get('src')
@@ -74,11 +73,12 @@ def start(retry=0, headless=True):
 
         for section in sections:
             
-            DRIVER.get(f'https://pinterest.com/chairekakia/{board}/{section}')
+            DRIVER.get(
+                f'https://pinterest.com/chairekakia/{board}/{section}', wait=1
+                )
             
             while True:
                 
-                time.sleep(1)
                 html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
                 targets = html.find(class_='gridCentered').findAll(
                     'a', href=re.compile('/pin/\d+/')

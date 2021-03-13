@@ -130,12 +130,16 @@ class WEBDRIVER:
         
         return list(path.expanduser().glob('*.default*'))[0]
 
-    def get(self, url, retry=3):
+    def get(self, url, wait=0, retry=3):
         
         for _ in range(retry):
-            try: self.driver.get(url)
-            except exceptions.TimeoutException: continue
-            except exceptions.UnexpectedAlertPresentException:
+            try: 
+                self.driver.get(url)
+                time.sleep(wait)
+            except (
+                exceptions.TimeoutException,
+                exceptions.UnexpectedAlertPresentException
+                ):
                 continue
     
     def find(self, address, keys=None, click=None, move=None, type_=1, enter=0, fetch=0):

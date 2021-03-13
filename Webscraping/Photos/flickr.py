@@ -62,13 +62,12 @@ def page_handler(hrefs):
                 except: # Image unavailable
                     status = DRIVER.find('statusCode', type_=7, fetch=1).text
                     if status in ('403', '404'):
-                        CONNECTION.execute(DELETE, (href,), commit=1)
+                        CONNECTION.execute(DELETE[0], (href,), commit=1)
                 break
             
             except (exceptions.WebDriverException, AttributeError): continue
         
-        else:
-            if image is None: continue
+        if image is None: continue
 
         name = get_name(image, 0, 1)
         if not save_image(name, image): continue

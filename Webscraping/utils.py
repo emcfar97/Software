@@ -45,7 +45,7 @@ GENERAL = {
     'functionally_nude': '(functionally_nude OR (bottomless AND topless)) AND NOT nude', 
     'open_clothes': 'open_clothes|open_coat|open_jacket|open_shirt|open_robe|open_kimono|open_fly|open_shorts', 
     'orgasm': 'orgasm|ejaculation', 
-    'oshiri': 'ass'
+    'oshiri': 'ass',
     'piercing': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain', 
     'presenting': 'presenting OR top-down_bottom-up OR ((spread_legs OR spread_pussy) AND (trembling OR (heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR spread_pussy', 
     'pussy': 'pussy|vagina', 
@@ -154,7 +154,7 @@ def get_tags(driver, path, filter=False):
     if video:
 
         tags.add('animated')
-        if path.suffix in ('.webm', '.mp4'): 
+        if path.suffix in ('.webm', '.mp4'):
             try:
                 for stream in FFProbe(str(path)).streams:
                     if stream.codec_type == 'audio': 
@@ -173,8 +173,8 @@ def get_tags(driver, path, filter=False):
             success, frame = vidcap.read()
 
         else:
-            step = round(90 * log((len(frames) * .0007) + 1) + 1)
-            frames = frames[::step]
+            step = 90 * log((len(frames) * .002) + 1) + 1
+            frames = frames[::round(step)]
     
     else: frames.append(path)
     

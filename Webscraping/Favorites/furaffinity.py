@@ -44,7 +44,9 @@ def page_handler(hrefs):
             'a', href=re.compile('/user/+(?!chairekakia)'), id=False
             ).get('href').split('/')[2]
         image = html.find('a', href=re.compile('//d.+')).get('href')
-        name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
+        try:
+            name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
+        except: continue
         name = PATH / 'Images' / SITE / name
 
         CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)

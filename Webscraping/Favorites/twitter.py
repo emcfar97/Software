@@ -12,7 +12,6 @@ def initialize(url, retry=0):
     while True:
 
         query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
-        time.sleep(4)
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         hrefs = [
             (*href, SITE) for href in
@@ -73,7 +72,7 @@ def page_handler(hrefs):
             name = image.replace('?format=', '.').split('/')[-1]
             name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
-            CONNECTION.execute(INSERT[6], (str(name), image, href, SITE))
+            CONNECTION.execute(INSERT[5], (str(name), image, href, SITE))
         else: CONNECTION.execute(DELETE[1], (href,), commit=1)
         
         progress.next()

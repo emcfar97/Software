@@ -6,8 +6,8 @@ def start():
 
     # process = subprocess.Popen([
     #     r'Webscraping\PixivUtil\PixivUtil2.exe',
-    #     '-i', '6', ''#, '', '0', '7', '', '-x'
-    #     #              start end  stop
+    #     '-s', '6', 'y', '-x'
+    #     #         start end  stop
     #     ])
     
     threads = [

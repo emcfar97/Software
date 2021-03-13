@@ -48,7 +48,8 @@ def extract_files(path, dest=None):
             
             if not save_image(name, image): errors.append(image)
             elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
-                name.rename(name.with_suffix('.mp4'))
+                try: name.rename(name.with_suffix('.mp4'))
+                except: name.unlink(missing_ok=1)
         
         file.unlink()
     
