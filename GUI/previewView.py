@@ -1,6 +1,6 @@
 from . import GESTURE, CONNECTION, get_frame
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QThread
 from PyQt5.QtWidgets import QLabel, QScrollArea
 
 class Preview(QScrollArea):
@@ -15,7 +15,6 @@ class Preview(QScrollArea):
         self.setWidgetResizable(True)
         self.setStyleSheet('''
             border: none;
-            
             ''')
         self.setContentsMargins(0, 0, 0, 0)
         
@@ -56,6 +55,7 @@ class Timer(QLabel):
         
         super(QLabel, self).__init__(parent)
         
+        self.thread = Worker(self)
         self.timer = QTimer()
         self.timer.timeout.connect(self.countdown)
         self.setAlignment(Qt.AlignCenter)
@@ -99,7 +99,8 @@ class Timer(QLabel):
         
         else:
             parent = self.parent()
-            CONNECTION.execute(GESTURE, (self.current,), commit=1)
+            self.thread.arguments = self.current.data(Qt.UserRole)
+            self.thread.start()
             
             try:
                 self.current = next(self.gallery)
@@ -119,3 +120,13 @@ class Timer(QLabel):
                     parent.width() * .4, parent.height() * .1,
                     125, 75
                     )
+
+class Worker(QThread):
+    
+    def __init__(self, parent):
+        
+        super(Worker, self).__init__(parent)
+
+    def run(self):
+    
+        CONNECTION.execute(GESTURE, (self.arguments,), commit=1)
