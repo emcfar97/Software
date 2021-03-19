@@ -154,15 +154,8 @@ class Slideshow(QMainWindow):
         video = self.stack.currentIndex()
         alt = event.modifiers() == Qt.AltModifier
         ctrl = event.modifiers() == Qt.ControlModifier
-        
-        if alt:
-            
-            if key_press == Qt.Key_Return: self.openEditor()
-            
-        if ctrl:
-            if key_press == Qt.Key_C: self.copy()
 
-        elif key_press in (Qt.Key_Right, Qt.Key_Left):
+        if key_press in (Qt.Key_Right, Qt.Key_Left):
             
             self.move(1 if key_press == Qt.Key_Right else -1)
             
@@ -197,6 +190,14 @@ class Slideshow(QMainWindow):
             else: 
                 self.video.update(None)
                 self.hide()
+        
+        elif alt:
+            
+            if key_press in (Qt.Key_Return, Qt.Key_Enter): self.openEditor()
+            
+        elif ctrl:
+            
+            if key_press == Qt.Key_C: self.copy()
 
     def mouseMoveEvent(self, event):
         
