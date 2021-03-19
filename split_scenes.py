@@ -51,6 +51,45 @@ DEBUG = args.debug
 SOURCE = args.source
 DEST = args.destination
 
+def split_scenes(video):
+    
+    if not video.exists():
+        video = SOURCE / video.name
+    name = DEST / video.name
+
+    stream = FFProbe(str(video)).streams[0]
+    start_time = get_time(stream.start_time)
+    duration = get_time(stream.duration)
+
+    scenes = find_scenes(video, stream.framerate)
+
+    for num, (start, end) in enumerate(scenes, start=1):
+        
+        if num == 0: 
+            start, end = start_time, get_time(end)
+
+        elif num == len(scenes):
+            start, end = get_time(start), duration
+
+        else: 
+            start, end = get_time(start), get_time(end)
+
+        if DEBUG: print(start, end); continue
+
+        file = name.with_name(f'{name.stem} - {num:02}.mp4')
+        trim(str(video), str(file), start, end)
+
+def get_time(time):
+
+    if isinstance(time, FrameTimecode):
+        
+        return time.get_timecode()
+
+    min, sec = divmod(float(time), 60)
+    hour, min = divmod(min, 60)
+
+    return f'{hour:02.0f}:{min:02.0f}:{sec:06.3f}'
+
 def find_scenes(video_path, framerate):
     # Create our video & scene managers, then add the detector.
 
@@ -67,44 +106,6 @@ def find_scenes(video_path, framerate):
 
     # Each returned scene is a tuple of the (start, end) timecode.
     return scene_manager.get_scene_list(framerate)
-
-def split_scenes(video):
-    
-    path = SOURCE / video.name
-    name = DEST / video.name
-
-    stream = FFProbe(str(path)).streams[0]
-    start_time = get_time(stream.start_time)
-    duration = get_time(stream.duration)
-
-    scenes = find_scenes(path, stream.framerate)
-
-    for num, (start, end) in enumerate(scenes, start=1):
-        
-        if num == 0: 
-            start, end = start_time, get_time(end)
-
-        elif num == len(scenes):
-            start, end = get_time(start), duration
-
-        else: 
-            start, end = get_time(start), get_time(end)
-
-        if DEBUG: print(start, end); continue
-
-        file = name.with_name(f'{name.stem} - {num:02}.mp4')
-        trim(str(path), str(file), start, end)
-
-def get_time(time):
-
-    if isinstance(time, FrameTimecode):
-        
-        return time.get_timecode()
-
-    min, sec = divmod(float(time), 60)
-    hour, min = divmod(min, 60)
-
-    return f'{hour:02.0f}:{min:02.0f}:{sec:06.3f}'
 
 def trim(input_path, output_path, start, end):
 
@@ -127,5 +128,5 @@ def trim(input_path, output_path, start, end):
         )
     output.run()
 
-if VIDEO: split_scenes(VIDEO)
+if VIDEO.is_file(): split_scenes(VIDEO)
 else: [split_scenes(video) for video in VIDEO.glob('*mp4')]
