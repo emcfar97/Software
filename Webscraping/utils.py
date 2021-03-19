@@ -57,6 +57,7 @@ GENERAL = {
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
     'suspended_congress': '(suspended_congress OR reverse_suspended_congress) AND sex',
+    'squatting cowgirl_position':'squatting_cowgirl_position',
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
     }
 CUSTOM = {
@@ -74,7 +75,29 @@ RATING = {
     2: 'NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))',
     1: 'NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR pussy OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))'
     }
-    
+REMOVE = [
+    {
+        '3d', 'photorealistic', 'realistic', 
+        'cum', 'cum_in_pussy',
+        'sex', 'sex_from_behind', 'vaginal', 'anal',
+        'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl',
+        'mosaic_censoring', 'censored', 'uncensored',
+        'male_focus', 'multiple_boys', 'multiple_girls', 
+        'pantyhose', 'no_humans', 'scenery'
+        },
+    [
+        '(rating|score):\w+',
+        'nopan', 'oshiri',
+        'solo_focus',
+        'uncensored',
+        'vagina',
+        'virgin',
+        'hetero',
+        'yuri', 'yaoi',
+        'squatting_cowgirl_position'
+        ]
+    ]
+
 def save_image(name, image=None, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
@@ -199,16 +222,7 @@ def get_tags(driver, path, filter=False):
     
     else:
         if video: temp_dir.cleanup()
-        if filter:
-            tags.difference_update({
-                '3d', 'censored',
-                'cum', 'cum_in_pussy',
-                'sex', 'sex_from_behind', 'vaginal', 'anal',
-                'doggystyle', 'missionary', 'cowgirl_position',
-                'mosaic_censoring',
-                'male_focus', 'no_humans', 'multiple_boys', 'multiple_girls', 
-                'photorealistic', 'realistic'
-                })
+        if filter: tags.difference_update(REMOVE[0])
     
     return ' '.join(tags)
 
@@ -263,7 +277,7 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
         rating.append(exif)
     
     tags = re.sub(
-        ' ((rating|score):\w+|nopan|oshiri|solo_focus|uncensored|vagina|virgin|hetero|yuri|yaoi) ', ' ', f' {" ".join(tags)} '
+        f' ({"|".join(REMOVE[1])}) ', ' ', f' {" ".join(tags)} '
         ).strip()
         
     return tags if rating is None else [tags] + rating
