@@ -1,9 +1,9 @@
 import json, time
 from os import path 
-from . import ROOT
+from . import USER
 from .utils import bs4, requests, re
 
-PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images')
+PATH = USER / r'Downloads\Images'
 
 def page_handler(url, title, page=0): 
     
