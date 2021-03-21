@@ -1,9 +1,9 @@
 import shutil, re, send2trash
 from os import path
-from . import ROOT, CONNECT, INSERT, WEBDRIVER
+from . import USER, CONNECT, INSERT, WEBDRIVER
 from .utils import IncrementalBar, get_name, get_hash, get_tags, generate_tags
 
-path = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images\Comics')
+path = USER / r'Downloads\Images\Comics'
 
 def get_artist(text):
 

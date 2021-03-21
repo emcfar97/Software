@@ -6,9 +6,10 @@ from re import search, sub, findall
 
 EXT = '.mp4', '.flv', '.mkv'
 ROOT = Path(Path(__file__).drive)
-DOWN = ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images')
-SOURCE = ROOT / path.expandvars(r'\Users\$USERNAME\Videos\Captures')
-DEST = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\Videos\Captures')
+USER = ROOT / path.expandvars(r'\Users\$USERNAME')
+DOWN = USER / r'Downloads\Images'
+SOURCE = USER / r'Videos\Captures'
+DEST = USER / r'Dropbox\Videos\Captures'
 
 def get_stream(files, text):
         

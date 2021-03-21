@@ -2,7 +2,7 @@ import json, cv2
 from os import path
 from PIL import Image
 from urllib.parse import urlparse
-from . import ROOT, CONNECT, INSERT, WEBDRIVER
+from . import USER, WEBDRIVER, CONNECT, INSERT
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
 EXT = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.webm', '.mp4'
@@ -71,7 +71,7 @@ def similarity(path):
 
     return False
 
-def start(extract=True, path=ROOT / path.expandvars(r'\Users\$USERNAME\Downloads\Images')):
+def start(extract=True, path=USER / r'Downloads\Images'):
     
     if extract: extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.suffix in EXT]
