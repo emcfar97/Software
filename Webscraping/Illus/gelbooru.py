@@ -13,7 +13,7 @@ def initialize(url, query=0):
         except IndexError: return False
 
     if not query:
-        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
         
     DRIVER.get(f'https://gelbooru.com/index.php{url}')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -59,25 +59,25 @@ def page_handler(hrefs):
         name = get_name(image.split('/')[-1], type_-1, 0)
         hash_ = get_hash(image, 1)
         
-        if CONNECTION.execute(UPDATE[0], (
+        if MYSQL.execute(UPDATE[0], (
             name.name, ' '.join(artists), tags, 
             rating, type_, image, hash_, href
             )):
-            if save_image(name, image, exif): CONNECTION.commit()
-            else: CONNECTION.rollback()
+            if save_image(name, image, exif): MYSQL.commit()
+            else: MYSQL.rollback()
 
         progress.next()
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     
     if initial: 
         DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
         hrefs = initialize(url)
-        CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
+        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
         DRIVER.close()
 
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))

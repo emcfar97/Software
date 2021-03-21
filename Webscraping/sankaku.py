@@ -18,7 +18,7 @@ def initialize(mode, url, query=0):
 
     if not query:
         query = set(
-            CONNECTION.execute(
+            MYSQL.execute(
                 f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1
                 )
             )
@@ -60,7 +60,7 @@ def page_handler(hrefs, mode):
         try: image = f'https:{html.find(id="highres", href=True).get("href")}'
         except AttributeError:
             if html.find(text='404: Page Not Found'): 
-                CONNECTION.execute(DELETE[0], (href,), commit=1)
+                MYSQL.execute(DELETE[0], (href,), commit=1)
             continue
         name = get_name(image.split('/')[-1].split('?e=')[0], mode[1]-1, 0)
             
@@ -85,29 +85,29 @@ def page_handler(hrefs, mode):
         artists = ' '.join(artists).encode('ascii', 'ignore').decode()
         hash_ = get_hash(image, 1)
 
-        if CONNECTION.execute(UPDATE[0], (
+        if MYSQL.execute(UPDATE[0], (
             name.name, artists, tags, rating, mode[1], image, hash_, href
             )):
-            if save_image(name, image, exif): CONNECTION.commit()
-            else: CONNECTION.rollback()
+            if save_image(name, image, exif): MYSQL.commit()
+            else: MYSQL.rollback()
     
         progress.next()
 
 def start(mode=1, initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     mode = MODE[mode]
 
     if initial: 
         url = DRIVER.login(SITE)
         hrefs = initialize(mode, url)
-        CONNECTION.execute(
+        MYSQL.execute(
             'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1, commit=1
             )
     page_handler(
-        CONNECTION.execute(
+        MYSQL.execute(
             f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1
             ), 
         mode

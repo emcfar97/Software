@@ -26,14 +26,14 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
             if src: DRIVER.find('//*[@id="url"]', src, fetch=1)
             else: DRIVER.find('//*[@id="file"]', path, fetch=1)
         except exceptions.InvalidArgumentException:
-            CONNECTION.execute(UPDATE[4], (1, 0, path), commit=1)
+            MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         DRIVER.find('//body/form/table[2]/tbody/tr[4]/td[1]/input', click=True)
         if path.endswith(EXT): time.sleep(25)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         if html.find(text=re.compile(IGNORE)):
-            CONNECTION.execute(UPDATE[4], (1, 0, path), commit=1)
+            MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         try:
             targets = [
@@ -55,7 +55,7 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
         else: saved = False
                         
         if saved and src is None: os.remove(path)
-        CONNECTION.execute(UPDATE[4], (1, saved, path), commit=1)
+        MYSQL.execute(UPDATE[4], (1, saved, path), commit=1)
 
     print(progress)
 
@@ -176,7 +176,7 @@ def edit(search, replace):
 def initialize():
     
     data = sqlite3.connect(r'Webscraping\PixivUtil\Data.sqlite')
-    CONNECTION.execute(
+    MYSQL.execute(
         INSERT[2], data.execute(SELECT[5]).fetchall(), many=1, commit=1
         )
     data.close()
@@ -189,14 +189,14 @@ def initialize():
     #         (PATH / 'Images' / site).iterdir()
     #         ]
 
-    # CONNECTION.execute(INSERT[2], paths, many=1, commit=1)
+    # MYSQL.execute(INSERT[2], paths, many=1, commit=1)
 
 def start(initial=1, headless=True):
 
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(CONNECTION.execute(SELECT[4], fetch=1))
+    main(MYSQL.execute(SELECT[4], fetch=1))
     DRIVER.close()

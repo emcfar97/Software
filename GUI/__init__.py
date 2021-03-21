@@ -56,7 +56,7 @@ def get_frame(path):
     if image is None: return QPixmap()
     return qimage2ndarray.array2qimage(image).rgbSwapped()
 
-CONNECTION = CONNECT()
+MYSQL = CONNECT()
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
 CASE = r'''

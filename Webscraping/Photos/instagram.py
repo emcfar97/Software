@@ -8,7 +8,7 @@ SITE = 'instagram'
 def initialize(url, retry=0):
     
     DRIVER.get(f'https://www.instagram.com{url}')
-    query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+    query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
     
     while True:
 
@@ -21,16 +21,16 @@ def initialize(url, retry=0):
             html.findAll('a', href=re.compile('/p/.+'))
             if (target.get('href'),) not in query
             ]
-        CONNECTION.execute(INSERT[0], hrefs, 1)
+        MYSQL.execute(INSERT[0], hrefs, 1)
             
         if not hrefs:
             if retry >= 2: break
             else: retry += 1
         else:
-            query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+            query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
             retry = 0
 
-    CONNECTION.commit()
+    MYSQL.commit()
     
 def page_handler(hrefs, retry=2):
 
@@ -88,21 +88,21 @@ def page_handler(hrefs, retry=2):
             if name.suffix.endswith(('jpg', 'png')): 
                 save_image(name, image, exif)
 
-            CONNECTION.execute(INSERT[0], (
+            MYSQL.execute(INSERT[0], (
                 name.name, artist, tags, rating, 1, hash_, image, SITE, href),
                 commit=1
                 )
-        else: CONNECTION.execute(DELETE[0], (href,), commit=1)
+        else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
     progress.next()
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     url = DRIVER.login(SITE)
     if initial: initialize(url)
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1)[10:])
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1)[10:])
     DRIVER.close()

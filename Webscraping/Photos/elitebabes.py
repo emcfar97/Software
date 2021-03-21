@@ -11,7 +11,7 @@ def initialize(url=1, query=0):
         except IndexError: return False
 
     if not query:
-        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
 
     DRIVER.get(f'https://www.{SITE}.com/my-favorite-galleries/page/{url}/')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -57,20 +57,20 @@ def page_handler(hrefs):
             save_image(name, src, exif)
             hash_ = get_hash(name)
 
-            CONNECTION.execute(INSERT[3],
+            MYSQL.execute(INSERT[3],
                 (name.name, artist, tags, rating, 1, hash_, src, SITE, href), 
                 )
-        else: CONNECTION.execute(DELETE[0], (href,), commit=1)
+        else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
         progress.next()
 
 def start(initial=True, headless=True):
         
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
 
     if initial: 
-        CONNECTION.execute(INSERT[0], initialize(), many=1, commit=1)
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+        MYSQL.execute(INSERT[0], initialize(), many=1, commit=1)
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

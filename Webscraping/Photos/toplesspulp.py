@@ -7,7 +7,7 @@ SITE = 'topless'
 
 def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
     
-    if not query: query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+    if not query: query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
 
     DRIVER.get(f'{url}{year}')
     for _ in range(10): 
@@ -20,10 +20,10 @@ def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
         for target in html.findAll('figure')
         if (target.find(href=True).get('href'),) not in query
         ]
-    CONNECTION.execute(INSERT[0], hrefs, 1)
+    MYSQL.execute(INSERT[0], hrefs, 1)
        
     initialize(year-1, query)
-    CONNECTION.commit()
+    MYSQL.commit()
 
 def page_handler(hrefs):
 
@@ -43,18 +43,18 @@ def page_handler(hrefs):
         save_image(name, href, exif)
         hash_ = get_hash(name)
         
-        CONNECTION.execute(UPDATE[0],
+        MYSQL.execute(UPDATE[0],
             (str(name), ' ', tags, rating, href, hash_, href),
             commit=1
             )
 
 def start(headless=True):
 
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     initialize()
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         
     DRIVER.close()

@@ -1,4 +1,4 @@
-from . import GESTURE, CONNECTION, get_frame
+from . import GESTURE, MYSQL, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QThread
 from PyQt5.QtWidgets import QLabel, QScrollArea
@@ -129,4 +129,4 @@ class Worker(QThread):
 
     def run(self):
     
-        CONNECTION.execute(GESTURE, (self.arguments,), commit=1)
+        MYSQL.execute(GESTURE, (self.arguments,), commit=1)

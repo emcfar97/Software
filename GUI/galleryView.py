@@ -1,5 +1,5 @@
 import re, textwrap
-from . import CONNECTION, BASE, COMIC, get_frame
+from . import MYSQL, BASE, COMIC, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QObject, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
@@ -411,7 +411,7 @@ class ImageView(QTableView):
 
     def read_comic(self, event):
 
-        parent, = CONNECTION.execute(
+        parent, = MYSQL.execute(
             COMIC, (self.currentIndex().data(Qt.UserRole),), fetch=1
             )
         self.parent().ribbon.tags.setText(f'comic={parent[0]}')
@@ -605,14 +605,14 @@ class Model(QAbstractTableModel):
 
     # def canFetchMore(self, index):
         
-        # return CONNECTION.CURSOR.rowcount > len(self.images)
+        # return MYSQL.CURSOR.rowcount > len(self.images)
 
     # def fetchMore(self, index, fetch=10000):
         
         # self.beginInsertRows(
         #     index, len(self.images), len(self.images) + fetch
         #     )
-        # self.images += CONNECTION.CURSOR.fetchmany(fetch)
+        # self.images += MYSQL.CURSOR.fetchmany(fetch)
         # self.endInsertRows()
         # self.numberPopulated.emit(self.images[:-fetch])
 
@@ -688,7 +688,7 @@ class Worker_(QObject):
 
     def run(self):
         
-        rows = CONNECTION.execute(self.statement, fetch=1)
+        rows = MYSQL.execute(self.statement, fetch=1)
         self.parent().images.update(rows)
         self.finished.emit()
 
@@ -705,5 +705,5 @@ class Worker(QThread):
     def run(self):
     
         self.parent().images.update(
-            CONNECTION.execute(self.statement, fetch=1)
+            MYSQL.execute(self.statement, fetch=1)
             )

@@ -21,11 +21,11 @@ def page_handler(): pass
 
 def setup(initial=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(False)
     
     DRIVER.login(SITE)
     if initial: initialize()
-    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()

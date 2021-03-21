@@ -16,7 +16,7 @@ def get_artist(text):
 
 def start(headless=True):
     
-    CONNECTION = CONNECT()
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     folders = list(path.iterdir())
@@ -41,17 +41,17 @@ def start(headless=True):
                 )
             
             if not (
-                CONNECTION.execute(INSERT[3], 
+                MYSQL.execute(INSERT[3], 
                     (image.name, artist, tags, 
                     rating, 3, hash_, None, None, None)
                     )
                 and 
-                CONNECTION.execute(INSERT[4], (
+                MYSQL.execute(INSERT[4], (
                     image.name, cover.name, num)
                     )
                 ): commit = 0
         if commit: 
-            CONNECTION.commit()
+            MYSQL.commit()
             send2trash.send2trash(str(folder))
         
         progress.next()

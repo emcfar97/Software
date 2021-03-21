@@ -77,7 +77,7 @@ def start(extract=True, path=USER / r'Downloads\Images'):
     files = [file for file in path.iterdir() if file.suffix in EXT]
     progress = IncrementalBar('Files', max=len(files))
     
-    CONNECTION = CONNECT()
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(profile=None)
 
     for file in files:
@@ -104,11 +104,11 @@ def start(extract=True, path=USER / r'Downloads\Images'):
                     custom=True, rating=True, exif=False
                     )
 
-            if CONNECTION.execute(INSERT[3], (
+            if MYSQL.execute(INSERT[3], (
                 dest.name, '', tags, rating, 1, hash_, None, None, None
                 )):
-                if file.replace(dest): CONNECTION.commit()
-                else: CONNECTION.rollback()
+                if file.replace(dest): MYSQL.commit()
+                else: MYSQL.rollback()
             
         except Exception as error: print(error, '\n')
     

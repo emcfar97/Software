@@ -60,7 +60,7 @@ def page_handler(url, title):
                 )
 
         hash_ = get_hash(name)
-        CONNECTION.execute(INSERT[3], 
+        MYSQL.execute(INSERT[3], 
             (name.name, artist, tags, rating, 1, hash_, None, SITE, None), 
             commit=1
             )
@@ -69,8 +69,8 @@ def page_handler(url, title):
 
 def start(headless=True):
         
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless, None)
     
     for file in PATH.iterdir():

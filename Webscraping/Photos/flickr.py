@@ -14,7 +14,7 @@ def initialize(url, query=0):
         except IndexError: return False
 
     if not query:
-        query = set(CONNECTION.execute(SELECT[0], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
 
     DRIVER.get(f'https://www.flickr.com{url}')
     for _ in range(2):
@@ -62,7 +62,7 @@ def page_handler(hrefs):
                 except: # Image unavailable
                     status = DRIVER.find('statusCode', type_=7, fetch=1).text
                     if status in ('403', '404'):
-                        CONNECTION.execute(DELETE[0], (href,), commit=1)
+                        MYSQL.execute(DELETE[0], (href,), commit=1)
                 break
             
             except (exceptions.WebDriverException, AttributeError): continue
@@ -78,7 +78,7 @@ def page_handler(hrefs):
         if name.suffix == '.jpg': save_image(name, image, exif)
         hash_ = get_hash(name) 
         
-        CONNECTION.execute(
+        MYSQL.execute(
             UPDATE[0], 
             (name.name, ' ', tags, rating, 1, image, hash_, href),
             commit=1
@@ -88,12 +88,12 @@ def page_handler(hrefs):
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial: 
         hrefs = initialize(DRIVER.login(SITE))
-        CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

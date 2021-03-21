@@ -12,7 +12,7 @@ def initialize(url, query=0):
 
     DRIVER.get(f'http://www.hentai-foundry.com{url}')
     if not query:
-        query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         if element := DRIVER.find('//*[@id="frontPage"]', type_=1):
             element.click()
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -21,11 +21,11 @@ def initialize(url, query=0):
         {(target.get('href'),) for target in 
         html.findAll(class_='thumbLink')} - query
         ]
-    CONNECTION.execute(INSERT[1], hrefs, many=1)
+    MYSQL.execute(INSERT[1], hrefs, many=1)
 
     next = next_page(html.find(class_='next')) 
     if hrefs and next: initialize(next, query)
-    else: CONNECTION.commit()
+    else: MYSQL.commit()
 
 def page_handler(hrefs):
 
@@ -48,18 +48,18 @@ def page_handler(hrefs):
         name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
         name = PATH / 'Images' / SITE / name
 
-        CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
+        MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
         progress.next()
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial:
         url = DRIVER.login(SITE)
         initialize(url)
-    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()

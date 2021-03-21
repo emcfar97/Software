@@ -41,7 +41,7 @@ def page_handler(hrefs, section):
         if section not in tags: tags += f' {section}'
         hash_ = get_hash(src, True)
 
-        CONNECTION.execute(INSERT[3], 
+        MYSQL.execute(INSERT[3], 
             (name.name, '', tags, rating, 1, hash_, src, SITE, None), 
             commit=1
             )
@@ -50,8 +50,8 @@ def page_handler(hrefs, section):
     
 def start(retry=0, headless=True):
 
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     DRIVER.login(SITE)
@@ -64,7 +64,7 @@ def start(retry=0, headless=True):
         # 'your-pinterest-likes': ['']
         }
     query = set(
-        href for href, in CONNECTION.execute(SELECT[0], (SITE,), fetch=1)
+        href for href, in MYSQL.execute(SELECT[0], (SITE,), fetch=1)
         )
 
     for board, sections in boards.items():

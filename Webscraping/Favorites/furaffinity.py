@@ -11,7 +11,7 @@ def initialize(url, query=0):
         except AttributeError: return False
 
     if not query:
-        query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.get(f'https://www.furaffinity.net{url}')
     
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -19,11 +19,11 @@ def initialize(url, query=0):
         (*href, SITE) for href in {(target.get('href'),) for target in 
         html.findAll(href=re.compile('/view+'))} - query
         ]
-    CONNECTION.execute(INSERT[1], hrefs, many=1)
+    MYSQL.execute(INSERT[1], hrefs, many=1)
     next = next_page(html.find(class_='button standard right')) 
     if hrefs and next: initialize(next, query)
 
-    CONNECTION.commit()
+    MYSQL.commit()
 
 def page_handler(hrefs):
 
@@ -37,7 +37,7 @@ def page_handler(hrefs):
         
         if html.find(text=re.compile('not in our database.+')):
             
-            CONNECTION.execute('DELETE FROM favorites WHERE href=%s', (href,), commit=1)
+            MYSQL.execute('DELETE FROM favorites WHERE href=%s', (href,), commit=1)
             continue      
                         
         artist = html.find(
@@ -49,18 +49,18 @@ def page_handler(hrefs):
         except: continue
         name = PATH / 'Images' / SITE / name
 
-        CONNECTION.execute(UPDATE[2], (str(name), image, href), commit=1)
+        MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
         progress.next()
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial: 
         url = DRIVER.login(SITE)
         initialize(url)
-    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()

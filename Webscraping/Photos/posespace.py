@@ -7,7 +7,7 @@ SITE = 'posespace'
 
 def initialize(url='/posetool/favs.aspx'):
 
-    query = set(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
 
     DRIVER.get(f'https://www.posespace.com{url}')
     time.sleep(1)
@@ -18,7 +18,7 @@ def initialize(url='/posetool/favs.aspx'):
             (target.text,) for target in html.findAll(class_='emph')
             } - query
         ]
-    CONNECTION.execute(INSERT[0], hrefs, many=1, commit=1)
+    MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
         
 def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
     
@@ -49,10 +49,10 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
             hash_ = get_hash(image)
             image.replace(name)
 
-            CONNECTION.execute(INSERT[3], 
+            MYSQL.execute(INSERT[3], 
                 (name.name, href[:-3], tags, rating, 1, hash_, None, SITE, None)
                 )
-        else: CONNECTION.execute(DELETE[0], (href,), commit=1)
+        else: MYSQL.execute(DELETE[0], (href,), commit=1)
         
         progress.next()
         
@@ -150,10 +150,10 @@ def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial: initialize()
-    page_handler(CONNECTION.execute(SELECT[2], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

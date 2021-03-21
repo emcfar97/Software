@@ -11,7 +11,7 @@ def initialize(url, retry=0):
 
     while True:
 
-        query = set(CONNECTION.execute(SELECT[1], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         hrefs = [
             (*href, SITE) for href in
@@ -22,7 +22,7 @@ def initialize(url, retry=0):
                     )
                 } - query
             ]
-        CONNECTION.execute(INSERT[1], hrefs, many=1)
+        MYSQL.execute(INSERT[1], hrefs, many=1)
         
         if not hrefs: 
             if retry >= 2: break
@@ -31,7 +31,7 @@ def initialize(url, retry=0):
             
         for _ in range(2): DRIVER.find('html', Keys.PAGE_DOWN, type_=6)
                 
-    CONNECTION.commit()
+    MYSQL.commit()
 
 def page_handler(hrefs):
     
@@ -72,19 +72,19 @@ def page_handler(hrefs):
             name = image.replace('?format=', '.').split('/')[-1]
             name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
-            CONNECTION.execute(INSERT[5], (str(name), image, href, SITE))
-        else: CONNECTION.execute(DELETE[1], (href,), commit=1)
+            MYSQL.execute(INSERT[5], (str(name), image, href, SITE))
+        else: MYSQL.execute(DELETE[1], (href,), commit=1)
         
         progress.next()
 
 def start(initial=True, headless=True):
     
-    global CONNECTION, DRIVER
-    CONNECTION = CONNECT()
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial: 
         url = DRIVER.login(SITE)
         initialize(url)
-    page_handler(CONNECTION.execute(SELECT[3], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
