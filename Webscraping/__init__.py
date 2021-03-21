@@ -138,6 +138,7 @@ class WEBDRIVER:
                 time.sleep(wait)
             except (
                 exceptions.TimeoutException,
+                exceptions.WebDriverExceptions,
                 exceptions.UnexpectedAlertPresentException
                 ):
                 continue
