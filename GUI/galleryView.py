@@ -2,7 +2,7 @@ import re, textwrap
 from . import CONNECTION, BASE, COMIC, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QThread, QTimer, QVariant, Qt, QSize
+from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QObject, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle, QCompleter
 
 ENUM = {
@@ -17,12 +17,12 @@ ENUM = {
 
 class Gallery(QWidget):
      
-    def __init__(self, parent):
+    def __init__(self, parent, margins=(5, 0, 0, 0)):
          
         super(Gallery, self).__init__(parent)
         self.title = parent.windowTitle()
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(5, 0, 0, 0)
+        self.layout.setContentsMargins(*margins)
         self.create_widgets()
                     
     def create_widgets(self):
@@ -86,7 +86,7 @@ class Gallery(QWidget):
             string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
             string = re.sub('(\+AND|OR) ', '', string)
             string = re.sub('-\+', '-', string)
-            if not re.search('\+\w+', string): string += ' qwd'
+            if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
 
             self.query['tags'] = (
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
@@ -98,10 +98,9 @@ class Gallery(QWidget):
         if not any(self.query): self.query[''] = 'NOT ISNULL(path)'
 
         # comic functionality
-        if 'type' in self.query and 'comic' not in self.query:
-            if '3' in self.query['type']:
-                join = 'JOIN comic ON comic.path_=imageData.path'
-                self.query['pages'] = 'page=0'
+        if '3' in self.query.get('type', '') and 'comic' not in self.query:
+            join = 'JOIN comic ON comic.path_=imageData.path'
+            self.query['pages'] = 'page=0'
 
         filter = " AND ".join(val for val in self.query.values() if val)
         
@@ -305,7 +304,7 @@ class Ribbon(QWidget):
     
         key_press = event.key()
 
-        if key_press == Qt.Key_Return: pass
+        if key_press in (Qt.Key_Return, Qt.Key_Enter): pass
 
         else: self.parent().keyPressEvent(event)
 
@@ -329,8 +328,6 @@ class ImageView(QTableView):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.contextMenuEvent)
-        if parent.title == 'Manage Data':
-            self.doubleClicked.connect(parent.parent().start_slideshow)
         
     def create_menu(self):
         
@@ -465,6 +462,17 @@ class ImageView(QTableView):
             
             self.parent().statusbar(self.total(), len(self.selectedIndexes()))
 
+    def mouseDoubleClickEvent(self, event):
+
+        parent = self.parent()
+        if parent.title == 'Manage Data':
+
+            if '3' in parent.query.get('type', '') and 'comic' not in parent.query: 
+                
+                self.read_comic(None)
+            
+            else: parent.parent().parent().start_slideshow()
+
     def contextMenuEvent(self, event):
         
         if self.parent().title == 'Manage Data' and self.currentIndex().data(200) == 'Comic':
@@ -567,6 +575,11 @@ class ImageView(QTableView):
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
+        
+        elif self.parent().title == 'Manage Data' and '3' in self.parent().query.get('type', '') and 'comic' not in self.parent().query:
+        
+            if key_press in (Qt.Key_Return, Qt.Key_Enter): self.read_comic(None)
+            else: self.parent().keyPressEvent(event)
 
         else: self.parent().keyPressEvent(event)
 
@@ -669,12 +682,26 @@ class Model(QAbstractTableModel):
     # def setData(self, index, value, role): 
         # return super().setData(index, value, role=role)
 
+class Worker_(QObject):
+
+    finished = pyqtSignal()
+
+    def run(self):
+        
+        rows = CONNECTION.execute(self.statement, fetch=1)
+        self.parent().images.update(rows)
+        self.finished.emit()
+
+    def __init__(self, parent):
+        
+        super(Worker, self).__init__(parent)
+
 class Worker(QThread):
     
     def __init__(self, parent):
         
         super(Worker, self).__init__(parent)
-
+    
     def run(self):
     
         self.parent().images.update(
