@@ -17,7 +17,10 @@ class Model():
         self.path = MODELS / path
         self.model = keras.models.load_model(self.path, compile=False)
         self.labels = loadtxt(
-            self.path.with_name(f'{path.split("-")[0]}.txt'), dtype='<U44'
+            self.path.with_name(
+                self.path.name.split('-')[0]
+                ).with_suffix('.txt'), 
+            dtype='<U44'
             )
         self.type = self.labels[0]
         self.labels = self.labels[1:]

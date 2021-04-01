@@ -3,14 +3,14 @@ else: from . import *
 
 def make_model(input_shape, classes, chckpnt=False, load=False):
 
-    inputs = keras.Input(shape=(*input_shape, 3))
-    x = data_augmentation(inputs)
-    x = layers.experimental.preprocessing.Rescaling(1./255)(x)
-    
     if isinstance(load, str): 
-        model = keras.models.load_model(MODELS / f'{load}.hdf5')(x)
+        model = keras.models.load_model(MODELS / f'{load}.hdf5')
+     
+    else:   
+        inputs = keras.Input(shape=(*input_shape, 3))
+        x = data_augmentation(inputs)
+        x = layers.experimental.preprocessing.Rescaling(1./255)(x)
     
-    else:
         if load == 0:
             x = layers.Conv2D(64, 3, activation='relu')(x)
             x = layers.MaxPooling2D()(x)
@@ -99,11 +99,11 @@ def save_model(epoch, logs):
                 MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5'
                 )
 
-NAME, VERSION = 'Medium', 6
+NAME, VERSION = 'Medium', 8
 DATA = Path(r'E:\Users\Emc11\Training') / NAME
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 EPOCHS, INITIAL = 16, 0
-IMAGE_SIZE = 180, 180
+IMAGE_SIZE = 256, 256
 BATCH = 32
 
 train_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -140,15 +140,15 @@ save_callback = keras.callbacks.LambdaCallback(
     on_epoch_end=save_model
     )
 
-model = make_model(IMAGE_SIZE, classes=2, load=0)
+model = make_model(IMAGE_SIZE, classes=2, load=1)
 model.compile(
     optimizer='adam',
-    loss=tf.losses.SparseCategoricalCrossentropy(from_logits=True),
+    loss='categorical_crossentropy',
     metrics=['accuracy']
     )
 model.fit(
-    train_ds, validation_data=val_ds, epochs=EPOCHS, 
+    train_ds, validation_data=val_ds, epochs=EPOCHS + INITIAL, 
     callbacks=[checkpoint, tensorboard, save_callback], 
-    initial_epoch=INITIAL, verbose=0
+    initial_epoch=INITIAL, verbose=1
     )
 model.save(MODELS / f'{NAME}-{VERSION:02}.hdf5', save_format='h5')
