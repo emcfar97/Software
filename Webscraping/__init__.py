@@ -55,6 +55,7 @@ class CONNECT:
             host=CREDENTIALS.get('mysql', 'hostname')
             )
         self.CURSOR = self.DATAB.cursor(buffered=True)
+        self.rowcount = None
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
 
@@ -62,6 +63,10 @@ class CONNECT:
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
+
+                if statement.startswith('SELECT'):
+                    self.rowcount = self.CURSOR.rowcount
+                else: self.rowcount = None
 
                 if commit: return self.DATAB.commit()
                 if fetch: return self.CURSOR.fetchall()
@@ -95,7 +100,7 @@ class CONNECT:
 
         try: self.DATAB.reconnect(attempts, time)
         except sql.errors.InterfaceError: return 0
-
+    
 class WEBDRIVER:
     
     PATH = Path(r'C:\Program Files\Mozilla Firefox')
@@ -109,8 +114,9 @@ class WEBDRIVER:
         options = webdriver.firefox.options.Options()
         options.headless = headless
         self.driver = webdriver.Firefox(
-            firefox_profile=profile, firefox_binary=binary, options=options, 
-            service_log_path=None, executable_path=WEBDRIVER.PATH / 'geckodriver.exe'
+            firefox_profile=profile, firefox_binary=binary, 
+            options=options, service_log_path=None, 
+            executable_path=WEBDRIVER.PATH / 'geckodriver.exe'
             )
         self.driver.implicitly_wait(wait)
         self.options = {
@@ -138,7 +144,7 @@ class WEBDRIVER:
                 time.sleep(wait)
             except (
                 exceptions.TimeoutException,
-                exceptions.WebDriverExceptions,
+                exceptions.WebDriverException,
                 exceptions.UnexpectedAlertPresentException
                 ):
                 continue
@@ -173,9 +179,13 @@ class WEBDRIVER:
         for _ in range(10):
             try: return self.driver.page_source
             except exceptions.WebDriverException: 
+                error = exceptions.WebDriverException
                 self.refresh()
+            except exceptions.InvalidSessionIdException:
+                error = exceptions.InvalidSessionIdException
+                print()
                 
-        raise exceptions.WebDriverException
+        raise error
     
     def current_url(self): return self.driver.current_url
 
