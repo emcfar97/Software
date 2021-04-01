@@ -1,6 +1,6 @@
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox,QCompleter
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox,QCompleter, QMessageBox
 
 class Properties(QMainWindow):
 
@@ -11,7 +11,13 @@ class Properties(QMainWindow):
         self.parent = parent
         self.configure_gui()
         self.create_widgets()
-        self.populate(indexes)
+        try: self.populate(indexes)
+        except Exception as error:
+            
+            QMessageBox.information(
+                None, type(error).__name__, str(error),
+                QMessageBox.Ok
+                )
 
     def configure_gui(self):
         
