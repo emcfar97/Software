@@ -55,7 +55,7 @@ class CONNECT:
             host=CREDENTIALS.get('mysql', 'hostname')
             )
         self.CURSOR = self.DATAB.cursor(buffered=True)
-        self.rowcount = None
+        self.rowcount = -1
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
 
@@ -63,10 +63,7 @@ class CONNECT:
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
-
-                if statement.startswith('SELECT'):
-                    self.rowcount = self.CURSOR.rowcount
-                else: self.rowcount = None
+                self.rowcount = self.CURSOR.rowcount
 
                 if commit: return self.DATAB.commit()
                 if fetch: return self.CURSOR.fetchall()
