@@ -19,7 +19,7 @@ def start(headless=True):
     DRIVER = WEBDRIVER(headless, None)
     
     folders = list(path.iterdir())
-    if not length := len(folders): return
+    if not (length := len(folders)): return
     progress = IncrementalBar('Comic', max=length)
 
     for folder in folders:
