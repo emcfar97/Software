@@ -5,7 +5,7 @@ from ffprobe import FFProbe
 from re import search, sub, findall
 
 EXT = '.mp4', '.flv', '.mkv'
-ROOT = Path(Path(__file__).drive)
+ROOT = Path(Path().cwd().drive)
 USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 DOWN = USER / r'Downloads\Images'
 SOURCE = USER / r'Videos\Captures'
@@ -16,6 +16,7 @@ def get_stream(files, text):
     new = DEST / files[0].with_suffix('.mp4').name
 
     if text and text in 'yes':
+
         stream = [
             ffmpeg.input(str(file)).drawtext(
                 text=file.stem, fontsize=45, 
@@ -34,8 +35,12 @@ def get_folders():
     targets = input('Target folders: ')
     
     if '..' in targets:
+
         start, end = targets.split('..')
-        return ''.join(str(i) for i in range(int(start), int(end) + 1))
+        
+        return ''.join(
+            str(i) for i in range(int(start), int(end) + 1)
+            )
         
     return targets
 
@@ -52,31 +57,43 @@ while True:
 
             files = [
                 (
-                    SOURCE / file, DEST / file.with_suffix('.mp4').name
+                    SOURCE / file, 
+                    DEST / file.with_suffix('.mp4').name
                     )
                 for file in SOURCE.iterdir() if file.suffix in EXT
                 ]
             
             for file, mp4 in files:
+
                 try: 
+                
                     if text and text in 'yes':
+
                         metadata = FFProbe(str(file)).streams[0]
+
                         ffmpeg.input(str(file)).drawtext(
                             text=file.stem, fontsize=45, 
                             x=int(metadata.width) * .70, 
                             y=int(metadata.height) * .85,
                             shadowcolor='white', shadowx=2, shadowy=2
-                        ).output(str(mp4), crf=20, preset='fast').run()
+                            ).output(str(mp4), crf=20, preset='fast').run()
+
                     else: 
-                        ffmpeg.input(str(file)).output(str(mp4), crf=20, preset='fast').run()
+                        ffmpeg.input(str(file)) \
+                        .output(str(mp4), crf=20, preset='fast') \
+                        .run()
+
                 except Exception as error: print(error); continue
+
                 file.unlink()
 
         elif user_input == '2': # concat videos
             
             text = input('Overlay text? ').lower()
+
+            folders = get_folders()
             
-            for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
+            for folder in SOURCE.glob(f'*Batch[{folders}]'):
                 
                 files = [
                     file for file in folder.iterdir()
@@ -84,8 +101,9 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                try: ffmpeg.concat(*stream).output(str(new), crf=20, preset='fast').run()
+                try: ffmpeg.concat(*stream).output(str(new),crf=20,preset='fast').run()
                 except Exception as error: print(error); continue
+                
                 for file in files: file.unlink()
 
         elif user_input == '3': # change framerate
@@ -100,17 +118,20 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                desired = float(input('Enter desired length (minutes): ')) * 60
+                desired = (float(
+                    input('Enter desired length in minutes: ')
+                    ) * 60) - 1
                 duration = sum(
                     float(FFProbe(file).streams[0].duration)
                     for file in files
                     )
                 try:
-                    ffmpeg.concat(*stream).setpts(
-                        f'{(desired - 1) / duration:.4f}*PTS') \
-                        .output(str(new), crf=20, preset='fast'
-                        ).run()
+                    ffmpeg.concat(*stream) \
+                        .setpts(f'{desired / duration:.4f}*PTS') \
+                        .output(str(new), crf=20, preset='fast') \
+                        .run()
                 except Exception as error: print(error); continue
+
                 for file in files: file.unlink()
 
         elif user_input == '4': # split video
@@ -130,41 +151,50 @@ while True:
                 
                 if end == '':
                     
-                    ffmpeg.input(str(file)).trim(
-                        start=start).output(str(new), preset='fast').run()
+                    ffmpeg.input(str(file)) \
+                        .trim(start=start) \
+                        .output(str(new), preset='fast') \
+                        .run()
 
                 else:
                     
                     ffmpeg.input(str(file)) \
                         .trim(start=start, end=end) \
                         .setpts('PTS-STARTPTS') \
-                        .output(str(new), preset='fast').run()
+                        .output(str(new), preset='fast') \
+                        .run()
 
             else: raise FileNotFoundError
 
         elif user_input == '5': # download m3u8
             
             url = input('Enter url: ')
-            name = f'{url.split("/")[3]}.mp4'
-            ffmpeg.input(url).output(str(DOWN / name)).run()
+            name = DOWN / f'{url.split("/")[3]}.mp4'
+            ffmpeg.input(url).output(str(name)).run()
 
         elif user_input == '6': # check directories
             
-            print(ROOT)
+            print(SOURCE)
+
             for file in SOURCE.iterdir():
+
                 if file.is_dir():
                     print(f'{file}: {[str(i) for i in file.iterdir()]}')
                 elif file.suffix in EXT: print(str(file))
+
             print() 
         
         elif user_input == '7': # change destination
 
             path = Path(input('Enter path: '))
+
             if path.exists(): 
+
                 DEST = path
                 print('Success\n')
+
             else: raise FileNotFoundError
 
         elif user_input == '8': break
-            
+        
     except Exception as error: print(error, '\n')
