@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDockWidget, QWidget,QVBoxLayout, QTabWidget, QTreeWidget, QSizePolicy
+from PyQt5.QtWidgets import QDockWidget, QWidget, QVBoxLayout, QTabWidget, QTreeWidget, QSizePolicy
 from PyQt5.QtCore import Qt
 from random import randint
 
