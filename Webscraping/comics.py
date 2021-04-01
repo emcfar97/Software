@@ -1,5 +1,4 @@
-import shutil, re, send2trash
-from os import path
+import re, send2trash
 from . import USER, CONNECT, INSERT, WEBDRIVER
 from .utils import IncrementalBar, get_name, get_hash, get_tags, generate_tags
 
@@ -17,23 +16,26 @@ def get_artist(text):
 def start(headless=True):
     
     MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(headless)
+    DRIVER = WEBDRIVER(headless, None)
     
     folders = list(path.iterdir())
-    if not len(folders): return
-    progress = IncrementalBar('Comic', max=len(folders))
+    if not length := len(folders): return
+    progress = IncrementalBar('Comic', max=length)
 
     for folder in folders:
         
         commit = 1
         artist = get_artist(folder.stem.lower())
         images = [
-            (num, get_hash(file), shutil.copy(file, get_name(file, 2, 1)))
+            (
+                num, get_hash(file), name:=get_name(file, 2, 1),
+                name.write_bytes(file.read_bytes())
+                )
             for num, file in enumerate(folder.iterdir())
             ]
         cover = images[0][2]
 
-        for num, hash_, image in images:
+        for num, hash_, image, _ in images:
 
             tags, rating = generate_tags(
                 general=get_tags(DRIVER, image), 
@@ -50,7 +52,7 @@ def start(headless=True):
                     image.name, cover.name, num)
                     )
                 ): commit = 0
-        if commit: 
+        if commit:
             MYSQL.commit()
             send2trash.send2trash(str(folder))
         
