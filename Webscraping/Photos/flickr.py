@@ -35,7 +35,7 @@ def initialize(url, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    progress = IncrementalBar(SITE, max=len(hrefs))
+    progress = IncrementalBar(SITE, max=MYSQL.rowcount)
     view = 'view.photo-notes-scrappy-view'
     target = 'view.photo-well-scrappy-view.requiredToShowOnServer'
 

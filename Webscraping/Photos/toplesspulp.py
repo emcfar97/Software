@@ -28,7 +28,7 @@ def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
-    progress = IncrementalBar(SITE, len(hrefs))
+    progress = IncrementalBar(SITE, MYSQL.rowcount)
 
     for href, in hrefs:
         

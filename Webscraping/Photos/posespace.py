@@ -23,7 +23,7 @@ def initialize(url='/posetool/favs.aspx'):
 def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
     
     if not hrefs: return
-    progress = IncrementalBar(SITE, max=len(hrefs))
+    progress = IncrementalBar(SITE, max=MYSQL.rowcount)
 
     for href, in hrefs:
 

@@ -35,7 +35,7 @@ def initialize(url, retry=0):
 def page_handler(hrefs, retry=2):
 
     if not hrefs: return
-    progress = IncrementalBar(SITE, max=len(hrefs))
+    progress = IncrementalBar(SITE, max=MYSQL.rowcount)
 
     for href, in hrefs:
         
