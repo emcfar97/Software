@@ -16,7 +16,7 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked OR ISNULL(path))',
+    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked={{}} OR ISNULL(path))',
     f'''
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
@@ -28,12 +28,12 @@ INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
+    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)',
     'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
     f'INSERT IGNORE INTO favorites(path, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s)',
     ]
 UPDATE = [
-    f'UPDATE imageData SET path=%s, artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
+    f'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
     f'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s WHERE href=%s',
     f'INSERT INTO imageData(path, hash, href, site) VALUES(%s, %s, %s, %s)',
@@ -113,7 +113,7 @@ class WEBDRIVER:
         self.driver = webdriver.Firefox(
             firefox_profile=profile, firefox_binary=binary, 
             options=options, service_log_path=None, 
-            executable_path=WEBDRIVER.PATH / 'geckodriver.exe'
+            executable_path=str(WEBDRIVER.PATH / 'geckodriver.exe')
             )
         self.driver.implicitly_wait(wait)
         self.options = {
@@ -173,7 +173,7 @@ class WEBDRIVER:
     
     def page_source(self):
         
-        for _ in range(10):
+        for _ in range(5):
             try: return self.driver.page_source
             except exceptions.WebDriverException: 
                 error = exceptions.WebDriverException
@@ -207,7 +207,7 @@ class WEBDRIVER:
                 
                 while self.current_url().endswith('/user/login'):
                     self.find(
-                        '//*[@id="user_name"]',CREDENTIALS.get(site, 'user').lower()
+                        '//*[@id="user_name"]', CREDENTIALS.get(site, 'user').lower()
                         )
                     self.find(
                         '//*[@id="user_password"]', CREDENTIALS.get(site, 'pass'), enter=1
@@ -242,14 +242,14 @@ class WEBDRIVER:
         try: self.driver.close()
         except: pass
 
-def start():
+def start(initialize=True):
     
     import threading
     from Webscraping import Photos, Illus, comics
     
     threads = [
-        threading.Thread(target=Photos.start),
-        threading.Thread(target=Illus.start),
+        threading.Thread(target=Photos.start, args=(initialize,)),
+        threading.Thread(target=Illus.start, args=(initialize,)),
         threading.Thread(target=comics.start)
         ]
     for thread in threads: thread.start()
