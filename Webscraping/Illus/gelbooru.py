@@ -1,5 +1,5 @@
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import IncrementalBar, save_image, get_hash, get_name, generate_tags, bs4, requests, re
+from ..utils import IncrementalBar, save_image, get_hash, get_name, generate_tags, bs4, requests, re, ARTIST
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -55,6 +55,7 @@ def page_handler(hrefs):
             tags, metadata, True, artists, True
             )
         
+        artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         image = html.find(href=True, text='Original image').get('href')
         name = get_name(image.split('/')[-1], type_-1, 0)
         hash_ = get_hash(image, 1)
