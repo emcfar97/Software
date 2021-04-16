@@ -1,5 +1,4 @@
 import json, cv2
-from os import path
 from PIL import Image
 from urllib.parse import urlparse
 from . import USER, WEBDRIVER, CONNECT, INSERT
@@ -57,21 +56,19 @@ def extract_files(path, dest=None):
 
 def similarity(path):
 
-    if path.suffix in EXT[:2]: 
-        image = cv2.imread(str(path))
-    else:
-        image = cv2.VideoCapture(str(path)).read()[-1]
+    if path.suffix in EXT[:2]: image = cv2.imread(str(path))
+    else: image = cv2.VideoCapture(str(path)).read()[-1]
 
-    try: 
-        if image.shape == MATCH.shape:
+    try:
+        if divmod(*image.shape[:2])[0] == divmod(*MATCH.shape[:2])[0]:
+
+            image = cv2.resize(image, MATCH.shape[1::-1])
             k = cv2.subtract(image, MATCH)
             return (k.min() + k.max()) < 20
             
     except: return True
-
-    return False
-
-def start(extract=True, path=USER / r'Downloads\Images'):
+    
+def start(extract=True, add='', path=USER / r'Downloads\Images'):
     
     if extract: extract_files(path / 'Generic')
     files = [file for file in path.iterdir() if file.suffix in EXT]
@@ -105,7 +102,8 @@ def start(extract=True, path=USER / r'Downloads\Images'):
                     )
 
             if MYSQL.execute(INSERT[3], (
-                dest.name, '', tags, rating, 1, hash_, None, None, None
+                dest.name, '', ' '.join((tags, add)), 
+                rating, 1, hash_, None, None, None
                 )):
                 if file.replace(dest): MYSQL.commit()
                 else: MYSQL.rollback()
