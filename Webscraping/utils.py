@@ -13,7 +13,7 @@ PATH = USER / r'Dropbox\ん'
 TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
 HASHER = hashlib.md5()
 EXT = 'jp.*g|png|gif|webp|webm|mp4|JP.*G|PNG|GIF|WEBP|WEBM|MP4'
@@ -33,7 +33,7 @@ GENERAL = {
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
     'condom': 'condom', 
     'cowgirl_position': '(cowgirl_position OR reverse_cowgirl_position) AND sex', 
-    'cum': 'cum|precum|semen',
+    'cum': 'cum|precum|semen|cumdrip|cum_in_mouth|cum_in_container|cum_in_pussy|cum_in_ass|cum_in_nipple|cum_on_feet|cum_on_body|cum_on_upper_body|cum_on_breasts',
     'dancing': 'dancing|dancer', 
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top AND sex',
@@ -48,10 +48,10 @@ GENERAL = {
     'oshiri': 'ass',
     'piercing': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain', 
     'presenting': 'presenting OR top-down_bottom-up OR ((spread_legs OR spread_pussy) AND (trembling OR (heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR spread_pussy', 
-    'pussy': 'pussy|vagina', 
+    'pussy': 'pussy|vagina|shaved_pussy', 
     'pussy_juice': 'pussy_juice|pussy_juices|pussy_juice_trail|pussy_juice_puddle|pussy_juice_stain|pussy_juice_drip_through_clothes', 
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
-    'sex': '(sex AND aftersex AND vaginal AND anal AND facial AND oral AND fellatio AND cunnilingus AND handjob AND frottage AND tribadism AND group_sex AND hetero AND yaoi AND yuri) AND NOT solo', 
+    'sex': '(sex AND aftersex AND vaginal AND anal AND facial AND oral AND fellatio AND cunnilingus AND handjob AND frottage AND tribadism AND group_sex AND hetero AND yaoi AND yuri AND clothed_sex) AND NOT solo', 
     'sex_toy': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
     'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls) OR NOT sex)', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
@@ -85,7 +85,7 @@ ARTIST = {
     'aomori': ['aomori', 1],
     'arctic char': ['tabata_hisayuki', -1],
     'arcticchar': ['tabata_hisayuki', -1],
-    'bigdeadalive': ['bigdead93', -1],
+    'bigdeadalive': ['bigdead93', 1],
     'bow':['bow_(bhp)', 0],
     'crescentia': ['Crescentia', -1],
     'crimeglass': ['x-t3al2', -1],
@@ -95,6 +95,7 @@ ARTIST = {
     'paul_kwon': ['zeronis', -1],
     'gray_eggs_n_ham':['gray_eggs_n_ham', 1],
     'graydoodles_':['gray_eggs_n_ham', 1],
+    'ichan': ['ignition_crisis', 0],
     'iskra': ['iskra', 1],
     'ittla': ['ittla', 1],
     'jjuneジュン': ['jjune', 0],
@@ -126,7 +127,7 @@ ARTIST = {
     'xin&obiコミ1a11ab': ['obiwan', 0],
     'xin&obi月曜日れ34a': ['obiwan', 0],
     'xin&obi月曜日れ34ab': ['obiwan', 0],
-    'xtilxtil': ['rtil', -1],
+    'xtilxtil': ['rtil', 1],
     'yd': ['yang-do', 0],
     'yd@4日目西a': ['yang-do', 0],
     'zako': ['zako_(arvinry)', -1],
@@ -188,10 +189,9 @@ def save_image(name, image=None, exif=b''):
 
         elif re.search('gif|webm|mp4', name.suffix):
             
-            data = requests.get(image, headers=HEADERS, stream=True)
-            with open(name, 'wb') as file: 
-                for chunk in data.iter_content(chunk_size=1024):
-                    if chunk: file.write(chunk)
+            name.write_bytes(
+                requests.get(image, headers=HEADERS, stream=True).content
+                )
     
     except UnidentifiedImageError: return False
     except OSError as error: 
@@ -222,7 +222,10 @@ def get_hash(image, src=False):
         
     if src:
         
-        try: image = Image.open(BytesIO(requests.get(image).content))
+        try:
+            image = Image.open(
+                BytesIO(requests.get(image, headers=HEADERS).content)
+                )
         except: return None
     
     elif re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
@@ -232,9 +235,11 @@ def get_hash(image, src=False):
 
     elif re.search('webm|mp4', image.suffix, re.IGNORECASE):
         
-        video_capture = VideoCapture(str(image)).read()[-1]
-        image = cvtColor(video_capture, COLOR_BGR2RGB)
-        image = Image.fromarray(image)
+        try:
+            video_capture = VideoCapture(str(image)).read()[-1]
+            image = cvtColor(video_capture, COLOR_BGR2RGB)
+            image = Image.fromarray(image)
+        except: return None
     
     image.thumbnail([32, 32])
     image = image.convert('L')
