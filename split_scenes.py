@@ -17,11 +17,11 @@ parser.add_argument(
     )
 parser.add_argument(
     '-d', '--downscale', type=int,
-    help='Downscale factor', default=50, 
+    help='Downscale factor for source video', default=25, 
     )
 parser.add_argument(
     '-t', '--threshold', type=int,
-    help='Threshold value', default=50, 
+    help='Threshold value for scene change', default=50, 
     )
 parser.add_argument(
     '-m', '--minimum', type=int,
@@ -55,25 +55,33 @@ def split_scenes(video):
     
     if not video.exists():
         video = SOURCE / video.name
-    name = DEST / video.name
-
+    if not DEBUG:
+        folder = DEST / video.stem
+        folder.mkdir(exist_ok=True)
+        name = folder / video.name
+    
     stream = FFProbe(str(video)).streams[0]
     start_time = get_time(stream.start_time)
     duration = get_time(stream.duration)
 
     scenes = find_scenes(video, stream.framerate)
+    if get_time(scenes[0][0]) != start_time:
+        scenes.insert(0, (start_time, scenes[0][0]))
 
     for num, (start, end) in enumerate(scenes, start=1):
         
-        if num == 0: 
+        if num == 1: 
             start, end = start_time, get_time(end)
 
-        elif num == len(scenes):
+        elif num == len(scenes) + 1:
             start, end = get_time(start), duration
 
         else: 
             start, end = get_time(start), get_time(end)
 
+        if start > end: start, end = end, start
+        if start == end: continue
+        
         if DEBUG: print(start, end); continue
 
         file = name.with_name(f'{name.stem} - {num:02}.mp4')
@@ -91,8 +99,8 @@ def get_time(time):
     return f'{hour:02.0f}:{min:02.0f}:{sec:06.3f}'
 
 def find_scenes(video_path, framerate):
+    
     # Create our video & scene managers, then add the detector.
-
     video_manager = VideoManager([str(video_path)])
     scene_manager = SceneManager()
     scene_manager.add_detector(ContentDetector(THRESHOLD, MINIMUM))
