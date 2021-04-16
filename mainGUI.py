@@ -1,11 +1,11 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAction
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QScrollArea, QGroupBox, QPushButton, QSizePolicy, QAction
+from PyQt5.QtCore import Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QIcon
 
-from GUI import ROOT, CONNECTION, MODIFY, DELETE
+from GUI import ROOT, MYSQL, MODIFY, DELETE
 from GUI.galleryView import Gallery
-from GUI.previewView import Preview, Timer
 from GUI.slideshowView import Slideshow
+from GUI.previewView import Preview, Timer
 from GUI.datasetView import Dataset
 from GUI.designView import Design
 from GUI.trainView import Train
@@ -44,7 +44,8 @@ class App(QMainWindow):
         options = {
             'Manage Data': ManageData, 
             'Gesture Draw': GestureDraw, 
-            'Machine Learning': MachineLearning
+            'Machine Learning': MachineLearning,
+            'Video Splitter': VideoSplitter,
             }
         for name, app in options.items():
             
@@ -52,7 +53,7 @@ class App(QMainWindow):
             option.setStyleSheet('''
                 QPushButton::focus:!hover {background: #b0caef};
                 text-align: left;
-                padding: 25px;
+                padding: 20px;
                 font: 12px;
                 ''')
             option.clicked.connect(
@@ -93,7 +94,7 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         
-        CONNECTION.close()
+        MYSQL.close()
         Qapp.quit()
 
 class ManageData(QMainWindow):
@@ -148,6 +149,13 @@ class ManageData(QMainWindow):
     def start_slideshow(self, index=None):
 
         view = self.gallery.images
+        # mode = QItemSelectionModel()
+        # selection = QItemSelection()
+        # selection.select(
+        #     (0, 0), view.table.rowCount() - 1, (view.total() - 1) % view.table.columnCount()
+        #     )
+        # view.selectionModel().select(selection, mode.NoUpdate)
+        # self.slideshow.gallery = self.selectedIndexes()
         self.slideshow.gallery = view.table.images
         
         index = index if index else view.currentIndex()
@@ -179,7 +187,24 @@ class ManageData(QMainWindow):
                         )
                 
             else: parameters.append(f'{key}={vals}')
-                
+
+        # if 'Path' in kwargs:
+
+            # for path, in gallery:
+            #     path = ROOT / path
+
+            #     try: path.rename(path.with_name())
+            #     except (
+            #         FileExistsError, 
+            #         FileNotFoundError, 
+            #         PermissionError
+            #         ) as error:
+            #         message = QMessageBox.question(
+            #             None, type(error).__name__, str(error), 
+            #             QMessageBox.Ignore | QMessageBox.Ok
+            #             )
+            #         if message == QMessageBox.Ok: return 0
+
         if 'Type' in kwargs:
             
             for path, in gallery:
@@ -194,18 +219,17 @@ class ManageData(QMainWindow):
                     PermissionError
                     ) as error:
                     message = QMessageBox.question(
-                        self, type(error).__name__, str(error), 
+                        None, type(error).__name__, str(error), 
                         QMessageBox.Ignore | QMessageBox.Ok
                         )
                     if message == QMessageBox.Ok: return 0
         
-        busy = CONNECTION.execute(
+        busy = MYSQL.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
         if busy:
-            parent = self.slideshow if self.isActiveWindow() else self
             QMessageBox.information(
-                parent, 'The database is busy', 
+                None, 'The database is busy', 
                 'There is a transaction currently taking place',
                 QMessageBox.Ok
                 )
@@ -219,26 +243,30 @@ class ManageData(QMainWindow):
     def delete_records(self, parent, gallery, update=True):
         
         message = QMessageBox.question(
-            parent, 'Delete', 'Are you sure you want to delete this?',
+            None, 'Delete', 
+            'Are you sure you want to delete this?',
             QMessageBox.Yes | QMessageBox.No
             )
         
         if message == QMessageBox.Yes:
 
             gallery = [
-                (index.data(Qt.UserRole),) 
-                for index in gallery
+                (data,) for index in gallery 
+                if (data := index.data(Qt.UserRole))
                 ]
-            for path, in gallery: (ROOT / path).unlink(True)
-                    
-            busy = CONNECTION.execute(DELETE, gallery, many=1, commit=1)
-            if busy:
+            
+            # If MYSQL returns an error
+            if MYSQL.execute(DELETE, gallery, many=1):
                 QMessageBox.information(
-                    parent, 'The database is busy', 
+                    None, 'The database is busy', 
                     'There is a transaction currently taking place',
                     QMessageBox.Ok
                     )
+                MYSQL.rollback()
                 return 0
+
+            for path, in gallery: (ROOT / path).unlink(True)
+            MYSQL.commit()
             
             if update:
                 self.gallery.images.update([])
@@ -250,7 +278,9 @@ class ManageData(QMainWindow):
 
         key_press = event.key()
 
-        if key_press == Qt.Key_Return: self.start_slideshow()
+        if key_press in (Qt.Key_Return, Qt.Key_Enter): 
+            
+            self.start_slideshow()
 
         elif key_press == Qt.Key_Delete: 
             
@@ -285,7 +315,6 @@ class GestureDraw(QMainWindow):
         
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)  
-        self.stack.setContentsMargins(0, 0, 5, 0)
 
         resolution = Qapp.desktop().screenGeometry()
         width, height = resolution.width(),  resolution.height()
@@ -293,10 +322,12 @@ class GestureDraw(QMainWindow):
 
     def create_widgets(self):
         
-        self.gallery = Gallery(self)
+        self.gallery = Gallery(self, (5, 0, 5, 0))
         self.preview = Preview(self, 'black')
         self.timer = Timer(self.preview)
-     
+
+        self.gallery.ribbon.multi.setChecked(True)
+        self.gallery.ribbon.changeSelectionMode(True)
         self.stack.addWidget(self.gallery)
         self.stack.addWidget(self.preview)
         
@@ -306,8 +337,7 @@ class GestureDraw(QMainWindow):
         
     def start_session(self):
         
-        gallery = (
-            thumb.data(Qt.UserRole) for thumb in 
+        gallery = iter(
             self.gallery.images.selectedIndexes()
             )
         time = self.gallery.ribbon.time.text()
@@ -323,12 +353,19 @@ class GestureDraw(QMainWindow):
             
             self.stack.setCurrentIndex(1)
             self.timer.start(gallery, time)
-   
+        
+        else:
+            QMessageBox.information(
+                self, '', 
+                'You are either missing images or a time',
+                QMessageBox.Ok
+                )
+
     def keyPressEvent(self, event):
         
         key_press = event.key()
 
-        if key_press == Qt.Key_Return: self.start_session()
+        if key_press in (Qt.Key_Return, Qt.Key_Enter): self.start_session()
 
         elif key_press == Qt.Key_Space: self.timer.pause()
 
@@ -336,6 +373,7 @@ class GestureDraw(QMainWindow):
 
             if self.stack.currentIndex():
                 
+                self.timer.pause()
                 self.statusbar.show()
                 self.statusbar.showMessage('')
                 self.stack.setCurrentIndex(0)
@@ -347,8 +385,17 @@ class GestureDraw(QMainWindow):
 
     def closeEvent(self, event):
     
-        self.parent.windows[self.windowTitle()].remove(self)
-        if not self.parent.is_empty(): self.parent.show()
+        if self.stack.currentIndex():
+            
+            self.timer.pause()
+            self.statusbar.show()
+            self.statusbar.showMessage('')
+            self.stack.setCurrentIndex(0)
+            self.gallery.populate()
+
+        else:
+            self.parent.windows[self.windowTitle()].remove(self)
+            if not self.parent.is_empty(): self.parent.show()
  
 class MachineLearning(QMainWindow):
     
@@ -474,7 +521,35 @@ class MachineLearning(QMainWindow):
         self.parent.windows[self.windowTitle()].remove(self)
         if not self.parent.is_empty(): self.parent.show()
 
+class VideoSplitter(QMainWindow):
+
+    def __init__(self, parent):
+        
+        super(VideoSplitter, self).__init__()
+        self.setWindowTitle('Video Splitter')
+        self.parent = parent
+        self.configure_gui()
+        self.create_menu()
+        self.create_widgets()
+        self.showMaximized()
+
+    def configure_gui(self):
+        
+        self.layout = QStackedWidget(self)
+        self.setCentralWidget(self.layout)  
+
+        resolution = Qapp.desktop().screenGeometry()
+        width, height = resolution.width(),  resolution.height()
+        self.setGeometry(0, 0, width, height)
+
+    def create_widgets(self):
+        
+        self.statusbar = QStatusBar(self)
+        self.setStatusBar(self.statusbar)
+        self.statusbar.setFixedHeight(25)
+
 Qapp = QApplication([])
+
 app = App()
 Qapp.setQuitOnLastWindowClosed(False)
 
