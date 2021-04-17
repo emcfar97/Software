@@ -14,6 +14,7 @@ class CONNECT:
         self.DATAB = sql.connect(option_files=r'GUI\credentials.ini')
         self.CURSOR = self.DATAB.cursor(buffered=True)
         self.transaction = False
+        self.rowcount = 0
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
         
@@ -27,6 +28,10 @@ class CONNECT:
                 else: self.CURSOR.execute(statement, arguments)
                 self.transaction = False
 
+                if statement.startswith('SELECT'):
+                    self.rowcount = self.CURSOR.rowcount
+                else: self.rowcount = 0
+
                 if commit: return self.DATAB.commit()
                 if fetch: return self.CURSOR.fetchall()
                 return list()
@@ -35,6 +40,8 @@ class CONNECT:
 
         self.transaction = False
         return list()
+
+    def rollback(self): self.DATAB.rollback()
 
     def reconnect(self, attempts=5, time=6):
 
@@ -48,7 +55,29 @@ class MyCompleter(QCompleter):
 
     def __def__(self, *args):
         
-        super(MyCompleter, self).__init__( *args)
+        super(MyCompleter, self).__init__(*args)
+        self.setCaseSensitivity(Qt.CaseInsensitive)
+        self.setCompletionMode(QCompleter.PopupCompletion)
+        # self.setWrapAround(False)
+
+    # Add texts instead of replace
+    def pathFromIndex(self, index):
+        
+        path = QCompleter.pathFromIndex(self, index)
+
+        lst = str(self.widget().text()).split(',')
+
+        if len(lst) > 1:
+            path = '%s, %s' % (','.join(lst[:-1]), path)
+
+        return path
+
+    # Add operator to separate between texts
+    def splitPath(self, path):
+        
+        path = str(path.split(',')[-1]).lstrip(' ')
+        
+        return [path]
 
 def get_frame(path):
 
