@@ -46,7 +46,9 @@ def page_handler(hrefs):
         image = html.find('a', href=re.compile('//d.+')).get('href')
         try:
             name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
-        except: continue
+        except: 
+            name = ' - '.join((artist, image.split()[-1]))
+            continue
         name = PATH / 'Images' / SITE / name
 
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
