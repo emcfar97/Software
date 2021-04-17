@@ -48,7 +48,7 @@ class Gallery(QWidget):
         
         if self.title == 'Gesture Draw':
             
-            self.query['gesture'] = 'date_used <= Now() - INTERVAL 2 MONTH'
+            self.query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
         else: self.parent().parent().preview.show_image(None)
 
         # query parsing & tag parsing
@@ -71,13 +71,15 @@ class Gallery(QWidget):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
 
-            elif val == 'NULL': token = f'{col} IS {val}'
+            elif val == 'NULL':
+                
+                token = f'{col} IS {val}'
 
             elif re.search('\D', val):
 
                 token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
 
-            self.query[col] = token
+            self.query[col] = self.query.get(col, []) + [token]
         
         if string.strip():
     
@@ -88,21 +90,23 @@ class Gallery(QWidget):
             string = re.sub('-\+', '-', string)
             if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
 
-            self.query['tags'] = (
+            self.query['tags'] = [
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
-                )
+                ]
         
         for text, col in zip(['type', 'rating'], [self.type, self.rating]):
             if (val:=ENUM[col.checkedAction().text()]) and text not in self.query:
-                self.query[text] = val
+                self.query[text] = [val]
         if not any(self.query): self.query[''] = 'NOT ISNULL(path)'
 
         # comic functionality
-        if '3' in self.query.get('type', '') and 'comic' not in self.query:
+        if '3' in self.query.get('type', [''])[0] and 'comic' not in self.query:
             join = 'JOIN comic ON comic.path_=imageData.path'
-            self.query['pages'] = 'page=0'
+            self.query['pages'] = ['page=0']
 
-        filter = " AND ".join(val for val in self.query.values() if val)
+        filter = " AND ".join(
+            f'({" OR ".join(val)})' for val in self.query.values() if val
+            )
         
         self.thread.statement = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
         self.thread.start()
@@ -199,8 +203,9 @@ class Ribbon(QWidget):
         self.tags = QLineEdit(self)
         self.tags.setFixedWidth(250)
         self.tags.setPlaceholderText('Enter tags')
+        autocomplete = open(r'GUI\autocomplete.txt').read()
         self.tags.setCompleter(
-            QCompleter(open(r'GUI\autocomplete.txt').read())
+            QCompleter(autocomplete.split())
             )
         self.select.addRow('Search:', self.tags)
         
@@ -432,8 +437,8 @@ class ImageView(QTableView):
     def update(self, images):
         
         if isinstance(images, bool): images = list()
+        self.parent().statusbar(MYSQL.rowcount)
         self.table.images = images
-        self.parent().statusbar(len(images))
     
     def openEditor(self, indexes):
         
@@ -442,7 +447,15 @@ class ImageView(QTableView):
             if index.data(1000) is not None
             ]
         Properties(self.parent().parent().parent(), gallery)
-
+    
+    def openPersistentEditor(self, indexes):
+        
+        gallery = [
+            index.data(1000) for index in indexes 
+            if index.data(1000) is not None
+            ]
+        Properties(self.parent().parent().parent(), gallery)
+    
     def selectionChanged(self, select, deselect):
         
         if self.table.images:
@@ -606,7 +619,7 @@ class Model(QAbstractTableModel):
 
     # def canFetchMore(self, index):
         
-        # return MYSQL.CURSOR.rowcount > len(self.images)
+        # return MYSQL.rowcount > len(self.images)
 
     # def fetchMore(self, index, fetch=10000):
         
