@@ -16,10 +16,10 @@ def initialize(url=1, query=0):
     DRIVER.get(f'https://www.{SITE}.com/my-favorite-galleries/page/{url}/')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
-        (href, SITE) for target in 
+        (href, SITE) for target in
         html.find(class_='gallery-a e').findAll(href=True)
         if (
-            href := re.sub('(.+)-\d+', r'\1', target.get('href').split('/')[-2]),
+            href := target.get('href').split('/')[-2],
             ) not in query
         ]
 
@@ -35,19 +35,24 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         page_source = requests.get(f'https://www.{SITE}.com/{href}')
+        html = bs4.BeautifulSoup(page_source.content, 'lxml')
         try:
-            html = bs4.BeautifulSoup(page_source.content, 'lxml')
             artist = html.find(href=re.compile(
                 f'https://www.{SITE}.com/model/.+'
                 )).get('href')
-            artist = artist.split('/')[-2].replace('-', '_')
-            images = html.find(class_='list-justified-container').findAll('a')
-        except: continue
+            artist = artist.split('/')[-2]
+        except AttributeError:
+            artist = html.find(class_='unlinkedtag').text
+        
+        images = html.find(
+            class_=re.compile('list-(justified-container|gallery a css)')
+            )
 
-        for image in images:
+        for image in images.findAll('a'):
 
             src = image.get('href')
-            name = get_name(src, 0, 1)
+            try: name = get_name(src, 0, 1)
+            except: continue
             if not save_image(name, src): break
 
             tags, rating, exif = generate_tags(
@@ -58,7 +63,8 @@ def page_handler(hrefs):
             hash_ = get_hash(name)
 
             MYSQL.execute(INSERT[3],
-                (name.name, artist, tags, rating, 1, hash_, src, SITE, href), 
+                (name.name, artist.replace('-', '_'), tags, 
+                rating, 1, hash_, src, SITE, href), 
                 )
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
