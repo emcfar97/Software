@@ -1,21 +1,17 @@
-import sqlite3, json, os, time, tempfile
+import sqlite3, os, time, tempfile
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import IncrementalBar, get_tags, generate_tags, bs4, requests, re
+from ..utils import IncrementalBar, ARTIST, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
 
 EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 
-def main(paths, upload=False, sankaku=0, gelbooru=0):
+def main(paths, upload_, sankaku=0, gelbooru=0):
     
     if not paths: return
-    if upload:
-        limit = get_limit()
-        artists = json.load(open(
-            r'Webscraping\artists.json', encoding='utf8'
-            ))
-    progress = IncrementalBar('favorites', max=len(paths))
+    if upload: limit = get_limit()
+    progress = IncrementalBar('favorites', max=MYSQL.rowcount)
 
     for (path, href, src, site,) in paths:
         
@@ -45,11 +41,11 @@ def main(paths, upload=False, sankaku=0, gelbooru=0):
             ]
         except: continue
         
-        if targets and not upload:
+        if targets and not upload_:
             try: saved = favorite(targets)
             except: saved = False
-        elif upload and (sankaku < limit or gelbooru < 50):
-            saved, type_ = upload(path, href, src, site, artists)  
+        elif upload_ and (sankaku < limit or gelbooru < 50):
+            saved, type_ = upload(path, href, src, site)  
             if type_: sankaku += 1
             else: gelbooru += 1
         else: saved = False
@@ -77,7 +73,7 @@ def favorite(targets, saved=False):
 
     return saved
      
-def upload(path, href, src, site, artists):
+def upload(path, href, src, site):
 
     if site == 'foundry':
         artist = href.split('/')[3]
@@ -93,17 +89,21 @@ def upload(path, href, src, site, artists):
         if href is None:
             href = f"/artworks/{path.split('-')[-1].strip().split('_')[0]}"
         href = f'https://www.pixiv.net{href}'
-    try: artist, site = artists[artist]
+
+    try: artist, site = ARTIST[artist]
     except KeyError: return False, 0
 
     with tempfile.NamedTemporaryFile(suffix='.jpg') as temp:
         
         temp.write(bytes(requests.get(src).content)) 
         tags = get_tags(DRIVER, temp.name)
-        if not tags or 'comic' in tags: return False, 0
-        general, rating = generate_tags(general=tags, rating=True, exif=False)
-        if len(tags) < 10: tags.append('tagme')
+        if 'comic' in tags: return False, 0
+
+        general, rating = generate_tags(
+            general=tags, rating=True, exif=False
+            )
         tags = ' '.join(set(tags + general + [artist]))
+        if len(tags) < 10: tags.append('tagme')
         
         if site:
             DRIVER.get('https://chan.sankakucomplex.com/post/upload')
@@ -142,7 +142,7 @@ def upload(path, href, src, site, artists):
 def get_limit():
     
     DRIVER.get('https://chan.sankakucomplex.com/user/upload_limit')
-    html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     return int(html.find('strong').text)
 
 def edit(search, replace):
@@ -191,12 +191,12 @@ def initialize():
 
     # MYSQL.execute(INSERT[2], paths, many=1, commit=1)
 
-def start(initial=1, headless=True):
+def start(initial=True, headless=True, upload=0):
 
     global MYSQL, DRIVER
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(MYSQL.execute(SELECT[4], fetch=1))
+    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1), upload)
     DRIVER.close()
