@@ -9,6 +9,7 @@ CHAT = '//*[@id="UserLiveSidebarToggle"]'
 CONTROL = '//*[@class="StreamBodyCtrlBody"]'
 ACCEPT = '//body/div[2]/div[2]/div[2]/div[2]/div[2]/button[2]'
 HIGH = '//body/div[2]/div[2]/div[2]/div[1]/div[2]/div/div[2]/button'
+FINISHED = '//*[@id="UserLiveFinishedBody"]'
 
 class Browser(WEBDRIVER):
 
@@ -21,18 +22,16 @@ class Browser(WEBDRIVER):
 
     def run(self):
 
-        while re.match('.+followings\Z', self.current_url()):
+        while True:
             
             try:
-                WebDriverWait(self.driver, 600).until(EC.url_contains('@'))
-                self.live_stream()
-            except (
-                TimeoutError, 
-                exceptions.NoSuchWindowException
-                ):
-                self.close()
-            except Exception as error:
-                print(f'\n{error}\n')
+                if '@' in self.current_url(): self.live_stream()
+                
+            except exceptions.WebDriverException: self.close(); break
+
+            except Exception as error: print(f'\n{error}\n')
+
+            threading.Timer(5, function=None)
 
     def live_stream(self, wait=60, retry=0):
 
@@ -60,13 +59,11 @@ class Browser(WEBDRIVER):
                     
                     retry += 1
 
-            except exceptions.NoSuchElementException: break
+            except exceptions.WebDriverException: break
             except exceptions.ElementClickInterceptedException: self.refresh()
 
             now = time.gmtime()[4]
-            threading.Timer(
-                interval=wait * (now // 2), function=None
-                )
+            threading.Timer(wait * (now // 2), function=None)
             if (now % 30) == 0: retry = 0
 
 def start(): Browser()
@@ -77,7 +74,7 @@ parser = argparse.ArgumentParser(
     )
 parser.add_argument(
     '-n', '--num', type=int,
-    help='Number of streams', default=1
+    help='Number of streams', default=2
     )
 args = parser.parse_args()
 
