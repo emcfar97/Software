@@ -285,7 +285,7 @@ def get_tags(driver, path, filter=False):
         driver.find('//*[@id="exampleFormControlFile1"]', str(frame))
         driver.find('//body/div/div/div/form/button', click=True)
 
-        for _ in range(16):
+        for _ in range(4):
             html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
             try:
                 tags.update([
@@ -296,7 +296,7 @@ def get_tags(driver, path, filter=False):
                 if driver.current_url().endswith('deepdanbooru/'):
                     driver.find('//*[@id="exampleFormControlFile1"]',str(frame))
                     driver.find('//body/div/div/div/form/button', click=True)
-                elif not _ % 4: driver.refresh()
+                driver.refresh()
     
     else:
         if video: temp_dir.cleanup()
