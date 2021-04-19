@@ -1,8 +1,9 @@
-import threading, time, argparse, re
+import argparse
+from time import sleep, gmtime
 from Webscraping import WEBDRIVER
+from pywinauto import Application
+from threading import Thread, Timer
 import selenium.common.exceptions as exceptions
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 PLAY = '//*[@class="LiveTapToPlay"]'
 CHAT = '//*[@id="UserLiveSidebarToggle"]'
@@ -18,6 +19,10 @@ class Browser(WEBDRIVER):
         super().__init__(headless=False, profile=profile, wait=15)
         self.get('https://sketch.pixiv.net/followings')
         self.driver.fullscreen_window()
+        self.obs = Application(backend='uia').start(
+            work_dir=r'C:\Program Files\obs-studio\bin\64bit',
+            cmd_line=r'C:\Program Files\obs-studio\bin\64bit\obs64.exe'
+            )
         self.run()
 
     def run(self):
@@ -25,22 +30,38 @@ class Browser(WEBDRIVER):
         while True:
             
             try:
-                if '@' in self.current_url(): self.live_stream()
+                if 'lives' in self.current_url():
+
+                    self.obs.top_window().child_window(
+                        title='Start Recording', 
+                        control_type='CheckBox',
+                        ).click()
+
+                    self.live_stream()
+
+                    self.obs.top_window().child_window(
+                        title='Stop Recording', 
+                        control_type='CheckBox',
+                        ).click()
                 
-            except exceptions.WebDriverException: self.close(); break
+            except exceptions.WebDriverException: break
 
             except Exception as error: print(f'\n{error}\n')
 
-            threading.Timer(5, function=None)
+            Timer(5, function=None)
+
+        self.close()
 
     def live_stream(self, wait=60, retry=0):
 
-        while re.match('.+/@.+/lives/\d+', self.current_url()):
+        self.set_window()
+        
+        while 'lives' in self.current_url():
 
             try:
 
                 self.find(PLAY, click=True, fetch=1)
-                time.sleep(5)
+                sleep(5)
                 self.find(CHAT, click=True)
 
                 if retry < 5:
@@ -59,12 +80,20 @@ class Browser(WEBDRIVER):
                     
                     retry += 1
 
-            except exceptions.WebDriverException: break
             except exceptions.ElementClickInterceptedException: self.refresh()
+                
+            except: pass
 
-            now = time.gmtime()[4]
-            threading.Timer(wait * (now // 2), function=None)
+            if self.find(FINISHED): self.driver.back()
+                            
+            now = gmtime()[4]
+            Timer(wait * (now // 2), function=None)
             if (now % 30) == 0: retry = 0
+
+    def set_window(self,):
+
+        title = f'[firefox.exe]: {self.driver.title} — Mozilla Firefox'
+        pass
 
 def start(): Browser()
 
@@ -79,8 +108,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 threads = [
-    threading.Thread(target=start)
-    for _ in range(args.num)
+    Thread(target=start) for _ in range(args.num)
     ]
 for thread in threads: thread.start()
 for thread in threads: thread.join()
