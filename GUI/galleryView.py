@@ -481,7 +481,7 @@ class ImageView(QTableView):
         parent = self.parent()
         if parent.title == 'Manage Data':
 
-            if '3' in parent.query.get('type', '') and 'comic' not in parent.query: 
+            if '3' in parent.query.get('type', [''])[0] and 'comic' not in parent.query:
                 
                 self.read_comic(None)
             
@@ -590,7 +590,7 @@ class ImageView(QTableView):
 
             else: self.setCurrentIndex(new)
         
-        elif self.parent().title == 'Manage Data' and '3' in self.parent().query.get('type', '') and 'comic' not in self.parent().query:
+        elif self.parent().title == 'Manage Data' and '3' in self.parent().query.get('type', [''])[0] and 'comic' not in self.parent().query:
         
             if key_press in (Qt.Key_Return, Qt.Key_Enter): self.read_comic(None)
             else: self.parent().keyPressEvent(event)
