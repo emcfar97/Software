@@ -47,7 +47,7 @@ def get_folders():
 while True:
     
     user_input = input(
-        'Choose from:\n1 - Convert videos\n2 - Concat videos\n3 - Change framerate\n4 - Split video\n5 - Download m3u8\n6 - Check directories\n7 - Change destination directory\n8 - Exit\n'
+        'Choose from:\n1 - Convert videos\n2 - Concat videos\n3 - Change framerate\n4 - Split video\n5 - Download m3u8\n6 - Adjust directories\n7 - Check directories\n8 - Exit\n'
         )
     
     try:
@@ -109,23 +109,23 @@ while True:
         elif user_input == '3': # change framerate
             
             text = input('Overlay text? ').lower()
+            desired = (float(
+                input('Enter desired length in minutes: ')
+                ) * 60) - 1
 
             for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
 
-                files = [
-                    file for file in folder.iterdir()
-                    if file.suffix in EXT
-                    ]
-                new, stream = get_stream(files, text)
-                
-                desired = (float(
-                    input('Enter desired length in minutes: ')
-                    ) * 60) - 1
-                duration = sum(
-                    float(FFProbe(file).streams[0].duration)
-                    for file in files
-                    )
                 try:
+                    files = [
+                        file for file in folder.iterdir()
+                        if file.suffix in EXT
+                        ]
+                    new, stream = get_stream(files, text)
+                    
+                    duration = sum(
+                        float(FFProbe(file).streams[0].duration)
+                        for file in files
+                        )
                     ffmpeg.concat(*stream) \
                         .setpts(f'{desired / duration:.4f}*PTS') \
                         .output(str(new), crf=20, preset='fast') \
@@ -172,9 +172,59 @@ while True:
             name = DOWN / f'{url.split("/")[3]}.mp4'
             ffmpeg.input(url).output(str(name)).run()
 
-        elif user_input == '6': # check directories
+        elif user_input == '6': # adjust directories
+
+            user_input = input(
+                '\nChoose from:\n1 - Change root\n2 - Change source\n3 - Change destination\n'
+                )
+
+            if   user_input == '1': # change root
+
+                path = Path(input('Enter path: '))
+
+                if path.exists(): 
+                    
+                    ROOT = path if '\\' in path.drive else Path(f'{path}\\')
+                    USER = Path(ROOT, *USER.parts[1:])
+                    DOWN = Path(ROOT, *DOWN.parts[1:])
+                    SOURCE = Path(ROOT, *SOURCE.parts[1:])
+                    DEST = Path(ROOT, *DEST.parts[1:])
+
+                    print('Success\n')
+
+                else: raise FileNotFoundError
+                        
+            elif user_input == '2': # change source
+
+                path = Path(input('Enter path: '))
+
+                if path.exists(): 
+
+                    SOURCE = path
+                    print('Success\n')
+
+                else: raise FileNotFoundError
+                        
+            elif user_input == '3': # Change destination
+
+                path = Path(input('Enter path: '))
+
+                if path.exists(): 
+
+                    DEST = path
+                    print('Success\n')
+
+                else: raise FileNotFoundError
+
+        elif user_input == '7': # check directories
             
-            print(SOURCE)
+            print(f'''
+                Root: {ROOT}
+                User: {USER}
+                Down: {DOWN}
+                Source: {SOURCE}
+                Dest: {DEST}
+                ''')
 
             for file in SOURCE.iterdir():
 
@@ -184,17 +234,6 @@ while True:
 
             print() 
         
-        elif user_input == '7': # change destination
-
-            path = Path(input('Enter path: '))
-
-            if path.exists(): 
-
-                DEST = path
-                print('Success\n')
-
-            else: raise FileNotFoundError
-
         elif user_input == '8': break
         
     except Exception as error: print(error, '\n')
