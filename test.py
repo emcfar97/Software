@@ -3,7 +3,7 @@ def Controller(arg=None):
     if arg == 0:
 
         import Webscraping
-
+        
         Webscraping.start()
         Get_Starred()
 
@@ -64,7 +64,7 @@ def Get_Starred():
     import bs4
 
     MYSQL = CONNECT()
-    DRIVER = WEBDRIVER()
+    DRIVER = WEBDRIVER(headless=False)
     UPDATE = 'UPDATE imageData SET stars=4 WHERE path=%s AND stars=0'
     
     show = '//body/div[1]/div[6]/div/div/div[1]/div/div/main/div/section[3]/div/div[2]/button'
@@ -240,55 +240,6 @@ def Find_symmetric_videos():
             
         if symmetric(frames): print(path)
 
-def parsing_test():
-    
-    import pyparsing as pp
-
-    # arithOp = pp.oneOf("AND OR NOT")
-    # number = pp.pyparsing_common.number()
-    # word = pp.Word(pp.alphas, pp.alphanums + "_-*(1234567890,)")
-    # term = word | number | pp.quotedString
-    # expression = 
-    # condition = pp.Group(term + arithOp + term)
-
-    lparen = pp.Suppress("(")
-    rparen = pp.Suppress(")")
-
-    and_ = pp.Literal("AND")
-    or_ = pp.Literal("OR")
-    not_ = pp.Literal("NOT")
-
-    operator = pp.oneOf(("=", "!=", ">", ">=", "<", "<="))
-
-    alphaword = pp.Word(pp.alphanums + "_")
-    string = pp.QuotedString(quoteChar="'")
-
-    number = (
-        pp.Word(pp.nums) + pp.Optional("." + pp.OneOrMore(pp.Word(pp.nums)))
-        )
-
-    identifier = alphaword
-
-    expr = pp.Forward()
-
-    condition = pp.Group(
-        identifier + (operator + (string | number))
-        )
-    condition = condition | (lparen + expr + rparen)
-
-    and_condition = (condition + pp.ZeroOrMore(and_ + condition))
-
-    expr << (and_condition + pp.ZeroOrMore(or_ + and_condition))
-
-    expr = pp.operatorPrecedence(condition,
-        [('NOT', 1, pp.opAssoc.RIGHT,),
-        ('AND', 2, pp.opAssoc.LEFT,),
-        ('OR', 2, pp.opAssoc.LEFT,)]
-        )
-
-    query = 'a AND b OR x AND y' 
-    print(expr.parseString(query))
-
 def make_stitch():
     
     import cv2
@@ -317,10 +268,27 @@ def make_stitch():
     status, image = stitcher.stitch(get_frames(path))
     cv2.imwrite(str(test / f'{num:03}'), image)
 
-Controller()
+# Controller()
 # Remove_redundancies()
 # Normalize_database()
 # Check_Predictions(1)
 # Find_symmetric_videos()
 # make_stitch()
 # Copy_Files()
+
+# from pathlib import Path
+# from PyQt5.QtCore import QIODevice, QFile
+# from PyQt5.QtGui import QGuiApplication, QPixmap
+
+# path = Path(r'C:\Users\Emc11\Dropbox\ん')
+# app = QGuiApplication([])
+
+# for image in path.glob('エラティカ *\*png'):
+
+#     pixmap = QPixmap()
+#     pixmap.load(str(image))
+#     file = QFile("goodProfileImage.png")
+#     file.open(QIODevice.WriteOnly)
+#     pixmap.save(file, "PNG")
+    
+# app.exec()
