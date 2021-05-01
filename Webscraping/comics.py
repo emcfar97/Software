@@ -1,6 +1,6 @@
 import re, send2trash
 from . import USER, CONNECT, INSERT, WEBDRIVER
-from .utils import IncrementalBar, get_name, get_hash, get_tags, generate_tags
+from .utils import ARTIST, IncrementalBar, get_name, get_hash, get_tags, generate_tags
 
 path = USER / r'Downloads\Images\Comics'
 
@@ -25,7 +25,10 @@ def start(headless=True):
     for folder in folders:
         
         commit = 1
-        artist = get_artist(folder.stem.lower())
+        artist = [
+            ARTIST.get(artist, [artist])[0] for artist in 
+            get_artist(folder.stem.lower())
+            ]
         images = [
             (
                 num, get_hash(file), name:=get_name(file, 2, 1),
