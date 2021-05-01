@@ -86,7 +86,14 @@ class CONNECT:
                 self.reconnect()
 
         return 0
-            
+    
+    def call(self, function, arguments=None, fetch=1):
+
+        self.CURSOR.callproc(function, arguments)
+        results = self.CURSOR.stored_results()
+        
+        if fetch: return list(results)[0]
+    
     def commit(self): self.DATAB.commit()
     
     def close(self): self.DATAB.close()
@@ -158,18 +165,8 @@ class WEBDRIVER:
 
             return element
 
-        except exceptions.NoSuchElementException as error:
+        except Exception as error:
             if fetch: raise error
-        
-        except exceptions.StaleElementReferenceException as error:
-            if fetch: raise error
-
-        except exceptions.ElementClickInterceptedException as error:
-            if fetch: raise error
-
-        except Exception as error: 
-            if fetch: raise error
-            print(error)
     
     def page_source(self):
         
