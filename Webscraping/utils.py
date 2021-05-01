@@ -33,12 +33,19 @@ GENERAL = {
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
     'condom': 'condom', 
     'cowgirl_position': '(cowgirl_position OR reverse_cowgirl_position) AND sex', 
-    'cum': 'cum|precum|semen|cumdrip|cum_in_mouth|cum_in_container|cum_in_pussy|cum_in_ass|cum_in_nipple|cum_on_feet|cum_on_body|cum_on_upper_body|cum_on_breasts',
+    'cum': 'cum|precum|semen|cumdrip|cum_in_mouth|cum_in_container|cum_in_pussy|cum_in_ass|cum_in_nipple|cum_on_feet|cum_on_body|cum_on_upper_body|cum_on_breasts|semen',
     'dancing': 'dancing|dancer', 
+    'female_pubic_hair': 'pubic_hair',
+    'female_solo': 'solo',
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top AND sex',
+    'intercrural': 'thigh_sex',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|short_yukata|yukata|short_kimono|kimono|geta|happi|zori',
+    'legs_apart': 'spread_legs',
+    'legs_spread': 'spread_legs',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls)))',
+    'male_pubic_hair': 'pubic_hair',
+    'male_solo': 'solo',
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
     'nopan': 'no_panties',
     'nude': 'nude AND NOT functionally_nude',
@@ -55,21 +62,21 @@ GENERAL = {
     'sex_toy': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
     'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls) OR NOT sex)', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
+    'shaking': 'trembling',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
     'suspended_congress': '(suspended_congress OR reverse_suspended_congress) AND sex',
     'squatting cowgirl_position':'squatting_cowgirl_position',
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
+    'vagina': 'pussy',
+    'underwear': 'underwear|panties|bra|briefs',
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR underboob OR corset OR breast_cutout OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain', 
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR underboob OR corset OR breast_cutout OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy', 
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
-    'intercrural': 'thigh_sex',
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
     'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage|naked_robe', 
     'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
-    'vagina': 'pussy',
-    'underwear': 'underwear|panties|bra|briefs'
     }
 RATING = {
     3: 'sex|aftersex|hetero|vaginal|anal|anus|cum|penis|vagina|pussy|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion', 
@@ -81,6 +88,7 @@ ARTIST = {
     '774': ['774_(nanashi)', -1],
     'abbb': ['abbb', -1],
     'afrobull': ['afrobull', -1],
+    'aaaa': ['aaaa_(quad-a)', 0],
     'akchu': ['akchu', -1],
     'aomori': ['aomori', 1],
     'arctic char': ['tabata_hisayuki', -1],
@@ -110,6 +118,9 @@ ARTIST = {
     'personalami':['personal_ami', 1],
     'redrop_おつまみ': ['redrop', 0],
     'ryoagawa': ['agawa_ryou', 0],
+    'initial-g': ['a1', 0],
+    'ryuun_(stiil) ': ['konoshige_(ryuun)', 0],
+    'typo_(requiemdusk)': ['optionaltypo', 1],
     'rtil': ['rtil', 1],
     'saitom': ['saitou_masatsugu', -1],
     'seinen': ['seinen', -1],
@@ -153,22 +164,24 @@ REMOVE = [
     {
         '3d', 'photorealistic', 'realistic', 'photo',
         'cum', 'cum_in_pussy',
-        'sex', 'sex_from_behind', 'vaginal', 'anal',
-        'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl',
+        'sex', 'after_sex', 'sex_from_behind', 'vaginal', 'anal',
+        'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl', 'boy_on_top'
         'mosaic_censoring', 'censored', 'uncensored',
         'male_focus', 'multiple_boys', 'multiple_girls', 
-        'pantyhose', 'no_humans', 'scenery'
+        'pantyhose', 'no_humans', 'scenery', 'asian', 'what'
         },
     [
         '(rating|score):\w+',
-        'nopan', 'oshiri',
+        'nopan', 'oshiri', 'pantsu',
         'solo_focus',
         'uncensored',
         'vagina',
         'virgin',
-        'hetero',
-        'yuri', 'yaoi',
-        'squatting_cowgirl_position'
+        'hetero', 'yuri', 'yaoi',
+        'squatting_cowgirl_position',
+        'shaking', '(fat|ugly|old)_man',
+        '(female|male)_(pubic_hair|solo)',
+        'excessive_.+'
         ]
     ]
 
