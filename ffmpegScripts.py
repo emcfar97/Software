@@ -142,9 +142,9 @@ while True:
                 
                 if search(' \d+', file.stem):
                     num = int(*findall(' (\d+)', file.stem))
-                    new = sub(f' {num}+', f' {num+1:02}', file.stem)
-                else: new = f'{file.stem} Part 00'
-                new = file.with_stem(new)
+                    new = sub(f' {num}+', f' {num+1:02}', file.name)
+                else: new = f'{file.stem} Part 00{file.suffix}'
+                new = file.with_name(new)
 
                 start = input('Enter start time (seconds or hh:mm:ss): ')
                 end = input('Enter end time (seconds or hh:mm:ss): ')
