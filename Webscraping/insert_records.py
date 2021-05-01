@@ -1,11 +1,11 @@
-import json, cv2
+import json, cv2, re
 from PIL import Image
 from urllib.parse import urlparse
 from . import USER, WEBDRIVER, CONNECT, INSERT
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
 EXT = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.webm', '.mp4'
-MATCH = cv2.imread(r'Webscraping\match.jpg')
+MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg')
 
 def extract_files(path, dest=None):
     
@@ -31,6 +31,8 @@ def extract_files(path, dest=None):
         for url in urls:
             
             path = urlparse(url['url']).path[1:]
+            if re.match('https://i.imgur.com/.+gif', path):
+                path.replace('gif', 'mp4')
             name = dest / path.split('/')[-1]
             if name.exists(): continue
             image = (
@@ -56,14 +58,18 @@ def extract_files(path, dest=None):
 
 def similarity(path):
 
-    if path.suffix in EXT[:2]: image = cv2.imread(str(path))
-    else: image = cv2.VideoCapture(str(path)).read()[-1]
+    if path.suffix in EXT[:2]: 
+        match = MATCH[0]
+        image = cv2.imread(str(path))
+    else: 
+        match = MATCH[1]
+        image = cv2.VideoCapture(str(path)).read()[-1]
 
     try:
-        if divmod(*image.shape[:2])[0] == divmod(*MATCH.shape[:2])[0]:
+        if divmod(*image.shape[:2])[0] == divmod(*match.shape[:2])[0]:
 
-            image = cv2.resize(image, MATCH.shape[1::-1])
-            k = cv2.subtract(image, MATCH)
+            image = cv2.resize(image, match.shape[1::-1])
+            k = cv2.subtract(image, match)
             return (k.min() + k.max()) < 20
             
     except: return True
