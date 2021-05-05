@@ -90,6 +90,7 @@ ARTIST = {
     'afrobull': ['afrobull', -1],
     'aaaa': ['aaaa_(quad-a)', 0],
     'akchu': ['akchu', -1],
+    'ringoya_(alp)':['alp', 0],
     'aomori': ['aomori', 1],
     'arctic char': ['tabata_hisayuki', -1],
     'arcticchar': ['tabata_hisayuki', -1],
@@ -157,7 +158,8 @@ ARTIST = {
     'なまにくatK（あったかい）': ['namaniku_atk', -1],
     'にの子': ['ninoko', -1],
     'ばん!':[ 'ban', -1],
-    'へら': ['hera_(hara0742)', -1],
+    'hara': ['hera_(hara0742)', 0],
+    'へら': ['hera_(hara0742)', 0],
     'ドウモウ_doumou': ['doumou', 0]
     }
 REMOVE = [
@@ -369,7 +371,7 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
     
     tags = re.sub(
         f' ({"|".join(REMOVE[1])}) ', ' ', f' {" ".join(tags)} '
-        ).strip()
+        ).strip().replace('-', '_')
         
     return tags if rating is None else [tags] + rating
 
