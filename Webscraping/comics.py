@@ -24,11 +24,10 @@ def start(headless=True):
 
     for folder in folders:
         
-        commit = 1
-        artist = [
+        artist = ' '.join(
             ARTIST.get(artist, [artist])[0] for artist in 
-            get_artist(folder.stem.lower())
-            ]
+            [get_artist(folder.stem.lower())]
+            )
         images = [
             (
                 num, get_hash(file), name:=get_name(file, 2, 1),
@@ -37,27 +36,26 @@ def start(headless=True):
             for num, file in enumerate(folder.iterdir())
             ]
         cover = images[0][2]
-
+        
         for num, hash_, image, _ in images:
 
             tags, rating = generate_tags(
                 general=get_tags(DRIVER, image), 
                 custom=True, rating=True, exif=False
                 )
-            
-            if not (
-                MYSQL.execute(INSERT[3], 
-                    (image.name, artist, tags, 
-                    rating, 3, hash_, None, None, None)
+            imageData = MYSQL.execute(INSERT[3], (
+                    image.name, artist, tags, rating, 
+                    3, hash_, None, None, None
                     )
-                and 
-                MYSQL.execute(INSERT[4], (
-                    image.name, cover.name, num)
+                )
+            comics = MYSQL.execute(INSERT[4], (
+                    image.name, cover.name, num
                     )
-                ): commit = 0
-        if commit:
-            MYSQL.commit()
-            send2trash.send2trash(str(folder))
+                )
+            if not (imageData and comics): break; continue
+
+        MYSQL.commit()
+        send2trash.send2trash(str(folder))
         
         progress.next()
 
