@@ -73,7 +73,8 @@ class Gallery(QWidget):
 
             elif val == 'NULL':
                 
-                token = f'{col} IS {val}'
+                neg = 'NOT ' if '!' in token else ''
+                token = f'{col} {neg}IS {val}'
 
             elif re.search('\D', val):
 
@@ -97,7 +98,7 @@ class Gallery(QWidget):
         for text, col in zip(['type', 'rating'], [self.type, self.rating]):
             if (val:=ENUM[col.checkedAction().text()]) and text not in self.query:
                 self.query[text] = [val]
-        if not any(self.query): self.query[''] = 'NOT ISNULL(path)'
+        if not any(self.query): self.query[''] = ['NOT ISNULL(path)']
 
         # comic functionality
         if '3' in self.query.get('type', [''])[0] and 'comic' not in self.query:
