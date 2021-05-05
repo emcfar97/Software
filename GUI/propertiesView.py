@@ -141,29 +141,26 @@ class LineEdit(QLineEdit):
     def __init__(self, parent, type_=False):
 
         super(LineEdit, self).__init__(parent)
-        self.textEdited.connect(self.modify)
         self.modified = set(), set()
         self.initial = set()
         self.type = type_
     
     def setText(self, text):
 
-        if text: 
+        if text:
+
             self.initial = set(text.split())
 
             return super().setText(text)
     
     def text(self):
         
-        if self.type: return self.modified[0]
-        if any(self.modified): return self.modified
+        new = set(super().text().split())
+        
+        if self.type: return new - self.initial
 
-    def modify(self, text):
-
-        new = set(text.split())
-        self.modified = (
-            new - self.initial, 
-            self.initial - new
+        return (
+            new - self.initial, self.initial - new
             )
 
 class ComboBox(QComboBox):
@@ -173,19 +170,7 @@ class ComboBox(QComboBox):
         super(ComboBox, self).__init__(parent)
         self.activated.connect(self.modify)
         self.modified = None
-    
-    def setCurrentText(self, text):
-    
-        self.initial = text
-
-        return super().setCurrentText(text)
-    
-    def setCurrentIndex(self, index):
-
-        self.initial = self.itemText(index)
-
-        return super().setCurrentIndex(index)   
-
+  
     def text(self): return self.modified
 
     def modify(self, change): self.modified = change
