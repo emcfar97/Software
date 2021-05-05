@@ -26,8 +26,9 @@ class Preview(QScrollArea):
         if index is None: pixmap = QPixmap()
         
         else:
-            path = index.data(Qt.UserRole)
-            type_ = index.data(1000)[5].pop()
+            data = index.data(Qt.UserRole)
+            path = data[0].pop()
+            type_ = data[5].pop()
             if path.endswith(('.mp4', '.webm')): path = get_frame(path)
 
             pixmap = QPixmap(path)

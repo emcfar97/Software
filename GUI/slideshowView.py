@@ -145,7 +145,7 @@ class Slideshow(QMainWindow):
 
     def openEditor(self):
         
-        file = self.gallery[self.index].data(1000)
+        file = self.gallery[self.index].data(Qt.UserRole)
         
         Properties(self.parent, [file])
 

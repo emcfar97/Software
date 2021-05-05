@@ -373,7 +373,7 @@ class ImageView(QTableView):
             menu.addSeparator()
             menu.addAction(
                 QAction(
-                    'Properties', menu, triggered=lambda: self.openEditor(self.selectedIndexes())
+                    'Properties', menu, triggered=self.openPersistentEditor
                     )
                 )
         except AttributeError: pass
@@ -408,7 +408,7 @@ class ImageView(QTableView):
 
     def find_by_artist(self, event):
 
-        artist = self.currentIndex().data(1000)[2]
+        artist = self.currentIndex().data(Qt.UserRole)[2]
         if artist: 
             artist = ' OR '.join(artist.pop().split())
             self.parent().ribbon.tags.setText(artist)
@@ -441,19 +441,11 @@ class ImageView(QTableView):
         self.parent().statusbar(MYSQL.rowcount)
         self.table.images = images
     
-    def openEditor(self, indexes):
+    def openPersistentEditor(self):
         
         gallery = [
-            index.data(1000) for index in indexes 
-            if index.data(1000) is not None
-            ]
-        Properties(self.parent().parent().parent(), gallery)
-    
-    def openPersistentEditor(self, indexes):
-        
-        gallery = [
-            index.data(1000) for index in indexes 
-            if index.data(1000) is not None
+            index.data(Qt.UserRole) for index in self.selectedIndexes() 
+            if index.data(Qt.UserRole) is not None
             ]
         Properties(self.parent().parent().parent(), gallery)
     
@@ -490,9 +482,13 @@ class ImageView(QTableView):
 
     def contextMenuEvent(self, event):
         
-        if self.parent().title == 'Manage Data' and self.currentIndex().data(200) == 'Comic':
+        title = self.parent().title == 'Manage Data'
+        comic = self.currentIndex().data(Qt.UserRole)[5] == 'Comic'
+        
+        if title and comic:
             self.menu.insertAction(self.artist, self.comic)
         else: self.menu.removeAction(self.comic)
+        
         self.menu.popup(self.mapToGlobal(event))
     
     def keyPressEvent(self, event):
@@ -509,7 +505,7 @@ class ImageView(QTableView):
             
             if self.selectedIndexes() and key_press in (Qt.Key_Return, Qt.Key_Enter):
             
-                self.openEditor(self.selectedIndexes())
+                self.openPersistentEditor()
             
             else: self.parent().keyPressEvent(event)
         
@@ -600,12 +596,12 @@ class ImageView(QTableView):
 
 class Model(QAbstractTableModel):
 
-    def __init__(self, parent):
+    def __init__(self, parent, size=5.18):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
         self.images = []
-        self.size = 5.18
+        self.size = size
         self.width = self.parent().parent().width() // self.size
         
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
@@ -636,11 +632,12 @@ class Model(QAbstractTableModel):
         ind = (index.row() * 5) + index.column()
 
         if ind >= len(self.images) or not self.images[ind][0]:
+
             return QVariant()
-        
+            
         if role == Qt.DecorationRole:
             
-            path = self.data(index, Qt.UserRole)
+            path = self.images[ind][0]
             image = (
                 get_frame(path) 
                 if path.endswith(('.mp4', '.webm')) else 
@@ -659,7 +656,7 @@ class Model(QAbstractTableModel):
             art, tag, rat, sta, typ, sit, = self.images[ind][1:7]
             
             tags = self.wrapper.wrap(
-                ' '.join(sorted(tag.replace('qwd ', '').split()))
+                ' '.join(sorted(tag.replace(' qwd ', ' ').split()))
                 )
             rest = self.wrapper.wrap(
                 f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()} Site: {sit}'
@@ -668,15 +665,7 @@ class Model(QAbstractTableModel):
 
         if role == Qt.SizeHintRole: return QSize(self.width, self.width)
         
-        if role == Qt.UserRole: return self.images[ind][0]
-        
-        if role == 100: return (index.row() * 5), index.column()
-        
-        if role == 200: return self.images[ind][5]
-        
-        if role == 300: return ind
-
-        if role == 1000:
+        if role == Qt.UserRole:
             
             data = self.images[ind]
             
@@ -692,10 +681,17 @@ class Model(QAbstractTableModel):
             
             return path, tags, artist, stars, rating, type, site
         
+        if role == 100: return (index.row() * 5), index.column()
+        
+        if role == 300: return ind
+        
         return QVariant()
     
-    # def setData(self, index, value, role): 
-        # return super().setData(index, value, role=role)
+    def setData(self, index, value, role):
+        
+        if role == Qt.EditRole and index.isValid():
+            
+            self.dataChanged.emit(index, index, [Qt.DisplayRole])
 
 class Worker_(QObject):
 
