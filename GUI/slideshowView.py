@@ -1,4 +1,6 @@
+from tempfile import NamedTemporaryFile
 from pathlib import Path
+from moviepy.editor import VideoFileClip
 from . import get_frame
 from .propertiesView import Properties
 from PyQt5.QtCore import Qt, QTimer, QUrl
@@ -64,7 +66,7 @@ class Slideshow(QMainWindow):
     def move(self, delta=0):
         
         self.index = (self.index + delta) % len(self.gallery)
-        path = self.gallery[self.index][0]
+        path = self.gallery[self.index].data(Qt.UserRole)
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
@@ -102,47 +104,50 @@ class Slideshow(QMainWindow):
 
     def rotate(self, sign):
 
-        path = self.gallery[self.index][0]
+        path = self.gallery[self.index].data(Qt.UserRole)
+
         if path.endswith(('jpg', 'png')):
-            QPixmap(path).transformed(
-                QTransform().rotate(90 * sign), 
-                Qt.SmoothTransformation
-                ).save(path)
-        else: pass
-            # VideoFileClip(path).rotate(90 * sign)
+            self.image.rotate(path, sign)
+        
+        else:
+            self.video.rotate(path, sign)
+            
         self.move()
 
     def copy(self):
         
-        path = self.gallery[self.index][0]
+        path = self.gallery[self.index].data(Qt.UserRole)
+
+        if path.endswith(('gif', '.mp4', '.webm')):
+            path = NamedTemporaryFile(
+                suffix='.png', delete=False
+                ).name
+            frame = self.video.grab()
+            self.render(frame)
+            frame.save(path, 'png')
+
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
         cb.setText(path, mode=cb.Clipboard)
 
     def delete(self):
         
-        path = self.gallery[self.index]
-        self.move(1)
+        if self.stack.currentIndex():
+            self.video.update(None)
+        else: self.image.update(None)
+        
+        path = [self.gallery[self.index]]
+
         if self.parent.delete_records(self, path, 0):
             del self.gallery[self.index]
-        else: self.move(-1)
+            
+        self.move()
 
     def openEditor(self):
-            
-        data = self.gallery[self.index]
         
-        path = {data[0]}
-        artist = set(data[1].split())
-        tags = set(data[2].split())
-        rating = {data[3]}
-        stars = {data[4]}
-        type = {data[5]}
-        site = {data[6]}
-
-        tags.discard('qwd')
-
-        index = path, tags, artist, stars, rating, type, site
-        Properties(self.parent, [index])
+        file = self.gallery[self.index].data(1000)
+        
+        Properties(self.parent, [file])
 
     def contextMenuEvent(self, event):
         
@@ -219,7 +224,17 @@ class imageViewer(QLabel):
             )
         # self.setScaledContents(True)
     
-    def update(self, pixmap): self.setPixmap(pixmap)
+    def update(self, pixmap): 
+        
+        if pixmap: self.setPixmap(pixmap)
+        else: self.setPixmap(QPixmap())
+
+    def rotate(self, path, sign):
+
+        QPixmap(path).transformed(
+            QTransform().rotate(90 * sign), 
+            Qt.SmoothTransformation
+            ).save(path)
     
     # def hasHeightForWidth(self):
 
@@ -236,7 +251,7 @@ class imageViewer(QLabel):
         parent = self.parent().parent()
         if not parent.stack.currentIndex(): 
             
-            image = QImage(parent.gallery[parent.index][0])
+            image = QImage(parent.gallery[parent.index].data(Qt.UserRole))
             
             pixmap = QPixmap(image).scaled(
                 event.size(), Qt.KeepAspectRatio, 
@@ -261,6 +276,19 @@ class videoPlayer(QVideoWidget):
         self.player.setMedia(QMediaContent(path))
         self.player.play()
     
+    def rotate(self, path, sign):
+        
+        self.update(None)
+        clip = VideoFileClip(path)
+        clip.rotate(90 * sign)
+
+        if path.endswith(('gif')):
+            clip.write_gif(path)
+        else: 
+            clip.write_videofile(path)
+
+        clip.close()
+
     def pause(self):
 
         status = self.player.state()

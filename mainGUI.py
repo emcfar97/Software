@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QScrollArea, QGroupBox, QPushButton, QSizePolicy, QAction
-from PyQt5.QtCore import Qt, QItemSelectionModel, QItemSelection
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget,  QVBoxLayout, QHBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAction
+from PyQt5.QtCore import Qt, QItemSelection
 from PyQt5.QtGui import QIcon
 
 from GUI import ROOT, MYSQL, MODIFY, DELETE
@@ -47,6 +47,7 @@ class App(QMainWindow):
             'Machine Learning': MachineLearning,
             'Video Splitter': VideoSplitter,
             }
+            
         for name, app in options.items():
             
             option = QPushButton(name, self)
@@ -114,6 +115,7 @@ class ManageData(QMainWindow):
         self.setWindowTitle('Manage Data')
         self.parent = parent
         self.configure_gui()
+        self.create_menu()
         self.create_widgets()
         self.showMaximized()
         self.gallery.populate()
@@ -132,6 +134,10 @@ class ManageData(QMainWindow):
         width, height = resolution.width(),  resolution.height()
         self.setGeometry(0, 0, width, height)
 
+    def create_menu(self):
+        
+        self.menubar = self.menuBar()
+        
     def create_widgets(self):
             
         self.windows = set()
@@ -149,18 +155,19 @@ class ManageData(QMainWindow):
     def start_slideshow(self, index=None):
 
         view = self.gallery.images
-        # mode = QItemSelectionModel()
-        # selection = QItemSelection()
-        # selection.select(
-        #     (0, 0), view.table.rowCount() - 1, (view.total() - 1) % view.table.columnCount()
-        #     )
-        # view.selectionModel().select(selection, mode.NoUpdate)
-        # self.slideshow.gallery = self.selectedIndexes()
-        self.slideshow.gallery = view.table.images
-        
+        selection = QItemSelection()
+
+        selection.select(
+            view.table.index(0, 0),
+            view.table.index(
+                view.table.rowCount() - 1, 
+                (view.total() - 1) % view.table.columnCount()
+                )
+            )
+
+        self.slideshow.gallery = selection.indexes()
         index = index if index else view.currentIndex()
-        try: self.slideshow.index = sum(index.data(100))
-        except: return
+        self.slideshow.index = sum(index.data(100))
         
         self.slideshow.move(0)
         if self.slideshow.isHidden():
@@ -179,7 +186,7 @@ class ManageData(QMainWindow):
                 
                 for val in vals[0]:
                     parameters.append(
-                        f'{key}=CONCAT({key}, "{val} ")'
+                        f'{key}=CONCAT({key}, " {val} ")'
                         )
                 for val in vals[1]:
                     parameters.append(
@@ -482,7 +489,7 @@ class MachineLearning(QMainWindow):
         # Help
         help = self.menubar.addMenu('Help')
 
-    def create_action(self, menu, text, slot, shortcut): 
+    def create_action(self, menu, text, slot, shortcut):
         
         if isinstance(text, list): 
             menu.addAction(text[0], self.menuAction, shortcut=shortcut)
@@ -506,7 +513,7 @@ class MachineLearning(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
-    def menuAction(self, action):
+    def menuAction(self, action=None):
 
         print(action)
 
