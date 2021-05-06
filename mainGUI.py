@@ -138,6 +138,8 @@ class ManageData(QMainWindow):
         
         self.menubar = self.menuBar()
         
+        # file = self.menubar.addMenu('File')
+        
     def create_widgets(self):
             
         self.windows = set()
@@ -155,15 +157,24 @@ class ManageData(QMainWindow):
     def start_slideshow(self, index=None):
 
         view = self.gallery.images
-        selection = QItemSelection()
 
-        selection.select(
+        selection = QItemSelection(
             view.table.index(0, 0),
             view.table.index(
-                view.table.rowCount() - 1, 
-                (view.total() - 1) % view.table.columnCount()
+                view.table.rowCount() - 2, 
+                view.table.columnCount() - 1
                 )
             )
+        selection.merge(QItemSelection(
+                view.table.index(
+                    view.table.rowCount() - 1, 0
+                    ),
+                view.table.index(
+                    view.table.rowCount() - 1, 
+                    (view.total() - 1) % view.table.columnCount()
+                    )),
+                view.selectionModel().Select
+                )
 
         self.slideshow.gallery = selection.indexes()
         index = index if index else view.currentIndex()
@@ -258,7 +269,7 @@ class ManageData(QMainWindow):
         if message == QMessageBox.Yes:
 
             gallery = [
-                (data,) for index in gallery 
+                (data[0].pop(),) for index in gallery 
                 if (data := index.data(Qt.UserRole))
                 ]
             
@@ -281,6 +292,10 @@ class ManageData(QMainWindow):
             
             return 1
     
+    def menuPressEvent(self, action=None):
+
+        print(action)
+
     def keyPressEvent(self, event):
 
         key_press = event.key()
@@ -513,7 +528,7 @@ class MachineLearning(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
-    def menuAction(self, action=None):
+    def menuPressEvent(self, action=None):
 
         print(action)
 
