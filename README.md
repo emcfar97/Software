@@ -17,8 +17,8 @@ A set of projects that I've developed, either individually or as a team, over th
 ## 2018
 ## 2019
 ## 2020
-(CS 470 Fall 2020)[https://github.com/Rayos1/CS-470-Fall-2020]
+[CS 470 Fall 2020](https://github.com/Rayos1/CS-470-Fall-2020)
 ## 2021
-(CS 449 Spring 2021)[https://github.com/Rayos1/CS-449-Spring-2021]
+[(CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
 # Music
 A suite if musuc related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
