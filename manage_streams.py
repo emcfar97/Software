@@ -12,7 +12,7 @@ ACCEPT = '//button[text()="Select"]'
 FINISHED = '//*[@id="UserLiveFinishedBody"]'
 
 class Browser(WEBDRIVER):
-
+    
     def __init__(self, profile=True):
 
         super().__init__(headless=False, profile=profile, wait=15)
@@ -20,7 +20,9 @@ class Browser(WEBDRIVER):
             work_dir=r'C:\Program Files\obs-studio\bin\64bit',
             cmd_line=r'C:\Program Files\obs-studio\bin\64bit\obs64.exe'
             )
+        self.auto_find('Launch Anyway', click=True, type_='Button')
         self.get('https://sketch.pixiv.net/followings')
+        self.driver.set_window_position(-1000, 0)
         self.driver.fullscreen_window()
         self.run()
 
@@ -95,15 +97,15 @@ class Browser(WEBDRIVER):
         
         try:
             element = self.obs.top_window().child_window(
-                title_re=title, control_type=type_,
+                title_re=title, control_type=type_
                 )
 
+            if keys: element.type_keys(keys)
             if click: element.click()
             if select:
                 if isinstance(bool, select): element.select()
                 else: element.select(select)
-            if keys: element.type_keys(keys)
-
+            
             return element
 
         except Exception as error:
