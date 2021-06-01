@@ -28,55 +28,45 @@ METADATA = {
     'screen_capture':'screencap',
     }
 GENERAL = {
-    '3d_cg': '3d',
     'age_difference': 'age_difference|teenage_girl_and_younger_boy',
     'bottomless': 'bottomless AND NOT (topless OR nude)', 
-    'condom': 'condom', 
     'cowgirl_position': '(cowgirl_position OR reverse_cowgirl_position) AND sex', 
     'cum': 'cum|precum|semen|cumdrip|cum_in_mouth|cum_in_container|cum_in_pussy|cum_in_ass|cum_in_nipple|cum_on_feet|cum_on_body|cum_on_upper_body|cum_on_breasts|semen',
+    'censored': 'mosaic_censor|blur_censor|bar_censor|novelty_censor',
     'dancing': 'dancing|dancer', 
-    'female_pubic_hair': 'pubic_hair',
-    'female_solo': 'solo',
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top AND sex',
-    'intercrural': 'thigh_sex',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|short_yukata|yukata|short_kimono|kimono|geta|happi|zori',
-    'legs_apart': 'spread_legs',
-    'legs_spread': 'spread_legs',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls)))',
-    'male_pubic_hair': 'pubic_hair',
-    'male_solo': 'solo',
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
-    'nopan': 'no_panties',
     'nude': 'nude AND NOT functionally_nude',
     'functionally_nude': '(functionally_nude OR (bottomless AND topless)) AND NOT nude', 
     'open_clothes': 'open_clothes|open_coat|open_jacket|open_shirt|open_robe|open_kimono|open_fly|open_shorts', 
+    'oral': 'fellatio|cunnilingus|blowjob',
     'orgasm': 'orgasm|ejaculation', 
-    'oshiri': 'ass',
-    'piercing': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain', 
+    'piercing': 'piercings|earrings|navel_piercings|areola_piercing|back_piercing|navel_piercing|nipple_piercing|ear_piercing|eyebrow_piercing|eyelid_piercing|lip_piercing|nose_piercing|tongue_piercing|clitoris_piercing|labia_piercing|penis_piercing|testicle_piercing|nipple_chain|linked_piercing', 
     'presenting': 'presenting OR top-down_bottom-up OR ((spread_legs OR spread_pussy) AND (trembling OR (heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR spread_pussy', 
     'pussy': 'pussy|vagina|shaved_pussy', 
     'pussy_juice': 'pussy_juice|pussy_juices|pussy_juice_trail|pussy_juice_puddle|pussy_juice_stain|pussy_juice_drip_through_clothes', 
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
-    'sex': '(sex AND aftersex AND vaginal AND anal AND facial AND oral AND fellatio AND cunnilingus AND handjob AND frottage AND tribadism AND group_sex AND hetero AND yaoi AND yuri AND clothed_sex) AND NOT solo', 
+    'sex': '(sex OR aftersex OR vaginal OR anal OR oral OR fellatio OR cunnilingus OR blowjob OR handjob OR frottage OR tribadism OR group_sex OR hetero OR yaoi OR yuri OR clothed_sex OR paizuri) AND NOT solo', 
     'sex_toy': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
     'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls) OR NOT sex)', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
-    'shaking': 'trembling',
+    'sportswear': 'sports_bra|yoga_pants',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
     'suspended_congress': '(suspended_congress OR reverse_suspended_congress) AND sex',
-    'squatting cowgirl_position':'squatting_cowgirl_position',
     'topless': 'topless AND bare_shoulders AND NOT (bottomless OR nude)', 
-    'vagina': 'pussy',
     'underwear': 'underwear|panties|bra|briefs',
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((shawl OR capelet OR cape OR shrug_<clothing> OR open_jacket OR bare_shoulders OR underboob OR corset OR breast_cutout OR breastless_clothes OR underbust) OR (sarong OR loincloth OR skirt OR pelvic_curtain OR showgirl_skirt OR belt OR japanese_clothes OR dress OR corset OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy', 
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
-    'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)'
+    'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)',
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
     'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage|naked_robe', 
+    'pokies': 'nipples_visible_through_clothes',
     'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
     }
 RATING = {
@@ -107,8 +97,8 @@ ARTIST = {
     'graydoodles_': ['gray_eggs_n_ham', 1],
     'enigmagyaru': ['gyarusatan', 1],
     'gyarusatan': ['gyarusatan', 1],
-    'hara': ['hera_(hara0742)', 0],
-    'へら': ['hera_(hara0742)', 0],
+    'hara': ['hara_(harayutaka)', 0],
+    'へら': ['hara_(harayutaka)', 0],
     'ichan': ['ignition_crisis', 0],
     'iskra': ['iskra', 1],
     'ittla': ['ittla', 1],
@@ -139,6 +129,8 @@ ARTIST = {
     'xtilxtil': ['rtil', 1],
     'saitom': ['saitou_masatsugu', -1],
     'seinen': ['seinen', -1],
+    'laminaria':['shiokonbu', 0],
+    'laminaria_(shiokonbu)':['shiokonbu', 0],
     'nekofondue': ['soduki', -1],
     'splash_brush': ['splashbrush'],
     'splashbrush': ['splashbrush'],
@@ -161,30 +153,37 @@ ARTIST = {
     'zheng': ['zheng', 0],
     'ぞんだ': ['zonda', -1],
     }
-REMOVE = [
-    {
-        '3d', 'photorealistic', 'realistic', 'photo',
-        'cum', 'cum_in_pussy',
-        'sex', 'after_sex', 'sex_from_behind', 'vaginal', 'anal',
-        'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl', 'boy_on_top'
-        'mosaic_censoring', 'censored', 'uncensored',
-        'male_focus', 'multiple_boys', 'multiple_girls', 
-        'pantyhose', 'no_humans', 'scenery', 'asian', 'what'
-        },
-    [
-        '(rating|score):\w+',
-        'nopan', 'oshiri', 'pantsu',
-        'solo_focus',
-        'uncensored',
-        'vagina',
-        'virgin',
-        'hetero', 'yuri', 'yaoi',
-        'squatting_cowgirl_position',
-        'shaking', '(fat|ugly|old)_man',
-        '(female|male)_(pubic_hair|solo)',
-        'excessive_.+'
-        ]
-    ]
+REMOVE = {
+    '3d', 'photorealistic', 'realistic', 'photo', 'blurry',
+    'cum', 'cum_in_pussy',
+    'sex', 'after_sex', 'sex_from_behind', 'vaginal', 'anal',
+    'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl', 'boy_on_top'
+    'mosaic_censoring', 'censored', 'uncensored',
+    'male_focus', 'multiple_boys', 'multiple_girls', 
+    'pantyhose', 'no_humans', 'scenery', 'asian', 'what'
+    }
+REPLACE = {
+    '3d': '3d_cg',
+    'anal_object_insertion':'anal object_insertion',
+    'anal_masturbation|penile_masturbation|vaginal_masturbation': 'masturbation',
+    'blowjob': 'fellatio',
+    '(female|male)_pubic_hair': 'pubic_hair',
+    '(female|male)_solo|solo_focus': 'solo',
+    'insertion': 'object_insertion',
+    'legs_spread|legs_apart': 'spread_legs',
+    'nipple_tweak':'nipple_tweaking',
+    'no_pan': 'no_panties',
+    'oshiri': 'ass',
+    'pantsu': 'panties',
+    'plugsuit': 'bodysuit',
+    '\w*pointed_ears': 'pointed_ears',
+    'shaking':'trembling',
+    'squatting_cowgirl_position': 'squatting cowgirl_position',
+    'thigh_sex': 'intercrural',
+    'vagina': 'pussy',
+    'vaginal_object_insertion': 'vaginal object_insertion',
+    'virgin|uncensored|nipples_visible_through_clothes|hetero|yuri|yaoi|excessive_.+|(fat|ugly|old)_man|object_insertion_from_behind|(rating|score):\w+': '',
+    }
 
 def save_image(name, image=None, exif=b''):
     '''Save image to name (with optional exif metadata)'''
@@ -314,7 +313,7 @@ def get_tags(driver, path, filter=False):
     
     else:
         if video: temp_dir.cleanup()
-        if filter: tags.difference_update(REMOVE[0])
+        if filter: tags.difference_update(REMOVE)
     
     return ' '.join(tags)
 
@@ -368,10 +367,10 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
         exif = piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})
         rating.append(exif)
     
-    tags = re.sub(
-        f' ({"|".join(REMOVE[1])}) ', ' ', f' {" ".join(tags)} '
-        ).strip().replace('-', '_')
-        
+    tags = " ".join(tags)
+    for key, value in REPLACE.items(): tags = re.sub(f' {key} ', value, tags)
+    else: tags = f' {tags} '.strip().replace('-', '_')
+
     return tags if rating is None else [tags] + rating
 
 def evaluate(tags, pattern):
