@@ -23,10 +23,11 @@ class Preview(QScrollArea):
         self.verticalScrollBar().setSliderPosition(0)
         self.horizontalScrollBar().setSliderPosition(0)
 
-        if index is None: pixmap = QPixmap()
+        if not (index and (data := index.data(Qt.UserRole))): 
+            
+            pixmap = QPixmap()
         
         else:
-            data = index.data(Qt.UserRole)
             path = data[0].pop()
             type_ = data[5].pop()
             if path.endswith(('.mp4', '.webm')): path = get_frame(path)
