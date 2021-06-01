@@ -2,7 +2,7 @@ import re, textwrap
 from . import MYSQL, BASE, COMIC, get_frame
 from .propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelectionModel, QItemSelection, QObject, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
+from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QObject, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle, QCompleter
 
 ENUM = {
@@ -51,7 +51,7 @@ class Gallery(QWidget):
             self.query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
         else: self.parent().parent().preview.show_image(None)
 
-        # query parsing & tag parsing
+        # query parsing
         for token in re.findall(f'\w+{op}[\w\*\.]+', string):
             
             string = string.replace(token, '')
@@ -74,7 +74,7 @@ class Gallery(QWidget):
             elif val == 'NULL':
                 
                 neg = 'NOT ' if '!' in token else ''
-                token = f'{col} {neg}IS {val}'
+                token = f'{neg}IS{val}({col})'
 
             elif re.search('\D', val):
 
@@ -82,6 +82,7 @@ class Gallery(QWidget):
 
             self.query[col] = self.query.get(col, []) + [token]
         
+        # tag parsing
         if string.strip():
     
             string = re.sub('(-?\w+( OR -?\w+)+)', r'(\1)', string)
@@ -98,12 +99,14 @@ class Gallery(QWidget):
         for text, col in zip(['type', 'rating'], [self.type, self.rating]):
             if (val:=ENUM[col.checkedAction().text()]) and text not in self.query:
                 self.query[text] = [val]
-        if not any(self.query): self.query[''] = ['NOT ISNULL(path)']
-
-        # comic functionality
+        
+         # comic functionality
+        
         if '3' in self.query.get('type', [''])[0] and 'comic' not in self.query:
             join = 'JOIN comic ON comic.path_=imageData.path'
             self.query['pages'] = ['page=0']
+
+        if not any(self.query): self.query[''] = ['NOT ISNULL(path)']
 
         filter = " AND ".join(
             f'({" OR ".join(val)})' for val in self.query.values() if val
@@ -402,8 +405,10 @@ class ImageView(QTableView):
     
     def delete(self, event):
 
+        random = 'RANDOM' in self.parent().get_order()
+
         self.parent().parent().parent().delete_records(
-            self.parent().parent(), self.selectedIndexes()
+            self.selectedIndexes(), not random
             )
 
     def find_by_artist(self, event):
@@ -418,18 +423,18 @@ class ImageView(QTableView):
 
     def read_comic(self, event):
 
-        parent, = MYSQL.execute(
-            COMIC, (self.currentIndex().data(Qt.UserRole),), fetch=1
-            )
+        path = self.currentIndex().data(Qt.UserRole)[0].pop()
+        parent, = MYSQL.execute(COMIC, (path,), fetch=1)
         self.parent().ribbon.tags.setText(f'comic={parent[0]}')
     
     def copy_path(self):
-    
+        
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
         
         paths = ' '.join(
-            f'"{index.data(Qt.UserRole)}"' for index in self.selectedIndexes()
+            f'"{index.data(Qt.UserRole)[0].pop()}"' 
+            for index in self.selectedIndexes()
             )
         cb.setText(paths, mode=cb.Clipboard)
 
@@ -483,9 +488,9 @@ class ImageView(QTableView):
     def contextMenuEvent(self, event):
         
         title = self.parent().title == 'Manage Data'
-        comic = self.currentIndex().data(Qt.UserRole)[5] == 'Comic'
+        index = self.currentIndex().data(Qt.UserRole)
         
-        if title and comic:
+        if index and title and index[5].pop() == 'Comic':
             self.menu.insertAction(self.artist, self.comic)
         else: self.menu.removeAction(self.comic)
         
@@ -494,8 +499,7 @@ class ImageView(QTableView):
     def keyPressEvent(self, event):
         
         key_press = event.key()
-        mode = QItemSelectionModel()
-        selection = QItemSelection()
+        mode = self.selectionModel()
         modifier = event.modifiers()
         ctrl = modifier == Qt.ControlModifier
         shift = modifier == Qt.ShiftModifier
@@ -523,28 +527,46 @@ class ImageView(QTableView):
         elif key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
             
             index = self.currentIndex()
-            row, col = index.row(), index.column()
-            direction = 1 if key_press in (Qt.Key_Down, Qt.Key_Right) else -1
+            row1, col1 = index.row(), index.column()
+            sign = 1 if key_press in (Qt.Key_Down, Qt.Key_Right) else -1
 
             if key_press in (Qt.Key_Right, Qt.Key_Left):
+                
+                row2 = row1
+                
+                if (col1 == 0 and sign < 0) or (col1 == 4 and sign > 0):
+                    if not 0 <= (row1 + sign) < self.table.rowCount():
+                        return
+                    row2 = row1 + sign
 
-                if (col== 0 and direction== -1) or (col== 4 and direction== 1):
-                    if not 0 <= (row + direction) < self.table.rowCount():return
-                    row += direction
-                col = (col + direction) % self.table.columnCount()
-                new = self.table.index(row, col)
-
+                col2 = (col1 + sign) % self.table.columnCount()
+                
             elif key_press in (Qt.Key_Up, Qt.Key_Down):
                 
-                if not 0 <= (row + direction) < self.table.rowCount(): return
-                row += direction 
-                new = self.table.index(row, col)
+                col2 = col1
+
+                if not 0 <= (row1 + sign) < self.table.rowCount(): return
+                
+                row2 = row1 + sign 
+                
+            new = self.table.index(row2, col2)
             
             if shift:
-                selection.select(
-                    *(index, new) if index > new else (new, index)
-                    )
-                self.selectionModel().select(selection, mode.ToggleCurrent)
+                
+                if row1 == row2: selection = QItemSelection(index, new)
+                    
+                else:
+
+                    start, end = (0, 4) if (sign < 0) else (4, 0)
+                    selection = QItemSelection(
+                        index, self.table.index(row2, start)
+                        )
+                    selection.merge(QItemSelection(
+                        new,  self.table.index(row2, end)
+                        ), self.selectionModel().Select
+                        )
+
+                self.selectionModel().select(selection, mode.Select)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -552,37 +574,73 @@ class ImageView(QTableView):
         elif key_press in (Qt.Key_PageUp, Qt.Key_PageDown):
             
             index = self.currentIndex()
-            row, col = index.row(), index.column()
+            row1, col1 = index.row(), index.column()
             sign = 1 if key_press == Qt.Key_PageDown else -1
             
-            row += sign * 5
-            if 0 > row: row = 0
-            elif row > self.table.rowCount(): row = self.table.rowCount() - 1
-            new = self.table.index(row, col)
+            row2 = row1 + (sign * 5)
+            if 0 > row2: row2, col2 = 0, 0
+            elif row2 > self.table.rowCount():
+                row2, col2 = self.table.rowCount() - 1, 4
+            else: col2 = col1
+            
+            new = self.table.index(row2, col2)
 
             if shift:
-                selection.select(
-                    *(index, new) if index > new else (new, index)
+                
+                selection = QItemSelection(
+                    self.table.index(row1, 4), 
+                    self.table.index(row1, col1)
                     )
-                self.selectionModel().select(selection, mode.ToggleCurrent)
+                selection.merge(QItemSelection(
+                    self.table.index(row1 + sign, 0), 
+                    self.table.index(row2 - sign, 4)
+                    ), self.selectionModel().Select
+                    )
+                selection.merge(QItemSelection(
+                    self.table.index(row2, col1), 
+                    self.table.index(row2, 0)
+                    ), self.selectionModel().Select
+                    )
+
+                self.selectionModel().select(selection, mode.Select)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
 
         elif key_press in (Qt.Key_Home, Qt.Key_End):
             
-            row, col = (
-                (0, 0) if key_press == Qt.Key_Home else 
-                (self.table.rowCount() - 1, (self.total() - 1) % self.table.columnCount())
+            sign = 1 if key_press == Qt.Key_End else -1
+
+            row1, col1 = (
+                (0, 0) if sign < 0 else 
+                (
+                    self.table.rowCount() - 1, 
+                    (self.total() - 1) % self.table.columnCount()
+                    )
                 )
-            new = self.table.index(row, col)
+            new = self.table.index(row1, col1)
 
             if shift:
+
                 index = self.currentIndex()
-                selection.select(
-                    *(index, new) if index > new else (new, index)
+                row2, col2 = index.row(), index.column()
+
+                selection = QItemSelection(
+                    self.table.index(index.row(), col1), 
+                    index
                     )
-                self.selectionModel().select(selection, mode.ToggleCurrent)
+                selection.merge(QItemSelection(
+                    self.table.index(row2 + sign, 0), 
+                    self.table.index(row1 - sign, 4)
+                    ), self.selectionModel().Select
+                    )
+                selection.merge(QItemSelection(
+                    self.table.index(row1, 0), 
+                    self.table.index(row1, 4)
+                    ), self.selectionModel().Select
+                    )
+
+                self.selectionModel().select(selection, mode.Select)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -650,6 +708,22 @@ class Model(QAbstractTableModel):
                 )
                 
             return QPixmap(image)
+
+        if role == Qt.EditRole:
+            
+            data = self.images[ind]
+            
+            path = {data[0]}
+            artist = set(data[1].split())
+            tags = set(data[2].split())
+            rating = {data[3]}
+            stars = {data[4]}
+            type = {data[5]}
+            site = {data[6]}
+
+            tags.discard('qwd')
+            
+            return path, tags, artist, stars, rating, type, site
 
         if role == Qt.ToolTipRole:
             
