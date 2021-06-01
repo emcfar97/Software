@@ -1,13 +1,13 @@
-import json, cv2, re
+import json, cv2, re, time, bs4
 from PIL import Image
 from urllib.parse import urlparse
 from . import USER, WEBDRIVER, CONNECT, INSERT
-from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
+from .utils import IncrementalBar, HEADERS, get_hash, get_name, get_tags, generate_tags, save_image
 
 EXT = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.webm', '.mp4'
 MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg')
 
-def extract_files(path, dest=None):
+def extract_files(driver, path, dest=None):
     
     if dest is None: dest = path.parent
 
@@ -18,9 +18,8 @@ def extract_files(path, dest=None):
             image = image.strip()
             name = path.parent / image.split('/')[-1].split('?')[0]
             save_image(name, image)
-        errors_txt.unlink()
-    
-    for file in path.iterdir():
+        
+    for file in path.glob('*json'):
         
         urls = [
             value for window in 
@@ -31,8 +30,12 @@ def extract_files(path, dest=None):
         for url in urls:
             
             path = urlparse(url['url']).path[1:]
-            if re.match('https://i.imgur.com/.+gif', path):
+            if re.match('https://i.imgur.com/.+gif', url['url']):
                 path.replace('gif', 'mp4')
+            elif re.match('.+/watch.+', url['url']):
+                try: path = get_url(driver, url['url'])
+                except: continue
+
             name = dest / path.split('/')[-1]
             if name.exists(): continue
             image = (
@@ -41,7 +44,7 @@ def extract_files(path, dest=None):
                 url['url']
                 )
             
-            if name.suffix == '.gifv': 
+            if name.suffix == '.gifv':
                 name = name.with_suffix('.mp4')
                 image = image.replace('gifv', 'mp4')
             elif name.suffix == '.webp':
@@ -55,6 +58,15 @@ def extract_files(path, dest=None):
         file.unlink()
     
     if errors: errors_txt.write_text('\n'.join(errors))
+
+def get_url(driver, src):
+
+    driver.get(src)
+    time.sleep(5)
+    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    url = html.find(src=re.compile('.+mp4\Z'))
+
+    return url.get('src')
 
 def similarity(path):
 
@@ -76,12 +88,12 @@ def similarity(path):
     
 def start(extract=True, add='', path=USER / r'Downloads\Images'):
     
-    if extract: extract_files(path / 'Generic')
-    files = [file for file in path.iterdir() if file.suffix in EXT]
-    progress = IncrementalBar('Files', max=len(files))
-    
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(profile=None)
+    
+    if extract: extract_files(DRIVER, path / 'Generic')
+    files = [file for file in path.iterdir() if file.suffix in EXT]
+    progress = IncrementalBar('Files', max=len(files))
 
     for file in files:
         
