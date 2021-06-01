@@ -1,5 +1,6 @@
-from tempfile import NamedTemporaryFile
 from pathlib import Path
+from PIL import ImageGrab
+from tempfile import mktemp
 from moviepy.editor import VideoFileClip
 from . import get_frame
 from .propertiesView import Properties
@@ -66,12 +67,12 @@ class Slideshow(QMainWindow):
     def move(self, delta=0):
         
         self.index = (self.index + delta) % len(self.gallery)
-        path = self.gallery[self.index].data(Qt.UserRole)
+        path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
         else:
-            if path.endswith(('.jpg', '.png')): 
+            if path.endswith(('.jpg', '.png')):
                 image = QImage(path)
                 path = None
             elif path.endswith(('gif', '.mp4', '.webm')):
@@ -104,7 +105,7 @@ class Slideshow(QMainWindow):
 
     def rotate(self, sign):
 
-        path = self.gallery[self.index].data(Qt.UserRole)
+        path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
 
         if path.endswith(('jpg', 'png')):
             self.image.rotate(path, sign)
@@ -116,15 +117,15 @@ class Slideshow(QMainWindow):
 
     def copy(self):
         
-        path = self.gallery[self.index].data(Qt.UserRole)
+        path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
 
         if path.endswith(('gif', '.mp4', '.webm')):
-            path = NamedTemporaryFile(
-                suffix='.png', delete=False
-                ).name
-            frame = self.video.grab()
-            self.render(frame)
-            frame.save(path, 'png')
+
+            path = mktemp(suffix='.png')
+            image = ImageGrab.grab(
+                (0, 0, self.width(),self.height())
+                )
+            image.save(path)
 
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
@@ -138,17 +139,16 @@ class Slideshow(QMainWindow):
         
         path = [self.gallery[self.index]]
 
-        if self.parent.delete_records(self, path, 0):
+        if self.parent.delete_records(path, 0):
             del self.gallery[self.index]
             
-        self.move()
-
     def openEditor(self):
         
-        file = self.gallery[self.index].data(Qt.UserRole)
+        Properties(
+            self.parent, 
+            [self.gallery[self.index].data(Qt.UserRole)]
+            )
         
-        Properties(self.parent, [file])
-
     def contextMenuEvent(self, event):
         
         self.menu.popup(event.globalPos())
@@ -160,7 +160,7 @@ class Slideshow(QMainWindow):
         alt = event.modifiers() == Qt.AltModifier
         ctrl = event.modifiers() == Qt.ControlModifier
 
-        if key_press in (Qt.Key_Right, Qt.Key_Left):
+        if self.gallery and key_press in (Qt.Key_Right, Qt.Key_Left):
             
             self.move(1 if key_press == Qt.Key_Right else -1)
             
@@ -249,10 +249,11 @@ class imageViewer(QLabel):
     def resizeEvent(self, event):
 
         parent = self.parent().parent()
-        if not parent.stack.currentIndex(): 
-            
-            image = QImage(parent.gallery[parent.index].data(Qt.UserRole))
-            
+
+        if not parent.stack.currentIndex():
+
+            index = parent.gallery[parent.index]
+            image = QImage(index.data(Qt.UserRole)[0].pop())            
             pixmap = QPixmap(image).scaled(
                 event.size(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
