@@ -156,12 +156,13 @@ class LineEdit(QLineEdit):
     def text(self):
         
         new = set(super().text().split())
+        add, remove = new - self.initial, self.initial - new
         
-        if self.type: return new - self.initial
-
-        return (
-            new - self.initial, self.initial - new
-            )
+        if not (add or remove): return False
+        
+        if self.type: return add
+        
+        return add, remove
 
 class ComboBox(QComboBox):
 
