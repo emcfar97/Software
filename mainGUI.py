@@ -6,9 +6,9 @@ from GUI import ROOT, MYSQL, MODIFY, DELETE
 from GUI.galleryView import Gallery
 from GUI.slideshowView import Slideshow
 from GUI.previewView import Preview, Timer
-from GUI.datasetView import Dataset
-from GUI.designView import Design
-from GUI.trainView import Train
+# from GUI.datasetView import Dataset
+# from GUI.designView import Design
+# from GUI.trainView import Train
 
 class App(QMainWindow):
     
@@ -155,8 +155,9 @@ class ManageData(QMainWindow):
         self.statusbar.setFixedHeight(25)
     
     def start_slideshow(self, index=None):
-
+        
         view = self.gallery.images
+        if not view.table.images: return
 
         selection = QItemSelection(
             view.table.index(0, 0),
@@ -186,23 +187,25 @@ class ManageData(QMainWindow):
         self.slideshow.activateWindow()
 
     def update_records(self, gallery, **kwargs):
-        
+                
         parameters = []
         query = set(self.gallery.query)
         change = set(i.lower() for i in kwargs)
+        random = 'RANDOM()' in self.gallery.get_order()
 
         for key, vals in kwargs.items():
+            
+            key = key.lower()
             
             if isinstance(vals, tuple):
                 
                 for val in vals[0]:
-                    parameters.append(
-                        f'{key}=CONCAT({key}, " {val} ")'
-                        )
+
+                    parameters.append(f'{key}=CONCAT({key}, " {val} ")')
+                
                 for val in vals[1]:
-                    parameters.append(
-                        f'{key}=REPLACE({key}, " {val} ", " ")'
-                        )
+
+                    parameters.append(f'{key}=REPLACE({key}, " {val} ", " ")')
                 
             else: parameters.append(f'{key}={vals}')
 
@@ -253,13 +256,15 @@ class ManageData(QMainWindow):
                 )
             return 0
 
-        if query & change: self.gallery.populate()
-        else: self.gallery.images.clearSelection()
+        if not random: self.gallery.populate()
+        # else: self.gallery.images.clearSelection()
+        if not self.slideshow.isHidden() and self.slideshow.gallery:
+            self.slideshow.move()   
 
         return 1
     
-    def delete_records(self, parent, gallery, update=True):
-        
+    def delete_records(self, gallery, update=False):
+                
         message = QMessageBox.question(
             None, 'Delete', 
             'Are you sure you want to delete this?',
@@ -267,14 +272,14 @@ class ManageData(QMainWindow):
             )
         
         if message == QMessageBox.Yes:
-
-            gallery = [
+            
+            paths = [
                 (data[0].pop(),) for index in gallery 
                 if (data := index.data(Qt.UserRole))
                 ]
             
             # If MYSQL returns an error
-            if MYSQL.execute(DELETE, gallery, many=1):
+            if MYSQL.execute(DELETE, paths, many=1):
                 QMessageBox.information(
                     None, 'The database is busy', 
                     'There is a transaction currently taking place',
@@ -283,13 +288,19 @@ class ManageData(QMainWindow):
                 MYSQL.rollback()
                 return 0
 
-            for path, in gallery: (ROOT / path).unlink(True)
+            for path, in paths: (ROOT / path).unlink(True)
             MYSQL.commit()
             
             if update:
                 self.gallery.images.update([])
                 self.gallery.populate()
-            
+            # else:
+            #     table = self.gallery.images.table
+            #     for index in gallery:
+            #         table.images.remove(index)
+            #     table.layoutChanged.emit()
+            if not self.slideshow.isHidden(): self.slideshow.move()   
+
             return 1
     
     def menuPressEvent(self, action=None):
@@ -300,14 +311,14 @@ class ManageData(QMainWindow):
 
         key_press = event.key()
 
-        if key_press in (Qt.Key_Return, Qt.Key_Enter): 
+        if key_press in (Qt.Key_Return, Qt.Key_Enter):
             
             self.start_slideshow()
 
-        elif key_press == Qt.Key_Delete: 
+        elif key_press == Qt.Key_Delete:
             
             gallery = self.gallery.images.selectedIndexes() 
-            self.delete_records(self, gallery)
+            self.delete_records(gallery)
                         
         elif key_press == Qt.Key_Escape: self.close()
     
