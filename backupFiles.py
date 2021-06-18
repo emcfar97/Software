@@ -42,6 +42,8 @@ for drive in get_drives():
 
     for root, dirs, files in walk(drive):
 
+        if 'Software' in root: continue
+        
         targets = {}
         root = Path(root)
         head = SOURCE / Path(*root.parts[1:])
