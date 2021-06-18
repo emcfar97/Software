@@ -28,12 +28,12 @@ INSERT = [
     'INSERT INTO imageData(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
     'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
     f'INSERT IGNORE INTO favorites(path, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s)',
     ]
 UPDATE = [
-    f'UPDATE imageData SET path=%s, artist=%s, tags=%s, rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
+    f'UPDATE imageData SET path=%s, artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
     f'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s WHERE href=%s',
     f'INSERT INTO imageData(path, hash, href, site) VALUES(%s, %s, %s, %s)',
@@ -227,12 +227,7 @@ class WEBDRIVER:
             self.find("loginUsername", CREDENTIALS.get(site, 'email'), type_=2)
             self.find("loginPassword", CREDENTIALS.get(site, 'pass'), type_=2, enter=1)
             
-        elif site == 'deviantArt':
-
-            self.get('https://www.deviantart.com/users/login')
-            self.find('//*[@id="username"]', CREDENTIALS.get(site, 'email'))
-            self.find('//*[@id="password"]', CREDENTIALS.get(site, 'pass'), enter=1)
-            time.sleep(5)
+        elif site == 'deviantart': return CREDENTIALS.get(site, 'url')
         
     def close(self):
         
@@ -252,4 +247,4 @@ def start(initialize=True):
     for thread in threads: thread.start()
     for thread in threads: thread.join()
 
-    print('Complete')
+    print('\nComplete')
