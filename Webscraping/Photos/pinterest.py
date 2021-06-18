@@ -12,15 +12,13 @@ def page_handler(hrefs, section):
 
     for href in hrefs:
         
-        progress.next()
-
         DRIVER.get(f'https://www.pinterest.com{href.get("href")}', wait=1)
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         target = html.find('a', href=True, attrs={'data-test-id':'image-link'})
         try: src = target.findAll('img', src=re.compile('.+pinimg.+'))[-1].get('src')
         except: continue
 
-        if (name:=get_name(src, 0, 1)).exists(): continue
+        if (name:=get_name(src)).exists(): continue
         save_image(name, src)
 
         if name.suffix in ('.jpg'):
@@ -46,7 +44,8 @@ def page_handler(hrefs, section):
             commit=1
             )
         
-    progress.next()
+        progress.next()
+    print()
     
 def start(retry=0, headless=True):
 

@@ -69,7 +69,7 @@ def page_handler(hrefs):
         
         if image is None: continue
 
-        name = get_name(image, 0, 1)
+        name = get_name(image)
         if not save_image(name, image): continue
         tags, rating, exif = generate_tags(
             general=get_tags(DRIVER, name, True), 
@@ -85,6 +85,7 @@ def page_handler(hrefs):
             )
     
         progress.next()
+    print()
 
 def start(initial=True, headless=True):
     

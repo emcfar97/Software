@@ -98,7 +98,7 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
     for file in files:
         
         try:
-            if (dest := get_name(file, 0, 1)).exists() or similarity(file):
+            if (dest := get_name(file, 1)).exists() or similarity(file):
                 file.unlink()
                 continue
             

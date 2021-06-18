@@ -30,7 +30,7 @@ def start(headless=True):
             )
         images = [
             (
-                num, get_hash(file), name:=get_name(file, 2, 1),
+                num, get_hash(file), name:=get_name(file),
                 name.write_bytes(file.read_bytes())
                 )
             for num, file in enumerate(folder.iterdir())
@@ -58,5 +58,6 @@ def start(headless=True):
         send2trash.send2trash(str(folder))
         
         progress.next()
+    print()
 
     DRIVER.close()

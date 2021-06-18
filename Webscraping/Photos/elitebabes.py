@@ -51,7 +51,7 @@ def page_handler(hrefs):
         for image in images.findAll('a'):
 
             src = image.get('href')
-            try: name = get_name(src, 0, 1)
+            try: name = get_name(src)
             except: continue
             if not save_image(name, src): break
 
@@ -69,6 +69,7 @@ def page_handler(hrefs):
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
         progress.next()
+    print()
 
 def start(initial=True, headless=True):
         

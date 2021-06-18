@@ -76,6 +76,7 @@ def page_handler(hrefs):
         else: MYSQL.execute(DELETE[1], (href,), commit=1)
         
         progress.next()
+    print()
 
 def start(initial=True, headless=True):
     

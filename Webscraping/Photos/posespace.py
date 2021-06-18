@@ -45,7 +45,7 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
                 general=get_tags(DRIVER, image, True) + ' reference', 
                 custom=True, rating=True, exif=False
                 )
-            name = get_name(image, 0)
+            name = get_name(image)
             hash_ = get_hash(image)
             image.replace(name)
 
@@ -55,6 +55,7 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
         
         progress.next()
+    print()
         
 def make_gif(image):
 

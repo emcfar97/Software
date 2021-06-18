@@ -32,9 +32,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
-        progress.next()
-
-        name = get_name(href, 0, hasher=1)
+        name = get_name(href)
         if not save_image(name, href): continue
         tags, rating, exif = generate_tags(
             get_tags(DRIVER, name, True) + ' casual_nudity',
@@ -47,6 +45,9 @@ def page_handler(hrefs):
             (str(name), ' ', tags, rating, href, hash_, href),
             commit=1
             )
+
+        progress.next()
+    print()
 
 def start(headless=True):
 

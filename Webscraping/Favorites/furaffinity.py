@@ -54,6 +54,7 @@ def page_handler(hrefs):
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
         progress.next()
+    print()
 
 def start(initial=True, headless=True):
     

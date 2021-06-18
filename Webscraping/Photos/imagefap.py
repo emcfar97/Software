@@ -32,8 +32,6 @@ def page_handler(url, title):
 
     for image in images:
         
-        progress.next()
-
         href = f'https://www.imagefap.com/{image.get("href")}'
         page_source = requests.get(href).content
         target = bs4.BeautifulSoup(page_source, 'lxml')
@@ -41,7 +39,7 @@ def page_handler(url, title):
             src=re.compile('https://cdn.imagefap.com/images/full/.+')
             ).get('src')
 
-        if (name:=get_name(src, 0, 1)).exists(): continue
+        if (name:=get_name(src)).exists(): continue
         save_image(name, src)
 
         if name.suffix in ('.jpg', '.jpeg'):
@@ -65,7 +63,8 @@ def page_handler(url, title):
             commit=1
             )
     
-    progress.next()
+        progress.next()
+    print()
 
 def start(headless=True):
         

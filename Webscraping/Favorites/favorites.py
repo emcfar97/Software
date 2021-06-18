@@ -1,6 +1,6 @@
 import sqlite3, os, time, tempfile
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import IncrementalBar, ARTIST, get_tags, generate_tags, bs4, requests, re
+from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
 
@@ -14,8 +14,6 @@ def main(paths, upload_, sankaku=0, gelbooru=0):
     progress = IncrementalBar('favorites', max=MYSQL.rowcount)
 
     for (path, href, src, site,) in paths:
-        
-        progress.next()
         
         DRIVER.get('http://iqdb.org/')
         try:
@@ -53,7 +51,8 @@ def main(paths, upload_, sankaku=0, gelbooru=0):
         if saved and src is None: os.remove(path)
         MYSQL.execute(UPDATE[4], (1, saved, path), commit=1)
 
-    print(progress)
+        progress.next()
+    print()
 
 def favorite(targets, saved=False):
 
@@ -181,15 +180,12 @@ def initialize():
         )
     data.close()
     
-    # paths = list()
-    # for site in ['foundry', 'furaffinity', 'misc', 'twitter']:
+    paths = [
+        (str(path), None, path.parent.name) 
+        for path in (PATH / 'Images').glob('*\*')
+        ]
 
-    #     paths += [
-    #         (str(path), None, site) for path in 
-    #         (PATH / 'Images' / site).iterdir()
-    #         ]
-
-    # MYSQL.execute(INSERT[2], paths, many=1, commit=1)
+    MYSQL.execute(INSERT[2], paths, many=1, commit=1)
 
 def start(initial=True, headless=True, upload=0):
 

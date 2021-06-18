@@ -62,7 +62,7 @@ def page_handler(hrefs, mode):
             if html.find(text='404: Page Not Found'): 
                 MYSQL.execute(DELETE[0], (href,), commit=1)
             continue
-        name = get_name(image.split('/')[-1].split('?e=')[0], mode[1]-1, 0)
+        name = get_name(image.split('/')[-1].split('?e=')[0], 0)
             
         metadata = ' '.join(
             '_'.join(tag.text.split()[:-2]) for tag in 
@@ -93,6 +93,7 @@ def page_handler(hrefs, mode):
             else: MYSQL.rollback()
     
         progress.next()
+    print()
 
 def start(mode=1, initial=True, headless=True):
     

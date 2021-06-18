@@ -39,7 +39,6 @@ def page_handler(hrefs, retry=2):
 
     for href, in hrefs:
         
-        progress.next()
         DRIVER.get(f'https://www.instagram.com{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         artist = html.find(
@@ -77,7 +76,7 @@ def page_handler(hrefs, retry=2):
         
         for image in images:
 
-            name = get_name(image, 0, 1)
+            name = get_name(image)
             save_image(name, image)
             hash_ = get_hash(name) 
 
@@ -94,7 +93,8 @@ def page_handler(hrefs, retry=2):
                 )
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
-    progress.next()
+        progress.next()
+    print()
 
 def start(initial=True, headless=True):
     

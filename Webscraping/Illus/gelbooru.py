@@ -24,7 +24,7 @@ def initialize(url, query=0):
         if (target.get('href'),) not in query
         ]
         
-    next = next_page(html.find(id='paginator').contents)   
+    next = next_page(html.find(id='paginator').contents)
     if hrefs and next: return hrefs + initialize(next, query)
     else: return hrefs
     
@@ -57,7 +57,7 @@ def page_handler(hrefs):
         
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         image = html.find(href=True, text='Original image').get('href')
-        name = get_name(image.split('/')[-1], type_-1, 0)
+        name = get_name(image.split('/')[-1], 0)
         hash_ = get_hash(image, 1)
         
         if MYSQL.execute(UPDATE[0], (
@@ -68,13 +68,15 @@ def page_handler(hrefs):
             else: MYSQL.rollback()
 
         progress.next()
+    print()
 
 def start(initial=True, headless=True):
     
     global MYSQL, DRIVER
     MYSQL = CONNECT()
     
-    if initial: 
+    if initial:
+
         DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
         hrefs = initialize(url)
