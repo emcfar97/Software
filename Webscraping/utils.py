@@ -1,6 +1,5 @@
 import piexif, bs4, requests, re, tempfile, hashlib, ast
 from . import ROOT, USER
-from os import path
 from math import log
 from io import BytesIO
 from ffprobe import FFProbe
@@ -10,13 +9,11 @@ from PIL import Image, UnidentifiedImageError
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
 PATH = USER / r'Dropbox\ん'
-TYPE = ['エラティカ ニ', 'エラティカ 三', 'エラティカ 四']
 RESIZE = [1320, 1000]
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
-HASHER = hashlib.md5()
-EXT = 'jp.*g|png|gif|webp|webm|mp4|JP.*G|PNG|GIF|WEBP|WEBM|MP4'
+EXT = 'jpe?g|png|gif|webp|webm|mp4|JPE?G|PNG|GIF|WEBP|WEBM|MP4'
 
 METADATA = {
     'audio':'audio|has_audio',
@@ -60,7 +57,7 @@ GENERAL = {
     'underwear': 'underwear|panties|bra|briefs',
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust OR o_ring_top) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)',
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
@@ -143,7 +140,8 @@ ARTIST = {
     'tetsu': ['tetsu_(kimuchi)', 0],
     'てつお': ['tetsuo_(tetuo1129)', -1],
     'tofuubear': ['tofuubear', -1],
-    'tukudani01': ['tsukudani', -1],
+    'tukudani01': ['tsukudani', 0],
+    'tsukiwani': ['tsukiwani', 0],
     'watatanza': ['watatanza', -1],
     'crimeglass': ['x-t3al2', -1],
     'yd': ['yang-do', 0],
@@ -213,22 +211,21 @@ def save_image(name, image=None, exif=b''):
             except: pass
     except: pass
     return name.exists()
-    
-def get_name(path, type_, hasher=1):
+
+def get_name(path, hasher=1):
     '''Return pathname (from optional hash of image)'''
+    
+    stem = path
 
     if hasher:
         if isinstance(path, str):
             data = requests.get(path, headers=HEADERS).content
         else: data = path.read_bytes()
-        HASHER.update(data)
+        hasher = hashlib.md5(data)
 
-        try: stem = f'{HASHER.hexdigest()}{path.suffix.lower()}'
-        except: stem = f'{HASHER.hexdigest()}.{re.findall(EXT, path)[0]}'
+        stem = f'{hasher.hexdigest()}.{re.findall(EXT, str(path))[0]}'
     
-    else: stem = path
-
-    return PATH / TYPE[type_] / stem.replace('jpeg','jpg')
+    return PATH / stem[0:2] / stem[2:4] / stem.replace('jpeg','jpg')
 
 def get_hash(image, src=False):
     '''Return perceptual hash of image'''
@@ -368,10 +365,11 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
         rating.append(exif)
     
     tags = " ".join(tags)
-    for key, value in REPLACE.items(): tags = re.sub(f' {key} ', value, tags)
-    else: tags = f' {tags} '.strip().replace('-', '_')
+    for key, value in REPLACE.items():
+        tags = re.sub(f' {key} ', f' {value} ', tags)
+    else: tags = tags.replace('-', '_')
 
-    return tags if rating is None else [tags] + rating
+    return [tags] + rating if rating else tags
 
 def evaluate(tags, pattern):
     
