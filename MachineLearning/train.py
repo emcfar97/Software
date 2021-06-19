@@ -106,11 +106,11 @@ EPOCHS, INITIAL = 16, 0
 IMAGE_SIZE = 256, 256
 BATCH = 32
 
-train_ds = tf.keras.preprocessing.image_dataset_from_directory(
+train_ds = tf.data.Dataset.list_files(
     str(DATA), validation_split=0.2, subset='training', 
     seed=1337, image_size=IMAGE_SIZE, batch_size=BATCH
     )
-val_ds = tf.keras.preprocessing.image_dataset_from_directory(
+val_ds = tf.data.Dataset.list_files(
     str(DATA), validation_split=0.2, subset='validation', 
     seed=1337, image_size=IMAGE_SIZE, batch_size=BATCH
     )
