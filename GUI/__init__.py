@@ -85,18 +85,16 @@ def get_frame(path):
     if image is None: return QPixmap()
     return qimage2ndarray.array2qimage(image).rgbSwapped()
 
+def create_menu():
+
+    pass
+
 MYSQL = CONNECT()
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
-CASE = r'''
-    case type
-    when 1 then CONCAT('{0}\エラティカ ニ\', path)
-    when 2 then CONCAT('{0}\エラティカ 三\', path)
-    when 3 then CONCAT('{0}\エラティカ 四\', path)
-    end
-    '''.format(PATH).replace('\\', '\\\\')
-BASE = f'SELECT {CASE} as path, artist, tags, rating, stars, type, site FROM imageData'
-COMIC = 'SELECT parent FROM comic WHERE path_=SUBSTRING(%s, 34)'
-GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=SUBSTRING(%s, 34)'
-MODIFY = f'UPDATE imageData SET {{}} WHERE path=SUBSTRING(%s, 34)'
-DELETE = 'DELETE FROM imageData WHERE path=SUBSTRING(%s, 34)'
+parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
+BASE = f'SELECT full_path(path, {parts}), artist, tags, rating, stars, type, site FROM imageData'
+COMIC = 'SELECT parent FROM comic WHERE path_=SUBSTRING(%s, 32)'
+GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=SUBSTRING(%s, 32)'
+MODIFY = f'UPDATE imageData SET {{}} WHERE path=SUBSTRING(%s, 32)'
+DELETE = 'DELETE FROM imageData WHERE path=SUBSTRING(%s, 32)'
