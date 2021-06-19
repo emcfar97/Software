@@ -62,7 +62,6 @@ def page_handler(hrefs, mode):
             if html.find(text='404: Page Not Found'): 
                 MYSQL.execute(DELETE[0], (href,), commit=1)
             continue
-        name = get_name(image.split('/')[-1].split('?e=')[0], 0)
             
         metadata = ' '.join(
             '_'.join(tag.text.split()[:-2]) for tag in 
@@ -76,14 +75,18 @@ def page_handler(hrefs, mode):
             '_'.join(artist.text.split()[:-2]) for artist in 
             html.findAll(class_=re.compile('tag-type-artist|idol|studio'))
             ]
+
+        name = get_name(image.split('/')[-1].split('?e=')[0], 0)
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(DRIVER, name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
         tags = tags.encode('ascii', 'ignore').decode()
+
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         artists = ' '.join(artists).encode('ascii', 'ignore').decode()
+
         hash_ = get_hash(image, 1)
 
         if MYSQL.execute(UPDATE[0], (
