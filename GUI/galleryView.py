@@ -102,7 +102,7 @@ class Gallery(QWidget):
         
          # comic functionality
         
-        if '3' in self.query.get('type', [''])[0] and 'comic' not in self.query:
+        if 'comic' in self.query.get('type', [''])[0] and '3' not in self.query:
             join = 'JOIN comic ON comic.path_=imageData.path'
             self.query['pages'] = ['page=0']
 
@@ -479,7 +479,7 @@ class ImageView(QTableView):
         parent = self.parent()
         if parent.title == 'Manage Data':
 
-            if '3' in parent.query.get('type', [''])[0] and 'comic' not in parent.query:
+            if 'comic' in parent.query.get('type', [''])[0] and '3' not in parent.query:
                 
                 self.read_comic(None)
             
@@ -645,7 +645,7 @@ class ImageView(QTableView):
 
             else: self.setCurrentIndex(new)
         
-        elif self.parent().title == 'Manage Data' and '3' in self.parent().query.get('type', [''])[0] and 'comic' not in self.parent().query:
+        elif self.parent().title == 'Manage Data' and 'comic' in self.parent().query.get('type', [''])[0] and '3' not in self.parent().query:
         
             if key_press in (Qt.Key_Return, Qt.Key_Enter): self.read_comic(None)
             else: self.parent().keyPressEvent(event)
