@@ -66,6 +66,8 @@ class Slideshow(QMainWindow):
 
     def move(self, delta=0):
         
+        if not self.gallery: return 0
+        
         self.index = (self.index + delta) % len(self.gallery)
         path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
