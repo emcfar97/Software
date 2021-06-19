@@ -130,6 +130,7 @@ while True:
                         .setpts(f'{desired / duration:.4f}*PTS') \
                         .output(str(new), crf=20, preset='fast') \
                         .run()
+                        
                 except Exception as error: print(error); continue
 
                 for file in files: file.unlink()
