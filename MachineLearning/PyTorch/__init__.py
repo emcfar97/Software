@@ -1,6 +1,8 @@
-from pathlib import Path
+if __name__ == '__main__': from __init__ import *
+else: from . import *
+    
+import torch
 
-HOME = Path(__file__).parent
 MODELS = HOME / 'Models'
 CHCKPNT = HOME / 'Checkpoints'
 LOGS = HOME / 'Logs'
