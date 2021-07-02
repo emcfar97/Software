@@ -3,17 +3,17 @@ from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, ge
 
 SITE = 'elitebabes'
 
-def initialize(url=1, query=0):
+def initialize(url, query=0):
 
     def next_page(page):
                 
-        try: return page.contents[0].get('href').split('/')[-2]
+        try: return page.get('href')[26:]
         except IndexError: return False
 
     if not query:
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
 
-    DRIVER.get(f'https://www.{SITE}.com/my-favorite-galleries/page/{url}/')
+    DRIVER.get(f'https://www.{SITE}.com{url}')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (href, SITE) for target in
@@ -23,7 +23,7 @@ def initialize(url=1, query=0):
             ) not in query
         ]
 
-    next = next_page(html.find(class_='next'))
+    next = next_page(html.find(class_='next page-numbers'))
     if hrefs and next: return hrefs + initialize(next, query)
     else: return hrefs
 
@@ -51,8 +51,7 @@ def page_handler(hrefs):
         for image in images.findAll('a'):
 
             src = image.get('href')
-            try: name = get_name(src)
-            except: continue
+            if (name:=get_name(src)).exists(): continue
             if not save_image(name, src): break
 
             tags, rating, exif = generate_tags(
@@ -77,7 +76,8 @@ def start(initial=True, headless=True):
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
 
-    if initial: 
-        MYSQL.execute(INSERT[0], initialize(), many=1, commit=1)
+    if initial:
+        hrefs = initialize(DRIVER.login(SITE))
+        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
