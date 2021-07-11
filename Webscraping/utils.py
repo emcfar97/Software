@@ -13,7 +13,7 @@ RESIZE = [1320, 1000]
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
-EXT = 'jpe?g|png|gif|webp|webm|mp4|JPE?G|PNG|GIF|WEBP|WEBM|MP4'
+EXT = 'jpe?g|png|gif|webm|mp4|JPE?G|PNG|GIF|WEBM|MP4'
 
 METADATA = {
     'audio':'audio|has_audio',
@@ -35,6 +35,7 @@ GENERAL = {
     'girl_on_top': 'girl_on_top AND sex',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|short_yukata|yukata|short_kimono|kimono|geta|happi|zori',
     'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls)))',
+    'mature': '(large_areolae OR plump OR fat OR belly) AND (sagging_breasts OR veiny_breasts)',
     'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
     'nude': 'nude AND NOT functionally_nude',
     'functionally_nude': '(functionally_nude OR (bottomless AND topless)) AND NOT nude', 
@@ -102,7 +103,7 @@ ARTIST = {
     'jjuneジュン': ['jjune', 0],
     'kajin': ['kajin_(kajinman)', 1],
     'kon_kit': ['konkitto', 0],
-    'ryuun_(stiil) ': ['konoshige_(ryuun)', 0],
+    'ryuun_(stiil)': ['konoshige_(ryuun)', 0],
     '0lightsource': ['lightsource', -1],
     'lmsketch': ['lm_(legoman)', 1],
     '【丁髷帝国】まげきち': ['magekichi', -1],
@@ -177,6 +178,7 @@ REPLACE = {
     '\w*pointed_ears': 'pointed_ears',
     'shaking':'trembling',
     'squatting_cowgirl_position': 'squatting cowgirl_position',
+    'standing_sex': 'standing sex',
     'thigh_sex': 'intercrural',
     'vagina': 'pussy',
     'vaginal_object_insertion': 'vaginal object_insertion',
