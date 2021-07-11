@@ -10,7 +10,7 @@ A mostly experimental app for GUI-ifying the machine learning process, a la Perc
 # Machine Learning
 An exploratory dive into machine learning using Tensorflow and PyTorch. Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
 # Webscraping
-A group of functions for scraping images off of various websites, which are then used for the GUI and Machine Learning projects.
+A group of functions for scraping images off of various imagehosting sites, which are then used for the GUI and Machine Learning projects.
 # School
 A set of projects that I've developed, either individually or as a team, over the course of my college career.
 ## 2017
