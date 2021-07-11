@@ -4,7 +4,7 @@ from pathlib import Path
 from ffprobe import FFProbe
 from re import search, sub, findall
 
-EXT = '.mp4', '.flv', '.mkv'
+EXT = '.mp4', '.flv', '.mkv', '.avi'
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 DOWN = USER / r'Downloads\Images'
