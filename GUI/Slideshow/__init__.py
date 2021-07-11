@@ -1,25 +1,24 @@
 from pathlib import Path
-from PIL import ImageGrab
-from tempfile import mktemp
-from moviepy.editor import VideoFileClip
-from . import get_frame
-from .propertiesView import Properties
-from PyQt5.QtCore import Qt, QTimer, QUrl
-from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QMenu, QStackedWidget, QLabel, QAction
+from .. import get_frame
+from ..propertiesView import Properties
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QMenu, QAction
 
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent):
+    def __init__(self, parent, gallery=None, index=0):
         
         super(Slideshow, self).__init__()
         self.parent = parent
+        self.gallery = list() if gallery is None else gallery
+        self.index = index
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
         self.create_widgets()
-          
+        self.move()
+        self.showMaximized()
+        
     def create_widgets(self):
         
         self.image = imageViewer(self)
@@ -33,7 +32,6 @@ class Slideshow(QMainWindow):
             lambda: self.setCursor(Qt.BlankCursor)
             )
         
-        # self.image.setParent(self)
         self.menu = self.create_menu()
     
     def create_menu(self):
@@ -66,7 +64,9 @@ class Slideshow(QMainWindow):
 
     def move(self, delta=0):
         
-        if not self.gallery: return 0
+        if not self.gallery: 
+            self.image.no_image()
+            return 0
         
         self.index = (self.index + delta) % len(self.gallery)
         path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
@@ -162,7 +162,7 @@ class Slideshow(QMainWindow):
         alt = event.modifiers() == Qt.AltModifier
         ctrl = event.modifiers() == Qt.ControlModifier
 
-        if self.gallery and key_press in (Qt.Key_Right, Qt.Key_Left):
+        if key_press in (Qt.Key_Right, Qt.Key_Left):
             
             self.move(1 if key_press == Qt.Key_Right else -1)
             
@@ -194,9 +194,7 @@ class Slideshow(QMainWindow):
         elif key_press == Qt.Key_Escape:
             
             if self.isFullScreen(): self.fullscreen()
-            else: 
-                self.video.update(None)
-                self.hide()
+            else: self.close()
         
         elif alt:
             
@@ -215,115 +213,18 @@ class Slideshow(QMainWindow):
         
     def closeEvent(self, event): self.video.update(None)
 
-class imageViewer(QLabel):
-    
-    def __init__(self, parent):
-        
-        super(QWidget, self).__init__(parent)
-        self.setAlignment(Qt.AlignCenter)
-        self.setMinimumSize(
-            self.parent().width() * .3, self.parent().height() * .3
-            )
-        # self.setScaledContents(True)
-    
-    def update(self, pixmap): 
-        
-        if pixmap: self.setPixmap(pixmap)
-        else: self.setPixmap(QPixmap())
+if __name__ == '__main__':
 
-    def rotate(self, path, sign):
+    from PyQt5.QtWidgets import QApplication
+    from .imageViewer import imageViewer
+    from .videoPlayer import videoPlayer
 
-        QPixmap(path).transformed(
-            QTransform().rotate(90 * sign), 
-            Qt.SmoothTransformation
-            ).save(path)
-    
-    # def hasHeightForWidth(self):
+    Qapp = QApplication([])
 
-    #     return self.pixmap() is not None
+    app = Slideshow(Qapp)
 
-    # def heightForWidth(self, w):
+    Qapp.exec_()
 
-    #     if self.pixmap():
-
-    #         return int(w * (self.pixmap().height() / self.pixmap().width()))
-
-    def resizeEvent(self, event):
-
-        parent = self.parent().parent()
-
-        if not parent.stack.currentIndex():
-
-            index = parent.gallery[parent.index]
-            image = QImage(index.data(Qt.UserRole)[0].pop())            
-            pixmap = QPixmap(image).scaled(
-                event.size(), Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
-                
-            self.setPixmap(pixmap)
-
-class videoPlayer(QVideoWidget):
-
-    def __init__(self, parent):
-        
-        super(QVideoWidget, self).__init__(parent)
-        self.player = QMediaPlayer(self)
-        self.player.setVolume(50) 
-        self.player.setVideoOutput(self)
-        self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
-
-    def update(self, path):
-        
-        if path: path = QUrl.fromLocalFile(path)
-        self.player.setMedia(QMediaContent(path))
-        self.player.play()
-    
-    def rotate(self, path, sign):
-        
-        self.update(None)
-        clip = VideoFileClip(path)
-        clip.rotate(90 * sign)
-
-        if path.endswith(('gif')):
-            clip.write_gif(path)
-        else: 
-            clip.write_videofile(path)
-
-        clip.close()
-
-    def pause(self):
-
-        status = self.player.state()
-        if status == QMediaPlayer.PlayingState: self.player.pause()
-        elif status == QMediaPlayer.PausedState: self.player.play()
-
-    def position(self, delta):
-
-        self.player.setPosition(self.player.position() + delta)
-
-    def volume(self, delta):
-        
-        if self.player.isAudioAvailable(): 
-            
-            self.player.setVolume(self.player.volume() + delta)
-
-    def mute(self):
-        
-        if self.player.isAudioAvailable(): 
-    
-            self.player.setMuted(not self.player.isMuted())
-
-    def stop(self): self.player.stop()
-
-    def mediaStatusChanged(self, status):
-        
-        if status == QMediaPlayer.EndOfMedia: self.player.play()
-
-        elif status not in (2, 1):
-
-            self.parent().setCurrentIndex(1)
-    
-    def wheelEvent(self, event):
-        
-        self.volume(event.angleDelta().y() // 12)  
+else:
+    from GUI.Slideshow.imageViewer import imageViewer
+    from GUI.Slideshow.videoPlayer import videoPlayer
