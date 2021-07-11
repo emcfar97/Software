@@ -172,11 +172,9 @@ class WEBDRIVER:
         
         for _ in range(5):
             try: return self.driver.page_source
-            except exceptions.WebDriverException: 
-                error = exceptions.WebDriverException
+            except exceptions.WebDriverException as error:
                 self.refresh()
-            except exceptions.InvalidSessionIdException:
-                error = exceptions.InvalidSessionIdException
+            except exceptions.InvalidSessionIdException as eror:
                 print()
                 
         raise error
