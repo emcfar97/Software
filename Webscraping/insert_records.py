@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from . import USER, WEBDRIVER, CONNECT, INSERT
 from .utils import IncrementalBar, HEADERS, get_hash, get_name, get_tags, generate_tags, save_image
 
-EXT = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.webm', '.mp4'
+EXT = 'jpe?g|png|gif|webm|mp4|JPE?G|PNG|GIF|WEBM|MP4'
 MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg')
 
 def extract_files(driver, path, dest=None):
@@ -92,11 +92,14 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
     DRIVER = WEBDRIVER(profile=None)
     
     if extract: extract_files(DRIVER, path / 'Generic')
-    files = [file for file in path.iterdir() if file.suffix in EXT]
+    files = [
+        file for file in path.iterdir() if re.search(EXT, file.suffix)
+        ]
     progress = IncrementalBar('Files', max=len(files))
 
     for file in files:
         
+        progress.next()
         try:
             if (dest := get_name(file, 1)).exists() or similarity(file):
                 file.unlink()
@@ -128,7 +131,5 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
             
         except Exception as error: print(error, '\n')
     
-        progress.next()
-
     DRIVER.close()
     print('\nDone')
