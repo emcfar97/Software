@@ -1,10 +1,11 @@
 import re, textwrap
-from . import MYSQL, BASE, COMIC, get_frame
-from .propertiesView import Properties
+from .. import MYSQL, BASE, COMIC, get_frame
+from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QObject, QThread, QTimer, QVariant, Qt, QSize, pyqtSignal
+from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QObject, QThread, QTimer, QVariant, QModelIndex, Qt, QSize, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QPushButton, QCheckBox, QMessageBox, QStyle, QCompleter
 
+AUTOCOMPLETE = r'GUI\autocomplete.txt'
 ENUM = {
     'All': '',
     'Photo': 'type=1', 
@@ -37,7 +38,7 @@ class Gallery(QWidget):
             self.images.table.layoutChanged.emit
             )
 
-    def populate(self, event=None, limit=10000, op='[<>=!]=?'):
+    def populate(self, event=None, op='[<>=!]=?'):
         
         self.query = {}
         join = ''
@@ -49,7 +50,7 @@ class Gallery(QWidget):
         if self.title == 'Gesture Draw':
             
             self.query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
-        else: self.parent().parent().preview.show_image(None)
+        else: self.parent().parent().preview.show_image()
 
         # query parsing
         for token in re.findall(f'\w+{op}[\w\*\.]+', string):
@@ -112,7 +113,7 @@ class Gallery(QWidget):
             f'({" OR ".join(val)})' for val in self.query.values() if val
             )
         
-        self.thread.statement = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
+        self.thread.statement = f'{BASE} {join} WHERE {filter} {order}'
         self.thread.start()
         
     def get_order(self, type_=0, ORDER={'Ascending':'ASC','Descending':'DESC'}):
@@ -207,9 +208,8 @@ class Ribbon(QWidget):
         self.tags = QLineEdit(self)
         self.tags.setFixedWidth(250)
         self.tags.setPlaceholderText('Enter tags')
-        autocomplete = open(r'GUI\autocomplete.txt').read()
         self.tags.setCompleter(
-            QCompleter(autocomplete.split())
+            QCompleter(open(AUTOCOMPLETE).read().split())
             )
         self.select.addRow('Search:', self.tags)
         
@@ -424,8 +424,8 @@ class ImageView(QTableView):
     def read_comic(self, event):
 
         path = self.currentIndex().data(Qt.UserRole)[0].pop()
-        parent, = MYSQL.execute(COMIC, (path,), fetch=1)
-        self.parent().ribbon.tags.setText(f'comic={parent[0]}')
+        parent, = MYSQL.execute(COMIC, (path,), fetch=1)[0]
+        self.parent().ribbon.tags.setText(f'comic={parent}')
     
     def copy_path(self):
         
@@ -463,14 +463,12 @@ class ImageView(QTableView):
                 if select := select.indexes():
                     image = select[0]
                 
-                elif self.selectedIndexes(): 
+                elif self.selectedIndexes():
                     image = min(self.selectedIndexes())
                 
                 else: image = None
 
-                preview = self.parent().parent().parent().preview
-                try: preview.show_image(image)
-                except: preview.show_image(None)
+                self.parent().parent().parent().preview.show_image(image)
             
             self.parent().statusbar(self.total(), len(self.selectedIndexes()))
 
@@ -654,6 +652,8 @@ class ImageView(QTableView):
 
 class Model(QAbstractTableModel):
 
+    number_populated = pyqtSignal(str, int, int, int)
+
     def __init__(self, parent, size=5.18):
 
         QAbstractTableModel.__init__(self, parent)
@@ -672,19 +672,32 @@ class Model(QAbstractTableModel):
 
     def columnCount(self, parent=None): return 5
 
-    # def canFetchMore(self, index):
+    def canFetchMore(self, index):
         
-        # return MYSQL.rowcount > len(self.images)
+        if index.isValid():
+            return False
 
-    # def fetchMore(self, index, fetch=10000):
+        return MYSQL.rowcount > len(self.images)
+
+    def fetchMore(self, index, fetch=5000):
+
+        start = len(self.images)
+        remainder = MYSQL.rowcount - start
+        items_to_fetch = min(fetch, remainder)
+
+        self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
+
+        self.images += MYSQL.CURSOR.fetchmany(fetch)
+
+        self.endInsertRows()
+
+    def layoutAboutToBeChanged(self, parents, hint):
         
-        # self.beginInsertRows(
-        #     index, len(self.images), len(self.images) + fetch
-        #     )
-        # self.images += MYSQL.CURSOR.fetchmany(fetch)
-        # self.endInsertRows()
-        # self.numberPopulated.emit(self.images[:-fetch])
+        print('layoutabouttobechanged')
+        self.parent().parent().populate()
 
+        return super().layoutAboutToBeChanged(parents=parents, hint=hint)
+    
     def data(self, index, role):
         
         ind = (index.row() * 5) + index.column()

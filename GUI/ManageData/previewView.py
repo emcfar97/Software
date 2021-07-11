@@ -1,4 +1,4 @@
-from . import GESTURE, MYSQL, get_frame
+from .. import GESTURE, MYSQL, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QThread
 from PyQt5.QtWidgets import QLabel, QScrollArea
@@ -18,7 +18,7 @@ class Preview(QScrollArea):
             ''')
         self.setContentsMargins(0, 0, 0, 0)
         
-    def show_image(self, index):
+    def update(self, index=None):
         
         self.verticalScrollBar().setSliderPosition(0)
         self.horizontalScrollBar().setSliderPosition(0)
@@ -42,8 +42,8 @@ class Preview(QScrollArea):
 
             if (type_ == 3 and aspect_ratio < .6) or aspect_ratio < .3: 
                 if height < width:
-                    pixmap.scaledToHeight(self.height())
-                else: pixmap.scaledToWidth(self.width())
+                    pixmap.scaledToHeight(self.width())
+                else: pixmap.scaledToWidth(self.height())
             else: pixmap = QPixmap(path).scaled(
                 self.size(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
