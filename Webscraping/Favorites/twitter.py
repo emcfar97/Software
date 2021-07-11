@@ -8,10 +8,10 @@ SITE = 'twitter'
 def initialize(url, retry=0):
 
     DRIVER.get(f'https://twitter.com/{url}/likes')
+    query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
 
     while True:
 
-        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         hrefs = [
             (*href, SITE) for href in
@@ -24,7 +24,7 @@ def initialize(url, retry=0):
             ]
         MYSQL.execute(INSERT[1], hrefs, many=1)
         
-        if not hrefs: 
+        if not hrefs:
             if retry >= 2: break
             else: retry += 1
         else: retry = 0
@@ -55,7 +55,7 @@ def page_handler(hrefs):
 
             except (IndexError, AttributeError, TypeError): 
                 try:
-                    continue
+                    # continue
                     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
                     images = html.findAll('video')
                     images[0].get('src'); images[-1].get('src')

@@ -13,8 +13,6 @@ def initialize(url, query=0):
     DRIVER.get(f'http://www.hentai-foundry.com{url}')
     if not query:
         query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
-        if element := DRIVER.find('//*[@id="frontPage"]', type_=1):
-            element.click()
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, SITE) for href in 
@@ -35,16 +33,13 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
-        if element := DRIVER.find('//*[@id="frontPage"]', type_=1):
-            element.click()
-        DRIVER.find(
-            '//body/main/div/section[1]/div[2]/img', click=True, type_=1
-            )
+        DRIVER.find('//*[@class="center"]', click=True)
         try: html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         except: continue
 
         artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
-        image = f'http:{html.find(class_="center", src=True).get("src")}'
+        try: image = f'http:{html.find(class_="center", src=True).get("src")}'
+        except: continue
         name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
         name = PATH / 'Images' / SITE / name
 
