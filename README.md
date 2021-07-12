@@ -10,7 +10,7 @@ A mostly experimental app for GUI-ifying the machine learning process, a la Perc
 # Machine Learning
 An exploratory dive into machine learning using Tensorflow and PyTorch. Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
 # Webscraping
-A group of functions for scraping images off of various websites, which are then used for the GUI and Machine Learning projects.
+A group of functions for scraping images off of various imagehosting sites, which are then used for the GUI and Machine Learning projects.
 # School
 A set of projects that I've developed, either individually or as a team, over the course of my college career.
 ## 2017
@@ -21,4 +21,4 @@ A set of projects that I've developed, either individually or as a team, over th
 ## 2021
 [CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
 # Music
-A suite if musuc related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
+A suite of musuc related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
