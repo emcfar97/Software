@@ -1,10 +1,23 @@
-if __name__ == '__main__': from __init__ import *
-else: from . import *
+'''File for design of neural network'''
 
-# Transformation
-transform = transforms.Compose([
-transforms.Resize((256, 256)),
-transforms.ToTensor(),
-transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+class NeuralNetwork(nn.Module):
 
-train_data_tensor = Custom_Dataset(train_data_dir, transform=transform)
+    def __init__(self):
+    
+        super(NeuralNetwork, self).__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(28*28, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 10),
+            nn.ReLU()
+            )
+
+    def forward(self, x):
+
+        x = self.flatten(x)
+        logits = self.linear_relu_stack(x)
+
+        return logits
