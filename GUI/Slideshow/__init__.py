@@ -5,6 +5,9 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QMenu, QAction
 
+from GUI.Slideshow.imageViewer import imageViewer
+from GUI.Slideshow.videoPlayer import videoPlayer
+
 class Slideshow(QMainWindow):
     
     def __init__(self, parent, gallery=None, index=0):
@@ -212,19 +215,3 @@ class Slideshow(QMainWindow):
             self.timer.start(1500)
         
     def closeEvent(self, event): self.video.update(None)
-
-if __name__ == '__main__':
-
-    from PyQt5.QtWidgets import QApplication
-    from .imageViewer import imageViewer
-    from .videoPlayer import videoPlayer
-
-    Qapp = QApplication([])
-
-    app = Slideshow(Qapp)
-
-    Qapp.exec_()
-
-else:
-    from GUI.Slideshow.imageViewer import imageViewer
-    from GUI.Slideshow.videoPlayer import videoPlayer

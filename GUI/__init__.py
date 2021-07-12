@@ -89,12 +89,11 @@ def create_menu():
 
     pass
 
-MYSQL = CONNECT()
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
 parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
 BASE = f'SELECT full_path(path, {parts}), artist, tags, rating, stars, type, site FROM imageData'
-COMIC = 'SELECT parent FROM comic WHERE path_=SUBSTRING(%s, 32)'
-GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=SUBSTRING(%s, 32)'
-MODIFY = f'UPDATE imageData SET {{}} WHERE path=SUBSTRING(%s, 32)'
-DELETE = 'DELETE FROM imageData WHERE path=SUBSTRING(%s, 32)'
+COMIC = 'SELECT parent FROM comic WHERE path_=get_name(%s)'
+GESTURE = f'UPDATE imageData SET date_used="{date.today()}" WHERE path=get_name(%s)'
+MODIFY = 'UPDATE imageData SET {} WHERE path=get_name(%s)'
+DELETE = 'DELETE FROM imageData WHERE path=get_name(%s)'

@@ -1,12 +1,18 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar
 from PyQt5.QtCore import Qt, QItemSelection
 
+from GUI import ROOT, CONNECT, MODIFY, DELETE    
+from GUI.ManageData.galleryView import Gallery
+from GUI.ManageData.previewView import Preview
+from GUI.Slideshow import Slideshow
+
 class ManageData(QMainWindow):
 
     def __init__(self, parent=None):
-        
+    
         super(ManageData, self).__init__()
         self.setWindowTitle('Manage Data')
+        self.MYSQL = CONNECT()
         self.parent = parent
         self.configure_gui()
         self.create_menu()
@@ -111,7 +117,7 @@ class ManageData(QMainWindow):
                         )
                     if message == QMessageBox.Ok: return 0
 
-        busy = MYSQL.execute(
+        busy = self.MYSQL.execute(
             MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
             )
         if busy:
@@ -142,18 +148,18 @@ class ManageData(QMainWindow):
                 if (data := index.data(Qt.UserRole))
                 ]
             
-            busy = MYSQL.execute(DELETE, paths, many=1)
+            busy = self.MYSQL.execute(DELETE, paths, many=1)
             if busy:
                 QMessageBox.information(
                     None, 'The database is busy', 
                     'There is a transaction currently taking place',
                     QMessageBox.Ok
                     )
-                MYSQL.rollback()
+                self.MYSQL.rollback()
                 return 0
 
             for path, in paths: (ROOT / path).unlink(True)
-            MYSQL.commit()
+            self.MYSQL.commit()
             
             if update:
                 self.gallery.images.update([])
@@ -199,22 +205,3 @@ class ManageData(QMainWindow):
         if self in self.parent.windows[self.windowTitle()]: 
             self.parent.windows[self.windowTitle()].remove(self)
         if not self.parent.is_empty(): self.parent.show()
-
-if __name__ == '__main__':
-
-    from PyQt5.QtWidgets import QApplication
-    from .. import ROOT, MYSQL, MODIFY, DELETE
-    from .galleryView import Gallery
-    from .previewView import Preview
-
-    Qapp = QApplication([])
-
-    app = ManageData(Qapp)
-
-    Qapp.exec_()
-
-else:
-    from GUI import ROOT, MYSQL, MODIFY, DELETE
-    from GUI.ManageData.galleryView import Gallery
-    from GUI.ManageData.previewView import Preview
-    from GUI.Slideshow import Slideshow

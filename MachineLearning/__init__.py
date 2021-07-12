@@ -1,14 +1,8 @@
 from PIL import Image
 from pathlib import Path
-from numpy import resize, array, loadtxt, argwhere
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+import numpy as np
 
 HOME = Path(__file__).parent
-MODELS = HOME / 'Models'
-CHCKPNT = HOME / 'Checkpoints'
-LOGS = HOME / 'Logs'
 
 class Model():
 

@@ -1,11 +1,12 @@
-from PyQt5.QtWidgets import QMainWindow
-# from VideoSplitter import *
+from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QTableView, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QRadioButton, QComboBox, QDialog, QScrollArea
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtCore import Qt, QAbstractTableModel
 
-class MainWindow(QMainWindow):
+class VideoSplitter(QMainWindow):
 
     def __init__(self, parent):
         
-        super(VideoSplitter, self).__init__()
+        super(VideoSplitter, self).__init__(parent)
         self.setWindowTitle('Video Splitter')
         self.parent = parent
         self.configure_gui()
@@ -18,23 +19,88 @@ class MainWindow(QMainWindow):
         self.layout = QStackedWidget(self)
         self.setCentralWidget(self.layout)  
 
-        resolution = Qapp.desktop().screenGeometry()
-        width, height = resolution.width(),  resolution.height()
-        self.setGeometry(0, 0, width, height)
-
     def create_widgets(self):
         
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
-if __name__ == '__main__':
+class Ribbon():
+     
+    def __init__(self, parent):
+         
+        super().__init__(parent)
+        self.configure_gui()
+        self.create_widgets()
+     
+    def configure_gui(self):
+        
+        pass
     
-    from PyQt5.QtWidgets import QApplication, QMainWindow
-    from VideoSplitter import *
+    def create_widgets(self):
+        
+        pass
+    
+class Canvas():
+     
+    def __init__(self, parent):
+         
+        super().__init__(parent)
+        self.configure_gui()
+        self.create_widgets()
+     
+    def configure_gui(self):
+        
+        pass
+    
+    def create_widgets(self):
+        
+        pass
+    
+class FileExplorer():
+     
+    def __init__(self, parent):
+         
+        super().__init__(parent)
+        self.configure_gui()
+        self.create_widgets()
+     
+    def configure_gui(self):
+        
+        pass
+    
+    def create_widgets(self):
+        
+        pass
 
-    Qapp = QApplication([])
+class Timeline():
+     
+    def __init__(self, parent):
+         
+        super().__init__(parent)
+        self.configure_gui()
+        self.create_widgets()
+     
+    def configure_gui(self):
+        
+        pass
+    
+    def create_widgets(self):
+        
+        pass
 
-    app = VideoSplitter(None)
-
-    Qapp.exec_()
+class VideoClips():
+     
+    def __init__(self, parent):
+         
+        super().__init__(parent)
+        self.configure_gui()
+        self.create_widgets()
+     
+    def configure_gui(self):
+        
+        pass
+    
+    def create_widgets(self):
+        
+        pass
