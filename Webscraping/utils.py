@@ -58,12 +58,12 @@ GENERAL = {
     'underwear': 'underwear|panties|bra|briefs',
     }
 CUSTOM = {
-    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust OR o_ring_top) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
+    'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage|naked_robe', 
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra OR pasties) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust OR o_ring_top) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)',
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
-    'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage|naked_robe', 
     'pokies': 'nipples_visible_through_clothes',
     'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
     }
@@ -100,6 +100,7 @@ ARTIST = {
     'ichan': ['ignition_crisis', 0],
     'iskra': ['iskra', 1],
     'ittla': ['ittla', 1],
+    'kimjunho': ['jjanda', 0],
     'jjuneジュン': ['jjune', 0],
     'kajin': ['kajin_(kajinman)', 1],
     'kon_kit': ['konkitto', 0],
@@ -113,6 +114,7 @@ ARTIST = {
     'ななひめ': ['nanahime', -1],
     '♣3': ['nanaya_(daaijianglin)', 0],
     '♣3@金曜日西り02a': ['nanaya_(daaijianglin)', 0],
+    'thiccwithaq': ['nyantcha', 0],
     'にの子': ['ninoko', -1],
     'xin&obiwan': ['obiwan', 0],
     'xin&obiコミ1a11ab': ['obiwan', 0],
@@ -160,9 +162,11 @@ REMOVE = {
     'mosaic_censoring', 'censored', 'uncensored',
     'male_focus', 'multiple_boys', 'multiple_girls', 
     'pantyhose', 'no_humans', 'scenery', 'asian', 'what'
+    'animal_ears'
     }
 REPLACE = {
     '3d': '3d_cg',
+    'animated_gif': 'animated',
     'anal_object_insertion':'anal object_insertion',
     'anal_masturbation|penile_masturbation|vaginal_masturbation': 'masturbation',
     'blowjob': 'fellatio',
