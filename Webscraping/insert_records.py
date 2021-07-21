@@ -1,7 +1,7 @@
-import json, cv2, re, time, bs4
+import cv2, re, time, bs4
 from PIL import Image
 from urllib.parse import urlparse
-from . import USER, WEBDRIVER, CONNECT, INSERT
+from . import USER, WEBDRIVER, CONNECT, INSERT, json_generator
 from .utils import IncrementalBar, HEADERS, get_hash, get_name, get_tags, generate_tags, save_image
 
 EXT = 'jpe?g|png|gif|webm|mp4|JPE?G|PNG|GIF|WEBM|MP4'
@@ -20,14 +20,8 @@ def extract_files(driver, path, dest=None):
             save_image(name, image)
         
     for file in path.glob('*json'):
-        
-        urls = [
-            value for window in 
-            json.load(open(file, encoding='utf-8'))[0]['windows'].values() 
-            for value in window.values()
-            ]
 
-        for url in urls:
+        for url in json_generator(file):
             
             path = urlparse(url['url']).path[1:]
             if re.match('https://i.imgur.com/.+gif', url['url']):

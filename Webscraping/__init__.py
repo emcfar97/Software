@@ -1,4 +1,4 @@
-import os, time
+import os, time, json
 from pathlib import Path
 import mysql.connector as sql
 from configparser import ConfigParser
@@ -11,10 +11,11 @@ CREDENTIALS = ConfigParser(delimiters='=')
 CREDENTIALS.read('credentials.ini')
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
+
 SELECT = [
-    'SELECT href FROM imageData WHERE site=%s',
+    'SELECT href FROM imagedata WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
-    'SELECT href FROM imageData WHERE site=%s AND ISNULL(path)',
+    'SELECT href FROM imagedata WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
     f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked={{}} OR ISNULL(path))',
     f'''
@@ -25,23 +26,24 @@ SELECT = [
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
-    'INSERT INTO imageData(href, site) VALUES(%s, %s)',
+    'INSERT INTO imagedata(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imageData(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
+    'INSERT INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
     'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
     f'INSERT IGNORE INTO favorites(path, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s)',
     ]
 UPDATE = [
-    f'UPDATE imageData SET path=%s, artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
-    f'UPDATE imageData SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
+    f'UPDATE imagedata SET path=%s, artist=CONCAT(" ", %s, " "), tags=CONCAT(" ", %s, " "), rating=%s, type=%s, src=%s, hash=%s WHERE href=%s',
+    f'UPDATE imagedata SET path=%s, src=%s, hash=%s, type=%s WHERE href=%s',
     f'UPDATE favorites SET path=REPLACE(%s, "{ROOT}", "C:"), src=%s WHERE href=%s',
-    f'INSERT INTO imageData(path, hash, href, site) VALUES(%s, %s, %s, %s)',
+    f'INSERT INTO imagedata(path, hash, href, site) VALUES(%s, %s, %s, %s)',
     f'UPDATE favorites SET checked=%s, saved=%s WHERE path=REPLACE(%s, "{ROOT}", "C:")',
     ]
 DELETE = [
-    'DELETE FROM imageData WHERE href=%s AND ISNULL(path)',
+    'DELETE FROM imagedata WHERE href=%s AND ISNULL(path)',
     'DELETE FROM favorites WHERE href=%s AND ISNULL(path)',
+    'DELETE FROM favorites WHERE SUBSTRING_INDEX(path, ".", -1) IN ("zip", "pixiv", "ini", "lnk")',
     ]
 
 class CONNECT:
@@ -231,6 +233,43 @@ class WEBDRIVER:
         
         try: self.driver.close()
         except: pass
+        
+def get_starred(headless=True):
+
+    import bs4, time
+    from Webscraping import WEBDRIVER, CONNECT
+    
+    MYSQL = CONNECT()
+    DRIVER = WEBDRIVER(headless=headless)
+    UPDATE = 'UPDATE imagedata SET stars=4 WHERE path=%s AND stars=0'
+    
+    show = '//body/div[1]/div[6]/div/div/div[1]/div/div/main/div/section[3]/div/div[2]/button'
+    address = '//button[@aria-label="Remove from Starred"]'
+
+    DRIVER.get('https://www.dropbox.com/h', wait=4)
+    if (element:=DRIVER.find(show, fetch=1)).text == 'Show':
+        element.click()
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+
+    while starred:=html.findAll(class_='starred-item__content'):
+
+        paths = [(target.text,) for target in starred]
+        MYSQL.execute(UPDATE, paths, many=1, commit=1)
+        [DRIVER.find(address, click=True) for _ in range(5)]
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        time.sleep(2)
+
+    DRIVER.close()
+
+def json_generator(path): 
+
+    generator = json.load(open(path, encoding='utf-8'))
+
+    for object in generator[0]['windows'].values():
+
+        for value in object.values():
+    
+            yield value
 
 def start(initialize=True):
     

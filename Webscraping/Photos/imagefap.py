@@ -1,5 +1,5 @@
-import json, spacy
-from .. import USER, WEBDRIVER, CONNECT, INSERT
+import spacy
+from .. import USER, WEBDRIVER, CONNECT, INSERT, json_generator
 from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 REMOVE = 'gif.|girl.|sex.|pic.|ass|cock|naked|nude|pornstar|porn|&|\d'
@@ -32,6 +32,7 @@ def page_handler(url, title):
 
     for image in images:
         
+        progress.next()
         href = f'https://www.imagefap.com/{image.get("href")}'
         page_source = requests.get(href).content
         target = bs4.BeautifulSoup(page_source, 'lxml')
@@ -63,7 +64,6 @@ def page_handler(url, title):
             commit=1
             )
     
-        progress.next()
     print()
 
 def start(headless=True):
@@ -74,12 +74,9 @@ def start(headless=True):
     
     for file in PATH.iterdir():
 
-        window = json.load(open(file))[0]['windows']
-        try:
-            for val in window.values():
-                for url in val.values():
-                    page_handler(url['url'], url['title'])
-        except Exception as error: print(error, '\n'); continue
+        for url in json_generator(file):
+            try: page_handler(url['url'], url['title'])
+            except Exception as error: print(error, '\n'); continue
         file.unlink()
         print()
 
