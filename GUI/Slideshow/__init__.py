@@ -1,29 +1,36 @@
 from pathlib import Path
 from .. import get_frame
 from ..propertiesView import Properties
-from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt, QTimer, QStringListModel, QVariant
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QMenu, QAction
 
-from GUI.Slideshow.imageViewer import imageViewer
-from GUI.Slideshow.videoPlayer import videoPlayer
+from GUI.slideshow.imageViewer import imageViewer
+from GUI.slideshow.videoPlayer import videoPlayer
 
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent, gallery=None, index=0):
+    def __init__(self, parent, gallery=list(), index=0):
         
         super(Slideshow, self).__init__()
         self.parent = parent
-        self.gallery = list() if gallery is None else gallery
+        self.configure_gui()
+        self.create_widgets(gallery)
+        self.create_menu()
         self.index = index
-        self.stack = QStackedWidget(self)
-        self.setCentralWidget(self.stack)
-        self.create_widgets()
         self.move()
         self.showMaximized()
+        self.activateWindow()
+    
+    def configure_gui(self):
         
-    def create_widgets(self):
+        self.stack = QStackedWidget(self)
+        self.setCentralWidget(self.stack)
+
+    def create_widgets(self, gallery):
         
+        self.model = Model(self, gallery)
+
         self.image = imageViewer(self)
         self.video = videoPlayer(self)
         self.stack.addWidget(self.image)
@@ -35,11 +42,10 @@ class Slideshow(QMainWindow):
             lambda: self.setCursor(Qt.BlankCursor)
             )
         
-        self.menu = self.create_menu()
-    
     def create_menu(self):
 
         menu = QMenu(self)
+
         self.full = QAction(
             'Fullscreen', menu, triggered=self.fullscreen
             )
@@ -63,16 +69,16 @@ class Slideshow(QMainWindow):
             'Properties', menu, triggered=self.openEditor
             ))
 
-        return menu
+        self.menu = menu
 
     def move(self, delta=0):
         
-        if not self.gallery: 
+        if not self.model.gallery:
             self.image.no_image()
             return 0
         
-        self.index = (self.index + delta) % len(self.gallery)
-        path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
+        self.index = (self.index + delta) % len(self.model.gallery)
+        path = self.model.data(self.index, Qt.UserRole)
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
@@ -110,7 +116,7 @@ class Slideshow(QMainWindow):
 
     def rotate(self, sign):
 
-        path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
+        path = self.model.data(self.index, Qt.UserRole)
 
         if path.endswith(('jpg', 'png')):
             self.image.rotate(path, sign)
@@ -122,9 +128,10 @@ class Slideshow(QMainWindow):
 
     def copy(self):
         
-        path = self.gallery[self.index].data(Qt.UserRole)[0].pop()
+        path = self.model.data(self.index, Qt.UserRole)
 
-        if path.endswith(('gif', '.mp4', '.webm')):
+        if path.endswith(('gif', '.mp4', '.webm')): 
+            return
 
             path = mktemp(suffix='.png')
             image = ImageGrab.grab(
@@ -142,16 +149,18 @@ class Slideshow(QMainWindow):
             self.video.update(None)
         else: self.image.update(None)
         
-        path = [self.gallery[self.index]]
+        path = [self.model.gallery[self.index]]
 
-        if self.parent.delete_records(path, 0):
-            del self.gallery[self.index]
+        if self.parent.delete_records(path):
+            del self.model.gallery[self.index]
+
+        self.move()
             
     def openEditor(self):
         
         Properties(
             self.parent, 
-            [self.gallery[self.index].data(Qt.UserRole)]
+            [self.model.data(self.index, Qt.EditRole)]
             )
         
     def contextMenuEvent(self, event):
@@ -215,3 +224,35 @@ class Slideshow(QMainWindow):
             self.timer.start(1500)
         
     def closeEvent(self, event): self.video.update(None)
+
+class Model(QStringListModel):
+
+    def __init__(self, parent, gallery):
+
+        QStringListModel.__init__(self, parent)
+        self.gallery = gallery
+    
+    def rowCount(self, parent=None): return len(self.gallery)
+
+    def data(self, index, role):
+
+        if role == Qt.EditRole:
+            
+            data = self.gallery[index]
+            
+            path = {data[0]}
+            artist = set(data[1].split())
+            tags = set(data[2].split())
+            rating = {data[3]}
+            stars = {data[4]}
+            type = {data[5]}
+            site = {data[6]}
+
+            tags.discard('qwd')
+            
+            return path, tags, artist, stars, rating, type, site
+        
+        if role == Qt.UserRole: return self.gallery[index][0]
+
+        return QVariant()
+    
