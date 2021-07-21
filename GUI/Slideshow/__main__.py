@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication
 
-from GUI.Slideshow import Slideshow
+from GUI.slideshow import Slideshow
 
 Qapp = QApplication([])
 

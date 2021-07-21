@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication
 
-from GUI.UploadMedia import UploadMedia
+from GUI.uploadmedia import UploadMedia
 
 Qapp = QApplication([])
 

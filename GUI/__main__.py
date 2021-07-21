@@ -1,10 +1,11 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout,  QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy
 from PyQt5.QtCore import Qt
 
-from GUI.ManageData import ManageData
-from GUI.ManageData.previewView import Preview, Timer
-from GUI.MachineLearning import MachineLearning
-from GUI.VideoSplitter import VideoSplitter
+from GUI.managedata import ManageData
+from GUI.managedata.galleryView import Gallery
+from GUI.managedata.previewView import Preview, Timer
+from GUI.machinelearning import MachineLearning
+from GUI.videosplitter import VideoSplitter
 
 class App(QMainWindow):
     
@@ -69,6 +70,12 @@ class App(QMainWindow):
         
     def is_empty(self): return any(self.windows.values())
 
+    def closed_window(self, event):
+        
+        widget = event
+        self.windows[widget.windowTitle()].remove(widget)
+        if self.is_empty(): self.show()
+
     def keyPressEvent(self, event):
 
         key_press = event.key()
@@ -91,7 +98,6 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         
-        MYSQL.close()
         Qapp.quit()
 
 class GestureDraw(QMainWindow):

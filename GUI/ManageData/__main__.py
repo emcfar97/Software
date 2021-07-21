@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication
 
-from GUI.ManageData import ManageData
+from GUI.managedata import ManageData
 
 Qapp = QApplication([])
 

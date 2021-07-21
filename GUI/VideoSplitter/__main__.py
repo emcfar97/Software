@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication
 
-from GUI.VideoSplitter import VideoSplitter
+from GUI.videosplitter import VideoSplitter
 
 Qapp = QApplication([])
 
