@@ -1,4 +1,4 @@
-from .. import GESTURE, MYSQL, get_frame
+from .. import GESTURE, get_frame
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QThread
 from PyQt5.QtWidgets import QLabel, QScrollArea
@@ -19,11 +19,8 @@ class Preview(QScrollArea):
         self.setContentsMargins(0, 0, 0, 0)
         
     def update(self, index=None):
-        
-        self.verticalScrollBar().setSliderPosition(0)
-        self.horizontalScrollBar().setSliderPosition(0)
 
-        if not (index and (data := index.data(Qt.UserRole))): 
+        if not (index and (data := index.data(Qt.EditRole))):
             
             pixmap = QPixmap()
         
@@ -33,22 +30,29 @@ class Preview(QScrollArea):
             if path.endswith(('.mp4', '.webm')): path = get_frame(path)
 
             pixmap = QPixmap(path)
-            height, width = pixmap.width(), pixmap.height()
+            height, width = pixmap.height(), pixmap.width()
             aspect_ratio = (
                 width / height 
                 if height > width else
                 height / width
                 )
 
-            if (type_ == 3 and aspect_ratio < .6) or aspect_ratio < .3: 
-                if height < width:
-                    pixmap.scaledToHeight(self.width())
-                else: pixmap.scaledToWidth(self.height())
-            else: pixmap = QPixmap(path).scaled(
+            if (type_ == 3 and aspect_ratio < .6) or aspect_ratio < .3:
+                if height > width:
+                    pixmap = pixmap.scaledToWidth(
+                        self.width() * .9, Qt.SmoothTransformation
+                        )
+                else:
+                    pixmap = pixmap.scaledToHeight(
+                        self.height() * .9, Qt.SmoothTransformation
+                        )
+            else: pixmap = pixmap.scaled(
                 self.size(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
                 )
 
+        self.verticalScrollBar().setSliderPosition(0)
+        self.horizontalScrollBar().setSliderPosition(0)
         self.label.setPixmap(pixmap)
 
 class Timer(QLabel):
@@ -67,7 +71,7 @@ class Timer(QLabel):
         parent = self.parent()
         self.gallery = gallery
         self.current = next(self.gallery)
-        parent.show_image(self.current)
+        parent.update(self.current)
         
         self.setGeometry(
             parent.width() * .85, parent.height() * .85, 
@@ -106,14 +110,14 @@ class Timer(QLabel):
             
             try:
                 self.current = next(self.gallery)
-                parent.show_image(self.current)
+                parent.update(self.current)
                 self.time[1] = self.time[0]
                 self.updateText()
 
             except StopIteration:
 
                 self.timer.stop()
-                parent.show_image(None)
+                parent.update()
                 self.setText('End of session')
                 self.setStyleSheet(
                     'background: black; color: white; font: 17px'
@@ -131,4 +135,6 @@ class Worker(QThread):
 
     def run(self):
     
-        MYSQL.execute(GESTURE, (self.arguments,), commit=1)
+        self.parent().parent().MYSQL.execute(
+            GESTURE, (self.arguments,), commit=1
+            )
