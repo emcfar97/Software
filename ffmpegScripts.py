@@ -2,9 +2,9 @@ import ffmpeg
 from os import path
 from pathlib import Path
 from ffprobe import FFProbe
-from re import search, sub, findall
+from re import search, sub, findall, IGNORECASE
 
-EXT = '.mp4', '.flv', '.mkv', '.avi'
+EXT = '\.(mp4|flv|mkv|avi|wmv|mov|mpg|mpeg|divx|rm|ram|vob|3gp)'
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 DOWN = USER / r'Downloads\Images'
@@ -60,7 +60,7 @@ while True:
                     SOURCE / file, 
                     DEST / file.with_suffix('.mp4').name
                     )
-                for file in SOURCE.iterdir() if file.suffix in EXT
+                for file in SOURCE.iterdir() if search(EXT, file.suffix, IGNORECASE)
                 ]
             
             for file, mp4 in files:
@@ -97,7 +97,7 @@ while True:
                 
                 files = [
                     file for file in folder.iterdir()
-                    if file.suffix in EXT
+                    if search(EXT, file.suffix, IGNORECASE)
                     ]
                 new, stream = get_stream(files, text)
                 
@@ -118,7 +118,7 @@ while True:
                 try:
                     files = [
                         file for file in folder.iterdir()
-                        if file.suffix in EXT
+                        if search(EXT, file.suffix, IGNORECASE)
                         ]
                     new, stream = get_stream(files, text)
                     
@@ -231,7 +231,8 @@ while True:
 
                 if file.is_dir():
                     print(f'{file}: {[str(i) for i in file.iterdir()]}')
-                elif file.suffix in EXT: print(str(file))
+                elif search(EXT, file.suffix, IGNORECASE):
+                    print(str(file))
 
             print() 
         
