@@ -2,7 +2,7 @@ import re
 from .. import BASE
 from .imageView import ImageView, Worker
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QWidget, QLineEdit, QVBoxLayout, QHBoxLayout, QFormLayout, QAbstractItemView, QMenu, QAction, QPushButton, QCheckBox, QStyle, QCompleter
+from PyQt5.QtWidgets import QWidget, QLineEdit, QVBoxLayout, QHBoxLayout,  QAbstractItemView, QPushButton, QCheckBox, QStyle, QCompleter, QMenu, QAction
 
 AUTOCOMPLETE = r'GUI\autocomplete.txt'
 ENUM = {
@@ -60,7 +60,7 @@ class Gallery(QWidget):
                 
                 token = f'parent="{val}"'
                 order = self.get_order(1)
-                join = 'JOIN comic ON comic.path_=imageData.path'
+                join = 'JOIN comic ON comic.path_=imagedata.path'
             
             elif col == 'order':
 
@@ -99,10 +99,10 @@ class Gallery(QWidget):
             if (val:=ENUM[col.checkedAction().text()]) and text not in self.query:
                 self.query[text] = [val]
         
-         # comic functionality
+        # comic functionality
         
         if 'comic' in self.query.get('type', [''])[0] and '3' not in self.query:
-            join = 'JOIN comic ON comic.path_=imageData.path'
+            join = 'JOIN comic ON comic.path_=imagedata.path'
             self.query['pages'] = ['page=0']
 
         if not any(self.query): self.query[''] = ['NOT ISNULL(path)']
@@ -202,36 +202,19 @@ class Ribbon(QWidget):
             self.history.addWidget(button)
 
         # Search function
-        self.select = QFormLayout()
-        self.layout.addLayout(self.select, 0)
-        
         self.tags = QLineEdit(self)
-        self.tags.setFixedWidth(250)
         self.tags.setPlaceholderText('Enter tags')
         self.tags.setCompleter(
             QCompleter(open(AUTOCOMPLETE).read().split())
             )
-        self.select.addRow('Search:', self.tags)
+        self.tags.returnPressed.connect(self.parent().populate)
+        self.layout.addWidget(self.tags, 6)
         
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().populate)
         self.tags.textChanged.connect(lambda: self.timer.start(1000))
         
-        if self.parent().title == 'Manage Data':
-            self.tags.returnPressed.connect(self.parent().populate)
-            
-        else:
-            self.time = QLineEdit(self)
-            self.time.setFixedWidth(250)
-            self.tags.returnPressed.connect(
-                self.parent().parent().start_session
-                )
-            self.time.returnPressed.connect(
-                self.parent().parent().start_session
-                )
-            self.select.addRow('Time:', self.time)
-    
         self.refresh = QPushButton(self)
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh.clicked.connect(self.parent().populate)
@@ -239,7 +222,7 @@ class Ribbon(QWidget):
         
         self.multi = QCheckBox('Multi-selection', self)
         self.multi.clicked.connect(self.changeSelectionMode)
-        self.layout.addWidget(self.multi, 1, Qt.AlignLeft)
+        self.layout.addWidget(self.multi, 0, Qt.AlignLeft)
 
         self.tags.setFocus()
         
