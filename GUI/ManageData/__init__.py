@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar
-from PyQt5.QtCore import Qt, QItemSelection
+from PyQt5.QtCore import Qt
 
-from GUI import ROOT, CONNECT, MODIFY, DELETE    
-from GUI.ManageData.galleryView import Gallery
-from GUI.ManageData.previewView import Preview
-from GUI.Slideshow import Slideshow
+from GUI import ROOT, CONNECT, MODIFY, DELETE
+from GUI.managedata.galleryView import Gallery
+from GUI.managedata.previewView import Preview
+from GUI.slideshow import Slideshow
 
 class ManageData(QMainWindow):
 
@@ -15,8 +15,8 @@ class ManageData(QMainWindow):
         self.MYSQL = CONNECT()
         self.parent = parent
         self.configure_gui()
-        self.create_menu()
         self.create_widgets()
+        self.create_menu()
         self.showMaximized()
         self.gallery.populate()
 
@@ -30,12 +30,6 @@ class ManageData(QMainWindow):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
 
-    def create_menu(self):
-        
-        self.menubar = self.menuBar()
-        
-        # file = self.menubar.addMenu('File')
-        
     def create_widgets(self):
             
         self.windows = set()
@@ -49,37 +43,40 @@ class ManageData(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
     
+    def create_menu(self):
+        
+        self.menubar = self.menuBar()
+        
+        # file = self.menubar.addMenu('File')
+        
     def start_slideshow(self, index=None):
         
         view = self.gallery.images
         if not view.table.images: return
 
-        selection = QItemSelection(
-            view.table.index(0, 0),
-            view.table.index(
-                view.table.rowCount() - 2, 
-                view.table.columnCount() - 1
-                )
-            )
-        selection.merge(QItemSelection(
-                view.table.index(
-                    view.table.rowCount() - 1, 0
-                    ),
-                view.table.index(
-                    view.table.rowCount() - 1, 
-                    (view.total() - 1) % view.table.columnCount()
-                    )),
-                view.selectionModel().Select
-                )
-
-        indexes = selection.indexes()
+        indexes = view.table.images
         index = index if index else view.currentIndex()
         index = sum(index.data(100))
         slideshow = Slideshow(self, indexes, index)
-
+        
         self.windows.add(slideshow)
 
-    def update_records(self, gallery, **kwargs):
+    def select_records(self, statement=None):
+
+        if statement is None:
+
+            statement = self.gallery.statement
+
+        busy = self.MYSQL.execute(statement)
+        if busy:
+            QMessageBox.information(
+                None, 'The database is busy', 
+                'There is a transaction currently taking place',
+                QMessageBox.Ok
+                )
+            return 0
+
+    def update_records(self, indexes, **kwargs):
                 
         parameters = []
         random = 'RANDOM()' in self.gallery.get_order()
@@ -102,7 +99,7 @@ class ManageData(QMainWindow):
 
         if 'Path' in kwargs:
 
-            for path, in gallery:
+            for path, in indexes:
                 path = ROOT / path
 
                 try: path.rename(path.with_name())
@@ -118,7 +115,7 @@ class ManageData(QMainWindow):
                     if message == QMessageBox.Ok: return 0
 
         busy = self.MYSQL.execute(
-            MODIFY.format(', '.join(parameters)), gallery, many=1, commit=1
+            MODIFY.format(', '.join(parameters)), indexes, many=1, commit=1
             )
         if busy:
             QMessageBox.information(
@@ -128,12 +125,12 @@ class ManageData(QMainWindow):
                 )
             return 0
 
-        if not random: self.gallery.populate()
         self.preview.update()
-
+        if not random: self.gallery.populate()
+        
         return 1
     
-    def delete_records(self, gallery, update=False):
+    def delete_records(self, indexes):
                 
         message = QMessageBox.question(
             None, 'Delete', 
@@ -144,8 +141,7 @@ class ManageData(QMainWindow):
         if message == QMessageBox.Yes:
             
             paths = [
-                (data[0].pop(),) for index in gallery 
-                if (data := index.data(Qt.UserRole))
+                (index.data(Qt.UserRole),) for index in indexes 
                 ]
             
             busy = self.MYSQL.execute(DELETE, paths, many=1)
@@ -161,16 +157,14 @@ class ManageData(QMainWindow):
             for path, in paths: (ROOT / path).unlink(True)
             self.MYSQL.commit()
             
-            if update:
-                self.gallery.images.update([])
-                self.gallery.populate()
-            else:
-                table = self.gallery.images.table
-                for index in gallery[::-1]:
-                    index = index.data(300)
-                    del table.images[index]
-                table.layoutChanged.emit()
-                self.gallery.statusbar
+            table = self.gallery.images.table
+            for index in indexes[::-1]:
+                if index is None: continue
+                del table.images[index.data(300)]
+
+            table.layoutChanged.emit()
+            self.gallery.images.clearSelection()
+            self.gallery.statusbar(self.gallery.images.total())
 
             return 1
     
@@ -188,7 +182,11 @@ class ManageData(QMainWindow):
 
         elif key_press == Qt.Key_Delete:
             
-            gallery = self.gallery.images.selectedIndexes() 
+            gallery = [
+                index for index in
+                self.gallery.images.selectedIndexes()
+                if index.data(300)
+                ]
             self.delete_records(gallery)
                         
         elif key_press == Qt.Key_Escape: self.close()
@@ -199,9 +197,5 @@ class ManageData(QMainWindow):
 
     def closeEvent(self, event):
         
+        self.MYSQL.close()
         self.windows.clear()
-        if self.parent is None: return
-
-        if self in self.parent.windows[self.windowTitle()]: 
-            self.parent.windows[self.windowTitle()].remove(self)
-        if not self.parent.is_empty(): self.parent.show()
