@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 
 HOME = Path(__file__).parent
+BATCH = 64
+EPOCHS = 10
 
 class Model():
 
