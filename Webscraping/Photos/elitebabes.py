@@ -34,6 +34,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
+        progress.next()
         page_source = requests.get(f'https://www.{SITE}.com/{href}')
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
         try:
@@ -67,7 +68,6 @@ def page_handler(hrefs):
                 )
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
-        progress.next()
     print()
 
 def start(initial=True, headless=True):

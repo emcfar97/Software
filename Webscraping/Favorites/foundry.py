@@ -32,6 +32,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
+        progress.next()
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
         DRIVER.find('//*[@class="center"]', click=True)
         try: html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -45,7 +46,6 @@ def page_handler(hrefs):
 
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
-        progress.next()
     print()
 
 def start(initial=True, headless=True):

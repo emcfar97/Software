@@ -40,6 +40,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
 
+        progress.next()
         DRIVER.get(f'https://twitter.com{href}')
 
         for _ in range(3):
@@ -75,7 +76,6 @@ def page_handler(hrefs):
             MYSQL.execute(INSERT[5], (str(name), image, href, SITE))
         else: MYSQL.execute(DELETE[1], (href,), commit=1)
         
-        progress.next()
     print()
 
 def start(initial=True, headless=True):

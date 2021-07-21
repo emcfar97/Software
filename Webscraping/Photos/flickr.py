@@ -41,6 +41,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
+        progress.next()
         DRIVER.get(f'https://www.flickr.com{href}')
         image = None
         
@@ -84,7 +85,6 @@ def page_handler(hrefs):
             commit=1
             )
     
-        progress.next()
     print()
 
 def start(initial=True, headless=True):
@@ -93,7 +93,7 @@ def start(initial=True, headless=True):
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
-    if initial: 
+    if initial:
         hrefs = initialize(DRIVER.login(SITE))
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))

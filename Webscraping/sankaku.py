@@ -47,6 +47,7 @@ def page_handler(hrefs, mode):
 
     for href, in hrefs:
         
+        progress.next()
         page_source = requests.get(
             f'https://{mode[0]}.sankakucomplex.com{href}'
             ).content      
@@ -95,7 +96,6 @@ def page_handler(hrefs, mode):
             if save_image(name, image, exif): MYSQL.commit()
             else: MYSQL.rollback()
     
-        progress.next()
     print()
 
 def start(mode=1, initial=True, headless=True):
@@ -109,7 +109,7 @@ def start(mode=1, initial=True, headless=True):
         url = DRIVER.login(SITE)
         hrefs = initialize(mode, url)
         MYSQL.execute(
-            'INSERT INTO imageData(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1, commit=1
+            'INSERT INTO imagedata(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1, commit=1
             )
     page_handler(
         MYSQL.execute(

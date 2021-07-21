@@ -32,6 +32,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
+        progress.next()
         name = get_name(href)
         if not save_image(name, href): continue
         tags, rating, exif = generate_tags(
@@ -46,7 +47,6 @@ def page_handler(hrefs):
             commit=1
             )
 
-        progress.next()
     print()
 
 def start(headless=True):

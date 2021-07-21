@@ -32,6 +32,7 @@ def page_handler(hrefs):
 
     for href, in hrefs:
         
+        progress.next()
         DRIVER.get(f'https://www.furaffinity.net{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
@@ -53,7 +54,6 @@ def page_handler(hrefs):
 
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
-        progress.next()
     print()
 
 def start(initial=True, headless=True):

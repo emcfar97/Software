@@ -24,6 +24,7 @@ def start(headless=True):
 
     for folder in folders:
         
+        progress.next()
         artist = ' '.join(
             ARTIST.get(artist, [artist])[0] for artist in 
             [get_artist(folder.stem.lower())]
@@ -43,7 +44,7 @@ def start(headless=True):
                 general=get_tags(DRIVER, image), 
                 custom=True, rating=True, exif=False
                 )
-            imageData = MYSQL.execute(INSERT[3], (
+            imagedata = MYSQL.execute(INSERT[3], (
                     image.name, artist, tags, rating, 
                     3, hash_, None, None, None
                     )
@@ -52,12 +53,11 @@ def start(headless=True):
                     image.name, cover.name, num
                     )
                 )
-            if not (imageData and comics): break; continue
+            if not (imagedata and comics): break; continue
 
         MYSQL.commit()
         send2trash.send2trash(str(folder))
         
-        progress.next()
     print()
 
     DRIVER.close()

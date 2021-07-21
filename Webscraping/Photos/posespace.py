@@ -27,6 +27,7 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
 
     for href, in hrefs:
 
+        progress.next()
         image_a = np.asarray(bytearray(
             requests.get(f'{url}{href}contacta.jpg').content)
             )
@@ -54,7 +55,6 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
                 )
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
         
-        progress.next()
     print()
         
 def make_gif(image):
