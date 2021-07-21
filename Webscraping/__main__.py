@@ -12,11 +12,13 @@ args = parser.parse_args()
 
 if args.arg == 0: # webscraping
 
-    import Webscraping
+    from Webscraping import start, get_starred
     
-    Webscraping.start()
-    Update_Autocomplete()
-    Get_Starred()
+    start()
+    get_starred()
+
+    print('\nComplete')
+
 
 elif args.arg == 1: # insert_records
 
@@ -25,7 +27,6 @@ elif args.arg == 1: # insert_records
 
     insert_records.start()
     imagefap.start()
-    Remove_Redundancies()
 
 else:
 
