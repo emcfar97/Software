@@ -11,9 +11,10 @@ SITES = {
 
 class UploadMedia(QMainWindow):
      
-    def __init__(self, parent):
+    def __init__(self, parent=None):
          
-        super(UploadMedia).__init__(parent)
+        super(UploadMedia, self).__init__()
+        self.parent = parent
         self.configure_gui()
         self.create_widgets()
      

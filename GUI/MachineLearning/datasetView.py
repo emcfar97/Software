@@ -4,7 +4,7 @@ class Dataset(QWidget):
 
     def __init__(self, parent):
         
-        super(QWidget, self).__init__(parent)
+        super(Dataset, self).__init__(parent)
         # self.layout = QHBoxLayout(self)
         self.create_widgets()
 

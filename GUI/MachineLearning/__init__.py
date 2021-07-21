@@ -1,12 +1,16 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout,  QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAction
+from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QStatusBar, QAction
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
+
+from GUI.machinelearning.designView import Design
+from GUI.machinelearning.datasetView import Dataset
+from GUI.machinelearning.trainView import Train
 
 class MachineLearning(QMainWindow):
     
     def __init__(self, parent=None):
         
-        super(MachineLearning, self).__init__(parent)
+        super(MachineLearning, self).__init__()
         self.setWindowTitle('Machine Learning')
         self.parent = parent
         self.configure_gui()
@@ -18,80 +22,7 @@ class MachineLearning(QMainWindow):
         
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)  
-        # self.stack.setContentsMargins(0, 0, 5, 0)
-
-    def create_menu(self):
-        
-        self.menubar = self.menuBar()
-        self.tooblar = self.addToolBar('')
-
-        # File
-        file = self.menubar.addMenu('File')
-        self.create_action(
-            file, ['New...', 'Create new project'], self.menuAction, 'Ctrl+N'
-            )
-        self.create_action(
-            file, ['Open...', 'Load project from file'], self.menuAction, 'Ctrl+O'
-            )
-        file.addMenu('Open recent')
-        file.addSeparator()
-        self.create_action(
-            file, ['Save', 'Save project to file'], self.menuAction, 'Ctrl+S'
-            )
-        file.addAction('Save As...', self.menuAction, shortcut='Ctrl+Shift+S')
-        file.addAction('Save a Copy...', self.menuAction)
-        file.addAction('Save Selection...', self.menuAction)
-        file.addAction('Export...', self.menuAction)
-        file.addSeparator()
-        file.addAction('Close', self.menuAction, shortcut='Ctrl+F4')
-        file.addSeparator()
-        file.addAction('Properties', self.menuAction)
-        file.addSeparator()
-        file.addAction('Quit', self.menuAction, shortcut='Ctrl+Q')
-
-        # Edit
-        edit = self.menubar.addMenu('Edit')
-        edit.addAction('Undo', self.menuAction, shortcut='Ctrl+Z')
-        edit.addAction('Redo', self.menuAction, shortcut='Ctrl+Y')
-        edit.addSeparator()
-        edit.addAction('Cut', self.menuAction, shortcut='Ctrl+X')
-        edit.addAction('Copy', self.menuAction, shortcut='Ctrl+C')
-        edit.addAction('Paste', self.menuAction, shortcut='Ctrl+V')
-        edit.addAction('Delete', self.menuAction, shortcut='Del')
-        edit.addSeparator()
-        edit.addAction('Select All', self.menuAction, shortcut='Ctrl+A')
-        edit.addAction('Find', self.menuAction, shortcut='Ctrl+F')
-        edit.addSeparator()
-        edit.addAction('Preferences', self.menuAction)
-
-        # View
-        view = self.menubar.addMenu('View')
-        view.addAction('Palettes', self.menuAction, shortcut='F9')
-        view.addAction('Inspector', self.menuAction, shortcut='F8')
-        view.addSeparator()
-        view.addAction('Zoom in', self.menuAction, shortcut='Ctrl++')
-        view.addAction('Zoom out', self.menuAction, shortcut='Ctrl+-')
-        view.addSeparator()
-        view.addAction('Fulscreen', self.menuAction, shortcut='F11')
-
-        # Layer
-        layer = self.menubar.addMenu('Layer')
-
-        # Tools
-        tools = self.menubar.addMenu('Tools')
-
-        # Help
-        help = self.menubar.addMenu('Help')
-
-    def create_action(self, menu, text, slot, shortcut):
-        
-        if isinstance(text, list): 
-            menu.addAction(text[0], self.menuAction, shortcut=shortcut)
-            self.tooblar.addAction(
-                QAction(QIcon('new.bmp'), f'{text[1]} ({shortcut})', self)
-                )
-        else:
-            menu.addAction(text, self.menuAction, shortcut=shortcut)
+        self.stack.setContentsMargins(0, 0, 5, 0)
 
     def create_widgets(self):
         
@@ -107,6 +38,79 @@ class MachineLearning(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
+    def create_menu(self):
+        
+        self.menubar = self.menuBar()
+        self.tooblar = self.addToolBar('')
+
+        # File
+        file = self.menubar.addMenu('File')
+        self.create_action(
+            file, ['New...', 'Create new project'], self.menuPressEvent, 'Ctrl+N'
+            )
+        self.create_action(
+            file, ['Open...', 'Load project from file'], self.menuPressEvent, 'Ctrl+O'
+            )
+        file.addMenu('Open recent')
+        file.addSeparator()
+        self.create_action(
+            file, ['Save', 'Save project to file'], self.menuPressEvent, 'Ctrl+S'
+            )
+        file.addAction('Save As...', self.menuPressEvent, shortcut='Ctrl+Shift+S')
+        file.addAction('Save a Copy...', self.menuPressEvent)
+        file.addAction('Save Selection...', self.menuPressEvent)
+        file.addAction('Export...', self.menuPressEvent)
+        file.addSeparator()
+        file.addAction('Close', self.menuPressEvent, shortcut='Ctrl+F4')
+        file.addSeparator()
+        file.addAction('Properties', self.menuPressEvent)
+        file.addSeparator()
+        file.addAction('Quit', self.menuPressEvent, shortcut='Ctrl+Q')
+
+        # Edit
+        edit = self.menubar.addMenu('Edit')
+        edit.addAction('Undo', self.menuPressEvent, shortcut='Ctrl+Z')
+        edit.addAction('Redo', self.menuPressEvent, shortcut='Ctrl+Y')
+        edit.addSeparator()
+        edit.addAction('Cut', self.menuPressEvent, shortcut='Ctrl+X')
+        edit.addAction('Copy', self.menuPressEvent, shortcut='Ctrl+C')
+        edit.addAction('Paste', self.menuPressEvent, shortcut='Ctrl+V')
+        edit.addAction('Delete', self.menuPressEvent, shortcut='Del')
+        edit.addSeparator()
+        edit.addAction('Select All', self.menuPressEvent, shortcut='Ctrl+A')
+        edit.addAction('Find', self.menuPressEvent, shortcut='Ctrl+F')
+        edit.addSeparator()
+        edit.addAction('Preferences', self.menuPressEvent)
+
+        # View
+        view = self.menubar.addMenu('View')
+        view.addAction('Palettes', self.menuPressEvent, shortcut='F9')
+        view.addAction('Inspector', self.menuPressEvent, shortcut='F8')
+        view.addSeparator()
+        view.addAction('Zoom in', self.menuPressEvent, shortcut='Ctrl++')
+        view.addAction('Zoom out', self.menuPressEvent, shortcut='Ctrl+-')
+        view.addSeparator()
+        view.addAction('Fulscreen', self.menuPressEvent, shortcut='F11')
+
+        # Layer
+        layer = self.menubar.addMenu('Layer')
+
+        # Tools
+        tools = self.menubar.addMenu('Tools')
+
+        # Help
+        help = self.menubar.addMenu('Help')
+
+    def create_action(self, menu, text, slot, shortcut):
+        
+        if isinstance(text, list): 
+            menu.addAction(text[0], self.menuPressEvent, shortcut=shortcut)
+            self.tooblar.addAction(
+                QAction(QIcon.fromTheme('new.bmp'), f'{text[1]} ({shortcut})', self)
+                )
+        else:
+            menu.addAction(text, self.menuPressEvent, shortcut=shortcut)
+
     def menuPressEvent(self, action=None):
 
         print(action)
@@ -116,8 +120,3 @@ class MachineLearning(QMainWindow):
         key_press = event.key()
                 
         if key_press == Qt.Key_Escape: self.close()
-
-    def closeEvent(self, event):
-        
-        self.parent.windows[self.windowTitle()].remove(self)
-        if not self.parent.is_empty(): self.parent.show()
