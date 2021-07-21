@@ -1,5 +1,5 @@
 import textwrap
-from .. import COMIC, get_frame
+from .. import COMIC, BATCH, get_frame
 from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QObject, QThread, QVariant, QModelIndex, Qt, QSize, pyqtSignal
@@ -93,10 +93,8 @@ class ImageView(QTableView):
     
     def delete(self, event):
 
-        random = 'RANDOM' in self.parent().get_order()
-
         self.parent().parent().parent().delete_records(
-            self.selectedIndexes(), not random
+            self.selectedIndexes()
             )
 
     def find_by_artist(self, event):
@@ -111,7 +109,7 @@ class ImageView(QTableView):
 
     def read_comic(self, event):
 
-        path = self.currentIndex().data(Qt.UserRole)[0].pop()
+        path = self.currentIndex().data(Qt.UserRole)
         parent, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
         self.parent().ribbon.tags.setText(f'comic={parent}')
     
@@ -137,8 +135,8 @@ class ImageView(QTableView):
     def openPersistentEditor(self):
         
         gallery = [
-            index.data(Qt.UserRole) for index in self.selectedIndexes() 
-            if index.data(Qt.UserRole) is not None
+            index.data(Qt.EditRole) for index in self.selectedIndexes() 
+            if index.data(Qt.EditRole) is not None
             ]
         Properties(self.parent().parent().parent(), gallery)
     
@@ -174,7 +172,7 @@ class ImageView(QTableView):
     def contextMenuEvent(self, event):
         
         title = self.parent().title == 'Manage Data'
-        index = self.currentIndex().data(Qt.UserRole)
+        index = self.currentIndex().data(Qt.EditRole)
         
         if index and title and index[5].pop() == 'Comic':
             self.menu.insertAction(self.artist, self.comic)
@@ -340,8 +338,6 @@ class ImageView(QTableView):
 
 class Model(QAbstractTableModel):
 
-    number_populated = pyqtSignal(str, int, int, int)
-
     def __init__(self, parent, size=5.18):
 
         QAbstractTableModel.__init__(self, parent)
@@ -367,7 +363,7 @@ class Model(QAbstractTableModel):
 
         return self.parent().mysql.rowcount > len(self.images)
 
-    def fetchMore(self, index, fetch=5000):
+    def fetchMore(self, index, fetch=BATCH):
 
         start = len(self.images)
         remainder = self.parent().mysql.rowcount - start
@@ -378,13 +374,6 @@ class Model(QAbstractTableModel):
         self.images += self.parent().mysql.CURSOR.fetchmany(fetch)
 
         self.endInsertRows()
-
-    def layoutAboutToBeChanged(self, parents, hint):
-        
-        print('layoutabouttobechanged')
-        self.parent().parent().populate()
-
-        return super().layoutAboutToBeChanged(parents=parents, hint=hint)
     
     def data(self, index, role):
         
@@ -440,21 +429,7 @@ class Model(QAbstractTableModel):
 
         if role == Qt.SizeHintRole: return QSize(self.width, self.width)
         
-        if role == Qt.UserRole:
-            
-            data = self.images[ind]
-            
-            path = {data[0]}
-            artist = set(data[1].split())
-            tags = set(data[2].split())
-            rating = {data[3]}
-            stars = {data[4]}
-            type = {data[5]}
-            site = {data[6]}
-
-            tags.discard('qwd')
-            
-            return path, tags, artist, stars, rating, type, site
+        if role == Qt.UserRole: return self.images[ind][0]
         
         if role == 100: return (index.row() * 5), index.column()
         
@@ -467,6 +442,10 @@ class Model(QAbstractTableModel):
         if role == Qt.EditRole and index.isValid():
             
             self.dataChanged.emit(index, index, [Qt.DisplayRole])
+
+            return True
+            
+        return False
 
 class Worker_(QObject):
 
