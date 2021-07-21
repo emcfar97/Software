@@ -1,95 +1,62 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QTableView, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QRadioButton, QComboBox, QDialog, QScrollArea
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt, QAbstractTableModel
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStatusBar
+from PyQt5.QtCore import Qt
+
+from GUI.videosplitter.videoView import Video
+from GUI.videosplitter.fileView import FileExplorer
+from GUI.videosplitter.timelineView import Timeline
+from GUI.videosplitter.clipsView import Clips
 
 class VideoSplitter(QMainWindow):
 
-    def __init__(self, parent):
-        
-        super(VideoSplitter, self).__init__(parent)
+    def __init__(self, parent=None):
+    
+        super(VideoSplitter, self).__init__()
         self.setWindowTitle('Video Splitter')
         self.parent = parent
         self.configure_gui()
-        self.create_menu()
         self.create_widgets()
+        self.create_menu()
         self.showMaximized()
 
     def configure_gui(self):
         
-        self.layout = QStackedWidget(self)
-        self.setCentralWidget(self.layout)  
+        self.center = QWidget(self)
+        self.layout = QHBoxLayout() 
+
+        self.center.setLayout(self.layout)
+        self.setCentralWidget(self.center)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
 
     def create_widgets(self):
         
+        self.video = Video(self)
+        self.files = FileExplorer(self)
+        self.timeline = Timeline(self)
+        self.clips = Clips(self)
+
+        self.layout.addWidget(self.video)
+        self.layout.addWidget(self.files)
+        self.layout.addWidget(self.timeline)
+        self.layout.addWidget(self.clips)
+
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
-class Ribbon():
-     
-    def __init__(self, parent):
-         
-        super().__init__(parent)
-        self.configure_gui()
-        self.create_widgets()
-     
-    def configure_gui(self):
-        
-        pass
-    
-    def create_widgets(self):
-        
-        pass
-    
-class Canvas():
-     
-    def __init__(self, parent):
-         
-        super().__init__(parent)
-        self.configure_gui()
-        self.create_widgets()
-     
-    def configure_gui(self):
-        
-        pass
-    
-    def create_widgets(self):
-        
-        pass
-    
-class FileExplorer():
-     
-    def __init__(self, parent):
-         
-        super().__init__(parent)
-        self.configure_gui()
-        self.create_widgets()
-     
-    def configure_gui(self):
-        
-        pass
-    
-    def create_widgets(self):
-        
-        pass
+    def create_menu(self): pass
 
-class Timeline():
-     
-    def __init__(self, parent):
-         
-        super().__init__(parent)
-        self.configure_gui()
-        self.create_widgets()
-     
-    def configure_gui(self):
-        
-        pass
-    
-    def create_widgets(self):
-        
-        pass
+    def keyPressEvent(self, event):
 
-class VideoClips():
+        key_press = event.key()
+
+        if key_press == Qt.Key_Escape: self.close()
+    
+        elif self.parent is not None:
+            
+            self.parent.keyPressEvent(event)
+
+class Ribbon(QWidget):
      
     def __init__(self, parent):
          
