@@ -2,6 +2,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QLabel
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 
+from GUI.slideshow.controls import Controls
+
 class imageViewer(QLabel):
     
     def __init__(self, parent):
@@ -37,10 +39,10 @@ class imageViewer(QLabel):
 
         parent = self.parent().parent()
 
-        if not parent.stack.currentIndex() and parent.gallery:
+        if not parent.stack.currentIndex() and parent.model.gallery:
 
-            index = parent.gallery[parent.index]
-            image = QImage(index.data(Qt.UserRole)[0].pop())            
+            index = parent.model.gallery[parent.index]
+            image = QImage(index[0])            
             pixmap = QPixmap(image).scaled(
                 event.size(), Qt.KeepAspectRatio, 
                 transformMode=Qt.SmoothTransformation
