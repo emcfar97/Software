@@ -78,7 +78,7 @@ class Slideshow(QMainWindow):
             return 0
         
         self.index = (self.index + delta) % len(self.model.gallery)
-        path = self.model.data(self.index, Qt.UserRole)
+        path = self.model.index(self.index).data(Qt.UserRole)
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
@@ -116,7 +116,7 @@ class Slideshow(QMainWindow):
 
     def rotate(self, sign):
 
-        path = self.model.data(self.index, Qt.UserRole)
+        path = self.model.index(self.index).data(Qt.UserRole)
 
         if path.endswith(('jpg', 'png')):
             self.image.rotate(path, sign)
@@ -128,7 +128,7 @@ class Slideshow(QMainWindow):
 
     def copy(self):
         
-        path = self.model.data(self.index, Qt.UserRole)
+        path = self.model.index(self.index).data(Qt.UserRole)
 
         if path.endswith(('gif', '.mp4', '.webm')): 
             return
@@ -149,19 +149,18 @@ class Slideshow(QMainWindow):
             self.video.update(None)
         else: self.image.update(None)
         
-        path = [self.model.gallery[self.index]]
+        index = [self.model.index(self.index)]
 
-        if self.parent.delete_records(path):
+        if self.parent.delete_records(index):
             del self.model.gallery[self.index]
 
         self.move()
             
     def openEditor(self):
+
+        index = self.model.index(self.index)
         
-        Properties(
-            self.parent, 
-            [self.model.data(self.index, Qt.EditRole)]
-            )
+        Properties(self.parent, [index.data(Qt.EditRole)])
         
     def contextMenuEvent(self, event):
         
@@ -235,6 +234,8 @@ class Model(QStringListModel):
     def rowCount(self, parent=None): return len(self.gallery)
 
     def data(self, index, role):
+
+        index = index.row()
 
         if role == Qt.EditRole:
             
