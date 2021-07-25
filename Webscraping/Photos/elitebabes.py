@@ -52,7 +52,7 @@ def page_handler(hrefs):
         for image in images.findAll('a'):
 
             src = image.get('href')
-            if (name:=get_name(src)).exists(): continue
+            name = get_name(src)
             if not save_image(name, src): break
 
             tags, rating, exif = generate_tags(
@@ -77,7 +77,9 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
 
     if initial:
+        
         hrefs = initialize(DRIVER.login(SITE))
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
