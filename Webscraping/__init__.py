@@ -170,13 +170,15 @@ class WEBDRIVER:
         except Exception as error:
             if fetch: raise error
     
-    def page_source(self):
+    def page_source(self, error=None):
         
         for _ in range(5):
             try: return self.driver.page_source
-            except exceptions.WebDriverException as error:
+            except exceptions.WebDriverException as error_:
+                error = error_
                 self.refresh()
-            except exceptions.InvalidSessionIdException as eror:
+            except exceptions.InvalidSessionIdException as error_:
+                error = error_
                 print()
                 
         raise error
@@ -236,32 +238,34 @@ class WEBDRIVER:
         
 def get_starred(headless=True):
 
-    import bs4, time
+    import bs4, re, time
     from Webscraping import WEBDRIVER, CONNECT
     
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless=headless)
     UPDATE = 'UPDATE imagedata SET stars=4 WHERE path=%s AND stars=0'
     
-    show = '//body/div[1]/div[6]/div/div/div[1]/div/div/main/div/section[3]/div/div[2]/button'
+    show = '//*[@id="maestro-content-portal"]/div/div/div/div/div/main/div/section[3]/div/div[2]/button'
     address = '//button[@aria-label="Remove from Starred"]'
 
     DRIVER.get('https://www.dropbox.com/h', wait=4)
     if (element:=DRIVER.find(show, fetch=1)).text == 'Show':
         element.click()
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    target = html.find('table')
 
-    while starred:=html.findAll(class_='starred-item__content'):
+    while starred:=target.findAll(text=re.compile('\w+\.')):
 
-        paths = [(target.text,) for target in starred]
+        paths = [(star,) for star in starred]
         MYSQL.execute(UPDATE, paths, many=1, commit=1)
         [DRIVER.find(address, click=True) for _ in range(5)]
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        target = html.find('table')
         time.sleep(2)
 
     DRIVER.close()
 
-def json_generator(path): 
+def json_generator(path):
 
     generator = json.load(open(path, encoding='utf-8'))
 
