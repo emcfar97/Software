@@ -15,7 +15,7 @@ def initialize(url, query=0):
     if not query:
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
         
-    DRIVER.get(f'https://gelbooru.com/index.php{url}')
+    DRIVER.get(f'https://{SITE}.com/index.php{url}')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
     hrefs = [
@@ -36,7 +36,7 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        page_source = requests.get(f'https://gelbooru.com/{href}')
+        page_source = requests.get(f'https://{SITE}.com/{href}')
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
 
         metadata = ' '.join(
