@@ -22,11 +22,16 @@ if args.arg == 0: # webscraping
 
 elif args.arg == 1: # insert_records
 
+    import threading
     from Webscraping import insert_records
     from Webscraping.Photos import imagefap
 
-    insert_records.start()
-    imagefap.start()
+    threads = [
+        threading.Thread(target=insert_records.start),
+        threading.Thread(target=imagefap.start),
+        ]
+    for thread in threads: thread.start()
+    for thread in threads: thread.join()
 
 else:
 
