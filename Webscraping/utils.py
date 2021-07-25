@@ -34,9 +34,9 @@ GENERAL = {
     'gesugao': 'crazy_smile|crazy_eyes|gesugao', 
     'girl_on_top': 'girl_on_top AND sex',
     'japanese_clothes': 'yamakasa|tabi|sarashi|fundoshi|hakama|short_yukata|yukata|short_kimono|kimono|geta|happi|zori',
-    'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls)))',
-    'mature': '(large_areolae OR plump OR fat OR belly) AND (sagging_breasts OR veiny_breasts)',
-    'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
+    'male_focus': '(male_focus OR (solo AND 1boy) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR multiple_girls)))',
+    'mature': '(large_areolae OR plump OR fat OR belly) AND (sagging_breasts OR veiny_breasts) OR milf',
+    'muscular': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR multiple_boys))) AND (muscular OR muscle OR muscular_female OR abs)', 
     'nude': 'nude AND NOT functionally_nude',
     'functionally_nude': '(functionally_nude OR (bottomless AND topless)) AND NOT nude', 
     'open_clothes': 'open_clothes|open_coat|open_jacket|open_shirt|open_robe|open_kimono|open_fly|open_shorts', 
@@ -49,7 +49,7 @@ GENERAL = {
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
     'sex': '(sex OR aftersex OR vaginal OR anal OR oral OR fellatio OR cunnilingus OR blowjob OR handjob OR frottage OR tribadism OR group_sex OR hetero OR yaoi OR yuri OR clothed_sex OR paizuri) AND NOT solo', 
     'sex_toy': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
-    'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR 4girls OR multiple_girls) OR NOT sex)', 
+    'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR multiple_girls) OR NOT sex)', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
     'sportswear': 'sports_bra|yoga_pants',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
@@ -65,7 +65,6 @@ CUSTOM = {
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
     'pokies': 'nipples_visible_through_clothes',
-    'slender': '(solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR 4boys OR multiple_boys))) AND (slender OR NOT (((muscular OR muscle OR muscular_female OR toned OR abs) OR ((large_breasts OR huge_breasts OR gigantic_breasts) OR (plump OR fat) OR thick_thighs OR wide_hips OR huge_ass))))',
     }
 RATING = {
     3: 'sex|aftersex|hetero|vaginal|anal|anus|cum|penis|vagina|pussy|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion', 
@@ -151,12 +150,15 @@ ARTIST = {
     'yd@4日目西a': ['yang-do', 0],
     'zako': ['zako_(arvinry)', -1],
     'paul_kwon': ['zeronis', -1],
+    'puu_no_puupuupuu': ['zeroshiki_kouichi', 1],
+    'puuzaki_puuna': ['zeroshiki_kouichi', 1],
     'zheng': ['zheng', 0],
     'ぞんだ': ['zonda', -1],
     }
 REMOVE = {
     '3d', 'photorealistic', 'realistic', 'photo', 'blurry',
-    'cum', 'cum_in_pussy',
+    'cum', 'cum_in_pussy', 'pov', 'solo',
+    'blurry', 'blurry_foreground', 'blurry_background',
     'sex', 'after_sex', 'sex_from_behind', 'vaginal', 'anal',
     'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl', 'boy_on_top'
     'mosaic_censoring', 'censored', 'uncensored',
@@ -166,7 +168,7 @@ REMOVE = {
     }
 REPLACE = {
     '3d': '3d_cg',
-    'animated_gif': 'animated',
+    'animate.*_gif': 'animated',
     'anal_object_insertion':'anal object_insertion',
     'anal_masturbation|penile_masturbation|vaginal_masturbation': 'masturbation',
     'blowjob': 'fellatio',
@@ -174,6 +176,8 @@ REPLACE = {
     '(female|male)_solo|solo_focus': 'solo',
     'insertion': 'object_insertion',
     'legs_spread|legs_apart': 'spread_legs',
+    '[4-9]boys': 'multiple_boys',
+    '[4-9]girls': 'multiple_girls',
     'nipple_tweak':'nipple_tweaking',
     'no_pan': 'no_panties',
     'oshiri': 'ass',
@@ -308,7 +312,7 @@ def get_tags(driver, path, filter=False):
                     tag.text for tag in html.find('tbody').findAll(href=True)
                     ])
                 break
-            except AttributeError: 
+            except AttributeError:
                 if driver.current_url().endswith('deepdanbooru/'):
                     driver.find('//*[@id="exampleFormControlFile1"]',str(frame))
                     driver.find('//body/div/div/div/form/button', click=True)
