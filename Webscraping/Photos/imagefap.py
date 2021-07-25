@@ -74,10 +74,15 @@ def start(headless=True):
     
     for file in PATH.iterdir():
 
+        error = 0
+
         for url in json_generator(file):
             try: page_handler(url['url'], url['title'])
-            except Exception as error: print(error, '\n'); continue
-        file.unlink()
+            except Exception as error_: 
+                error = error_
+                print(error, '\n'); continue
+        
+        if not error: file.unlink()
         print()
 
     DRIVER.close()
