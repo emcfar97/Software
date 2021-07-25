@@ -1,5 +1,5 @@
 import sqlite3, os, time, tempfile
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
 from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 
-def main(paths, upload_, sankaku=0, gelbooru=0):
+def main(paths, upload, sankaku=0, gelbooru=0):
     
     if not paths: return
     if upload: limit = get_limit()
@@ -15,6 +15,7 @@ def main(paths, upload_, sankaku=0, gelbooru=0):
 
     for (path, href, src, site,) in paths:
         
+        progress.next()
         DRIVER.get('http://iqdb.org/')
         try:
             if src: DRIVER.find('//*[@id="url"]', src, fetch=1)
@@ -22,8 +23,9 @@ def main(paths, upload_, sankaku=0, gelbooru=0):
         except exceptions.InvalidArgumentException:
             MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
-        DRIVER.find('//body/form/table[2]/tbody/tr[4]/td[1]/input', click=True)
+        DRIVER.find('//input[@type="submit"]', click=True)
         if path.endswith(EXT): time.sleep(25)
+        else: time.sleep(5)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         if html.find(text=re.compile(IGNORE)):
@@ -39,40 +41,41 @@ def main(paths, upload_, sankaku=0, gelbooru=0):
             ]
         except: continue
         
-        if targets and not upload_:
-            try: saved = favorite(targets)
-            except: saved = False
-        elif upload_ and (sankaku < limit or gelbooru < 50):
+        if targets and not upload: saved = favorite(targets)
+        elif upload and (sankaku < limit or gelbooru < 50):
             saved, type_ = upload(path, href, src, site)  
             if type_: sankaku += 1
             else: gelbooru += 1
         else: saved = False
                         
         if saved and src is None: os.remove(path)
-        MYSQL.execute(UPDATE[4], (1, saved, path), commit=1)
+        MYSQL.execute(UPDATE[4], (1, int(saved), path), commit=1)
 
-        progress.next()
     print()
 
 def favorite(targets, saved=False):
 
     for match in targets:
+
         DRIVER.get(f'https:{match.get("href")}')
-        if'gelbooru' in match.get('href') and'list&'not in DRIVER.current_url():
-            DRIVER.find('Add to favorites', click=True, type_=4)
+
+        if'gelbooru' in match.get('href'):
+            try: DRIVER.find('//*[text()="Add to favorites"]', click=True)
+            except: pass
         else:
             element = DRIVER.find('//*[@title="Add to favorites"]')
             try: element.click()
-            except exceptions.ElementClickInterceptedException: 
+            except exceptions.ElementClickInterceptedException:
                 DRIVER.active_element().click()
                 element.click()
             except exceptions.ElementNotInteractableException: pass
+            except: pass
 
         saved = True
 
     return saved
      
-def upload(path, href, src, site):
+def upload_image(path, href, src, site):
 
     if site == 'foundry':
         artist = href.split('/')[3]
@@ -186,6 +189,7 @@ def initialize():
         ]
 
     MYSQL.execute(INSERT[2], paths, many=1, commit=1)
+    MYSQL.execute(DELETE[2], commit=1)
 
 def start(initial=True, headless=True, upload=0):
 
