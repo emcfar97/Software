@@ -3,162 +3,77 @@ import argparse
 def run():
 
     args = parser.parse_args()
+    if not (args.args or args.func): return
 
-    function = args.name
-    arguments = ', '.join([arg for arg in args.args])
+    function = args.func
+    arguments = args.args
 
     exec(f'{function}({arguments})')
-        
-def Controller(arg=None):
-    
-    if arg == 0: # webscraping
-
-        import Webscraping
-        
-        Webscraping.start()
-        Update_Autocomplete()
-        Get_Starred()
-
-    elif arg == 1: # insert_records
-
-        from Webscraping import insert_records
-        from Webscraping.Photos import imagefap
-
-        insert_records.start()
-        imagefap.start()
-        Remove_Redundancies()
-    
-    else:
-
-        from Webscraping.Favorites import deviantart
-        from Webscraping.Photos import posespace, blogspot
-
-        deviantart.start(1, 0)
-        # posespace.start(0)
-        # blogspot.start(1, 0)
-
-def Remove_Redundancies():
-
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()  
-    SELECT = 'SELECT path, artist, tags FROM imageData WHERE NOT ISNULL(path)'
-    UPDATE = 'UPDATE imageData SET artist=%s, tags=%s WHERE path=%s'
-
-    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
-
-        artist = f' {" ".join(set(artist.split()))} '
-        tags = f' {" ".join(set(tags.split()))} '
-        MYSQL.execute(UPDATE, (artist, tags, path))
-
-    MYSQL.commit()
-    MYSQL.close()
-
-def Update_Autocomplete():
-
-    from pathlib import Path
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()
-    
-    MYSQL.execute('SET GLOBAL group_concat_max_len=10000000')
-    artist, tags = MYSQL.execute(
-        '''SELECT 
-        GROUP_CONCAT(DISTINCT artist ORDER BY artist SEPARATOR ""), 
-        GROUP_CONCAT(DISTINCT tags ORDER BY tags SEPARATOR "") 
-        FROM imagedata''',
-        fetch=1)[0]
-    text = (
-        ' '.join(sorted(set(artist.split()))), 
-        ' '.join(sorted(set(tags.split())))
-        )
-    text = ('\n'.join(text)).encode('ascii', 'ignore')
-    Path(r'GUI\autocomplete.txt').write_text(text.decode())
-    
-    MYSQL.close()
-
-def Get_Starred(headless=True):
-
-    import bs4, time
-    from Webscraping import WEBDRIVER, CONNECT
-    
-    MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(headless=headless)
-    UPDATE = 'UPDATE imageData SET stars=4 WHERE path=%s AND stars=0'
-    
-    show = '//body/div[1]/div[6]/div/div/div[1]/div/div/main/div/section[3]/div/div[2]/button'
-    address = '//button[@aria-label="Remove from Starred"]'
-
-    DRIVER.get('https://www.dropbox.com/h', wait=4)
-    if (element:=DRIVER.find(show, fetch=1)).text == 'Show':
-        element.click()
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-
-    while starred:=html.findAll(class_='starred-item__content'):
-
-        paths = [(target.text,) for target in starred]
-        MYSQL.execute(UPDATE, paths, many=1, commit=1)
-        [DRIVER.find(address, click=True) for _ in range(5)]
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        time.sleep(2)
-
-    DRIVER.close()
 
 def Normalize_Database():
 
     from pathlib import Path
-    from Webscraping import CONNECT, USER
+    from Webscraping import CONNECT, USER, utils
     
     MYSQL = CONNECT()
     DROPBOX = USER / r'Dropbox\ん'
-    CASE = r'''
-        case type
-        when 1 then CONCAT('{0}\エラティカ ニ\', path)
-        when 2 then CONCAT('{0}\エラティカ 三\', path)
-        when 3 then CONCAT('{0}\エラティカ 四\', path)
-        end
-        '''.format(DROPBOX).replace('\\', '\\\\')
-    SELECT = f'SELECT {CASE} FROM imageData WHERE NOT ISNULL(path)'
-    UPDATE = 'UPDATE imageData SET path=NULL WHERE path=get_name(%s)'
-    DELETE = 'DELETE FROM imageData WHERE path=get_name(%s) AND ISNULL(src)'
+    parts = ", ".join([f"'{part}'" for part in DROPBOX.parts]).replace('\\', '')
+    SELECT = f'SELECT full_path(path, {parts}) FROM imagedata WHERE NOT ISNULL(path)'
+    select = 'SELECT src, href FROM imagedata WHERE path=%s'
+    UPDATE = 'UPDATE imagedata SET path=NULL WHERE path=%s'
+    DELETE = 'DELETE FROM imagedata WHERE path=%s'
 
     database = set(
         Path(path) for path, in MYSQL.execute(SELECT, fetch=1)
         )
-    windows = set(DROPBOX.glob('*/*/*'))
+    windows = set(DROPBOX.glob('[0-9a-f]/[0-9a-f]/*'))
     x, y = database - windows, windows - database
     
-    for num, file in enumerate(y, 1):
-        try: file.replace(DROPBOX / r'Downloads\Test\Reserve' / file.name)
-        except: continue
-    else:
-        try: print(f'{num} files moved')
-        except: print('0 files moved')
-    
     for num, file in enumerate(x, 1):
-        MYSQL.execute(UPDATE, (file.name,), commit=1)
+        if any(*MYSQL.execute(select, (file.name,), fetch=1)):
+            MYSQL.execute(UPDATE, (file.name,), commit=1)
+        else:
+            MYSQL.execute(DELETE, (file.name,), commit=1)
     else:
         try: print(f'{num} records deleted')
         except: print('0 records deleted')
 
-    MYSQL.execute(DELETE, x, many=1, commit=1)
+    SELECT = 'SELECT path FROM imageData WHERE hash=%s OR path=%s'
 
+    for num, file in enumerate(y, 1):
+
+        hash_ = utils.get_hash(file)
+        name = utils.get_name(file)
+
+        image = MYSQL.execute(SELECT, (hash_, name.name), fetch=1)
+        if image:
+            try:
+                file.rename(name)
+            except FileExistsError:
+                file.unlink()
+        else:
+            try: file.replace(DROPBOX / r'Downloads\Test\Reserve' / file.name)
+            except: continue
+    else:
+        try: print(f'{num} files moved')
+        except: print('0 files moved')
+    
 def Check_Predictions(sql=False, num=25):
     
+    from Webscraping import USER
     from MachineLearning import Model
 
+    path = USER / r'Dropbox\ん'
     model = Model('deepdanbooru.hdf5')
 
     if sql:
         
-        from Webscraping import USER, CONNECT
-
-        path = USER / r'Dropbox\ん'
+        from Webscraping import CONNECT
         
         MYSQL = CONNECT()
         SELECT = f'''
             SELECT full_path(path), tags, type 
-            FROM imageData 
+            FROM imagedata 
             WHERE SUBSTR(path, 32, 5) IN ('.jpg', '.png')
             ORDER BY RAND() LIMIT {num}
             '''
@@ -166,7 +81,7 @@ def Check_Predictions(sql=False, num=25):
         for image, tags, type_ in MYSQL.execute(SELECT, fetch=1):
 
             tags = sorted(tags.split())
-            image = path / TYPE[type_] / image
+            image = path / image
             prediction = model.predict(image)
             similar = set(tags) & set(prediction)
 
@@ -177,7 +92,7 @@ def Check_Predictions(sql=False, num=25):
         from PIL import Image
         from random import choices
 
-        glob = list(path.glob('エラティカ *\*jpg'))
+        glob = list(path.glob('[0-9a-f]/[0-9a-f]/*jpg'))
 
         for image in choices(glob, k=num):
 
@@ -244,7 +159,7 @@ def Find_symmetric_videos():
             ])
     
     MYSQL = CONNECT()
-    SELECT = 'SELECT path FROM imageData WHERE MATCH(tags, artist) AGAINST("animated -audio" IN BOOLEAN MODE) AND type=0'
+    SELECT = 'SELECT path FROM imagedata WHERE MATCH(tags, artist) AGAINST("animated -audio" IN BOOLEAN MODE) AND type=0'
 
     for path, in MYSQL.execute(SELECT, fetch=1):
 
@@ -258,6 +173,33 @@ def Find_symmetric_videos():
             success, frame = vidcap.read()
             
         if symmetric(frames): print(path)
+
+def Download_Youtube():
+
+    from pytube import YouTube
+    from Webscraping import USER, json_generator
+    from Webscraping.utils import IncrementalBar
+
+    path = USER / r'Downloads\Images\Youtube'
+
+    for file in path.iterdir():
+        
+        error = 0
+        urls = list(json_generator(file))
+        progress = IncrementalBar('Files', max=len(urls))
+
+        for url in urls[::-1]:
+
+            progress.next()
+            video = YouTube(url['url'])
+            try:
+                func = video.streams.get_highest_resolution()
+                func.download(path.parent)
+            except Exception as error_: 
+                error = error_
+                continue
+        
+        if not error: file.unlink()
 
 def make_stitch():
     
@@ -289,16 +231,36 @@ def make_stitch():
     status, image = stitcher.stitch(frames)
     cv2.imwrite(str(test / 'p.jpg'), image)
 
+def path_walk(top, topdown=False, followlinks=False):
+    """
+    See Python docs for os.walk, exact same behavior but it yields Path() instances instead
+    """
+    names = list(top.iterdir())
+
+    dirs = (node for node in names if node.is_dir() is True)
+    nondirs =(node for node in names if node.is_dir() is False)
+
+    if topdown:
+        yield top, dirs, nondirs
+
+    for name in dirs:
+        if followlinks or name.is_symlink() is False:
+            for x in path_walk(name, topdown, followlinks):
+                yield x
+
+    if topdown is not True:
+        yield top, dirs, nondirs
+
 parser = argparse.ArgumentParser(
     prog='test', 
     description='Run test functions'
     )
 parser.add_argument(
-    '-n', '--name', type=str,
+    '-f', '--func', type=str,
     help='Name of function'
     )
 parser.add_argument(
-    '-a', '--args', type=list,
+    '-a', '--args', type=str,
     help='Arguments of function',
     default=''
     )
