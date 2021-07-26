@@ -64,17 +64,17 @@ class App(QMainWindow):
             self.layout.addWidget(option)
     
     def select(self, title, app):
-
-        self.windows[title] = self.windows.get(title, []) + [app(self)]
+        
+        app = app(self)
+        app.window_closed.connect(self.closed_window)
+        self.windows[title] = self.windows.get(title, []) + [app]
         self.hide()
         
-    def is_empty(self): return any(self.windows.values())
-
     def closed_window(self, event):
         
         widget = event
         self.windows[widget.windowTitle()].remove(widget)
-        if self.is_empty(): self.show()
+        if any(self.windows.values()): self.show()
 
     def keyPressEvent(self, event):
 
