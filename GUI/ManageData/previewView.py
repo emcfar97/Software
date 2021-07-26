@@ -1,6 +1,6 @@
 from .. import GESTURE, get_frame
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QTimer, QThread
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QLabel, QScrollArea
 
 class Preview(QScrollArea):
@@ -105,8 +105,8 @@ class Timer(QLabel):
         
         else:
             parent = self.parent()
-            self.thread.arguments = self.current.data(Qt.UserRole)
-            self.thread.start()
+            path = self.current.data(Qt.UserRole)[0]
+            MYSQL.execute(GESTURE, (path,))
             
             try:
                 self.current = next(self.gallery)
@@ -126,15 +126,3 @@ class Timer(QLabel):
                     parent.width() * .4, parent.height() * .1,
                     125, 75
                     )
-
-class Worker(QThread):
-    
-    def __init__(self, parent):
-        
-        super(Worker, self).__init__(parent)
-
-    def run(self):
-    
-        self.parent().parent().MYSQL.execute(
-            GESTURE, (self.arguments,), commit=1
-            )

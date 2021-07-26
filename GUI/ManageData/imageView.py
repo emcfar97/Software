@@ -2,7 +2,7 @@ import textwrap
 from .. import COMIC, BATCH, get_frame
 from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QObject, QThread, QVariant, QModelIndex, Qt, QSize, pyqtSignal
+from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QObject, QThread, QVariant, QModelIndex, Qt, QSize
 from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QMessageBox
 
 class ImageView(QTableView):
@@ -80,7 +80,7 @@ class ImageView(QTableView):
         for num, item in enumerate(items):
             action = QAction(item, menu, checkable=True)
             if num == check: action.setChecked(True)
-            action_group.triggered.connect(self.parent().populate)
+            action_group.triggered.connect(self.parent().parent().select_records)
             action_group.addAction(action)
             menu.addAction(action)
 
@@ -99,9 +99,9 @@ class ImageView(QTableView):
 
     def find_by_artist(self, event):
 
-        artist = self.currentIndex().data(Qt.UserRole)[2]
+        artist = self.currentIndex().data(Qt.UserRole)[1]
         if artist: 
-            artist = ' OR '.join(artist.pop().split())
+            artist = ' OR '.join(artist.split())
             self.parent().ribbon.tags.setText(artist)
         else: QMessageBox.information(
             self, 'Artist', 'This image has no artist'
@@ -109,7 +109,7 @@ class ImageView(QTableView):
 
     def read_comic(self, event):
 
-        path = self.currentIndex().data(Qt.UserRole)
+        path = self.currentIndex().data(Qt.UserRole)[0]
         parent, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
         self.parent().ribbon.tags.setText(f'comic={parent}')
     
@@ -119,7 +119,7 @@ class ImageView(QTableView):
         cb.clear(mode=cb.Clipboard)
         
         paths = ' '.join(
-            f'"{index.data(Qt.UserRole)[0].pop()}"' 
+            f'"{index.data(Qt.UserRole)[0]}"' 
             for index in self.selectedIndexes()
             )
         cb.setText(paths, mode=cb.Clipboard)
@@ -128,9 +128,12 @@ class ImageView(QTableView):
 
     def update(self, images):
         
-        if isinstance(images, bool): images = list()
+        self.clearSelection()
         self.parent().statusbar(self.mysql.rowcount)
+
+        if not isinstance(images, list): images = list()
         self.table.images = images
+        self.table.layoutChanged.emit()
     
     def openPersistentEditor(self):
         
@@ -329,10 +332,9 @@ class ImageView(QTableView):
 
             else: self.setCurrentIndex(new)
         
-        elif self.parent().title == 'Manage Data' and 'comic' in self.parent().query.get('type', [''])[0] and '3' not in self.parent().query:
+        elif 'type="comic"' in self.parent().query and key_press in (Qt.Key_Return, Qt.Key_Enter):
         
-            if key_press in (Qt.Key_Return, Qt.Key_Enter): self.read_comic(None)
-            else: self.parent().keyPressEvent(event)
+            self.read_comic(None)
 
         else: self.parent().keyPressEvent(event)
 
@@ -379,13 +381,16 @@ class Model(QAbstractTableModel):
         
         ind = (index.row() * 5) + index.column()
 
-        if ind >= len(self.images) or not self.images[ind][0]:
+        if ind >= len(self.images) or not any(self.images[ind]):
 
             return QVariant()
-            
+        
+        data = self.images[ind]
+
         if role == Qt.DecorationRole:
             
-            path = self.images[ind][0]
+            path = data[0]
+
             image = (
                 get_frame(path) 
                 if path.endswith(('.mp4', '.webm')) else 
@@ -401,7 +406,7 @@ class Model(QAbstractTableModel):
 
         if role == Qt.EditRole:
             
-            data = self.images[ind]
+            data = data[:7]
             
             path = {data[0]}
             artist = set(data[1].split())
@@ -417,7 +422,7 @@ class Model(QAbstractTableModel):
 
         if role == Qt.ToolTipRole:
             
-            art, tag, rat, sta, typ, sit, = self.images[ind][1:7]
+            art, tag, rat, sta, typ, sit, = data[1:7]
             
             tags = self.wrapper.wrap(
                 ' '.join(sorted(tag.replace(' qwd ', ' ').split()))
@@ -429,7 +434,7 @@ class Model(QAbstractTableModel):
 
         if role == Qt.SizeHintRole: return QSize(self.width, self.width)
         
-        if role == Qt.UserRole: return self.images[ind][0]
+        if role == Qt.UserRole: return data
         
         if role == 100: return (index.row() * 5), index.column()
         
@@ -446,29 +451,3 @@ class Model(QAbstractTableModel):
             return True
             
         return False
-
-class Worker_(QObject):
-
-    finished = pyqtSignal()
-
-    def run(self):
-        
-        rows = self.mysql.execute(self.statement, fetch=1)
-        self.parent().images.update(rows)
-        self.finished.emit()
-
-    def __init__(self, parent):
-        
-        super(Worker, self).__init__(parent)
-
-class Worker(QThread):
-    
-    def __init__(self, parent):
-        
-        super(Worker, self).__init__(parent)
-    
-    def run(self):
-    
-        self.parent().images.update(
-            self.parent().images.mysql.execute(self.statement, fetch=1)
-            )

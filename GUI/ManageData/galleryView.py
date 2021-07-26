@@ -1,15 +1,15 @@
 import re
 from .. import BASE
-from .imageView import ImageView, Worker
+from .imageView import ImageView
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QWidget, QLineEdit, QVBoxLayout, QHBoxLayout,  QAbstractItemView, QPushButton, QCheckBox, QStyle, QCompleter, QMenu, QAction
 
 AUTOCOMPLETE = r'GUI\autocomplete.txt'
 ENUM = {
     'All': '',
-    'Photo': 'type=1', 
-    'Illus': 'type=2', 
-    'Comic': 'type=3',
+    'Photo': "type='photograph'",
+    'Illus': "type='illustration'",
+    'Comic': "type='comic'",
     'Explicit': '',
     'Questionable': 'rating<3',
     'Safe': 'rating=1',
@@ -24,32 +24,24 @@ class Gallery(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(*margins)
         self.create_widgets()
+        self.update_query()
                     
     def create_widgets(self):
         
         self.ribbon = Ribbon(self)
         self.images = ImageView(self)
-        self.thread = Worker(self)
          
         self.layout.addWidget(self.ribbon)
         self.layout.addWidget(self.images)
-        self.thread.finished.connect(
-            self.images.table.layoutChanged.emit
-            )
 
-    def populate(self, event=None, op='[<>=!]=?'):
+    def update_query(self, event=None, op='[<>=!]=?'):
         
-        self.query = {}
+        query = {}
         join = ''
         order = self.get_order()
-        self.images.clearSelection()
         string = self.ribbon.tags.text()
         if string: self.ribbon.update(string)
         
-        if self.title == 'Gesture Draw':
-            
-            self.query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
-
         # query parsing
         for token in re.findall(f'\w+{op}[\w\*\.]+', string):
             
@@ -58,8 +50,7 @@ class Gallery(QWidget):
 
             if col == 'comic':
                 
-                token = f'parent="{val}"'
-                order = self.get_order(1)
+                token = f"comic.parent='{val}'"
                 join = 'JOIN comic ON comic.path_=imagedata.path'
             
             elif col == 'order':
@@ -79,8 +70,18 @@ class Gallery(QWidget):
 
                 token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
 
-            self.query[col] = self.query.get(col, []) + [token]
+            query[col] = query.get(col, []) + [token]
         
+        # menu parsing
+        for text, col in zip(['type', 'rating'], [self.type, self.rating]):
+
+            if (val:=ENUM[col.checkedAction().text()]) and text not in query:
+                query[text] = [val]
+            if 'comic' not in query and text == 'type' and 'comic' in val:
+
+                join = 'JOIN comic ON comic.path_=imagedata.path'
+                query['comic'] = ['comic.parent=imagedata.path']
+
         # tag parsing
         if string.strip():
     
@@ -91,36 +92,22 @@ class Gallery(QWidget):
             string = re.sub('-\+', '-', string)
             if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
 
-            self.query['tags'] = [
+            query['tags'] = [
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 ]
         
-        for text, col in zip(['type', 'rating'], [self.type, self.rating]):
-            if (val:=ENUM[col.checkedAction().text()]) and text not in self.query:
-                self.query[text] = [val]
-        
-        # comic functionality
-        
-        if 'comic' in self.query.get('type', [''])[0] and '3' not in self.query:
-            join = 'JOIN comic ON comic.path_=imagedata.path'
-            self.query['pages'] = ['page=0']
-
-        if not any(self.query): self.query[''] = ['NOT ISNULL(path)']
+        if not any(query): query[''] = ['NOT ISNULL(path)']
 
         filter = " AND ".join(
-            f'({" OR ".join(val)})' for val in self.query.values() if val
+            f'({" OR ".join(val)})' for val in query.values() if val
             )
         
-        self.statement = f'{BASE} {join} WHERE {filter} {order}'
-        
-        self.thread.statement = self.statement
-        self.thread.start()
-        
-    def get_order(self, type_=0, ORDER={'Ascending':'ASC','Descending':'DESC'}):
+        self.query = f'{BASE} {join} WHERE {filter} {order}'
+
+    def get_order(self, ORDER={'Ascending':'ASC','Descending':'DESC'}):
         
         order = self.order[1].checkedAction().text()
         column = self.order[0].checkedAction().text()
-        if type_: column = 'page'
         
         if column:
             column = 'RAND()' if column == 'Random' else column
@@ -157,7 +144,7 @@ class Gallery(QWidget):
 
         elif key_press == Qt.Key_F4: self.ribbon.tags.setFocus()
         
-        elif key_press == Qt.Key_F5: self.populate()
+        elif key_press == Qt.Key_F5: self.parent().select_records()
 
         else: self.parent().keyPressEvent(event)
 
@@ -178,7 +165,9 @@ class Ribbon(QWidget):
          
         self.undo = ['']
         self.redo = []
+        
         self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 5, 5, 0)
 
     def create_widgets(self):
         
@@ -207,22 +196,23 @@ class Ribbon(QWidget):
         self.tags.setCompleter(
             QCompleter(open(AUTOCOMPLETE).read().split())
             )
-        self.tags.returnPressed.connect(self.parent().populate)
+        self.tags.returnPressed.connect(self.parent().parent().select_records)
+        self.tags.textChanged.connect(self.parent().update_query)
         self.layout.addWidget(self.tags, 6)
         
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
-        self.timer.timeout.connect(self.parent().populate)
+        self.timer.timeout.connect(self.parent().parent().select_records)
         self.tags.textChanged.connect(lambda: self.timer.start(1000))
         
         self.refresh = QPushButton(self)
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
-        self.refresh.clicked.connect(self.parent().populate)
-        self.layout.addWidget(self.refresh, 1, Qt.AlignLeft)
+        self.refresh.clicked.connect(self.parent().parent().select_records)
+        self.layout.addWidget(self.refresh)
         
         self.multi = QCheckBox('Multi-selection', self)
         self.multi.clicked.connect(self.changeSelectionMode)
-        self.layout.addWidget(self.multi, 0, Qt.AlignLeft)
+        self.layout.addWidget(self.multi)
 
         self.tags.setFocus()
         
