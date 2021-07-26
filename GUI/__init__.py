@@ -2,10 +2,11 @@ import qimage2ndarray
 from os import path
 from pathlib import Path
 from datetime import date
+from functools import wraps
 from cv2 import VideoCapture
 import mysql.connector as sql
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, QThread
 from PyQt5.QtWidgets import QCompleter, QMenu, QAction, QActionGroup
 
 class CONNECT:
@@ -35,17 +36,17 @@ class CONNECT:
 
                 if commit: return self.DATAB.commit()
                 if fetch: return self.CURSOR.fetchall()
-                return list()
             
             except (sql.errors.DatabaseError, sql.errors.InterfaceError):
                 
                 self.reconnect()
         
         self.transaction = False
+        return list()
 
     def rollback(self): self.DATAB.rollback()
 
-    def reconnect(self, attempts=5, time=6):
+    def reconnect(self, attempts=10, time=6):
 
         self.DATAB.reconnect(attempts, time)
 
@@ -53,6 +54,30 @@ class CONNECT:
     
     def close(self): self.DATAB.close()
 
+class Worker(QThread):
+
+    def __init__(self, target, *args, **kwargs):
+
+        super().__init__()
+        self._target = target
+        self._args = args
+        self._kwargs = kwargs
+
+    def run(self):
+
+        self._target(*self._args, **self._kwargs)
+
+def run(func):
+
+    @wraps(func)
+    def async_func(*args, **kwargs):
+
+        runner = Worker(func, *args, **kwargs)
+        func.__runner = runner
+        runner.start()
+
+    return async_func
+    
 class MyCompleter(QCompleter):
 
     def __def__(self, *args):
