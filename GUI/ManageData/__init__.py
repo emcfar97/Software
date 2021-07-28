@@ -7,8 +7,6 @@ from GUI.managedata.previewView import Preview
 from GUI.managedata.ribbonView import Ribbon
 from GUI.slideshow import Slideshow
 
-AUTOCOMPLETE = r'GUI\autocomplete.txt'
-
 class ManageData(QMainWindow):
 
     transaction_complete = pyqtSignal()
@@ -20,8 +18,8 @@ class ManageData(QMainWindow):
         self.setWindowTitle('Manage Data')
         self.parent = parent
         self.configure_gui()
+        self.create_menu()
         self.create_widgets()
-        # self.create_menu()
         self.showMaximized()
 
     def configure_gui(self):
@@ -31,7 +29,7 @@ class ManageData(QMainWindow):
 
         self.center.setLayout(self.layout)
         self.setCentralWidget(self.center)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(5, 0, 0, 0)
         self.layout.setSpacing(0)
 
     def create_widgets(self):
@@ -54,7 +52,10 @@ class ManageData(QMainWindow):
         
         self.menubar = self.menuBar()
         self.toolbar = self.addToolBar('Toolbar')
-        self.toolbar.addWidget(Ribbon(self))
+
+        self.ribbon = Ribbon(self)
+        self.toolbar.addWidget(self.ribbon)
+
         self.menubar.triggered.connect(self.menuPressEvent)
         self.toolbar.actionTriggered.connect(self.menuPressEvent)
         
@@ -69,13 +70,14 @@ class ManageData(QMainWindow):
 
     # @run
     @pyqtSlot()
-    def select_records(self, query=None):
+    def select_records(self):
 
-        if query is None: query = self.gallery.query
-
+        self.ribbon.update_query()
+        query = self.ribbon.query
+        
         try:
             record = self.MYSQL.execute(query, fetch=1)
-            self.gallery.images.update(record)
+            self.gallery.update(record)
         except:
             QMessageBox.information(
                 None, 'The database is busy', 
@@ -86,11 +88,10 @@ class ManageData(QMainWindow):
 
         return 1
 
-    # @run
+    @run
     def update_records(self, indexes, **kwargs):
-                
+        
         parameters = []
-        random = 'RANDOM()' in self.gallery.get_order()
 
         for key, vals in kwargs.items():
             
@@ -137,11 +138,9 @@ class ManageData(QMainWindow):
             return 0
 
         self.preview.update()
-        if not random: self.transaction_complete.emit()
+        self.transaction_complete.emit()
         
-        return 1
-
-    # @run    
+    @run
     def delete_records(self, indexes):
                 
         message = QMessageBox.question(
@@ -152,10 +151,9 @@ class ManageData(QMainWindow):
         
         if message == QMessageBox.Yes:
             
-            random = 'RANDOM()' in self.gallery.get_order()
-
             paths = [
-                (index.data(Qt.UserRole)[0],) for index in indexes 
+                (index.data(Qt.UserRole)[0],) 
+                for index in indexes if index.data(300)
                 ]
             
             busy = self.MYSQL.execute(DELETE, paths, many=1)
@@ -172,32 +170,36 @@ class ManageData(QMainWindow):
             self.MYSQL.commit()
 
             self.preview.update()
-
-            if not random: self.transaction_complete.emit()
-            else:
-                table = self.gallery.images.table
-                for index in indexes[::-1]:
-                    if index is None: continue
-                    del table.images[index.data(300)]
-
-                table.layoutChanged.emit()
-                self.gallery.images.clearSelection()
-                self.gallery.statusbar(self.gallery.images.total())
-
-            return 1
+            self.transaction_complete.emit()
     
     def start_slideshow(self, index=None):
         
-        view = self.gallery.images
-        if not view.total(): return
+        if not self.gallery.total(): return
 
-        indexes = view.table.images
-        index = index if index else view.currentIndex()
+        indexes = self.gallery.table.images
+        index = index if index else self.gallery.currentIndex()
         index = sum(index.data(100))
         slideshow = Slideshow(self, indexes, index)
         
         self.windows.add(slideshow)
 
+    def update_statusbar(self, total=0, select=''):
+         
+        total = (
+            f'{total} image' 
+            if (total == 1) else 
+            f'{total} images'
+            )
+
+        if select:
+            select = (
+                f'{select} image selected' 
+                if (select == 1) else 
+                f'{select} images selected'
+                )
+        
+        self.statusbar.showMessage(f'   {total}     {select}')
+    
     def menuPressEvent(self, action=None):
 
         print(action)
@@ -205,19 +207,22 @@ class ManageData(QMainWindow):
     def keyPressEvent(self, event):
 
         key_press = event.key()
+        modifiers = event.modifiers()
+        alt = modifiers == Qt.AltModifier
 
-        if key_press in (Qt.Key_Return, Qt.Key_Enter):
+        if alt:
             
-            self.start_slideshow()
+            if key_press == Qt.Key_Left: self.ribbon.go_back()
+                
+            elif key_press == Qt.Key_Right: self.ribbon.go_forward()
+            
+        if key_press == Qt.Key_F4: self.ribbon.tags.setFocus()
+        
+        elif key_press == Qt.Key_F5: self.select_records()
 
         elif key_press == Qt.Key_Delete:
             
-            gallery = [
-                index for index in
-                self.gallery.images.selectedIndexes()
-                if index.data(300)
-                ]
-            self.delete_records(gallery)
+            self.delete_records(self.gallery.selectedIndexes())
                         
         elif key_press == Qt.Key_Escape: self.close()
     
@@ -229,3 +234,4 @@ class ManageData(QMainWindow):
         
         self.MYSQL.close()
         self.windows.clear()
+        self.window_closed.emit()
