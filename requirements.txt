@@ -15,7 +15,7 @@ ImageHash==4.2.0
 imutils==0.5.3
 isort==4.3.4
 lazy-object-proxy==1.3.1
-lxml==4.6.2
+lxml==4.6.3
 mccabe==0.6.1
 murmurhash==1.0.5
 mysql-connector-python==8.0.22
@@ -24,7 +24,7 @@ oauthlib==3.1.0
 opencv-python==4.4.0.46
 pefile==2019.4.18
 piexif==1.1.3
-Pillow==8.0.1
+Pillow==8.2.0
 plac==1.1.3
 preshed==3.0.5
 protobuf==3.14.0
@@ -52,6 +52,6 @@ thinc==7.4.5
 tqdm==4.55.1
 tweepy==3.9.0
 typing-extensions==3.7.4.3
-urllib3==1.26.2
+urllib3==1.26.5
 wasabi==0.8.0
 wrapt==1.12.1
