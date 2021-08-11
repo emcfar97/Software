@@ -1,5 +1,5 @@
 import piexif, bs4, requests, re, tempfile, hashlib, ast
-from . import ROOT, USER
+from . import ROOT, USER, EXT
 from math import log
 from io import BytesIO
 from ffprobe import FFProbe
@@ -13,7 +13,6 @@ RESIZE = [1320, 1000]
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
-EXT = 'jpe?g|png|gif|webm|mp4|JPE?G|PNG|GIF|WEBM|MP4'
 
 METADATA = {
     'audio':'audio|has_audio',
@@ -49,7 +48,7 @@ GENERAL = {
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
     'sex': '(sex OR aftersex OR vaginal OR anal OR oral OR fellatio OR cunnilingus OR blowjob OR handjob OR frottage OR tribadism OR group_sex OR hetero OR yaoi OR yuri OR clothed_sex OR paizuri) AND NOT solo', 
     'sex_toy': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
-    'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR multiple_girls) OR NOT sex)', 
+    # 'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR multiple_girls) OR NOT sex)', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
     'sportswear': 'sports_bra|yoga_pants',
     'suggestive': 'sexually_suggestive OR (naughty_smile OR fellatio_gesture OR teasing OR blush OR spread_legs OR pulled_by_self OR lifted_by_self OR (come_hither OR beckoning) OR (tongue_out AND (open_mouth OR licking_lips)) OR (bent_over AND (looking_back OR looking_at_viewer)) OR (trembling OR (saliva OR sweat) OR ((heavy_breathing OR breath) OR (parted_lips AND NOT clenched_teeth))) OR (skirt_lift OR bra_lift OR dress_lift OR shirt_lift OR wind_lift OR breast_lift OR kimono_pull) AND NOT (vaginal OR anal OR sex OR erection OR aftersex OR ejaculation OR pussy OR penis))', 
@@ -108,6 +107,8 @@ ARTIST = {
     'lmsketch': ['lm_(legoman)', 1],
     '【丁髷帝国】まげきち': ['magekichi', -1],
     'kinucakes': ['mariel_cartwright', -1],
+    'mucha': ['mucha_(muchakai)', 0],
+    'mutyakai': ['mucha_(muchakai)', 0],
     'mukka': ['mukka', -1],
     'なまにくatK（あったかい）': ['namaniku_atk', -1],
     'ななひめ': ['nanahime', -1],
@@ -123,6 +124,7 @@ ARTIST = {
     'owler': ['owler', 1],
     'personalami': ['personal_ami', 1],
     'otmm': ['redrop', 0],
+    'otsumami': ['redrop', 0],
     'redrop_おつまみ': ['redrop', 0],
     'rtil': ['rtil', 1],
     'xtilxtil': ['rtil', 1],
@@ -168,16 +170,20 @@ REMOVE = {
     }
 REPLACE = {
     '3d': '3d_cg',
+    '[4-9]boys': 'multiple_boys',
+    '[4-9]girls': 'multiple_girls',
     'animate.*_gif': 'animated',
     'anal_object_insertion':'anal object_insertion',
     'anal_masturbation|penile_masturbation|vaginal_masturbation': 'masturbation',
+    'mosaic_censoring': 'mosaic_censor',
+    'bar_censoring': 'bar_censor',
+    'blur_censoring': 'blur_censor',
     'blowjob': 'fellatio',
     '(female|male)_pubic_hair': 'pubic_hair',
     '(female|male)_solo|solo_focus': 'solo',
     'insertion': 'object_insertion',
     'legs_spread|legs_apart': 'spread_legs',
-    '[4-9]boys': 'multiple_boys',
-    '[4-9]girls': 'multiple_girls',
+    'mature_female': 'mature',
     'nipple_tweak':'nipple_tweaking',
     'no_pan': 'no_panties',
     'oshiri': 'ass',
@@ -215,8 +221,8 @@ def save_image(name, image=None, exif=b''):
                 )
     
     except UnidentifiedImageError: return False
-    except OSError as error: 
-        if 'trunc' not in error.args: 
+    except OSError as error:
+        if 'trunc' not in error.args:
             try: img.save(name.with_suffix('.gif'))
             except: pass
     except: pass
@@ -233,7 +239,7 @@ def get_name(path, hasher=1):
         else: data = path.read_bytes()
         hasher = hashlib.md5(data)
 
-        stem = f'{hasher.hexdigest()}.{re.findall(EXT, str(path))[0]}'
+        stem = f'{hasher.hexdigest()}.{re.findall(EXT, str(path), re.IGNORECASE)[0]}'
     
     return PATH / stem[0:2] / stem[2:4] / stem.replace('jpeg','jpg')
 

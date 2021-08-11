@@ -52,7 +52,7 @@ def page_handler(hrefs):
         for image in images.findAll('a'):
 
             src = image.get('href')
-            name = get_name(src)
+            if (name:=get_name(src)).exists(): continue
             if not save_image(name, src): break
 
             tags, rating, exif = generate_tags(
@@ -62,10 +62,12 @@ def page_handler(hrefs):
             save_image(name, src, exif)
             hash_ = get_hash(name)
 
-            MYSQL.execute(INSERT[3],
+            if not MYSQL.execute(INSERT[3],
                 (name.name, artist.replace('-', '_'), tags, 
                 rating, 1, hash_, src, SITE, href), 
-                )
+                ):
+                MYSQL.rollback()
+                break
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
     
     print()
@@ -83,3 +85,25 @@ def start(initial=True, headless=True):
         
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='elitebabes', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless)

@@ -37,7 +37,7 @@ def page_handler(url, title):
         page_source = requests.get(href).content
         target = bs4.BeautifulSoup(page_source, 'lxml')
         src = target.find(
-            src=re.compile('https://cdn.imagefap.com/images/full/.+')
+            src=re.compile('.+imagefap.com/images/full/.+')
             ).get('src')
 
         if (name:=get_name(src)).exists(): continue
@@ -59,8 +59,10 @@ def page_handler(url, title):
                 )
 
         hash_ = get_hash(name)
-        MYSQL.execute(INSERT[3], 
-            (name.name, artist, tags, rating, 1, hash_, None, SITE, None), 
+        MYSQL.execute(INSERT[3], (
+            name.name, artist, tags, rating,
+            1, hash_, None, SITE, None
+            ), 
             commit=1
             )
     
@@ -86,3 +88,20 @@ def start(headless=True):
         print()
 
     DRIVER.close()
+    
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='imagefap', 
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.headless)

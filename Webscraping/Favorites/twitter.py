@@ -89,3 +89,25 @@ def start(initial=True, headless=True):
         initialize(url)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
+    
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='twitter', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless)

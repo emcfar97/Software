@@ -1,5 +1,5 @@
-from . import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
-from .utils import USER, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re, ARTIST
+from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
+from .utils import bs4, requests, re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'nhentai'
 
@@ -46,9 +46,11 @@ def page_handler(hrefs):
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
         
         cover = None
+        target = html.findAll(href=re.compile('/artist/.+'))
+        if target is None: target = html.findAll(href=re.compile('/group/.+'))
         artists = [
             artist.get('href').split('/')[-2].replace('-', '_')
-            for artist in html.findAll(href=re.compile('/artist/.+'))
+            for artist in target
             ]
         artists = [
             ARTIST.get(artist, [artist])[0] for artist in artists
@@ -57,25 +59,31 @@ def page_handler(hrefs):
         for image in html.findAll('a', class_='gallerythumb'):
             
             page_source = requests.get(f'https://{SITE}.net{image.get("href")}')
-            html = bs4.BeautifulSoup(page_source.content, 'lxml')
-            src = html.find(src=re.compile('.+galleries.+')).get('src')
+            image = bs4.BeautifulSoup(page_source.content, 'lxml')
+            try:
+                src = image.find(src=re.compile('.+galleries.+')).get('src')
             
-            name = get_name(src)
-            if cover is None: cover = name
-            if not save_image(name, src): break
+                name = get_name(src)
+                if cover is None: cover = name
+                if not save_image(name, src): break
 
-            tags, rating, exif = generate_tags(
+                tags, rating, exif = generate_tags(
                 general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=True
                 )
+            except: break
             save_image(name, src, exif)
             hash_ = get_hash(name)
 
-            MYSQL.execute(INSERT[3], (
-                name.name, ' '.join(artists), tags, rating, 
-                3, hash_, src, SITE, href
-                ))
-            MYSQL.execute(INSERT[4], (name.name, cover.name))
+            if not MYSQL.execute(INSERT[3], (
+                name.name, ' '.join(artists), tags,
+                rating, 3, hash_, src, SITE, href
+                )):
+                MYSQL.rollback()
+                break
+            if not MYSQL.execute(INSERT[4], (name.name, cover.name)):
+                MYSQL.rollback()
+                break
         
         else: MYSQL.execute(DELETE[0], (href,), commit=1)
 
@@ -132,7 +140,7 @@ def start(initial=True, headless=True, mode=1):
                     )
                 )
             comics = MYSQL.execute(INSERT[4], (
-                    image.name, cover.name, num
+                    image.name, cover.name
                     )
                 )
             if not (imagedata and comics): break; continue
@@ -143,3 +151,30 @@ def start(initial=True, headless=True, mode=1):
     print()
 
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='comics', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+            '-m', '--mode', type=int,
+            help='Mode argument (default 1)',
+            default=1
+            )
+    
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless, args.mode)

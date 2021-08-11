@@ -35,12 +35,15 @@ def page_handler(hrefs):
         progress.next()
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
         DRIVER.find('//*[@class="center"]', click=True)
-        try: html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        except: continue
+        try: 
+            html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
-        artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
-        try: image = f'http:{html.find(class_="center", src=True).get("src")}'
-        except: continue
+            artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
+            image = f'http:{html.find(class_="center", src=True).get("src")}'
+        except Exception as error: 
+            print(error)
+            continue
+        
         name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
         name = PATH / 'Images' / SITE / name
 
@@ -59,3 +62,25 @@ def start(initial=True, headless=True):
         initialize(url)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='foundry', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless)

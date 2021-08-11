@@ -47,3 +47,7 @@ def start():
             for url in val.values():
                 page_handler(url['url'], url['title'])
         file.remove()
+
+if __name__ == '__main__':
+    
+    start()

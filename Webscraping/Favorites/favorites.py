@@ -1,10 +1,9 @@
 import sqlite3, os, time, tempfile
-from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, EXT
 from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
 
-EXT = '.gif', '.webm', '.mp4'
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 
 def main(paths, upload, sankaku=0, gelbooru=0):
@@ -24,7 +23,7 @@ def main(paths, upload, sankaku=0, gelbooru=0):
             MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         DRIVER.find('//input[@type="submit"]', click=True)
-        if path.endswith(EXT): time.sleep(25)
+        if re.search(EXT[-12:], path,re.IGNORECASE): time.sleep(25)
         else: time.sleep(5)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -198,5 +197,32 @@ def start(initial=True, headless=True, upload=0):
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1), upload)
+    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1)[-1000:], upload)
     DRIVER.close()
+    
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='favorites', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-u', '--upload', type=int,
+        help='Upload argument (default 0)',
+        default=0
+        )
+
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless, args.upload)

@@ -9,21 +9,23 @@ def initialize(url='/posetool/favs.aspx'):
 
     query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
 
-    DRIVER.get(f'https://www.posespace.com{url}')
+    DRIVER.get(f'https://www.{SITE}.com{url}')
     time.sleep(1)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, SITE) for href in 
         {
-            (target.text,) for target in html.findAll(class_='emph')
+            (target.text,) for target in 
+            html.findAll(class_='emph')
             } - query
         ]
     MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
         
-def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
+def page_handler(hrefs, url=f'https://www.{SITE}.com/img/contact/'):
     
     if not hrefs: return
     progress = IncrementalBar(SITE, max=MYSQL.rowcount)
+    add = ' reference turnaround'
 
     for href, in hrefs:
 
@@ -38,23 +40,26 @@ def page_handler(hrefs, url='https://www.posespace.com/img/contact/'):
             cv2.imdecode(image_a, -1), cv2.imdecode(image_b, -1)
             ])
         
-        make_gif(image); continue
+        try:
 
-        for image in make_gif(image):
+            for image in make_gif(image):
 
-            tags, rating = generate_tags(
-                general=get_tags(DRIVER, image, True) + ' reference', 
-                custom=True, rating=True, exif=False
-                )
-            name = get_name(image)
-            hash_ = get_hash(image)
-            image.replace(name)
+                tags, rating = generate_tags(
+                    general=get_tags(DRIVER, image, True), 
+                    custom=True, rating=True, exif=False
+                    )
+                name = get_name(image)
+                hash_ = get_hash(image)
+                image.replace(name)
 
-            MYSQL.execute(INSERT[3], 
-                (name.name, href[:-3], tags, rating, 1, hash_, None, SITE, None)
-                )
-        else: MYSQL.execute(DELETE[0], (href,), commit=1)
-        
+                MYSQL.execute(INSERT[3], 
+                    (name.name, href[:-3], ' '.join((tags, add)),
+                    rating, 1, hash_, None, SITE, None)
+                    )
+            
+            else: MYSQL.execute(DELETE[0], (href,), commit=1)
+            
+        except: continue
     print()
         
 def make_gif(image):
@@ -74,10 +79,12 @@ def make_gif(image):
     shapes.sort(key=lambda x:precedence(x, image.shape[1]))
     
     total = {
-        tuple(
-            int(i/10) for i in cv2.boundingRect(shape)[2:]
-            ) 
-        for shape in shapes[:24]
+        size for shape in shapes[:24] if
+        (
+            size := tuple(
+                i//10 for i in cv2.boundingRect(shape)[2:] 
+                )
+            ) != (0, 0)
         }
     
     # copy = image.copy()
@@ -92,43 +99,37 @@ def make_gif(image):
 
     temps = []
     temp_dir = tempfile.TemporaryDirectory()
-    temp_dir = pathlib.Path(temp_dir.name)
 
     for num, shape in enumerate(shapes):
 
         x, y, w, h = cv2.boundingRect(shape)
         if w < 10 or h < 10: continue
-        temp = temp_dir / f'{num:03}.jpg'
-        temp.mkdir()
-        cv2.imwrite(str(temp), image[y:y+h, x:x+w])
+
+        temp = tempfile.NamedTemporaryFile(
+            dir=temp_dir.name, prefix=f'{num:03}-', suffix='.jpg', delete=False
+            )
+        temp = pathlib.Path(temp.name)
+        temp.write_bytes(
+            cv2.imencode('.jpg', image[y:y+h, x:x+w])[-1]
+            )
         temps.append(temp)
 
-    # cv2.imshow('name', image)
-    # cv2.waitKey(0)
-
-    if len(total) <= 3:
+    if len(total) < 3:
     
         DRIVER.get('https://ezgif.com/maker')
         for temp in temps[:24]:
-            DRIVER.find(
-                '//body/div/div[2]/div[2]/form/fieldset/p[1]/input', 
-                keys=str(temp)
-                )
-        DRIVER.find(
-            '//body/div/div[2]/div[2]/form/fieldset/p[3]/input', click=True
-            )
-        DRIVER.find(
-            '//body/div/div[2]/div[2]/form/p[4]/input', click=True
-            )
-        time.sleep(5)
+            DRIVER.find('//input[@type="file"]', keys=str(temp))
+        DRIVER.find('//input[@type="submit"]', click=True)
+        time.sleep(10)
+        DRIVER.find('//input[@type="submit"]', click=True)
+        time.sleep(10)
         
-        # gif = pathlib.Path(tempfile.TemporaryFile((suffix='.gif').name)
-        # src = DRIVER.find(
-        #     '/html/body/div/div[2]/div[2]/div[2]/p[1]/img'
-        #     )
-        # save_image(gif, src.get_attribute('src'))
+        gif = tempfile.TemporaryFile(suffix='.gif', delete=False)
+        gif = pathlib.Path(gif.name)
+        src = DRIVER.find('//img[@alt="[animate output image]"]')
+        save_image(gif, src.get_attribute('src'))
 
-        # return [*temps[24:], gif]
+        return [gif, *temps[25:]]
     
     return temps
 
@@ -153,8 +154,30 @@ def start(initial=True, headless=True):
     
     global MYSQL, DRIVER
     MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(headless)
+    DRIVER = WEBDRIVER(headless, None)
     
     if initial: initialize()
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='posespace', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless)

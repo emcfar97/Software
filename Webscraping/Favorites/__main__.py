@@ -1,3 +1,15 @@
 from Webscraping.Favorites import start
 
-start()
+import argparse
+
+parser = argparse.ArgumentParser(
+    prog='Favorites', 
+    )
+parser.add_argument(
+    '-i', '--initial', type=int,
+    help='Initial argument (default 1)',
+    default=1
+    )
+args = parser.parse_args()
+
+start(args.initial)

@@ -59,3 +59,20 @@ def start(headless=True):
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='toplesspulp', 
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.headless)

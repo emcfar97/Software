@@ -1,10 +1,9 @@
 import cv2, re, time, bs4
 from PIL import Image
 from urllib.parse import urlparse
-from . import USER, WEBDRIVER, CONNECT, INSERT, json_generator
-from .utils import IncrementalBar, HEADERS, get_hash, get_name, get_tags, generate_tags, save_image
+from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, json_generator
+from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
-EXT = 'jpe?g|png|gif|webm|mp4|JPE?G|PNG|GIF|WEBM|MP4'
 MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg')
 
 def extract_files(driver, path, dest=None):
@@ -14,7 +13,9 @@ def extract_files(driver, path, dest=None):
     errors = []
     errors_txt = path / 'Errors.txt'
     if errors_txt.exists():
+        
         for image in errors_txt.read_text().split('\n'):
+           
             image = image.strip()
             name = path.parent / image.split('/')[-1].split('?')[0]
             save_image(name, image)
@@ -26,7 +27,7 @@ def extract_files(driver, path, dest=None):
             path = urlparse(url['url']).path[1:]
             if re.match('https://i.imgur.com/.+gif', url['url']):
                 path.replace('gif', 'mp4')
-            elif re.match('.+/watch.+', url['url']):
+            elif re.search('.+/watch.+', url['url']):
                 try: path = get_url(driver, url['url'])
                 except: continue
 
@@ -53,6 +54,12 @@ def extract_files(driver, path, dest=None):
     
     if errors: errors_txt.write_text('\n'.join(errors))
 
+    for file in dest.glob('*webp'):
+
+        name = file.with_suffix('.jpg')
+        name.write_bytes(file.read_bytes())
+        file.unlink()
+
 def get_url(driver, src):
 
     driver.get(src)
@@ -64,7 +71,7 @@ def get_url(driver, src):
 
 def similarity(path):
 
-    if path.suffix in EXT[:2]: 
+    if re.search(EXT, path.suffix, re.IGNORECASE): 
         match = MATCH[0]
         image = cv2.imread(str(path))
     else: 
@@ -87,7 +94,7 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
     
     if extract: extract_files(DRIVER, path / 'Generic')
     files = [
-        file for file in path.iterdir() if re.search(EXT, file.suffix)
+        file for file in path.iterdir() if re.search(EXT, file.suffix, re.IGNORECASE)
         ]
     progress = IncrementalBar('Files', max=len(files))
 
@@ -127,3 +134,25 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
     
     DRIVER.close()
     print('\nDone')
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='insert records', 
+        )
+    parser.add_argument(
+        '-e', '--extract', type=bool,
+        help='Mode argument (default True)',
+        default=True
+        )
+    parser.add_argument(
+        '-a', '--add', type=str,
+        help='Initial argument (default "")',
+        default=''
+        )
+
+    args = parser.parse_args()
+    
+    start(args.extract, args.add)

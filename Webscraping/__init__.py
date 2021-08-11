@@ -11,6 +11,7 @@ CREDENTIALS = ConfigParser(delimiters='=')
 CREDENTIALS.read('credentials.ini')
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
+EXT = 'jpe?g|png|gif|webm|mp4'
 
 SELECT = [
     'SELECT href FROM imagedata WHERE site=%s',
@@ -30,7 +31,7 @@ INSERT = [
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'INSERT INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
-    'INSERT INTO comic(path_, parent, page) VALUES(%s, %s, %s)',
+    'INSERT INTO comic(path, parent) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s)',
     ]
 UPDATE = [
@@ -78,12 +79,16 @@ class CONNECT:
             except sql.errors.IntegrityError:
                 
                 if statement.startswith('UPDATE'):
-                    index = 0 if 'imageD' in statement else 1
+                    index = 0 if 'imaged' in statement else 1
                     self.execute(DELETE[index], (arguments[-1],), commit=1)
                     return 1
-                elif statement.startswith('INSERT'): break
+                elif statement.startswith('INSERT'): return 1
 
-            except (sql.errors.OperationalError, sql.errors.DatabaseError):
+            except (
+                sql.errors.OperationalError, 
+                sql.errors.DatabaseError, 
+                sql.errors.InterfaceError
+                ):
                 
                 self.reconnect()
 
@@ -157,18 +162,23 @@ class WEBDRIVER:
     
     def find(self, address, keys=None, click=None, move=None, type_=1, enter=0, fetch=0):
         
-        try:
-            element = self.options[type_](address)
-            
-            if click: element.click()
-            if keys: element.send_keys(keys)
-            if move:ActionChains(self.driver).move_to_element(element).perform()
-            if enter: element.send_keys(Keys.RETURN)
+        for _ in range(5):
+        
+            try:
+                element = self.options[type_](address)
+                
+                if click: element.click()
+                if keys: element.send_keys(keys)
+                if move:ActionChains(self.driver).move_to_element(element).perform()
+                if enter: element.send_keys(Keys.RETURN)
 
-            return element
+                return element
 
-        except Exception as error:
-            if fetch: raise error
+            except Exception as error_:
+                if fetch: raise error_
+                error = error_
+
+        raise error
     
     def page_source(self, error=None):
         
@@ -239,7 +249,6 @@ class WEBDRIVER:
 def get_starred(headless=True):
 
     import bs4, re, time
-    from Webscraping import WEBDRIVER, CONNECT
     
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless=headless)
@@ -256,7 +265,7 @@ def get_starred(headless=True):
 
     while starred:=target.findAll(text=re.compile('\w+\.')):
 
-        paths = [(star,) for star in starred]
+        paths = [(str(star),) for star in starred]
         MYSQL.execute(UPDATE, paths, many=1, commit=1)
         [DRIVER.find(address, click=True) for _ in range(5)]
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')

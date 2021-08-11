@@ -97,3 +97,25 @@ def start(retry=0, headless=True):
                     time.sleep(2)
             
     DRIVER.close()
+    
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='pinterest', 
+        )
+    parser.add_argument(
+        '-r', '--retry', type=int,
+        help='Retry argument (default 0)',
+        default=0
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.retry, args.headless)

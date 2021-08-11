@@ -98,7 +98,7 @@ def page_handler(hrefs, mode):
     
     print()
 
-def start(mode=1, initial=True, headless=True):
+def start(initial=True, headless=True, mode=1):
     
     global MYSQL, DRIVER
     MYSQL = CONNECT()
@@ -118,3 +118,30 @@ def start(mode=1, initial=True, headless=True):
         mode
         )
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='sankaku', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-m', '--mode', type=int,
+        help='Mode argument (default 1)',
+        default=1
+        )
+    
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless, args.mode)

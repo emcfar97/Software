@@ -1,6 +1,6 @@
 from . import favorites, foundry, furaffinity, twitter
 
-def start():
+def start(initialize=True):
 
     import threading, subprocess
 
@@ -12,9 +12,9 @@ def start():
     
     threads = [
         # threading.Thread(target=process.wait),
-        threading.Thread(target=twitter.start),
-        threading.Thread(target=foundry.start),
-        threading.Thread(target=furaffinity.start),
+        threading.Thread(target=twitter.start, args=(initialize,)),
+        threading.Thread(target=foundry.start, args=(initialize,)),
+        threading.Thread(target=furaffinity.start, args=(initialize,)),
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()

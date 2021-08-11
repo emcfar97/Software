@@ -106,3 +106,25 @@ def start(initial=True, headless=True):
     if initial: initialize(url)
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1)[10:])
     DRIVER.close()
+
+if __name__ == '__main__':
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog='instagram', 
+        )
+    parser.add_argument(
+        '-i', '--initial', type=int,
+        help='Initial argument (default 1)',
+        default=1
+        )
+    parser.add_argument(
+        '-h', '--headless', type=int,
+        help='Headless argument (default 1)',
+        default=1
+        )
+
+    args = parser.parse_args()
+    
+    start(args.initial, args.headless)
