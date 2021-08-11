@@ -2,44 +2,43 @@ import ffmpeg, argparse
 from pathlib import Path
 from ffprobe import FFProbe
 from Webscraping import USER
-from scenedetect import VideoManager
-from scenedetect import SceneManager
-from scenedetect import FrameTimecode
+from moviepy.editor import VideoFileClip
 from scenedetect.detectors import ContentDetector
+from scenedetect import VideoManager, SceneManager, FrameTimecode
 
 parser = argparse.ArgumentParser(
     prog='scene_splits', 
     description='Splits videos into multiple scenes'
     )
-parser.add_argument(
+parser.add_argument( # path to video
     '-p', '--path', type=str,
     help='Path to video', default=''
     )
-parser.add_argument(
+parser.add_argument( # downscale
     '-d', '--downscale', type=int,
-    help='Downscale factor for source video', default=25, 
+    help='Downscale factor for source video', default=50, 
     )
-parser.add_argument(
+parser.add_argument( # threshold
     '-t', '--threshold', type=int,
-    help='Threshold value for scene change', default=50, 
+    help='Threshold value for scene change', default=25, 
     )
-parser.add_argument(
+parser.add_argument( # minimum
     '-m', '--minimum', type=int,
     help='Minimum scene length', default=15, 
     )
-parser.add_argument(
+parser.add_argument( # debug flag
     '-b', '--debug', type=bool,
     help='Print timecodes', default=False, 
     )
-parser.add_argument(
+parser.add_argument( # source directory
     '-s', '--source', type=str,
     help='File path to source folder',
     default=USER / r'Downloads\Test', 
     )
-parser.add_argument(
+parser.add_argument( # destination directory
     '-de', '--destination', type=str,
     help='File path to destination folder',
-    default=USER / r'Downloads\Images\Clips', 
+    default=USER / r'Downloads\Clips', 
     )
 args = parser.parse_args()
 
@@ -50,6 +49,7 @@ MINIMUM = args.minimum
 DEBUG = args.debug
 SOURCE = args.source
 DEST = args.destination
+EXT = 'mp4|flv|mkv|avi|wmv|mov|mpg|mpeg|divx|rm|ram|vob|3gp'
 
 def split_scenes(video):
     
@@ -59,12 +59,19 @@ def split_scenes(video):
         folder = DEST / video.stem
         folder.mkdir(exist_ok=True)
         name = folder / video.name
+        
+    try:
+        stream = FFProbe(str(video)).streams[0]
+        start_time = get_time(stream.start_time)
+        framerate = stream.framerate
+        duration = get_time(stream.duration_seconds())
+    except:
+        stream = VideoFileClip(str(video))
+        start_time = get_time(stream.start)
+        framerate = stream.fps
+        duration = get_time(stream.duration)
     
-    stream = FFProbe(str(video)).streams[0]
-    start_time = get_time(stream.start_time)
-    duration = get_time(stream.duration)
-
-    scenes = find_scenes(video, stream.framerate)
+    scenes = find_scenes(video, framerate)
     if get_time(scenes[0][0]) != start_time:
         scenes.insert(0, (start_time, scenes[0][0]))
 
@@ -84,7 +91,7 @@ def split_scenes(video):
         
         if DEBUG: print(start, end); continue
 
-        file = name.with_name(f'{name.stem} - {num:02}.mp4')
+        file = name.with_name(f'{name.stem} - {num:03}.mp4')
         trim(str(video), str(file), start, end)
 
 def get_time(time):
@@ -137,4 +144,4 @@ def trim(input_path, output_path, start, end):
     output.run()
 
 if VIDEO.is_file(): split_scenes(VIDEO)
-else: [split_scenes(video) for video in VIDEO.glob('*mp4')]
+else: [split_scenes(video) for video in VIDEO.glob(f'*{EXT}')]
