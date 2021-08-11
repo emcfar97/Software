@@ -9,6 +9,26 @@ from win32.win32api import GetLogicalDriveStrings
 
 SOURCE = Path.home() / 'Dropbox'
 
+def path_walk(top, topdown=False, followlinks=False):
+    """
+    See Python docs for os.walk, exact same behavior but it yields Path() instances instead
+    """
+    names = list(top.iterdir())
+
+    dirs = (node for node in names if node.is_dir() is True)
+    nondirs =(node for node in names if node.is_dir() is False)
+
+    if topdown:
+        yield top, dirs, nondirs
+
+    for name in dirs:
+        if followlinks or name.is_symlink() is False:
+            for x in path_walk(name, topdown, followlinks):
+                yield x
+
+    if topdown is not True:
+        yield top, dirs, nondirs
+
 def get_drives(drive_types=(DRIVE_REMOVABLE,)):
 
     drives = GetLogicalDriveStrings().split("\x00")
@@ -31,21 +51,26 @@ def last_modified(path):
 
 def get_version(paths):
 
-    latest = str(sorted(paths)[-1])
-    version = int(*re.findall(' - (\d+)', latest))
+    latest = sorted(paths)[-1]
+    version = int(*re.findall(' - (\d+)', latest.name))
+    modified = date.fromtimestamp(latest.stat().st_mtime)
+    difference = date.today() - modified
 
-    return re.sub(' - \d+', f' - {version + 1:02}', latest)
+    if difference.days <= 15: return False
+    stem = re.sub(' - \d+', f' - {version + 1:02}', latest.stem)
+
+    return latest.with_stem(stem)
 
 for drive in get_drives():
     
+    drive = Path(drive)
     print(drive)
 
-    for root, dirs, files in walk(drive):
+    for root, dirs, files in path_walk(drive):
 
-        if 'Software' in root: continue
+        if 'Software' in root.parts: continue
         
         targets = {}
-        root = Path(root)
         head = SOURCE / Path(*root.parts[1:])
         
         for path in root.iterdir():
@@ -62,7 +87,8 @@ for drive in get_drives():
         for key, val in targets.items():
             
             val = get_version(val)
-
+            
+            if not val: continue            
             if key.is_file(): copy(key, val)
             else: copytree(key, val)
 
