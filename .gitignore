@@ -7,6 +7,7 @@ __pycache__
 .vscode
 ffmpeg-20190824-1cfba7f-win64-static
 Music
+MachineLearning/Datasets/*
 MachineLearning/*/Checkpoints
 MachineLearning/*/Models
 MachineLearning/*/Logs
