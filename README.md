@@ -8,7 +8,7 @@ Consists of a lefthand gallery of images and a righthand display for selected im
 ### Gesture Draw
 App for easy gesture drawing (drawing the pose of a figure in a short amount of time). Allows user to select images and specify the amount of time for each gesture draw.
 ### Slideshow
-A mostly experimental app for GUI-ifying the machine learning process, a la PerceptiLabs.
+App for displaying images and video. Currently only works with Manage Database.
 ### Upload Media
 Experimental. App for uploading illustrations to various sites (twitter, instagram, etc), according to a schedule and with specific comments.
 ### Video Splitter
