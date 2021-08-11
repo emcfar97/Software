@@ -1,12 +1,18 @@
 # GUI
 This is a suite of files for a graphical user interface that navigates and selects from a gallery of images for the purposes of illustration reference and practice. Originally implemented in Tkinter and SQLite, the project is now coded in PyQt5 and MySQL.\
-Consists of three applications:
+Consists of five applications:
+### Machine Learning
+Experimental. App for GUI-ifying the machine learning process, a la PerceptiLabs.
 ### Manage Database
-Consists of a lefthand gallery of images and a righthand display for selected image. Allows deletion and updating of records, as well as a slideshow function that can display images and videos in fullscreen.
+Consists of a lefthand gallery of images and a righthand display for selected image. Allows deletion and updating of records, as well as a slideshow function that can display images and videos in fullscreen. 
 ### Gesture Draw
 App for easy gesture drawing (drawing the pose of a figure in a short amount of time). Allows user to select images and specify the amount of time for each gesture draw.
-### Machine Learning
+### Slideshow
 A mostly experimental app for GUI-ifying the machine learning process, a la PerceptiLabs.
+### Upload Media
+Experimental. App for uploading illustrations to various sites (twitter, instagram, etc), according to a schedule and with specific comments.
+### Video Splitter
+Experimental. App for splitting video into clips using the scenedetect module.
 # Machine Learning
 An exploratory dive into machine learning using Tensorflow and PyTorch. Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
 # Webscraping
