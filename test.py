@@ -103,16 +103,18 @@ def Check_Predictions(sql=False, num=25):
             cv2.imshow(prediction, image_)
             cv2.waitKey(0)
 
-def Copy_Files(files, dest):
+def Copy_Files(files, dest, sym=False):
     
     from pathlib import Path
 
-    dest = Path(dest)
     paths = [Path(file) for file in files]
-    [
-        (dest / path.name).write_bytes(path.read_bytes()) 
-        for path in paths
-        ]
+    dest = Path(dest)
+
+    for path in paths:
+
+        name = dest / path.name    
+        if sym and not name.exists(): name.symlink_to(path)
+        else: name.write_bytes(path.read_bytes())
 
 def Artist_statistics():
 
