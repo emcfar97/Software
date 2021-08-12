@@ -111,7 +111,7 @@ if __name__ == '__main__':
         default=0
         )
     parser.add_argument(
-        '-h', '--headless', type=int,
+        '-he', '--headless', type=int,
         help='Headless argument (default 1)',
         default=1
         )
