@@ -283,18 +283,3 @@ def json_generator(path):
         for value in object.values():
     
             yield value
-
-def start(initialize=True):
-    
-    import threading
-    from Webscraping import Photos, Illus, comics
-    
-    threads = [
-        threading.Thread(target=Photos.start, args=(initialize,)),
-        threading.Thread(target=Illus.start, args=(initialize,)),
-        threading.Thread(target=comics.start)
-        ]
-    for thread in threads: thread.start()
-    for thread in threads: thread.join()
-
-    print('\nComplete')
