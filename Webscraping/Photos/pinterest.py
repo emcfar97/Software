@@ -106,14 +106,14 @@ if __name__ == '__main__':
         prog='pinterest', 
         )
     parser.add_argument(
-        '-r', '--retry', type=int,
+        '-r', '--retry', type=bool,
         help='Retry argument (default 0)',
         default=0
         )
     parser.add_argument(
-        '-he', '--headless', type=int,
-        help='Headless argument (default 1)',
-        default=1
+        '-he', '--headless', type=bool,
+        help='Headless argument (default True)',
+        default=True
         )
 
     args = parser.parse_args()

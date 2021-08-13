@@ -208,17 +208,17 @@ if __name__ == '__main__':
         prog='favorites', 
         )
     parser.add_argument(
-        '-i', '--initial', type=int,
-        help='Initial argument (default 1)',
-        default=1
+        '-i', '--initial', type=bool,
+        help='Initial argument (default True)',
+        default=True
         )
     parser.add_argument(
-        '-he', '--headless', type=int,
-        help='Headless argument (default 1)',
-        default=1
+        '-he', '--headless', type=bool,
+        help='Headless argument (default True)',
+        default=True
         )
     parser.add_argument(
-        '-u', '--upload', type=int,
+        '-u', '--upload', type=bool,
         help='Upload argument (default 0)',
         default=0
         )

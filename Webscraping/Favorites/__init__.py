@@ -1,8 +1,7 @@
-from . import favorites, foundry, furaffinity, twitter
-
 def start(initialize=True):
 
     import threading, subprocess
+    from . import favorites, foundry, furaffinity, twitter
 
     # process = subprocess.Popen([
     #     r'Webscraping\PixivUtil\PixivUtil2.exe',
@@ -19,4 +18,4 @@ def start(initialize=True):
     for thread in threads: thread.start()
     for thread in threads: thread.join()
 
-    favorites.start()
+    favorites.start(initialize)

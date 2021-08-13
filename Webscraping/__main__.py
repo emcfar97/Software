@@ -5,11 +5,11 @@ parser = argparse.ArgumentParser(
     description='Command line interface for common webscraping operations and projects'
     )
 parser.add_argument(
-    '-a', '--arg', type=int,
+    '-a', '--arg', type=bool,
     help='argument', default=None
     )
 parser.add_argument(
-    '-i', '--init', type=int,
+    '-i', '--init', type=bool,
     help='initialize', default=1
     )
 
@@ -24,7 +24,7 @@ if args.arg == 0: # webscraping
     threads = [
         threading.Thread(target=Photos.start, args=(args.initialize,)),
         threading.Thread(target=Illus.start, args=(args.initialize,)),
-        # threading.Thread(target=comics.start, args=(args.initialize,))
+        threading.Thread(target=comics.start, args=(args.initialize, 1, 0))
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()

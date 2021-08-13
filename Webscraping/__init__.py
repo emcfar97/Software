@@ -117,7 +117,7 @@ class WEBDRIVER:
     PATH = Path(r'C:\Program Files\Mozilla Firefox')
 
     def __init__(self, headless=True, profile=True, wait=15):
-
+        
         if profile: profile = webdriver.FirefoxProfile(self.get_profile())
         binary = webdriver.firefox.firefox_binary.FirefoxBinary(
             str(WEBDRIVER.PATH / 'firefox.exe')

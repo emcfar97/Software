@@ -87,16 +87,6 @@ def make_gif(image):
             ) != (0, 0)
         }
     
-    # copy = image.copy()
-    # for num, shape in enumerate(shapes[:24:], 1):
-        
-    #     M = cv2.moments(shape)
-    #     cX, cY = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-    #     # draw the countour number on the image
-    #     cv2.putText(copy, f"#{num}", (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-    #     cv2.drawContours(copy, [shape], -1, (0, 255, 0), 2)
-    # copy = ResizeWithAspectRatio(copy, 900, 600)
-
     temps = []
     temp_dir = tempfile.TemporaryDirectory()
 
@@ -133,23 +123,6 @@ def make_gif(image):
     
     return temps
 
-
-def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
-    dim = None
-    (h, w) = image.shape[:2]
-
-    if width is None and height is None:
-        return image
-    if width is None:
-        r = height / float(h)
-        dim = (int(w * r), height)
-    else:
-        r = width / float(w)
-        dim = (width, int(h * r))
-
-    return cv2.resize(image, dim, interpolation=inter)
-
-
 def start(initial=True, headless=True):
     
     global MYSQL, DRIVER
@@ -157,7 +130,7 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless, None)
     
     if initial: initialize()
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1)[::2])
     DRIVER.close()
 
 if __name__ == '__main__':
@@ -168,14 +141,14 @@ if __name__ == '__main__':
         prog='posespace', 
         )
     parser.add_argument(
-        '-i', '--initial', type=int,
-        help='Initial argument (default 1)',
-        default=1
+        '-i', '--initial', type=bool,
+        help='Initial argument (default True)',
+        default=True
         )
     parser.add_argument(
-        '-he', '--headless', type=int,
-        help='Headless argument (default 1)',
-        default=1
+        '-he', '--headless', type=bool,
+        help='Headless argument (default True)',
+        default=True
         )
 
     args = parser.parse_args()
