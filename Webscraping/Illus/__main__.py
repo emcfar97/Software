@@ -8,12 +8,12 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '-i', '--initial', type=bool,
     help='Initial argument (default True)',
-    default=1
+    default=True
     )
 parser.add_argument(
     '-f', '--fav', type=bool,
     help='Favorites argument (default True)',
-    default=1
+    default=True
     )
 args = parser.parse_args()
 

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '-i', '--initial', type=bool,
     help='Initial argument (default True)',
-    default=1
+    default=True
     )
 args = parser.parse_args()
 

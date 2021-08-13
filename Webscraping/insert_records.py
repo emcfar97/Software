@@ -59,6 +59,13 @@ def extract_files(driver, path, dest=None):
         name = file.with_suffix('.jpg')
         name.write_bytes(file.read_bytes())
         file.unlink()
+        
+    for file in dest.glob('*gifv'):
+
+        name = file.with_suffix('.mp4')
+        image = f'https://i.imgur.com/{name.name}'
+        save_image(name, image)
+        file.unlink()
 
 def get_url(driver, src):
 
