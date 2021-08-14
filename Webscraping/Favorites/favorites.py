@@ -223,4 +223,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    start(args.initial, args.head, args.upload)
+    start(args.init, args.head, args.upload)

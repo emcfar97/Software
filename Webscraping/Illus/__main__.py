@@ -17,4 +17,4 @@ parser.add_argument(
     )
 args = parser.parse_args()
 
-start(args.initial, args.fav)
+start(args.init, args.fav)

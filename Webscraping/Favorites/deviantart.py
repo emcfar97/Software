@@ -87,4 +87,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    start(args.initial, args.headless)
+    start(args.init, args.headless)

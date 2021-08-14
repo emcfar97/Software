@@ -12,4 +12,4 @@ parser.add_argument(
     )
 args = parser.parse_args()
 
-start(args.initial)
+start(args.init)
