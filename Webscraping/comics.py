@@ -1,3 +1,4 @@
+import argparse
 from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
 from .utils import bs4, requests, re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
 
@@ -154,27 +155,25 @@ def start(initial=True, headless=True, mode=1):
 
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='comics', 
         )
     parser.add_argument(
-        '-i', '--initial', type=bool,
-        help='Initial argument (default True)',
-        default=True
+        '-i', '--init', type=int,
+        help='Initial argument (default 1)',
+        default=1
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
     parser.add_argument(
-            '-m', '--mode', type=int,
-            help='Mode argument (default 1)',
-            default=1
-            )
+        '-m', '--mode', type=int,
+        help='Mode argument (default 1)',
+        default=1
+        )
     
     args = parser.parse_args()
-    
-    start(args.initial, args.headless, args.mode)
+
+    start(args.init, args.head, args.mode)

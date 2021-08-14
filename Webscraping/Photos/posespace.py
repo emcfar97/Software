@@ -1,4 +1,4 @@
-import cv2, imutils, pathlib, time
+import argparse, cv2, imutils, pathlib, time
 import numpy as np
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
 from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, bs4, requests, save_image, tempfile
@@ -135,22 +135,20 @@ def start(initial=True, headless=True):
 
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='posespace', 
         )
     parser.add_argument(
-        '-i', '--initial', type=bool,
-        help='Initial argument (default True)',
-        default=True
+        '-i', '--init', type=int,
+        help='Initial argument (default 1)',
+        default=1
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
 
     args = parser.parse_args()
     
-    start(args.initial, args.headless)
+    start(args.initial, args.head)

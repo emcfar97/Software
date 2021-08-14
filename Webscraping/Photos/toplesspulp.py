@@ -1,4 +1,4 @@
-import time
+import time, argparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4
 from selenium.webdriver.common.keys import Keys
@@ -62,17 +62,15 @@ def start(headless=True):
 
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='toplesspulp', 
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
 
     args = parser.parse_args()
     
-    start(args.headless)
+    start(args.head)

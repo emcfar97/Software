@@ -14,6 +14,7 @@ parser.add_argument(
     )
 
 args = parser.parse_args()
+
 if args.arg == 0: # webscraping
 
     from Webscraping import get_starred

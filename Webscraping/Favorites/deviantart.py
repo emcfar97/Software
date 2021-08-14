@@ -1,3 +1,4 @@
+import argparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import PATH, IncrementalBar, bs4, re
 
@@ -69,8 +70,6 @@ def start(initial=True, headless=True):
     DRIVER.close()
 
 if __name__ == '__main__':
-
-    import argparse
 
     parser = argparse.ArgumentParser(
         prog='daviantart', 

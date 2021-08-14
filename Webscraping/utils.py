@@ -241,7 +241,7 @@ def get_name(path, hasher=1):
 
         stem = f'{hasher.hexdigest()}.{re.findall(EXT, str(path), re.IGNORECASE)[0]}'
     
-    return PATH / stem[0:2] / stem[2:4] / stem.replace('jpeg','jpg')
+    return PATH / stem[0:2] / stem[2:4] / stem.lower().replace('jpeg','jpg')
 
 def get_hash(image, src=False):
     '''Return perceptual hash of image'''
@@ -307,9 +307,9 @@ def get_tags(driver, path, filter=False):
     
     for frame in frames:
 
-        driver.get('http://kanotype.iptime.org:8003/deepdanbooru/')
+        driver.get('http://dev.kanotype.net:8003/deepdanbooru/')
         driver.find('//*[@id="exampleFormControlFile1"]', str(frame))
-        driver.find('//body/div/div/div/form/button', click=True)
+        driver.find('//button[@type="submit"]', click=True)
 
         for _ in range(4):
             html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
@@ -321,7 +321,7 @@ def get_tags(driver, path, filter=False):
             except AttributeError:
                 if driver.current_url().endswith('deepdanbooru/'):
                     driver.find('//*[@id="exampleFormControlFile1"]',str(frame))
-                    driver.find('//body/div/div/div/form/button', click=True)
+                    driver.find('//button[@type="submit"]', click=True)
                 driver.refresh()
     
     else:

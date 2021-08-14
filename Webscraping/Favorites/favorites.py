@@ -1,4 +1,4 @@
-import sqlite3, os, time, tempfile
+import argparse, sqlite3, os, time, tempfile
 from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, EXT
 from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
@@ -202,20 +202,18 @@ def start(initial=True, headless=True, upload=0):
     
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='favorites', 
         )
     parser.add_argument(
-        '-i', '--initial', type=bool,
-        help='Initial argument (default True)',
-        default=True
+        '-i', '--init', type=int,
+        help='Initial argument (default 1)',
+        default=1
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
     parser.add_argument(
         '-u', '--upload', type=bool,
@@ -225,4 +223,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    start(args.initial, args.headless, args.upload)
+    start(args.initial, args.head, args.upload)

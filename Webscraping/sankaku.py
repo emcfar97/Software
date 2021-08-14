@@ -1,8 +1,6 @@
+import argparse, time
 from . import CONNECT, SELECT, UPDATE, DELETE, WEBDRIVER
 from .utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re, ARTIST
-import time
-from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 SITE = 'sankaku'
 MODE = [
@@ -121,20 +119,18 @@ def start(initial=True, headless=True, mode=1):
 
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='sankaku', 
         )
     parser.add_argument(
-        '-i', '--initial', type=bool,
-        help='Initial argument (default True)',
-        default=True
+        '-i', '--init', type=int,
+        help='Initial argument (default 1)',
+        default=1
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
     parser.add_argument(
         '-m', '--mode', type=int,
@@ -144,4 +140,4 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    start(args.initial, args.headless, args.mode)
+    start(args.initial, args.head, args.mode)

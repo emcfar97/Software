@@ -1,3 +1,4 @@
+import argparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import PATH, IncrementalBar, bs4, re
 
@@ -65,22 +66,20 @@ def start(initial=True, headless=True):
 
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='foundry', 
         )
     parser.add_argument(
-        '-i', '--initial', type=bool,
-        help='Initial argument (default True)',
-        default=True
+        '-i', '--init', type=int,
+        help='Initial argument (default 1)',
+        default=1
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
 
     args = parser.parse_args()
     
-    start(args.initial, args.headless)
+    start(args.initial, args.head)

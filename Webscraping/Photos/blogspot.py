@@ -1,3 +1,4 @@
+import argparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
@@ -73,8 +74,6 @@ def start(index, headless=True):
 
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='sankaku', 
         )
@@ -83,11 +82,11 @@ if __name__ == '__main__':
         help='Index argument'
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
 
     args = parser.parse_args()
     
-    start(args.index, args.headless)
+    start(args.index, args.head)

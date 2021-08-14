@@ -1,5 +1,4 @@
-import cv2, re, time, bs4
-from PIL import Image
+import argparse, cv2, re, time, bs4
 from urllib.parse import urlparse
 from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, json_generator
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
@@ -121,7 +120,7 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
                     general=get_tags(DRIVER, file, True), 
                     custom=True, rating=True, exif=True
                     )
-                Image.open(file).save(file, exif=exif)
+                save_image(file, exif=exif)
 
             elif dest.suffix.lower() in ('.gif', '.webm', '.mp4'):
                 
@@ -143,8 +142,6 @@ def start(extract=True, add='', path=USER / r'Downloads\Images'):
     print('\nDone')
 
 if __name__ == '__main__':
-
-    import argparse
 
     parser = argparse.ArgumentParser(
         prog='insert records', 

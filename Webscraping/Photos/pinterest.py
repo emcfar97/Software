@@ -1,7 +1,6 @@
+import argparse, time
 from .. import CONNECT, INSERT, SELECT, WEBDRIVER
 from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, bs4, re, save_image
-import time
-from PIL import Image
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'pinterest'
@@ -28,7 +27,7 @@ def page_handler(hrefs, section):
                 general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=True
                 )
-            Image.open(name).save(name, exif=exif)
+            save_image(name, exif=exif)
 
         elif name.suffix in ('.gif', '.webm', '.mp4'):
             
@@ -100,8 +99,6 @@ def start(retry=0, headless=True):
     
 if __name__ == '__main__':
 
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog='pinterest', 
         )
@@ -111,11 +108,11 @@ if __name__ == '__main__':
         default=0
         )
     parser.add_argument(
-        '-he', '--headless', type=bool,
-        help='Headless argument (default True)',
-        default=True
+        '-he', '--head', type=int,
+        help='Headless argument (default 1)',
+        default=1
         )
 
     args = parser.parse_args()
     
-    start(args.retry, args.headless)
+    start(args.retry, args.head)
