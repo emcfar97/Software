@@ -6,9 +6,9 @@ parser = argparse.ArgumentParser(
     prog='Photos', 
     )
 parser.add_argument(
-    '-i', '--initial', type=bool,
-    help='Initial argument (default True)',
-    default=True
+    '-i', '--init', type=int,
+    help='Initial argument (default 1)',
+    default=1
     )
 args = parser.parse_args()
 

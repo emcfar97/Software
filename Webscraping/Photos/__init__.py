@@ -1,4 +1,4 @@
-def start(initialize=True):
+def start(initialize=1):
 
     import threading 
 
@@ -10,7 +10,7 @@ def start(initialize=True):
         threading.Thread(target=elitebabes.start, args=(initialize,)),
         # threading.Thread(target=instagram.start, args=(initiailze,)),
         # threading.Thread(target=posespace.start, args=(initiailze,))
-        threading.Thread(target=sankaku.start, args=(initialize, 1, 0)),
+        threading.Thread(target=sankaku.start, args=(initialize, True, 0)),
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()

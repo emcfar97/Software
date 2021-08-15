@@ -1,4 +1,4 @@
-def start(initialize=True):
+def start(initialize=1):
 
     import threading, subprocess
     from . import favorites, foundry, furaffinity, twitter

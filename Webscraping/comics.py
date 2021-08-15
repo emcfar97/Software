@@ -90,13 +90,14 @@ def page_handler(hrefs):
 
     print()
 
-def start(initial=True, headless=True, mode=1):
-    
-    global MYSQL, DRIVER
-    MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(headless)
+def start(initial=1, headless=True, mode=1):
     
     if mode:
+        
+        global MYSQL, DRIVER
+        MYSQL = CONNECT()
+        DRIVER = WEBDRIVER(headless)
+
         if initial:
 
             hrefs = initialize()
@@ -107,6 +108,10 @@ def start(initial=True, headless=True, mode=1):
         return
 
     import send2trash
+
+    global MYSQL, DRIVER
+    MYSQL = CONNECT()
+    DRIVER = WEBDRIVER(headless, None)
 
     path = USER / r'Downloads\Images\Comics'
     folders = list(path.iterdir())
@@ -164,9 +169,9 @@ if __name__ == '__main__':
         default=1
         )
     parser.add_argument(
-        '-he', '--head', type=int,
-        help='Headless argument (default 1)',
-        default=1
+        '-he', '--head', type=bool,
+        help='Headless argument (default True)',
+        default=True
         )
     parser.add_argument(
         '-m', '--mode', type=int,
