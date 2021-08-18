@@ -26,7 +26,7 @@ def initialize(url, query=0):
 
     next = next_page(html.find(class_='next page-numbers'))
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return hrefs
+    else: return MYSQL.execute(INSERT[0], hrefs, many=1)
 
 def page_handler(hrefs):
     
@@ -81,8 +81,7 @@ def start(initial=True, headless=True):
 
     if initial:
         
-        hrefs = initialize(DRIVER.login(SITE))
-        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        if initialize(DRIVER.login(SITE)): MYSQL.commit()
         
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

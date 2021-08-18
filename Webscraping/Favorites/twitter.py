@@ -7,7 +7,7 @@ SITE = 'twitter'
 
 def initialize(url, retry=0):
 
-    DRIVER.get(f'https://twitter.com/{url}/likes')
+    DRIVER.get(f'https://{SITE}.com/{url}/likes')
     query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
 
     while True:
@@ -41,7 +41,7 @@ def page_handler(hrefs):
     for href, in hrefs:
 
         progress.next()
-        DRIVER.get(f'https://twitter.com{href}')
+        DRIVER.get(f'https://{SITE}.com{href}')
 
         for _ in range(3):
             try:

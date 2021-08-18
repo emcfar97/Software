@@ -33,7 +33,7 @@ def initialize(page='/favorites/?page=1', query=0):
         
     next = next_page(html.find(class_='pagination'))
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return hrefs
+    else: return MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
     
 def page_handler(hrefs):
 
@@ -43,7 +43,8 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        page_source = requests.get(f'https://{SITE}.net{href}')
+        try: page_source = requests.get(f'https://{SITE}.net{href}')
+        except: continue
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
         
         cover = None
@@ -92,16 +93,16 @@ def page_handler(hrefs):
 
 def start(initial=1, headless=True, mode=1):
     
+    global MYSQL, DRIVER
+
     if mode:
         
-        global MYSQL, DRIVER
         MYSQL = CONNECT()
         DRIVER = WEBDRIVER(headless)
 
         if initial:
 
-            hrefs = initialize()
-            MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+            if initialize(): MYSQL.commit()
 
         page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         DRIVER.close()
@@ -109,7 +110,6 @@ def start(initial=1, headless=True, mode=1):
 
     import send2trash
 
-    global MYSQL, DRIVER
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless, None)
 

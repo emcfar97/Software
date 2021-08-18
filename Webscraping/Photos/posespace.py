@@ -130,7 +130,7 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless, None)
     
     if initial: initialize()
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1)[::2])
+    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
 
 if __name__ == '__main__':

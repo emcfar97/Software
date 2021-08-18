@@ -16,7 +16,7 @@ def initialize(url, query=0):
     if not query:
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
 
-    DRIVER.get(f'https://www.flickr.com{url}')
+    DRIVER.get(f'https://www.{SITE}.com{url}')
     for _ in range(2):
         DRIVER.find('html', Keys.END, type_=6)
         time.sleep(2)
@@ -30,7 +30,7 @@ def initialize(url, query=0):
 
     next = next_page(html.find('a', {'data-track':'paginationRightClick'}))
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return hrefs
+    else: return MYSQL.execute(INSERT[0], hrefs, many=1)
 
 def page_handler(hrefs):
 
@@ -42,7 +42,7 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'https://www.flickr.com{href}')
+        DRIVER.get(f'https://www.{SITE}.com{href}')
         image = None
         
         for _ in range(20):
@@ -94,8 +94,7 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
     
     if initial:
-        hrefs = initialize(DRIVER.login(SITE))
-        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        if initialize(DRIVER.login(SITE)): MYSQL.commit()
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
 

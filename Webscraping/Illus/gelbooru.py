@@ -25,7 +25,7 @@ def initialize(url, query=0):
         
     next = next_page(html.find(id='paginator').contents)
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return hrefs
+    else: return MYSQL.execute(INSERT[0], hrefs, many=1)
     
 def page_handler(hrefs):
 
@@ -78,8 +78,7 @@ def start(initial=True, headless=True):
 
         DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
-        hrefs = initialize(url)
-        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        if initialize(url): MYSQL.commit()
         DRIVER.close()
 
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))

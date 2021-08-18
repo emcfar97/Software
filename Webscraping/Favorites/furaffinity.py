@@ -13,7 +13,7 @@ def initialize(url, query=0):
 
     if not query:
         query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
-    DRIVER.get(f'https://www.furaffinity.net{url}')
+    DRIVER.get(f'https://www.{SITE}.net{url}')
     
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
@@ -34,7 +34,7 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'https://www.furaffinity.net{href}')
+        DRIVER.get(f'https://www.{SITE}.net{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
         if html.find(text=re.compile('not in our database.+')):

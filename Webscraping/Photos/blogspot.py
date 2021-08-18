@@ -29,6 +29,7 @@ def page_handler(hrefs, tag):
             commit=1
             )
         progress.next()
+        
     print()
 
 def initialize(url, query=0):
@@ -63,9 +64,9 @@ def start(index, headless=True):
     page_source = requests.get(url[0]).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     
-    for page in html.findAll('li'): 
+    for page in html.findAll('li'):
         try: initialize(page.contents[0].get('href'))
-        except: 
+        except:
             for page in page.findAll(class_='post-count-link'):
                 initialize(page.get('href'))
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1), url[1])

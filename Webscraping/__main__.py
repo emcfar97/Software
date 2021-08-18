@@ -24,7 +24,7 @@ if args.arg == 0: # webscraping
     threads = [
         threading.Thread(target=Photos.start, args=(args.init,)),
         threading.Thread(target=Illus.start, args=(args.init,)),
-        threading.Thread(target=comics.start, args=(args.init, 1, 0))
+        threading.Thread(target=comics.start, args=(args.init,))
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()

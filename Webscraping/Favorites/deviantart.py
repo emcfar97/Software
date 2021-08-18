@@ -13,7 +13,7 @@ def initialize(url, query=0):
 
     if not query:
         query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
-    DRIVER.get(f'https://www.deviantart.com/notifications/watch')
+    DRIVER.get(f'https://www.{SITE}.com/notifications/watch')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     artists = html.findAll('div', {'aria-label': re.compile('\d+ Deviations by .*')})
 
@@ -39,7 +39,7 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'http://www.hentai-foundry.com{href}')
+        DRIVER.get(f'http://www.{SITE}.com{href}')
         if element := DRIVER.find('//*[@id="frontPage"]', type_=1):
             element.click()
         DRIVER.find(
@@ -72,7 +72,7 @@ def start(initial=True, headless=True):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        prog='daviantart', 
+        prog='deviantart', 
         )
     parser.add_argument(
         '-i', '--initial', type=bool,

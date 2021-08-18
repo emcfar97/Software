@@ -7,6 +7,7 @@ MODE = [
     ['idol', 1],
     ['chan', 2]
     ]
+INSERT = 'INSERT INTO imagedata(href, type, site) VALUES(%s, %s, %s)'
 
 def initialize(mode, url, query=0):
     
@@ -33,7 +34,7 @@ def initialize(mode, url, query=0):
         
         next = next_page(html.find('div', {'next-page-url': True})) 
         if hrefs and next: return hrefs + initialize(mode, next, query)
-        else: return hrefs
+        else: return MYSQL.execute(INSERT, hrefs, many=1)
     except:
         time.sleep(60)   
         initialize(mode, url, query)
@@ -103,12 +104,10 @@ def start(initial=True, headless=True, mode=1):
     DRIVER = WEBDRIVER(headless)
     mode = MODE[mode]
 
-    if initial: 
+    if initial:
         url = DRIVER.login(SITE)
-        hrefs = initialize(mode, url)
-        MYSQL.execute(
-            'INSERT INTO imagedata(href, type, site) VALUES(%s, %s, %s)', hrefs, many=1, commit=1
-            )
+        if initialize(mode, url): MYSQL.commit()
+
     page_handler(
         MYSQL.execute(
             f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1

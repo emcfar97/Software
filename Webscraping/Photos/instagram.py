@@ -7,7 +7,7 @@ SITE = 'instagram'
 
 def initialize(url, retry=0):
     
-    DRIVER.get(f'https://www.instagram.com{url}')
+    DRIVER.get(f'https://www.{SITE}.com{url}')
     query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
     
     while True:
@@ -40,7 +40,7 @@ def page_handler(hrefs, retry=2):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'https://www.instagram.com{href}')
+        DRIVER.get(f'https://www.{SITE}.com{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         artist = html.find(
             alt=re.compile('.+ profile picture')

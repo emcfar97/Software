@@ -178,7 +178,7 @@ class WEBDRIVER:
                 if fetch: raise error_
                 error = error_
 
-        raise error
+        if fetch: raise error
     
     def page_source(self, error=None):
         
