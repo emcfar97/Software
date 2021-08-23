@@ -86,7 +86,7 @@ class Slideshow(QMainWindow):
             if path.endswith(('.jpg', '.png')):
                 image = QImage(path)
                 path = None
-            elif path.endswith(('gif', '.mp4', '.webm')):
+            elif path.endswith(('.gif', '.mp4', '.webm')):
                 image = get_frame(path)
             else: print(path)
             
