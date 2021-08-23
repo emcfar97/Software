@@ -19,76 +19,48 @@ class CONNECT(QObject):
         self.DATAB = sql.connect(option_files=CREDENTIALS)
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
-    # @run
-    def execute(self, statement, arguments=None, commit=0):
+    def execute(self, statement, arguments=None, many=0):
         
-        for _ in range(5):
-            try:
-                self.CURSOR.executemany(statement, arguments)
-
-                if commit:
-
-                    self.DATAB.commit()
-                    self.finished.emit(1)
-                    return 1
-
-                else: 
-                    
-                    self.finished.emit(0)
-                    return 0
-
-            except sql.errors.ProgrammingError as error:
-                
-                print('Programming', error, statement)
-                return list()
-                
-            except sql.errors.DatabaseError as error:
-
-                print('Database', error, statement)
-                try: self.reconnect()
-                except Exception as error:
-                    print('\tDatabase', error, statement); pass
-
-            except sql.errors.InterfaceError as error:
-
-                print('Interface', error, statement)
-                try: self.reconnect()
-                except Exception as error:
-                    print('\tInterface', error, statement); pass
-
-            self.finished.emit(0)
-            return 0
-
-    # @run
-    def select(self, statement, arguments=None):
+        try:
         
-        for _ in range(5):
-            try:
-                self.CURSOR.execute(statement, arguments)
+            if many: self.CURSOR.executemany(statement, arguments)
+            else: self.CURSOR.execute(statement, arguments)
+            
+            if statement.startswith('SELECT'):
                 self.finishedSelect.emit(self.CURSOR.fetchall())
-
-                return
-
-            except sql.errors.ProgrammingError as error:
+                return 1
                 
-                print('Programming', error, statement)
-                return list()
+            elif statement.startswith('UPDATE'):
+                self.DATAB.commit()
+                self.finishedUpdate.emit(1)
                 
-            except sql.errors.DatabaseError as error:
+            elif statement.startswith('DELETE'):
+                self.finishedDelete.emit(1)
 
-                print('Database', error, statement)
-                try: self.reconnect()
-                except Exception as error:
-                    print('\tDatabase', error, statement); pass
+            self.finishedTransaction.emit(1)
+            return 1
 
-            except sql.errors.InterfaceError as error:
+        except sql.errors.ProgrammingError as error:
+            
+            print('Programming', error, statement)
+            self.finishedSelect.emit(self.CURSOR.fetchall())
+            
+        except sql.errors.DatabaseError as error:
 
-                print('Interface', error, statement)
-                try: self.reconnect()
-                except Exception as error:
-                    print('\tInterface', error, statement); pass
+            print('Database', error, statement)
+            try: self.reconnect()
+            except Exception as error:
+                print('\tDatabase', error, statement); pass
 
-            self.finishedSelect.emit([])
+        except sql.errors.InterfaceError as error:
+
+            print('Interface', error, statement)
+            try: self.reconnect()
+            except Exception as error:
+                print('\tInterface', error, statement); pass
+
+        self.finishedTransaction.emit(0)
+        return 0
     
     def rollback(self): self.DATAB.rollback()
 

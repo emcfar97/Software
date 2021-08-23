@@ -89,7 +89,7 @@ class ManageData(QMainWindow):
     @pyqtSlot()
     def select_records(self):
         
-        self.mysql.select(self.ribbon.update_query())
+        self.mysql.execute(self.ribbon.update_query())
 
     def update_records(self, indexes, **kwargs):
         
