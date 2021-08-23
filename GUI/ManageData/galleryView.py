@@ -342,13 +342,13 @@ class Model(QAbstractTableModel):
             return False
 
         mysql = self.parent().parent().parent().mysql
-        return mysql.rowcount > len(self.images)
+        return mysql.rowcount() > len(self.images)
 
     def fetchMore(self, index, fetch=BATCH):
 
         mysql = self.parent().parent().parent().MYSQL
         start = len(self.images)
-        remainder = mysql.rowcount - start
+        remainder = mysql.rowcount() - start
         items_to_fetch = min(fetch, remainder)
 
         self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)

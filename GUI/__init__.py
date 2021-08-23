@@ -18,7 +18,6 @@ class CONNECT(QObject):
         super(CONNECT, self).__init__()
         self.DATAB = sql.connect(option_files=CREDENTIALS)
         self.CURSOR = self.DATAB.cursor(buffered=True)
-        self.rowcount = 0
 
     # @run
     def execute(self, statement, arguments=None, commit=0):
@@ -38,11 +37,9 @@ class CONNECT(QObject):
                     self.finished.emit(0)
                     return 0
 
-            
             except sql.errors.ProgrammingError as error:
                 
                 print('Programming', error, statement)
-                self.rowcount = 0
                 return list()
                 
             except sql.errors.DatabaseError as error:
@@ -68,7 +65,6 @@ class CONNECT(QObject):
         for _ in range(5):
             try:
                 self.CURSOR.execute(statement, arguments)
-                self.rowcount = self.CURSOR.rowcount
                 self.finishedSelect.emit(self.CURSOR.fetchall())
 
                 return
@@ -76,7 +72,6 @@ class CONNECT(QObject):
             except sql.errors.ProgrammingError as error:
                 
                 print('Programming', error, statement)
-                self.rowcount = 0
                 return list()
                 
             except sql.errors.DatabaseError as error:
@@ -103,6 +98,8 @@ class CONNECT(QObject):
 
     def commit(self): self.DATAB.commit()
     
+    def rowcount(self): return self.CURSOR.rowcount
+
     def close(self): self.DATAB.close()
 
 class Completer(QCompleter):
