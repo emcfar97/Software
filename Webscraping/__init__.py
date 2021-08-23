@@ -261,15 +261,13 @@ def get_starred(headless=True):
     if (element:=DRIVER.find(show, fetch=1)).text == 'Show':
         element.click()
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-    target = html.find('table')
 
-    while starred:=target.findAll(text=re.compile('\w+\.')):
+    while starred:=html.findAll('span', {"data-testid": "files-filename"}):
 
         paths = [(str(star),) for star in starred]
         MYSQL.execute(UPDATE, paths, many=1, commit=1)
         [DRIVER.find(address, click=True) for _ in range(5)]
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        target = html.find('table')
         time.sleep(2)
 
     DRIVER.close()
