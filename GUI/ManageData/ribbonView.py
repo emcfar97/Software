@@ -1,9 +1,8 @@
 import re
-from .. import BASE
+from .. import BASE, AUTOCOMPLETE, Completer
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QAbstractItemView, QPushButton, QCheckBox, QStyle, QCompleter, QMenu, QAction
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QAbstractItemView, QPushButton, QCheckBox, QStyle, QMenu, QAction
 
-AUTOCOMPLETE = r'GUI\autocomplete.txt'
 ENUM = {
     'All': '',
     'Photo': "type='photograph'",
@@ -16,6 +15,8 @@ ENUM = {
 
 class Ribbon(QWidget):
      
+    selection_mode = pyqtSignal(bool)
+
     def __init__(self, parent):
          
         super(Ribbon, self).__init__(parent)
@@ -55,12 +56,10 @@ class Ribbon(QWidget):
         self.tags = QLineEdit(self)
         self.tags.setPlaceholderText('Enter tags')
         self.tags.setCompleter(
-            QCompleter(open(AUTOCOMPLETE).read().split())
+            Completer(open(AUTOCOMPLETE).read().split())
             )
         self.tags.returnPressed.connect(self.parent().select_records)
-        self.tags.textChanged.connect(self.update_query)
-        self.layout.addWidget(self.tags, 4)
-        
+                
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.parent().select_records)
@@ -69,12 +68,13 @@ class Ribbon(QWidget):
         self.refresh = QPushButton(self)
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.refresh.clicked.connect(self.parent().select_records)
-        self.layout.addWidget(self.refresh)
-        
+                
         self.multi = QCheckBox('Multi-selection', self)
-        self.multi.clicked.connect(self.changeSelectionMode)
+        self.multi.clicked.connect(self.selection_mode.emit)
+        
+        self.layout.addWidget(self.tags)
+        self.layout.addWidget(self.refresh)
         self.layout.addWidget(self.multi)
-
         self.tags.setFocus()
         
     def update_query(self, event=None, op='[<>=!]=?'):
@@ -129,7 +129,7 @@ class Ribbon(QWidget):
         # tag parsing
         if string.strip():
     
-            string = re.sub('(-?\w+( OR -?\w+)+)', r'(\1)', string)
+            string = re.sub('([-*]?\w+( OR [-*]?\w+)+)', r'(\1)', string)
             string = re.sub('NOT ', '-', string.strip())
             string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
             string = re.sub('(\+AND|OR) ', '', string)
@@ -140,13 +140,17 @@ class Ribbon(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 ]
         
-        if not any(query): query[''] = ['NOT ISNULL(path)']
+        if not any(query) or 'type' in query:
+            
+            query[''] = ['NOT ISNULL(imagedata.path)']
 
         filter = " AND ".join(
             f'({" OR ".join(val)})' for val in query.values() if val
             )
         
         self.query = f'{BASE} {join} WHERE {filter} {order}'
+
+        return self.query
 
     def get_order(self, ORDER={'Ascending':'ASC','Descending':'DESC'}):
         
@@ -171,7 +175,7 @@ class Ribbon(QWidget):
             else:
                 self.undo.append(string)
                 self.redo.clear()
-
+                
         self.back.setEnabled(bool(self.undo[1:]))
         self.forward.setEnabled(bool(self.redo))
         self.menu.setEnabled(bool(self.undo + self.redo))
@@ -180,7 +184,7 @@ class Ribbon(QWidget):
         for state in reversed(self.undo[1:] + self.redo[::-1]):
             
             action = QAction(state, menu, checkable=True)
-            if state == string and check: 
+            if state == string and check:
                 action.setChecked(True)
                 check=0
             menu.addAction(action)
@@ -201,18 +205,8 @@ class Ribbon(QWidget):
             self.undo.append(self.redo.pop())
             if update: self.update_history()
     
-    def changeSelectionMode(self, event):
-        
-        if event:
-            self.parent().images.setSelectionMode(
-                QAbstractItemView.MultiSelection
-                )
-        else:
-            self.parent().images.setSelectionMode(
-                QAbstractItemView.ExtendedSelection
-                )
-            self.parent().images.clearSelection()
-    
+    def setText(self, text): self.tags.setText(text)
+
     def menuEvent(self, event):
 
         action = event.text()
@@ -233,4 +227,4 @@ class Ribbon(QWidget):
 
         if key_press in (Qt.Key_Return, Qt.Key_Enter): pass
 
-        else: self.parent().keyPressEvent(event)
+        else: self.parent().parent().keyPressEvent(event)

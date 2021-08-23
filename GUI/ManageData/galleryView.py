@@ -1,11 +1,18 @@
-import textwrap, re
-from .. import COMIC, BATCH, get_frame
+import textwrap
+from .. import BATCH, get_frame
 from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QSize
-from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup, QMessageBox
+from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QSize, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup
+
+COLUMNS = 5.18
 
 class Gallery(QTableView):
+    
+    selection = pyqtSignal(QItemSelection, QItemSelection)
+    find_artist = pyqtSignal()#QModelIndex)
+    delete_ = pyqtSignal(QItemSelection)
+    load_comic = pyqtSignal()
 
     def __init__(self, parent):
 
@@ -30,7 +37,9 @@ class Gallery(QTableView):
         
         menu = QMenu(self)
         parent = self.parent()
-        self.comic = QAction('Read comic', menu, triggered=self.read_comic)
+        self.comic = QAction(
+            'Read comic', menu, triggered=self.load_comic.emit
+            )
         
         temp_menu, sortMenu = self.create_submenu(
             menu, 'Sort by', 
@@ -57,7 +66,7 @@ class Gallery(QTableView):
                 )                
             menu.addSeparator()
             self.artist = QAction(
-                'Find more by artist', menu, triggered=self.find_by_artist
+                'Find more by artist', menu, triggered=self.find_artist
                 )
             menu.addAction(self.artist)
             menu.addSeparator()
@@ -79,7 +88,7 @@ class Gallery(QTableView):
         for num, item in enumerate(items):
             action = QAction(item, menu, checkable=True)
             if num == check: action.setChecked(True)
-            action_group.triggered.connect(self.parent().ribbon.update_query)
+            action_group.triggered.connect(self.parent().select_records)
             action_group.addAction(action)
             menu.addAction(action)
 
@@ -90,31 +99,15 @@ class Gallery(QTableView):
         if get_menu: return action_group, menu
         return action_group
     
-    def find_by_artist(self, event):
-
-        artist = self.currentIndex().data(Qt.UserRole)[1]
-        if artist: 
-            artist = ' OR '.join(artist.split())
-            self.parent().ribbon.tags.setText(artist)
-        else: QMessageBox.information(
-            self, 'Artist', 'This image has no artist'
-            )
-
-    def read_comic(self, event=None):
-        
-        parent = self.parent().parent()
-        path = self.currentIndex().data(Qt.UserRole)[0]
-        parent_, = parent.MYSQL.execute(COMIC, (path,), fetch=1)[0]
-        parent.ribbon.tags.setText(f'comic={parent_}')
-    
     def copy_path(self):
         
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
         
-        paths = ' '.join(
-            f'"{index.data(Qt.UserRole)[0]}"' 
+        paths = ', '.join(
+            f"r'{index.data(Qt.UserRole)[0]}'" 
             for index in self.selectedIndexes()
+            if index.data(300) is not None
             )
         cb.setText(paths, mode=cb.Clipboard)
 
@@ -122,18 +115,12 @@ class Gallery(QTableView):
 
     def update(self, images):
         
-        parent = self.parent().parent()
-        self.clearSelection()
-        if not isinstance(images, list): images = list()
-        parent.update_statusbar(parent.MYSQL.rowcount)
         self.table.images = images
         self.table.layoutChanged.emit()
     
     def delete(self, event):
 
-        self.parent().parent().delete_records(
-            self.selectedIndexes()
-            )
+        self.delete_.emit(self.selectedIndexes())
 
     def openPersistentEditor(self):
         
@@ -145,45 +132,27 @@ class Gallery(QTableView):
     
     def selectionChanged(self, select, deselect):
         
-        if self.table.images:
-            
-            if self.parent().parent().windowTitle() == 'Manage Data':
-
-                if select := select.indexes():
-                    image = select[0]
-                
-                elif self.selectedIndexes():
-                    image = min(self.selectedIndexes())
-                
-                else: image = None
-
-                self.parent().parent().preview.update(image)
-            
-            self.parent().parent().update_statusbar(
-                self.total(), len(self.selectedIndexes())
-                )
+        self.selection.emit(select, deselect)
 
     def mouseDoubleClickEvent(self, event):
 
-        parent = self.parent().parent()
-
-        if re.match('type=.comic.', parent.ribbon.query):
-            
-            self.read_comic()
-        
-        else: parent.start_slideshow()
+        self.load_comic.emit()
+        # self.load_comic.emit(self.currentIndex())
 
     def contextMenuEvent(self, event):
         
-        title = self.parent().parent().windowTitle() == 'Manage Data'
         index = self.currentIndex().data(Qt.EditRole)
         
-        if index and title and index[5].pop() == 'Comic':
+        if index and index[5].pop() == 'Comic':
             self.menu.insertAction(self.artist, self.comic)
         else: self.menu.removeAction(self.comic)
         
         self.menu.popup(self.mapToGlobal(event))
     
+    def menuEvent(self, event):
+
+        pass
+
     def keyPressEvent(self, event):
         
         key_press = event.key()
@@ -242,12 +211,16 @@ class Gallery(QTableView):
             if shift:
                 
                 if row1 == row2: selection = QItemSelection(index, new)
+                
+                elif key_press in (Qt.Key_Right, Qt.Key_Left):
                     
-                else:
+                    selection = QItemSelection(index, new)
+
+                elif key_press in (Qt.Key_Up, Qt.Key_Down):
 
                     start, end = (0, 4) if (sign < 0) else (4, 0)
                     selection = QItemSelection(
-                        index, self.table.index(row2, start)
+                        index, self.table.index(row1, start)
                         )
                     selection.merge(QItemSelection(
                         new,  self.table.index(row2, end)
@@ -335,26 +308,23 @@ class Gallery(QTableView):
         
         elif key_press in (Qt.Key_Return, Qt.Key_Enter):
             
-            ribbon = self.parent().parent().ribbon
-            if re.match('type=.comic.', ribbon.query):
-        
-                self.read_comic()
+            self.load_comic.emit()
+            # self.load_comic.emit(self.currentIndex())
 
-        else: self.parent().keyPressEvent(event)
+        else: self.parent().parent().keyPressEvent(event)
 
     def resizeEvent(self, event):
 
-        self.table.width = event.size().width() // self.table.size
+        self.table.width = event.size().width() // COLUMNS
 
 class Model(QAbstractTableModel):
 
-    def __init__(self, parent, size=5.18):
+    def __init__(self, parent):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
+        self.width = self.parent().parent().width() // COLUMNS
         self.images = []
-        self.size = size
-        self.width = self.parent().parent().width() // self.size
         
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
     
@@ -371,18 +341,19 @@ class Model(QAbstractTableModel):
         if index.isValid():
             return False
 
-        mysql = self.parent().parent().parent().MYSQL
+        mysql = self.parent().parent().parent().mysql
         return mysql.rowcount > len(self.images)
 
     def fetchMore(self, index, fetch=BATCH):
 
+        mysql = self.parent().parent().parent().MYSQL
         start = len(self.images)
-        remainder = self.parent().mysql.rowcount - start
+        remainder = mysql.rowcount - start
         items_to_fetch = min(fetch, remainder)
 
         self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
 
-        self.images += self.parent().mysql.CURSOR.fetchmany(fetch)
+        self.images += mysql.CURSOR.fetchmany(fetch)
 
         self.endInsertRows()
     

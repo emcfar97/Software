@@ -20,40 +20,51 @@ class Preview(QScrollArea):
         
     def update(self, index=None):
 
-        if not (index and (data := index.data(Qt.EditRole))):
+        if not (index and (data := index.data(Qt.UserRole))):
             
             pixmap = QPixmap()
+            # self.label.setText('No image')
+            # self.label.setStyleSheet('font: 20x')
         
         else:
-            path = data[0].pop()
-            type_ = data[5].pop()
+            path = data[0]
+            type_ = data[5]
             if path.endswith(('.mp4', '.webm')): path = get_frame(path)
 
             pixmap = QPixmap(path)
-            height, width = pixmap.height(), pixmap.width()
-            aspect_ratio = (
-                width / height 
-                if height > width else
-                height / width
-                )
+            if not pixmap.isNull():
+                height, width = pixmap.height(), pixmap.width()
+                aspect_ratio = (
+                    width / height 
+                    if height > width else
+                    height / width
+                    )
 
-            if (type_ == 3 and aspect_ratio < .6) or aspect_ratio < .3:
-                if height > width:
-                    pixmap = pixmap.scaledToWidth(
-                        self.width() * .9, Qt.SmoothTransformation
-                        )
-                else:
-                    pixmap = pixmap.scaledToHeight(
-                        self.height() * .9, Qt.SmoothTransformation
-                        )
-            else: pixmap = pixmap.scaled(
-                self.size(), Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
+                if (type_ == 3 and aspect_ratio < .6) or aspect_ratio < .3:
+                    if height > width:
+                        pixmap = pixmap.scaledToWidth(
+                            self.width() * .9, Qt.SmoothTransformation
+                            )
+                    else:
+                        pixmap = pixmap.scaledToHeight(
+                            self.height() * .9, Qt.SmoothTransformation
+                            )
+                else: pixmap = pixmap.scaled(
+                    self.size(), Qt.KeepAspectRatio, 
+                    transformMode=Qt.SmoothTransformation
+                    )
+            
+            # else:
+                # self.label.setText('No image')
+                # self.setStyleSheet('font: 20x')
 
         self.verticalScrollBar().setSliderPosition(0)
         self.horizontalScrollBar().setSliderPosition(0)
         self.label.setPixmap(pixmap)
+    
+    def keyPressEvent(self, event):
+        
+        self.parent().parent().keyPressEvent(event)
 
 class Timer(QLabel):
     

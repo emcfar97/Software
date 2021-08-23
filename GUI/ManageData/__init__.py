@@ -1,7 +1,8 @@
+import re
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView
 
-from GUI import ROOT, CONNECT, MODIFY, DELETE, run
+from GUI import ROOT, CONNECT, MODIFY, DELETE, COMIC, AUTOCOMPLETE, Completer, update_autocomplete, remove_redundancies
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
 from GUI.managedata.ribbonView import Ribbon
@@ -9,8 +10,9 @@ from GUI.slideshow import Slideshow
 
 class ManageData(QMainWindow):
 
-    transaction_complete = pyqtSignal()
-    window_closed = pyqtSignal()
+    populateGallery = pyqtSignal()
+    completedTransaction = pyqtSignal(list, int)
+    closedWindow = pyqtSignal()
 
     def __init__(self, parent=None):
     
@@ -35,7 +37,7 @@ class ManageData(QMainWindow):
     def create_widgets(self):
             
         self.windows = set()
-        self.MYSQL = CONNECT()
+        self.mysql = CONNECT()
 
         self.gallery = Gallery(self)
         self.preview = Preview(self, 'white')
@@ -46,7 +48,21 @@ class ManageData(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
-        self.transaction_complete.connect(self.select_records)
+        self.completedTransaction.connect(self.delete_records)
+        
+        self.mysql.finished.connect(self.select_records)
+        self.mysql.finishedSelect.connect(lambda x: self.preview.update(None))
+        self.mysql.finishedSelect.connect(self.gallery.clearSelection)
+        self.mysql.finishedSelect.connect(self.gallery.update)
+        self.mysql.finishedSelect.connect(self.update_statusbar)
+
+        self.gallery.selection.connect(self.update_preview)
+        self.gallery.selection.connect(self.update_statusbar)
+        self.gallery.delete_.connect(self.delete_records)
+        self.gallery.load_comic.connect(self.read_comic)
+        self.gallery.find_artist.connect(self.find_by_artist)
+
+        self.ribbon.selection_mode.connect(self.setSelectionMode)
     
     def create_menu(self):
         
@@ -61,6 +77,8 @@ class ManageData(QMainWindow):
         
         # File
         file = self.menubar.addMenu('File')
+        file.addAction('Update Autocomplete')
+        file.addAction('Remove Redundancies')
         
         # View
         help = self.menubar.addMenu('View')
@@ -68,27 +86,11 @@ class ManageData(QMainWindow):
         # Help
         help = self.menubar.addMenu('Help')
 
-    # @run
     @pyqtSlot()
     def select_records(self):
-
-        self.ribbon.update_query()
-        query = self.ribbon.query
         
-        try:
-            record = self.MYSQL.execute(query, fetch=1)
-            self.gallery.update(record)
-        except:
-            QMessageBox.information(
-                None, 'The database is busy', 
-                'There is a transaction currently taking place',
-                QMessageBox.Ok
-                )
-            return 0
+        self.mysql.select(self.ribbon.update_query())
 
-        return 1
-
-    @run
     def update_records(self, indexes, **kwargs):
         
         parameters = []
@@ -109,40 +111,21 @@ class ManageData(QMainWindow):
                 
             else: parameters.append(f'{key}={vals}')
 
-        if 'Path' in kwargs:
-
-            for path, in indexes:
-                path = ROOT / path
-
-                try: path.rename(path.with_name())
-                except (
-                    FileExistsError, 
-                    FileNotFoundError, 
-                    PermissionError
-                    ) as error:
-                    message = QMessageBox.question(
-                        None, type(error).__name__, str(error), 
-                        QMessageBox.Ignore | QMessageBox.Ok
-                        )
-                    if message == QMessageBox.Ok: return 0
-
-        busy = self.MYSQL.execute(
-            MODIFY.format(', '.join(parameters)), indexes, many=1, commit=1
+        self.mysql.execute(
+            MODIFY.format(', '.join(parameters)), indexes, commit=1
             )
-        if busy:
-            QMessageBox.information(
-                None, 'The database is busy', 
-                'There is a transaction currently taking place',
-                QMessageBox.Ok
-                )
-            return 0
 
-        self.preview.update()
-        self.transaction_complete.emit()
+    def delete_records(self, indexes, type_=0):
+
+        if type_:
+                        
+            for path, in indexes: (ROOT / path).unlink(True)
+
+            self.mysql.commit()
+            self.mysql.finished.emit(1)
+            
+            return
         
-    @run
-    def delete_records(self, indexes):
-                
         message = QMessageBox.question(
             None, 'Delete', 
             'Are you sure you want to delete this?',
@@ -153,25 +136,14 @@ class ManageData(QMainWindow):
             
             paths = [
                 (index.data(Qt.UserRole)[0],) 
-                for index in indexes if index.data(300)
+                for index in indexes
+                if index.data(300) is not None
                 ]
             
-            busy = self.MYSQL.execute(DELETE, paths, many=1)
-            if busy:
-                QMessageBox.information(
-                    None, 'The database is busy', 
-                    'There is a transaction currently taking place',
-                    QMessageBox.Ok
-                    )
-                self.MYSQL.rollback()
-                return 0
+            if self.mysql.execute(DELETE, paths):
+                
+                self.completedTransaction.emit(paths, 1)
 
-            for path, in paths: (ROOT / path).unlink(True)
-            self.MYSQL.commit()
-
-            self.preview.update()
-            self.transaction_complete.emit()
-    
     def start_slideshow(self, index=None):
         
         if not self.gallery.total(): return
@@ -183,8 +155,24 @@ class ManageData(QMainWindow):
         
         self.windows.add(slideshow)
 
-    def update_statusbar(self, total=0, select=''):
-         
+    def update_preview(self, select, deselect):
+        
+        if total := self.gallery.total():
+            
+            if select := select.indexes(): image = select[0]
+            
+            elif indexes := self.gallery.selectedIndexes():
+                image = min(indexes)
+            
+            else: image = None
+
+            self.preview.update(image)
+            
+    def update_statusbar(self):
+        
+        total = self.gallery.total()
+        select = len(self.gallery.selectedIndexes())
+
         total = (
             f'{total} image' 
             if (total == 1) else 
@@ -192,17 +180,66 @@ class ManageData(QMainWindow):
             )
 
         if select:
+
             select = (
                 f'{select} image selected' 
                 if (select == 1) else 
                 f'{select} images selected'
                 )
+                
+        else: select = ''
         
         self.statusbar.showMessage(f'   {total}     {select}')
     
-    def menuPressEvent(self, action=None):
+    def find_by_artist(self, event=None):
 
-        print(action)
+        index = self.gallery.currentIndex()
+        artist = index.data(Qt.UserRole)[1]
+        
+        if artist: 
+            
+            self.ribbon.setText(' OR '.join(artist.split()))
+
+        else: QMessageBox.information(
+            self, 'Find by artist', 'This image has no artist'
+            )
+
+    def read_comic(self, event=None):
+        
+        if re.search('type=.comic.', self.ribbon.query):
+            
+            path = self.gallery.currentIndex().data(Qt.UserRole)[0]
+            parent_, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
+            self.ribbon.setText(f'comic={parent_}')
+        
+        else: self.start_slideshow()
+    
+    def setSelectionMode(self, event):
+        
+        if event:
+            self.gallery.setSelectionMode(
+                QAbstractItemView.MultiSelection
+                )
+        else:
+            self.gallery.setSelectionMode(
+                QAbstractItemView.ExtendedSelection
+                )
+            self.gallery.clearSelection()
+    
+    def menuPressEvent(self, event=None):
+
+        action = event.text()
+        
+        if action == 'Update Autocomplete':
+
+            update_autocomplete()
+            self.ribbon.tags.setCompleter(
+                Completer(open(AUTOCOMPLETE).read().split())
+                )
+
+        if action == 'Remove Redundancies':
+
+            remove_redundancies()
 
     def keyPressEvent(self, event):
 
@@ -232,6 +269,6 @@ class ManageData(QMainWindow):
 
     def closeEvent(self, event):
         
-        self.MYSQL.close()
+        self.mysql.close()
         self.windows.clear()
-        self.window_closed.emit()
+        self.closedWindow.emit()

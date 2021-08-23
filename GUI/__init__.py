@@ -1,52 +1,103 @@
 import qimage2ndarray
 from os import path
 from pathlib import Path
-from datetime import date
-from functools import wraps
 from cv2 import VideoCapture
 import mysql.connector as sql
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QThread
+from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtWidgets import QCompleter, QMenu, QAction, QActionGroup
 
-class CONNECT:
+class CONNECT(QObject):
     
+    finished = pyqtSignal(int)
+    finishedSelect = pyqtSignal(list)
+    completedTransaction = pyqtSignal()
+
     def __init__(self):
 
-        self.DATAB = sql.connect(option_files=r'GUI\credentials.ini')
+        super(CONNECT, self).__init__()
+        self.DATAB = sql.connect(option_files=CREDENTIALS)
         self.CURSOR = self.DATAB.cursor(buffered=True)
-        self.transaction = False
         self.rowcount = 0
 
-    def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
+    # @run
+    def execute(self, statement, arguments=None, commit=0):
         
-        if self.transaction: return self.transaction
-
-        self.transaction = True
-
         for _ in range(5):
             try:
-                if many: self.CURSOR.executemany(statement, arguments)
-                else: self.CURSOR.execute(statement, arguments)
-                self.transaction = False
+                self.CURSOR.executemany(statement, arguments)
 
-                if statement.startswith('SELECT'):
-                    self.rowcount = self.CURSOR.rowcount
-                else: self.rowcount = 0
+                if commit:
 
-                if commit: return self.DATAB.commit()
-                if fetch: return self.CURSOR.fetchall()
+                    self.DATAB.commit()
+                    self.finished.emit(1)
+                    return 1
+
+                else: 
+                    
+                    self.finished.emit(0)
+                    return 0
+
             
-            except (sql.errors.DatabaseError, sql.errors.InterfaceError):
+            except sql.errors.ProgrammingError as error:
                 
-                self.reconnect()
-        
-        self.transaction = False
-        return list()
+                print('Programming', error, statement)
+                self.rowcount = 0
+                return list()
+                
+            except sql.errors.DatabaseError as error:
 
+                print('Database', error, statement)
+                try: self.reconnect()
+                except Exception as error:
+                    print('\tDatabase', error, statement); pass
+
+            except sql.errors.InterfaceError as error:
+
+                print('Interface', error, statement)
+                try: self.reconnect()
+                except Exception as error:
+                    print('\tInterface', error, statement); pass
+
+            self.finished.emit(0)
+            return 0
+
+    # @run
+    def select(self, statement, arguments=None):
+        
+        for _ in range(5):
+            try:
+                self.CURSOR.execute(statement, arguments)
+                self.rowcount = self.CURSOR.rowcount
+                self.finishedSelect.emit(self.CURSOR.fetchall())
+
+                return
+
+            except sql.errors.ProgrammingError as error:
+                
+                print('Programming', error, statement)
+                self.rowcount = 0
+                return list()
+                
+            except sql.errors.DatabaseError as error:
+
+                print('Database', error, statement)
+                try: self.reconnect()
+                except Exception as error:
+                    print('\tDatabase', error, statement); pass
+
+            except sql.errors.InterfaceError as error:
+
+                print('Interface', error, statement)
+                try: self.reconnect()
+                except Exception as error:
+                    print('\tInterface', error, statement); pass
+
+            self.finishedSelect.emit([])
+    
     def rollback(self): self.DATAB.rollback()
 
-    def reconnect(self, attempts=10, time=6):
+    def reconnect(self, attempts=5, time=6):
 
         self.DATAB.reconnect(attempts, time)
 
@@ -54,71 +105,43 @@ class CONNECT:
     
     def close(self): self.DATAB.close()
 
-class Worker(QThread):
+class Completer(QCompleter):
 
-    def __init__(self, target, *args, **kwargs):
+    def __init__(self, model, parent=None):
 
-        super().__init__()
-        self._target = target
-        self._args = args
-        self._kwargs = kwargs
+        super(Completer, self).__init__(model, parent)
 
-    def run(self):
-
-        self._target(*self._args, **self._kwargs)
-
-def run(func):
-
-    @wraps(func)
-    def async_func(*args, **kwargs):
-
-        runner = Worker(func, *args, **kwargs)
-        func.__runner = runner
-        runner.start()
-
-    return async_func
-    
-class MyCompleter(QCompleter):
-
-    def __def__(self, *args):
-        
-        super(MyCompleter, self).__init__(*args)
         self.setCaseSensitivity(Qt.CaseInsensitive)
         self.setCompletionMode(QCompleter.PopupCompletion)
-        # self.setWrapAround(False)
+        self.setWrapAround(False)
 
-    # Add texts instead of replace
-    def pathFromIndex(self, index):
+    # # Add texts instead of replace
+    # def pathFromIndex(self, index):
+
+    #     path = QCompleter.pathFromIndex(self, index)
+
+    #     lst = str(self.widget().text()).split(',')
+
+    #     if len(lst) > 1:
+    #         path = '%s, %s' % (','.join(lst[:-1]), path)
+
+    #     return path
+
+    # # Add operator to separate between texts
+    # def splitPath(self, path):
+
+    #     path = str(path.split(',')[-1]).lstrip(' ')
         
-        path = QCompleter.pathFromIndex(self, index)
-
-        lst = str(self.widget().text()).split(',')
-
-        if len(lst) > 1:
-            path = '%s, %s' % (','.join(lst[:-1]), path)
-
-        return path
-
-    # Add operator to separate between texts
-    def splitPath(self, path):
+    #     return [path]
         
-        path = str(path.split(',')[-1]).lstrip(' ')
-        
-        return [path]
-
-def get_frame(path):
-
-    image = VideoCapture(path).read()[-1]
-    if image is None: return QPixmap()
-    return qimage2ndarray.array2qimage(image).rgbSwapped()
-
-def create_submenu(parent, name, items, check=None, get_menu=False):
+def create_menu(parent, name, items, check=None, get_menu=False):
         
     if name is None: menu = parent
     else: menu = QMenu(name, parent)
     action_group = QActionGroup(menu)
 
     for num, item in enumerate(items):
+        
         action = QAction(item, menu, checkable=True)
         if num == check: action.setChecked(True)
         action_group.triggered.connect(parent.parent().parent().populate)
@@ -132,6 +155,12 @@ def create_submenu(parent, name, items, check=None, get_menu=False):
     if get_menu: return action_group, menu
     return action_group
 
+def get_frame(path):
+
+    image = VideoCapture(path).read()[-1]
+    if image is None: return QPixmap()
+    return qimage2ndarray.array2qimage(image).rgbSwapped()
+
 def remove_redundancies():
 
     from Webscraping import CONNECT
@@ -142,8 +171,8 @@ def remove_redundancies():
 
     for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
 
-        artist = f' {" ".join(set(artist.split()))} '
-        tags = f' {" ".join(set(tags.split()))} '
+        artist = f' {" ".join(set(artist.split()))} '.replace('-', '_')
+        tags = f' {" ".join(set(tags.split()))} '.replace('-', '_')
         MYSQL.execute(UPDATE, (artist, tags, path))
 
     MYSQL.commit()
@@ -156,7 +185,6 @@ def update_autocomplete():
 
     MYSQL = CONNECT()
     
-    MYSQL.execute('SET GLOBAL group_concat_max_len=10000000')
     artist, tags = MYSQL.execute(
         '''SELECT 
         GROUP_CONCAT(DISTINCT artist ORDER BY artist SEPARATOR ""), 
@@ -173,11 +201,14 @@ def update_autocomplete():
     MYSQL.close()
 
 BATCH = 10000
+CREDENTIALS = r'GUI\credentials.ini'
+AUTOCOMPLETE = r'GUI\autocomplete.txt'
+
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
 parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
-BASE = f'SELECT full_path(path, {parts}), artist, tags, rating, stars, type, site FROM imagedata'
-COMIC = 'SELECT parent FROM comic WHERE path_=get_name(%s)'
-GESTURE = f'UPDATE imagedata SET date_used="{date.today()}" WHERE path=get_name(%s)'
+BASE = f'SELECT full_path(imagedata.path, {parts}), artist, tags, rating, stars, type, site FROM imagedata'
+COMIC = 'SELECT parent FROM comic WHERE path=get_name(%s)'
+GESTURE = 'UPDATE imagedata SET date_used=CURDATE() WHERE path=get_name(%s)'
 MODIFY = 'UPDATE imagedata SET {} WHERE path=get_name(%s)'
 DELETE = 'DELETE FROM imagedata WHERE path=get_name(%s)'
