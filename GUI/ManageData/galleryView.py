@@ -346,7 +346,7 @@ class Model(QAbstractTableModel):
 
     def fetchMore(self, index, fetch=BATCH):
 
-        mysql = self.parent().parent().parent().MYSQL
+        mysql = self.parent().parent().parent().mysql
         start = len(self.images)
         remainder = mysql.rowcount() - start
         items_to_fetch = min(fetch, remainder)

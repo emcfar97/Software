@@ -48,13 +48,12 @@ class ManageData(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(25)
 
-        self.completedTransaction.connect(self.delete_records)
-        
-        self.mysql.finished.connect(self.select_records)
+        self.mysql.finishedTransaction.connect(self.select_records)
         self.mysql.finishedSelect.connect(lambda x: self.preview.update(None))
         self.mysql.finishedSelect.connect(self.gallery.clearSelection)
         self.mysql.finishedSelect.connect(self.gallery.update)
         self.mysql.finishedSelect.connect(self.update_statusbar)
+        self.mysql.finishedDelete.connect(self.delete_records)
 
         self.gallery.selection.connect(self.update_preview)
         self.gallery.selection.connect(self.update_statusbar)
@@ -91,7 +90,7 @@ class ManageData(QMainWindow):
         
         self.mysql.execute(self.ribbon.update_query())
 
-    def update_records(self, indexes, **kwargs):
+    def update_records(self, indexes, source, **kwargs):
         
         parameters = []
 
@@ -111,13 +110,13 @@ class ManageData(QMainWindow):
                 
             else: parameters.append(f'{key}={vals}')
 
-        self.mysql.execute(
-            MODIFY.format(', '.join(parameters)), indexes, commit=1
+        return self.mysql.execute(
+            MODIFY.format(', '.join(parameters)), indexes, many=1
             )
 
     def delete_records(self, indexes, type_=0):
 
-        if type_:
+        if isinstance(indexes[0], str):
                         
             for path, in indexes: (ROOT / path).unlink(True)
 
@@ -140,9 +139,9 @@ class ManageData(QMainWindow):
                 if index.data(300) is not None
                 ]
             
-            if self.mysql.execute(DELETE, paths):
+            if self.mysql.execute(DELETE, paths, many=1):
                 
-                self.completedTransaction.emit(paths, 1)
+                self.mysql.finishedDelete(paths)
 
     def start_slideshow(self, index=None):
         

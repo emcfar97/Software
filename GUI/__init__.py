@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import QCompleter, QMenu, QAction, QActionGroup
 
 class CONNECT(QObject):
     
-    finished = pyqtSignal(int)
-    finishedSelect = pyqtSignal(list)
-    completedTransaction = pyqtSignal()
+    finishedTransaction = pyqtSignal(object)
+    finishedSelect = pyqtSignal(object)
+    finishedUpdate = pyqtSignal(object)
+    finishedDelete = pyqtSignal(object)
 
     def __init__(self):
 
@@ -35,7 +36,8 @@ class CONNECT(QObject):
                 self.finishedUpdate.emit(1)
                 
             elif statement.startswith('DELETE'):
-                self.finishedDelete.emit(1)
+                pass
+                # self.finishedDelete.emit(1)
 
             self.finishedTransaction.emit(1)
             return 1
@@ -44,6 +46,7 @@ class CONNECT(QObject):
             
             print('Programming', error, statement)
             self.finishedSelect.emit(self.CURSOR.fetchall())
+            return 0
             
         except sql.errors.DatabaseError as error:
 
