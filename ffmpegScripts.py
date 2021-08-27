@@ -111,7 +111,7 @@ while True:
             text = input('Overlay text? ').lower()
             desired = (float(
                 input('Enter desired length in minutes: ')
-                ) * 60) - 1
+                ) * 60)
 
             for folder in SOURCE.glob(f'*Batch[{get_folders()}]'):
 
@@ -137,7 +137,7 @@ while True:
 
         elif user_input == '4': # split video
 
-            file = Path(input('Enter filepath: ').strip())
+            file = Path(input('Enter filepath: ').strip((' \'"')))
 
             if file.exists():
                 
