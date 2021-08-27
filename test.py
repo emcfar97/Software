@@ -194,14 +194,46 @@ def Download_Youtube():
 
             progress.next()
             video = YouTube(url['url'])
+            
             try:
+
                 func = video.streams.get_highest_resolution()
                 func.download(path.parent)
-            except Exception as error_: 
+
+            except Exception as error_:
+
+                print('\n', error_)
                 error = error_
                 continue
         
         if not error: file.unlink()
+
+def Download_Nhentai(*args):
+    
+    import requests, bs4, re
+    from Webscraping import USER
+    from Webscraping.utils import save_image
+
+    path = USER / r'Downloads\Images\Comics'
+            
+    for arg in args:
+
+        code, artist, range_ = arg
+
+        comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
+        comic.mkdir(exist_ok=True)
+        
+        page_source = requests.get(f'https://nhentai.net/g/{code}')
+        html = bs4.BeautifulSoup(page_source.content, 'lxml')
+        pages = html.findAll('a', class_='gallerythumb')
+
+        for page in pages[range_[0] - 1:range_[1] - 1]:
+
+            page = requests.get(f'https://nhentai.net{page.get("href")}')
+            image = bs4.BeautifulSoup(page.content, 'lxml')
+            src = image.find(src=re.compile('.+galleries.+')).get('src')       
+            name = comic / src.split('/')[-1]
+            save_image(name, src)
 
 def make_stitch():
     
