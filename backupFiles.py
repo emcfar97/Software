@@ -94,4 +94,4 @@ for drive in get_drives():
 
             print(f'\t{val}') 
 
-while True: input('\nDone'); break
+input('\nDone')
