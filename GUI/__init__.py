@@ -36,28 +36,24 @@ class CONNECT(QObject):
                 self.finishedUpdate.emit(1)
                 
             elif statement.startswith('DELETE'):
-                pass
-                # self.finishedDelete.emit(1)
+                self.finishedDelete.emit(arguments)
 
             self.finishedTransaction.emit(1)
             return 1
 
         except sql.errors.ProgrammingError as error:
             
-            print('Programming', error, statement)
             self.finishedSelect.emit(self.CURSOR.fetchall())
             return 0
             
         except sql.errors.DatabaseError as error:
 
-            print('Database', error, statement)
             try: self.reconnect()
             except Exception as error:
                 print('\tDatabase', error, statement); pass
 
         except sql.errors.InterfaceError as error:
 
-            print('Interface', error, statement)
             try: self.reconnect()
             except Exception as error:
                 print('\tInterface', error, statement); pass

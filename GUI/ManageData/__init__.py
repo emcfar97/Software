@@ -116,15 +116,12 @@ class ManageData(QMainWindow):
 
     def delete_records(self, indexes, type_=0):
 
-        if isinstance(indexes[0], str):
+        if isinstance(indexes[0], tuple):
                         
             for path, in indexes: (ROOT / path).unlink(True)
 
-            self.mysql.commit()
-            self.mysql.finished.emit(1)
+            return self.mysql.commit()
             
-            return
-        
         message = QMessageBox.question(
             None, 'Delete', 
             'Are you sure you want to delete this?',
@@ -139,9 +136,7 @@ class ManageData(QMainWindow):
                 if index.data(300) is not None
                 ]
             
-            if self.mysql.execute(DELETE, paths, many=1):
-                
-                self.mysql.finishedDelete(paths)
+            self.mysql.execute(DELETE, paths, many=1)
 
     def start_slideshow(self, index=None):
         
