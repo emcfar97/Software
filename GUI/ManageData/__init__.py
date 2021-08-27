@@ -53,6 +53,7 @@ class ManageData(QMainWindow):
         self.mysql.finishedSelect.connect(self.gallery.clearSelection)
         self.mysql.finishedSelect.connect(self.gallery.update)
         self.mysql.finishedSelect.connect(self.update_statusbar)
+        self.mysql.finishedUpdate.connect(lambda x: self.windows.discard(x))
         self.mysql.finishedDelete.connect(self.delete_records)
 
         self.gallery.selection.connect(self.update_preview)
@@ -90,7 +91,7 @@ class ManageData(QMainWindow):
         
         self.mysql.execute(self.ribbon.update_query())
 
-    def update_records(self, indexes, source, **kwargs):
+    def update_records(self, source, indexes, kwargs):
         
         parameters = []
 
@@ -111,7 +112,7 @@ class ManageData(QMainWindow):
             else: parameters.append(f'{key}={vals}')
 
         return self.mysql.execute(
-            MODIFY.format(', '.join(parameters)), indexes, many=1
+            MODIFY.format(', '.join(parameters)), indexes, many=1, source=source
             )
 
     def delete_records(self, indexes, type_=0):

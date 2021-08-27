@@ -20,7 +20,7 @@ class CONNECT(QObject):
         self.DATAB = sql.connect(option_files=CREDENTIALS)
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
-    def execute(self, statement, arguments=None, many=0):
+    def execute(self, statement, arguments=None, many=0, source=None):
         
         try:
         
@@ -29,22 +29,21 @@ class CONNECT(QObject):
             
             if statement.startswith('SELECT'):
                 self.finishedSelect.emit(self.CURSOR.fetchall())
-                return 1
+                return
+                
                 
             elif statement.startswith('UPDATE'):
                 self.DATAB.commit()
-                self.finishedUpdate.emit(1)
+                self.finishedUpdate.emit(source)
                 
             elif statement.startswith('DELETE'):
                 self.finishedDelete.emit(arguments)
 
             self.finishedTransaction.emit(1)
-            return 1
 
         except sql.errors.ProgrammingError as error:
             
             self.finishedSelect.emit(self.CURSOR.fetchall())
-            return 0
             
         except sql.errors.DatabaseError as error:
 
@@ -59,7 +58,6 @@ class CONNECT(QObject):
                 print('\tInterface', error, statement); pass
 
         self.finishedTransaction.emit(0)
-        return 0
     
     def rollback(self): self.DATAB.rollback()
 

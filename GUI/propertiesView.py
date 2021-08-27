@@ -1,8 +1,11 @@
+from  . import AUTOCOMPLETE, Completer
 from PyQt5.QtGui import QCursor
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox,QCompleter, QMessageBox
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 
 class Properties(QMainWindow):
+
+    update = pyqtSignal(object, object, object)
 
     def __init__(self, parent, indexes):
         
@@ -11,13 +14,7 @@ class Properties(QMainWindow):
         self.parent = parent
         self.configure_gui()
         self.create_widgets()
-        try: self.populate(indexes)
-        except Exception as error:
-            
-            QMessageBox.information(
-                None, type(error).__name__, str(error),
-                QMessageBox.Ok
-                )
+        self.populate(indexes)
 
     def configure_gui(self):
         
@@ -52,7 +49,7 @@ class Properties(QMainWindow):
     def create_widgets(self):
         
         self.modified = {}
-        artist, tags = open(r'GUI\autocomplete.txt').readlines()
+        artist, tags = open(AUTOCOMPLETE).readlines()
 
         self.path = QLineEdit(self)
         self.tags = LineEdit(self)
@@ -63,8 +60,8 @@ class Properties(QMainWindow):
         self.site = LineEdit(self, True)
         
         self.path.setDisabled(True)
-        self.tags.setCompleter(QCompleter(tags.split()))
-        self.artist.setCompleter(QCompleter(artist.split()))
+        self.tags.setCompleter(Completer(tags.split()))
+        self.artist.setCompleter(Completer(artist.split()))
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration', 'Comic'])
@@ -112,6 +109,7 @@ class Properties(QMainWindow):
         if site:  self.site.setText(site.pop())
 
         self.paths = [(row[0].pop(),) for row in indexes]
+        self.update.connect(self.parent.update_records)
         self.parent.windows.add(self)
         self.tags.setFocus()
         self.show()
@@ -124,9 +122,8 @@ class Properties(QMainWindow):
             for i in range(1, self.form.rowCount())
             if self.form.itemAt(i, 1).widget().text()
             }
-        if self.parent.update_records(self.paths, **modified):
-            self.parent.windows.discard(self)
-        else: self.activateWindow()
+        
+        self.update.emit(self, self.paths, modified)
         
     def keyPressEvent(self, event):
         
