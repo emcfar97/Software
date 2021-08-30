@@ -11,8 +11,7 @@ from GUI.slideshow import Slideshow
 class ManageData(QMainWindow):
 
     populateGallery = pyqtSignal()
-    completedTransaction = pyqtSignal(list, int)
-    closedWindow = pyqtSignal()
+    closedWindow = pyqtSignal(object)
 
     def __init__(self, parent=None):
     
@@ -67,7 +66,7 @@ class ManageData(QMainWindow):
     def create_menu(self):
         
         self.menubar = self.menuBar()
-        self.toolbar = self.addToolBar('Toolbar')
+        self.toolbar = self.addToolBar('Ribbon')
 
         self.ribbon = Ribbon(self)
         self.toolbar.addWidget(self.ribbon)
@@ -79,6 +78,7 @@ class ManageData(QMainWindow):
         file = self.menubar.addMenu('File')
         file.addAction('Update Autocomplete')
         file.addAction('Remove Redundancies')
+        file.addAction('Exit')
         
         # View
         help = self.menubar.addMenu('View')
@@ -232,9 +232,11 @@ class ManageData(QMainWindow):
                 Completer(open(AUTOCOMPLETE).read().split())
                 )
 
-        if action == 'Remove Redundancies':
+        elif action == 'Remove Redundancies':
 
             remove_redundancies()
+        
+        elif action == 'Exit': self.close()
 
     def keyPressEvent(self, event):
 
@@ -266,4 +268,4 @@ class ManageData(QMainWindow):
         
         self.mysql.close()
         self.windows.clear()
-        self.closedWindow.emit()
+        self.closedWindow.emit(self)

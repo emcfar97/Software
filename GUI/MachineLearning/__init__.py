@@ -111,8 +111,9 @@ class MachineLearning(QMainWindow):
         else:
             menu.addAction(text, self.menuPressEvent, shortcut=shortcut)
 
-    def menuPressEvent(self, action=None):
-
+    def menuPressEvent(self, event=None):
+        
+        action = event.text()
         print(action)
 
     def keyPressEvent(self, event):

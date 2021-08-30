@@ -31,7 +31,6 @@ class CONNECT(QObject):
                 self.finishedSelect.emit(self.CURSOR.fetchall())
                 return
                 
-                
             elif statement.startswith('UPDATE'):
                 self.DATAB.commit()
                 self.finishedUpdate.emit(source)
@@ -43,13 +42,17 @@ class CONNECT(QObject):
 
         except sql.errors.ProgrammingError as error:
             
-            self.finishedSelect.emit(self.CURSOR.fetchall())
+            self.finishedSelect.emit([])
+            return
             
         except sql.errors.DatabaseError as error:
 
             try: self.reconnect()
             except Exception as error:
                 print('\tDatabase', error, statement); pass
+
+            self.finishedSelect.emit([])
+            return
 
         except sql.errors.InterfaceError as error:
 
@@ -100,7 +103,7 @@ class Completer(QCompleter):
         
     #     return [path]
         
-def create_menu(parent, name, items, check=None, get_menu=False):
+def create_submenu(parent, name, items, check=None, get_menu=False):
         
     if name is None: menu = parent
     else: menu = QMenu(name, parent)
