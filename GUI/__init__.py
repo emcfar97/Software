@@ -20,15 +20,20 @@ class CONNECT(QObject):
         self.DATAB = sql.connect(option_files=CREDENTIALS)
         self.CURSOR = self.DATAB.cursor(buffered=True)
 
-    def execute(self, statement, arguments=None, many=0, source=None):
+    def execute(self, statement, arguments=None, many=0, fetch=0, source=None):
         
         try:
         
             if many: self.CURSOR.executemany(statement, arguments)
             else: self.CURSOR.execute(statement, arguments)
             
+
             if statement.startswith('SELECT'):
+
+                if fetch: return self.CURSOR.fetchall()
+
                 self.finishedSelect.emit(self.CURSOR.fetchall())
+                
                 return
                 
             elif statement.startswith('UPDATE'):
@@ -42,8 +47,9 @@ class CONNECT(QObject):
 
         except sql.errors.ProgrammingError as error:
             
-            self.finishedSelect.emit([])
-            return
+            print('\tDatabase', error, statement)
+
+            # self.finishedSelect.emit([])
             
         except sql.errors.DatabaseError as error:
 
@@ -51,8 +57,7 @@ class CONNECT(QObject):
             except Exception as error:
                 print('\tDatabase', error, statement); pass
 
-            self.finishedSelect.emit([])
-            return
+            # self.finishedSelect.emit([])
 
         except sql.errors.InterfaceError as error:
 
@@ -60,8 +65,6 @@ class CONNECT(QObject):
             except Exception as error:
                 print('\tInterface', error, statement); pass
 
-        self.finishedTransaction.emit(0)
-    
     def rollback(self): self.DATAB.rollback()
 
     def reconnect(self, attempts=5, time=6):

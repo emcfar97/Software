@@ -44,8 +44,7 @@ class Gallery(QTableView):
         temp_menu, sortMenu = self.create_submenu(
             menu, 'Sort by', 
             ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'], 
-            check=0 if parent.windowTitle() == 'Manage Data' else 5,
-            get_menu=True
+            check=0, get_menu=True
             )
         sortMenu.addSeparator()
         parent.order = [temp_menu, self.create_submenu(
@@ -60,22 +59,22 @@ class Gallery(QTableView):
 
         menu.addSeparator()
         menu.addAction(QAction('Copy', menu, triggered=self.copy_path))
-        try:
-            menu.addAction(
-                QAction('Delete', menu, triggered=self.delete)
-                )                
-            menu.addSeparator()
-            self.artist = QAction(
-                'Find more by artist', menu, triggered=self.find_artist
-                )
-            menu.addAction(self.artist)
-            menu.addSeparator()
-            menu.addAction(
+        menu.addAction(
+            QAction('Delete', menu, triggered=self.delete)
+            )                
+        menu.addSeparator()
+        self.artist = QAction(
+            'Find more by artist', menu, triggered=self.find_artist
+            )
+        menu.addAction(self.artist)
+        menu.addSeparator()
+        menu.addAction(
                 QAction(
                     'Properties', menu, triggered=self.openPersistentEditor
                     )
                 )
-        except AttributeError: pass
+
+        menu.triggered.connect(self.menuPressEvent)
 
         return menu
 
@@ -149,9 +148,10 @@ class Gallery(QTableView):
         
         self.menu.popup(self.mapToGlobal(event))
     
-    def menuEvent(self, event):
+    def menuPressEvent(self, event):
 
-        pass
+        action = event.text()
+        print(action)
 
     def keyPressEvent(self, event):
         

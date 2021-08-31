@@ -115,7 +115,7 @@ class ManageData(QMainWindow):
             MODIFY.format(', '.join(parameters)), indexes, many=1, source=source
             )
 
-    def delete_records(self, indexes, type_=0):
+    def delete_records(self, indexes):
 
         if isinstance(indexes[0], tuple):
                         
@@ -152,7 +152,7 @@ class ManageData(QMainWindow):
 
     def update_preview(self, select, deselect):
         
-        if total := self.gallery.total():
+        if self.gallery.total():
             
             if select := select.indexes(): image = select[0]
             
