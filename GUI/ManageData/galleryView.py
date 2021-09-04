@@ -151,7 +151,7 @@ class Gallery(QTableView):
     def menuPressEvent(self, event):
 
         action = event.text()
-        print(action)
+        # print(action)
 
     def keyPressEvent(self, event):
         

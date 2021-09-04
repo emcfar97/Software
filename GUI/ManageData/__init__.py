@@ -1,8 +1,8 @@
 import re
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView, QFileDialog
 
-from GUI import ROOT, CONNECT, MODIFY, DELETE, COMIC, AUTOCOMPLETE, Completer, update_autocomplete, remove_redundancies
+from GUI import ROOT, PATH, CONNECT, MODIFY, DELETE, COMIC, AUTOCOMPLETE, Completer, update_autocomplete, remove_redundancies
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
 from GUI.managedata.ribbonView import Ribbon
@@ -78,6 +78,7 @@ class ManageData(QMainWindow):
         file = self.menubar.addMenu('File')
         file.addAction('Update Autocomplete')
         file.addAction('Remove Redundancies')
+        file.addAction('Copy Images to')
         file.addAction('Exit')
         
         # View
@@ -209,6 +210,25 @@ class ManageData(QMainWindow):
         
         else: self.start_slideshow()
     
+    def copy_to(self, event=None, sym=False):
+
+        paths = [
+            ROOT / index.data(Qt.UserRole)[0]
+            for index in self.gallery.selectedIndexes()
+            if index.data(300) is not None
+            ]
+
+        folder = ROOT / QFileDialog.getExistingDirectory(
+          self, 'Open Directory', str(PATH.parent),
+          QFileDialog.ShowDirsOnly
+          )
+
+        for path in paths:
+
+            name = folder / path.name
+            if sym and not name.exists(): name.symlink_to(path)
+            else: name.write_bytes(path.read_bytes())
+
     def setSelectionMode(self, event):
         
         if event:
@@ -232,10 +252,10 @@ class ManageData(QMainWindow):
                 Completer(open(AUTOCOMPLETE).read().split())
                 )
 
-        elif action == 'Remove Redundancies':
-
-            remove_redundancies()
+        elif action == 'Remove Redundancies': remove_redundancies()
         
+        elif action == 'Copy Images to': self.copy_to()
+
         elif action == 'Exit': self.close()
 
     def keyPressEvent(self, event):
