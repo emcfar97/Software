@@ -23,7 +23,6 @@ class CONNECT(QObject):
     def execute(self, statement, arguments=None, many=0, fetch=0, source=None):
         
         try:
-        
             if many: self.CURSOR.executemany(statement, arguments)
             else: self.CURSOR.execute(statement, arguments)
             
@@ -37,33 +36,39 @@ class CONNECT(QObject):
                 return
                 
             elif statement.startswith('UPDATE'):
+
                 self.DATAB.commit()
                 self.finishedUpdate.emit(source)
                 
             elif statement.startswith('DELETE'):
+
                 self.finishedDelete.emit(arguments)
 
             self.finishedTransaction.emit(1)
 
         except sql.errors.ProgrammingError as error:
             
-            print('\tDatabase', error, statement)
+            print('Programming', error, statement)
 
-            # self.finishedSelect.emit([])
-            
         except sql.errors.DatabaseError as error:
 
+            print('Database', error, statement)
             try: self.reconnect()
             except Exception as error:
-                print('\tDatabase', error, statement); pass
-
-            # self.finishedSelect.emit([])
+                print('\tDatabase', error, statement)
 
         except sql.errors.InterfaceError as error:
 
+            print('\tInterface', error, statement)
             try: self.reconnect()
             except Exception as error:
-                print('\tInterface', error, statement); pass
+                print('\tInterface', error, statement)
+            
+        except Exception as error:
+        
+            print('Error', error)
+
+        finally: return
 
     def rollback(self): self.DATAB.rollback()
 
