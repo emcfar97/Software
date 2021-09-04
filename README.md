@@ -9,8 +9,6 @@ Consists of a lefthand gallery of images and a righthand display for selected im
 App for easy gesture drawing (drawing the pose of a figure in a short amount of time). Allows user to select images and specify the amount of time for each gesture draw.
 ### Slideshow
 App for displaying images and video. Currently only works with Manage Database.
-### Upload Media
-Experimental. App for uploading illustrations to various sites (twitter, instagram, etc), according to a schedule and with specific comments.
 ### Video Splitter
 Experimental. App for splitting video into clips using the scenedetect module.
 # Machine Learning
