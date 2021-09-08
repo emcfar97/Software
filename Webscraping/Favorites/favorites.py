@@ -197,7 +197,7 @@ def start(initial=True, headless=True, upload=0):
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1)[-1000:], upload)
+    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1), upload)
     DRIVER.close()
     
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ def initialize(url, query=0):
 
     next = next_page(html.find('a', {'data-track':'paginationRightClick'}))
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return MYSQL.execute(INSERT[0], hrefs, many=1)
+    else: return hrefs
 
 def page_handler(hrefs):
 
@@ -94,7 +94,9 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
     
     if initial:
-        if initialize(DRIVER.login(SITE)): MYSQL.commit()
+        hrefs = initialize(DRIVER.login(SITE))
+        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
 

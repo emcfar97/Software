@@ -248,7 +248,7 @@ class WEBDRIVER:
         
 def get_starred(headless=True):
 
-    import bs4, re, time
+    import bs4, time
     
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless=headless)

@@ -80,8 +80,8 @@ def start(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
 
     if initial:
-        
-        if initialize(DRIVER.login(SITE)): MYSQL.commit()
+        hrefs = initialize(DRIVER.login(SITE))
+        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
         
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()

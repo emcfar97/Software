@@ -34,7 +34,7 @@ def initialize(mode, url, query=0):
         
         next = next_page(html.find('div', {'next-page-url': True})) 
         if hrefs and next: return hrefs + initialize(mode, next, query)
-        else: return MYSQL.execute(INSERT, hrefs, many=1)
+        else: return hrefs
     except:
         time.sleep(60)   
         initialize(mode, url, query)
@@ -106,7 +106,8 @@ def start(initial=True, headless=True, mode=1):
 
     if initial:
         url = DRIVER.login(SITE)
-        if initialize(mode, url): MYSQL.commit()
+        hrefs = initialize(mode, url)
+        MYSQL.execute(INSERT, hrefs, many=1, commit=1)
 
     page_handler(
         MYSQL.execute(

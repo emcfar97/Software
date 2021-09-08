@@ -33,7 +33,7 @@ def initialize(page='/favorites/?page=1', query=0):
         
     next = next_page(html.find(class_='pagination'))
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+    else: return hrefs
     
 def page_handler(hrefs):
 
@@ -43,8 +43,7 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        try: page_source = requests.get(f'https://{SITE}.net{href}')
-        except: continue
+        page_source = requests.get(f'https://{SITE}.net{href}')
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
         
         cover = None
@@ -60,20 +59,24 @@ def page_handler(hrefs):
 
         for image in html.findAll('a', class_='gallerythumb'):
             
-            page_source = requests.get(f'https://{SITE}.net{image.get("href")}')
-            image = bs4.BeautifulSoup(page_source.content, 'lxml')
             try:
+                page_source = requests.get(f'https://{SITE}.net{image.get("href")}')
+                image = bs4.BeautifulSoup(page_source.content, 'lxml')
                 src = image.find(src=re.compile('.+galleries.+')).get('src')
             
                 name = get_name(src)
-                if cover is None: cover = name
-                if not save_image(name, src): break
+            except: continue
+            
+            if cover is None: cover = name
+            if not save_image(name, src): 
+                MYSQL.rollback()
+                break
 
-                tags, rating, exif = generate_tags(
+            tags, rating, exif = generate_tags(
                 general=get_tags(DRIVER, name, True), 
                 custom=True, rating=True, exif=True
                 )
-            except: break
+            
             save_image(name, src, exif)
             hash_ = get_hash(name)
 
@@ -100,9 +103,10 @@ def start(initial=1, headless=True, mode=1):
         MYSQL = CONNECT()
         DRIVER = WEBDRIVER(headless)
 
-        if initial:
-
-            if initialize(): MYSQL.commit()
+        if initial: 
+            
+            hrefs = initialize()
+            MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
 
         page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         DRIVER.close()
