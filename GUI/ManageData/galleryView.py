@@ -10,9 +10,9 @@ COLUMNS = 5.18
 class Gallery(QTableView):
     
     selection = pyqtSignal(QItemSelection, QItemSelection)
-    find_artist = pyqtSignal()#QModelIndex)
-    delete_ = pyqtSignal(QItemSelection)
-    load_comic = pyqtSignal()
+    find_artist = pyqtSignal(QModelIndex)
+    delete = pyqtSignal(list)
+    load_comic = pyqtSignal(object)
 
     def __init__(self, parent):
 
@@ -37,9 +37,7 @@ class Gallery(QTableView):
         
         menu = QMenu(self)
         parent = self.parent()
-        self.comic = QAction(
-            'Read comic', menu, triggered=self.load_comic.emit
-            )
+        self.comic = QAction('Read comic', menu)
         
         temp_menu, sortMenu = self.create_submenu(
             menu, 'Sort by', 
@@ -58,21 +56,13 @@ class Gallery(QTableView):
             )
 
         menu.addSeparator()
-        menu.addAction(QAction('Copy', menu, triggered=self.copy_path))
-        menu.addAction(
-            QAction('Delete', menu, triggered=self.delete)
-            )                
+        menu.addAction(QAction('Copy', menu))
+        menu.addAction(QAction('Delete', menu))            
         menu.addSeparator()
-        self.artist = QAction(
-            'Find more by artist', menu, triggered=self.find_artist
-            )
+        self.artist = QAction('Find more by artist', menu)
         menu.addAction(self.artist)
         menu.addSeparator()
-        menu.addAction(
-                QAction(
-                    'Properties', menu, triggered=self.openPersistentEditor
-                    )
-                )
+        menu.addAction(QAction('Properties', menu))
 
         menu.triggered.connect(self.menuPressEvent)
 
@@ -117,10 +107,6 @@ class Gallery(QTableView):
         self.table.images = images
         self.table.layoutChanged.emit()
     
-    def delete(self, event):
-
-        self.delete_.emit(self.selectedIndexes())
-
     def openPersistentEditor(self):
         
         gallery = [
@@ -135,8 +121,7 @@ class Gallery(QTableView):
 
     def mouseDoubleClickEvent(self, event):
 
-        self.load_comic.emit()
-        # self.load_comic.emit(self.currentIndex())
+        self.load_comic.emit(self.currentIndex())
 
     def contextMenuEvent(self, event):
         
@@ -151,7 +136,24 @@ class Gallery(QTableView):
     def menuPressEvent(self, event):
 
         action = event.text()
-        # print(action)
+        
+        if action == 'Copy': self.copy_path()
+
+        elif action == 'Delete':
+
+            self.delete.emit(self.selectedIndexes())
+
+        elif action == 'Read comic':
+            
+            self.load_comic.emit(self.currentIndex())
+
+        elif action == 'Find more by artist':
+
+            self.find_artist.emit(self.currentIndex())
+
+        elif action == 'Properties':
+
+            self.openPersistentEditor()
 
     def keyPressEvent(self, event):
         
@@ -308,8 +310,7 @@ class Gallery(QTableView):
         
         elif key_press in (Qt.Key_Return, Qt.Key_Enter):
             
-            self.load_comic.emit()
-            # self.load_comic.emit(self.currentIndex())
+            self.load_comic.emit(None)
 
         else: self.parent().parent().keyPressEvent(event)
 
