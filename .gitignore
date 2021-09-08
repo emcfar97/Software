@@ -6,11 +6,11 @@
 __pycache__
 .vscode
 ffmpeg-20190824-1cfba7f-win64-static
-Music
+GUI/test*.*
+GUI/autocomplete.txt
 MachineLearning/Datasets/*
 MachineLearning/*/Checkpoints
 MachineLearning/*/Models
 MachineLearning/*/Logs
-OBScripts/*.*
-GUI/test*.*
+Music
 Webscraping/pixivutil
