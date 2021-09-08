@@ -25,7 +25,6 @@ class CONNECT(QObject):
         try:
             if many: self.CURSOR.executemany(statement, arguments)
             else: self.CURSOR.execute(statement, arguments)
-            
 
             if statement.startswith('SELECT'):
 
@@ -49,6 +48,7 @@ class CONNECT(QObject):
         except sql.errors.ProgrammingError as error:
             
             print('Programming', error, statement)
+            return
 
         except sql.errors.DatabaseError as error:
 
@@ -56,6 +56,8 @@ class CONNECT(QObject):
             try: self.reconnect()
             except Exception as error:
                 print('\tDatabase', error, statement)
+            
+            return
 
         except sql.errors.InterfaceError as error:
 
@@ -63,12 +65,15 @@ class CONNECT(QObject):
             try: self.reconnect()
             except Exception as error:
                 print('\tInterface', error, statement)
+
+            return
             
         except Exception as error:
         
             print('Error', error)
+            return
 
-        finally: return
+        return
 
     def rollback(self): self.DATAB.rollback()
 
