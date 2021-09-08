@@ -141,10 +141,13 @@ while True:
 
             if file.exists():
                 
-                if search(' \d+', file.stem):
-                    num = int(*findall(' (\d+)', file.stem))
-                    new = sub(f' {num}+', f' {num+1:02}', file.name)
+                if latest := sorted(SOURCE.glob(f'{file.stem} Part [0-9]*')):
+                    
+                    num = int(*findall(' (\d+)', latest[-1].stem))
+                    new = sub(f' {num}+', f' {num+1:02}', latest[-1].name)
+
                 else: new = f'{file.stem} Part 00{file.suffix}'
+
                 new = file.with_name(new)
 
                 start = input('Enter start time (seconds or hh:mm:ss): ')
@@ -154,7 +157,8 @@ while True:
                     
                     ffmpeg.input(str(file)) \
                         .trim(start=start) \
-                        .output(str(new), preset='fast') \
+                        .setpts('PTS-STARTPTS') \
+                        .output(str(new), preset='veryslow') \
                         .run()
 
                 else:
@@ -162,7 +166,7 @@ while True:
                     ffmpeg.input(str(file)) \
                         .trim(start=start, end=end) \
                         .setpts('PTS-STARTPTS') \
-                        .output(str(new), preset='fast') \
+                        .output(str(new), preset='veryslow') \
                         .run()
 
             else: raise FileNotFoundError
