@@ -30,8 +30,8 @@ INSERT = [
     'INSERT INTO imagedata(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
-    'INSERT INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
-    'INSERT INTO comic(path, parent) VALUES(%s, %s)',
+    'REPLACE INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
+    'REPLACE INTO comic(path, parent) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, src, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s, %s)',
     ]
 UPDATE = [
@@ -184,6 +184,9 @@ class WEBDRIVER:
         
         for _ in range(5):
             try: return self.driver.page_source
+            except exceptions.InvalidArgumentException as error_:
+                error = error_
+                return self.driver.page_source.encode('ascii', 'ignore').decode('unicode_escape')
             except exceptions.WebDriverException as error_:
                 error = error_
                 self.refresh()
@@ -248,27 +251,21 @@ class WEBDRIVER:
         
 def get_starred(headless=True):
 
-    import bs4, time
+    import bs4
     
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless=headless)
     UPDATE = 'UPDATE imagedata SET stars=4 WHERE path=%s AND stars=0'
-    
-    show = '//*[@id="maestro-content-portal"]/div/div/div/div/div/main/div/section[3]/div/div[2]/button'
-    address = '//button[@aria-label="Remove from Starred"]'
+    ADDRESS = '//button[@aria-label="Remove from Starred"]'
 
-    DRIVER.get('https://www.dropbox.com/h', wait=4)
-    if (element:=DRIVER.find(show, fetch=1)).text == 'Show':
-        element.click()
+    DRIVER.get('https://www.dropbox.com/starred', wait=4)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
-    while starred:=html.findAll('span', {"data-testid": "files-filename"}):
+    for star in html.findAll('span', {"data-testid": "files-filename"}):
 
-        paths = [(str(star),) for star in starred]
-        MYSQL.execute(UPDATE, paths, many=1, commit=1)
-        [DRIVER.find(address, click=True) for _ in range(5)]
+        DRIVER.find(ADDRESS, click=True)
+        MYSQL.execute(UPDATE, (star.text,), commit=1)
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        time.sleep(2)
 
     DRIVER.close()
 
