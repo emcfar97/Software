@@ -1,4 +1,4 @@
-import argparse
+import argparse, json
 from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
 from .utils import bs4, requests, re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
 
@@ -38,6 +38,7 @@ def initialize(page='/favorites/?page=1', query=0):
 def page_handler(hrefs):
 
     if not hrefs: return
+    comic_records = json.load(open(r'Webscraping\comic_data.json'))
     progress = IncrementalBar(SITE, max=MYSQL.rowcount)
 
     for href, in hrefs:
@@ -63,34 +64,59 @@ def page_handler(hrefs):
                 page_source = requests.get(f'https://{SITE}.net{image.get("href")}')
                 image = bs4.BeautifulSoup(page_source.content, 'lxml')
                 src = image.find(src=re.compile('.+galleries.+')).get('src')
-            
                 name = get_name(src)
-            except: continue
-            
-            if cover is None: cover = name
-            if not save_image(name, src): 
-                MYSQL.rollback()
-                break
 
-            tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name, True), 
-                custom=True, rating=True, exif=True
-                )
+                if cover is None:
+                    cover = name
+                    comic_records[cover.name] = comic_records.get(
+                        cover.name, {'imagedata': [], 'comics': []}
+                        )
+                if name.name in [i[0] for i in comic_records[cover.name]['comics']]: continue
+                if not save_image(name, src):
+                    MYSQL.rollback()
+                    break
             
-            save_image(name, src, exif)
-            hash_ = get_hash(name)
+                tags, rating, exif = generate_tags(
+                    general=get_tags(DRIVER, name, True), 
+                    custom=True, rating=True, exif=True
+                    )
+                
+                save_image(name, src, exif)
+                hash_ = get_hash(name)
 
-            if not MYSQL.execute(INSERT[3], (
-                name.name, ' '.join(artists), tags,
-                rating, 3, hash_, src, SITE, href
-                )):
-                MYSQL.rollback()
-                break
-            if not MYSQL.execute(INSERT[4], (name.name, cover.name)):
-                MYSQL.rollback()
-                break
+                comic_records[cover.name]['imagedata'].append(
+                    (name.name, ' '.join(artists), tags,
+                    rating, 3, hash_, src, SITE, href)
+                    )
+                comic_records[cover.name]['comics'].append(
+                    (name.name, cover.name)
+                    )
         
-        else: MYSQL.execute(DELETE[0], (href,), commit=1)
+            except Exception as error:
+                print('\n', error, href, src)
+                break
+            
+        else:
+            imagedata = comic_records[cover.name]['imagedata']
+            comics = comic_records[cover.name]['comics']
+
+            if (
+                MYSQL.execute(INSERT[3], imagedata, many=1) and
+                MYSQL.execute(INSERT[4], comics, many=1)
+                ):
+                
+                del comic_records[cover.name]
+                MYSQL.execute(DELETE[0], (href,), commit=1)
+                
+            else:
+                MYSQL.rollback()
+                break
+            
+        json.dump(
+            comic_records, 
+            open(r'Webscraping\comic_data.json', 'w'),
+            indent=4
+            )
 
     print()
 
