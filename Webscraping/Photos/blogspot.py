@@ -8,6 +8,28 @@ URL = [
     ['https://ggulbest.blogspot.com/', ' asian']
     ]
 
+def initialize(url, query=0):
+    
+    def next_page(page):
+             
+        try: return page.get('href')
+        except AttributeError: return False
+
+    if not query: query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
+
+    page_source = requests.get(url).content
+    html = bs4.BeautifulSoup(page_source, 'lxml')
+    hrefs = [
+        (target.get('href'), SITE) for target in 
+        html.findAll('a', href=re.compile('.+://\d.bp.blogspot.com+'))
+        if (target.get('href'),) not in query
+        ]
+    MYSQL.execute(INSERT[0], hrefs, 1)
+        
+    next = next_page(html.find(title='Older Posts'))
+    if hrefs and next: initialize(next, query)
+    else: MYSQL.commit()
+
 def page_handler(hrefs, tag):
 
     if not hrefs: return
@@ -31,28 +53,6 @@ def page_handler(hrefs, tag):
         progress.next()
         
     print()
-
-def initialize(url, query=0):
-    
-    def next_page(page):
-             
-        try: return page.get('href')
-        except AttributeError: return False
-
-    if not query: query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
-
-    page_source = requests.get(url).content
-    html = bs4.BeautifulSoup(page_source, 'lxml')
-    hrefs = [
-        (target.get('href'), SITE) for target in 
-        html.findAll('a', href=re.compile('.+://\d.bp.blogspot.com+'))
-        if (target.get('href'),) not in query
-        ]
-    MYSQL.execute(INSERT[0], hrefs, 1)
-        
-    next = next_page(html.find(title='Older Posts'))
-    if hrefs and next: initialize(next, query)
-    else: MYSQL.commit()
 
 def start(index, headless=True):
 

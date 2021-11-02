@@ -1,3 +1,4 @@
+from moviepy.editor import VideoFileClip
 from PyQt5.QtCore import QUrl
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer

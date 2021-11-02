@@ -49,7 +49,7 @@ def page_handler(hrefs):
         try:
             name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
         except: 
-            name = ' - '.join((artist, image.split()[-1]))
+            # name = ' - '.join((artist, image.split('/')[-1]))
             continue
         name = PATH / 'Images' / SITE / name
 
@@ -63,7 +63,7 @@ def start(initial=True, headless=True):
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
-    if initial: 
+    if initial:
         url = DRIVER.login(SITE)
         initialize(url)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))

@@ -176,7 +176,7 @@ def edit(search, replace):
         
 def initialize():
     
-    data = sqlite3.connect(r'Webscraping\PixivUtil\Data.sqlite')
+    data = sqlite3.connect(r'Webscraping\Pixivutil\db.sqlite')
     MYSQL.execute(
         INSERT[2], data.execute(SELECT[5]).fetchall(), many=1, commit=1
         )
@@ -190,14 +190,14 @@ def initialize():
     MYSQL.execute(INSERT[2], paths, many=1, commit=1)
     MYSQL.execute(DELETE[2], commit=1)
 
-def start(initial=True, headless=True, upload=0):
+def start(initial=True, headless=True, depth=0, upload=0):
 
     global MYSQL, DRIVER
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1), upload)
+    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1)[-depth:], upload)
     DRIVER.close()
     
 if __name__ == '__main__':

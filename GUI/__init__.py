@@ -5,7 +5,7 @@ from cv2 import VideoCapture
 import mysql.connector as sql
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
-from PyQt5.QtWidgets import QCompleter, QMenu, QAction, QActionGroup
+from PyQt5.QtWidgets import QCompleter, QMenu, QAction, QActionGroup, QFileDialog
 
 class CONNECT(QObject):
     
@@ -53,7 +53,7 @@ class CONNECT(QObject):
         except sql.errors.DatabaseError as error:
 
             print('Database', error, statement)
-            try: self.reconnect()
+            try: self.reconnect(1)
             except Exception as error:
                 print('\tDatabase', error, statement)
             
@@ -61,8 +61,8 @@ class CONNECT(QObject):
 
         except sql.errors.InterfaceError as error:
 
-            print('\tInterface', error, statement)
-            try: self.reconnect()
+            print('Interface', error, statement)
+            try: self.reconnect(1)
             except Exception as error:
                 print('\tInterface', error, statement)
 
@@ -181,6 +181,25 @@ def update_autocomplete():
     Path(r'GUI\autocomplete.txt').write_text(text.decode())
     
     MYSQL.close()
+
+def copy_to(widget, images, sym=False):
+
+        paths = [
+            Path(index.data(Qt.UserRole)[0])
+            for index in images
+            if index.data(300) is not None
+            ]
+            
+        folder = Path(QFileDialog.getExistingDirectory(
+            widget, 'Open Directory', str(PATH.parent),
+            QFileDialog.ShowDirsOnly
+            ))
+
+        for path in paths:
+
+            name = folder / path.name
+            if sym and not name.exists(): name.symlink_to(path)
+            else: name.write_bytes(path.read_bytes())
 
 BATCH = 10000
 CREDENTIALS = r'GUI\credentials.ini'

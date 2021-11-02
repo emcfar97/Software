@@ -94,7 +94,7 @@ class Gallery(QTableView):
         cb.clear(mode=cb.Clipboard)
         
         paths = ', '.join(
-            f"r'{index.data(Qt.UserRole)[0]}'" 
+            f"{index.data(Qt.UserRole)[0]}" 
             for index in self.selectedIndexes()
             if index.data(300) is not None
             )
@@ -310,7 +310,7 @@ class Gallery(QTableView):
         
         elif key_press in (Qt.Key_Return, Qt.Key_Enter):
             
-            self.load_comic.emit(None)
+            self.load_comic.emit(self.currentIndex())
 
         else: self.parent().parent().keyPressEvent(event)
 

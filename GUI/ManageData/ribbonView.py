@@ -205,6 +205,8 @@ class Ribbon(QWidget):
             self.undo.append(self.redo.pop())
             if update: self.update_history()
     
+    def text(self): return self.tags.text()
+    
     def setText(self, text): self.tags.setText(text)
 
     def menuEvent(self, event):

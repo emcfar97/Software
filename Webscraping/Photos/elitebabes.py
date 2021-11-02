@@ -26,7 +26,7 @@ def initialize(url, query=0):
 
     next = next_page(html.find(class_='next page-numbers'))
     if hrefs and next: return hrefs + initialize(next, query)
-    else: return MYSQL.execute(INSERT[0], hrefs, many=1)
+    else: return hrefs
 
 def page_handler(hrefs):
     

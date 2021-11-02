@@ -7,7 +7,7 @@ def siamese():
     from PIL import Image
 
     MYSQL = CONNECT()
-    SELECT = f'SELECT type+0, path FROM imageData WHERE type in (1, 2) AND path LIKE "%.jpg" ORDER BY RAND() LIMIT 100'
+    SELECT = f'SELECT type+0, path FROM imagedata WHERE type in (1, 2) AND path LIKE "%.jpg" ORDER BY RAND() LIMIT 100'
 
     def make_pairs(images, labels, pairs=1):
         # initialize two empty lists to hold the (image, image) pairs and
