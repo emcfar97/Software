@@ -5,9 +5,10 @@ from io import BytesIO
 from ffprobe import FFProbe
 from imagehash import dhash
 from progress.bar import IncrementalBar
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, ImageFile
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 PATH = USER / r'Dropbox\ん'
 RESIZE = [1320, 1000]
 HEADERS = {
@@ -57,7 +58,7 @@ GENERAL = {
     'underwear': 'underwear|panties|bra|briefs',
     }
 CUSTOM = {
-    'naked_clothes': 'naked_belt|naked_apron|naked_shirt|naked_cape|naked_overalls|naked_ribbon|naked_cloak|naked_bandage|naked_robe', 
+    'naked_clothes': 'naked_apron|naked_belt|naked_bandage|naked_cape|naked_cloak|naked_overalls|naked_ribbon|naked_robe|naked_shirt', 
     'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra OR pasties) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust OR o_ring_top) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)',
@@ -184,6 +185,7 @@ REPLACE = {
     'insertion': 'object_insertion',
     'legs_spread|legs_apart': 'spread_legs',
     'mature_female': 'mature',
+    'muscle': 'muscular',
     'nipple_tweak':'nipple_tweaking',
     'no_pan': 'no_panties',
     'oshiri': 'ass',
