@@ -47,16 +47,14 @@ def page_handler(hrefs):
             try:
                 time.sleep(3)
                 html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-                images = html.findAll(
-                    alt='Image', src=re.compile('.+?format=.+')
-                    )
+                target = html.find('article', {'data-testid': 'tweet'})
+                images = target.findAll(src=re.compile('.+?format=.+'))
                 images[0].get('src'); images[-1].get('src')
                 artist = href.split('/')[1].lower()
                 break
 
             except (IndexError, AttributeError, TypeError): 
                 try:
-                    # continue
                     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
                     images = html.findAll('video')
                     images[0].get('src'); images[-1].get('src')
@@ -65,7 +63,7 @@ def page_handler(hrefs):
 
                 except (IndexError, AttributeError, TypeError): continue
         
-        if not images: continue
+        if not images or images[0].name == 'video': continue
         
         for image in images:
 
@@ -74,6 +72,7 @@ def page_handler(hrefs):
             name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
             MYSQL.execute(INSERT[5], (str(name), image, href, SITE))
+
         else: MYSQL.execute(DELETE[1], (href,), commit=1)
         
     print()

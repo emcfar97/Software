@@ -1,5 +1,5 @@
 from pathlib import Path
-from .. import get_frame
+from .. import get_frame, copy_to
 from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QStringListModel, QVariant
@@ -44,6 +44,20 @@ class Slideshow(QMainWindow):
         
     def create_menu(self):
 
+        self.menubar = self.menuBar()
+        self.menubar.triggered.connect(self.menuPressEvent)
+        
+        # File
+        file = self.menubar.addMenu('File')
+        file.addAction('Copy Image to')
+        file.addAction('Exit')
+        
+        # View
+        help = self.menubar.addMenu('View')
+        
+        # Help
+        help = self.menubar.addMenu('Help')
+        
         menu = QMenu(self)
 
         self.full = QAction(
@@ -78,7 +92,7 @@ class Slideshow(QMainWindow):
             return 0
         
         self.index = (self.index + delta) % len(self.model.gallery)
-        path = self.model.index(self.index).data(Qt.UserRole)
+        path = self.model.index(self.index).data(Qt.UserRole)[0]
         self.setWindowTitle(f'{Path(path).name} - Slideshow')
 
         if path is None: pixmap = QPixmap()
@@ -102,21 +116,25 @@ class Slideshow(QMainWindow):
     def fullscreen(self):
 
         if self.isFullScreen():
+
             self.timer.stop()
             self.image.setStyleSheet('background: ')
             self.full.setText('Fullscreen')
             self.setCursor(Qt.ArrowCursor)
+            self.menubar.show()
             self.showNormal()
 
         else:
+
             self.image.setStyleSheet('background: black')
             self.full.setText('Exit fullscreen')
             self.setCursor(Qt.BlankCursor)
+            self.menubar.hide()
             self.showFullScreen()
 
     def rotate(self, sign):
 
-        path = self.model.index(self.index).data(Qt.UserRole)
+        path = self.model.index(self.index).data(Qt.UserRole)[0]
 
         if path.endswith(('jpg', 'png')):
             self.image.rotate(path, sign)
@@ -128,7 +146,7 @@ class Slideshow(QMainWindow):
 
     def copy(self):
         
-        path = self.model.index(self.index).data(Qt.UserRole)
+        path = self.model.index(self.index).data(Qt.UserRole)[0]
 
         if path.endswith(('gif', '.mp4', '.webm')): 
             return
@@ -165,6 +183,16 @@ class Slideshow(QMainWindow):
     def contextMenuEvent(self, event):
         
         self.menu.popup(event.globalPos())
+
+    def menuPressEvent(self, event=None):
+
+        action = event.text()
+        
+        if action == 'Copy Image to':
+            
+            copy_to(self, [self.model.index(self.index)])
+
+        elif action == 'Exit': self.close()
 
     def keyPressEvent(self, event):
 
@@ -253,7 +281,9 @@ class Model(QStringListModel):
             
             return path, tags, artist, stars, rating, type, site
         
-        if role == Qt.UserRole: return self.gallery[index][0]
-
+        if role == Qt.UserRole: return self.gallery[index]
+        
+        if role == 300: return index
+        
         return QVariant()
     

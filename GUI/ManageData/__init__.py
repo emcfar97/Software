@@ -1,8 +1,9 @@
 import re
+from dotenv import load_dotenv
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView
 
-from GUI import ROOT, PATH, CONNECT, MODIFY, DELETE, COMIC, AUTOCOMPLETE, Completer, update_autocomplete, remove_redundancies
+from GUI import ROOT, CONNECT, MODIFY, DELETE, COMIC, AUTOCOMPLETE, Completer, update_autocomplete, remove_redundancies, copy_to
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
 from GUI.managedata.ribbonView import Ribbon
@@ -45,7 +46,7 @@ class ManageData(QMainWindow):
         
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
-        self.statusbar.setFixedHeight(25)
+        self.statusbar.setFixedHeight(30)
 
         self.mysql.finishedTransaction.connect(self.select_records)
         self.mysql.finishedSelect.connect(lambda x: self.preview.update(None))
@@ -57,7 +58,7 @@ class ManageData(QMainWindow):
 
         self.gallery.selection.connect(self.update_preview)
         self.gallery.selection.connect(self.update_statusbar)
-        self.gallery.delete_.connect(self.delete_records)
+        self.gallery.delete.connect(self.delete_records)
         self.gallery.load_comic.connect(self.read_comic)
         self.gallery.find_artist.connect(self.find_by_artist)
 
@@ -119,7 +120,7 @@ class ManageData(QMainWindow):
     def delete_records(self, indexes):
 
         if isinstance(indexes[0], tuple):
-                        
+
             for path, in indexes: (ROOT / path).unlink(True)
 
             return self.mysql.commit()
@@ -187,9 +188,8 @@ class ManageData(QMainWindow):
         
         self.statusbar.showMessage(f'   {total}     {select}')
     
-    def find_by_artist(self, event=None):
+    def find_by_artist(self, index):
 
-        index = self.gallery.currentIndex()
         artist = index.data(Qt.UserRole)[1]
         
         if artist: 
@@ -202,7 +202,11 @@ class ManageData(QMainWindow):
 
     def read_comic(self, event=None):
         
-        if re.search('type=.comic.', self.ribbon.query):
+        if (
+            re.search('type=.comic.', self.ribbon.query) and 
+            not re.search('comic=.+', self.ribbon.text()) and
+            event is not None
+            ):
             
             path = self.gallery.currentIndex().data(Qt.UserRole)[0]
             parent_, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
@@ -210,25 +214,6 @@ class ManageData(QMainWindow):
         
         else: self.start_slideshow()
     
-    def copy_to(self, event=None, sym=False):
-
-        paths = [
-            ROOT / index.data(Qt.UserRole)[0]
-            for index in self.gallery.selectedIndexes()
-            if index.data(300) is not None
-            ]
-
-        folder = ROOT / QFileDialog.getExistingDirectory(
-          self, 'Open Directory', str(PATH.parent),
-          QFileDialog.ShowDirsOnly
-          )
-
-        for path in paths:
-
-            name = folder / path.name
-            if sym and not name.exists(): name.symlink_to(path)
-            else: name.write_bytes(path.read_bytes())
-
     def setSelectionMode(self, event):
         
         if event:
@@ -254,7 +239,9 @@ class ManageData(QMainWindow):
 
         elif action == 'Remove Redundancies': remove_redundancies()
         
-        elif action == 'Copy Images to': self.copy_to()
+        elif action == 'Copy Images to':
+            
+            copy_to(self, self.gallery.selectedIndexes())
 
         elif action == 'Exit': self.close()
 
@@ -287,5 +274,5 @@ class ManageData(QMainWindow):
     def closeEvent(self, event):
         
         self.mysql.close()
-        self.windows.clear()
+        for window in self.windows: window.close()
         self.closedWindow.emit(self)

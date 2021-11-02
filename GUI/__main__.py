@@ -197,7 +197,7 @@ class GestureDraw(QMainWindow):
         else:
             self.parent.windows[self.windowTitle()].remove(self)
             if not self.parent.is_empty(): self.parent.show()
- 
+
 Qapp = QApplication([])
 
 app = App()

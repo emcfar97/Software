@@ -35,16 +35,8 @@ def page_handler(hrefs):
         
         progress.next()
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
-        DRIVER.find('//*[@class="center"]', click=True)
-        try: 
-            html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-
-            artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
-            image = f'http:{html.find(class_="center", src=True).get("src")}'
-        except Exception as error: 
-            print(error)
-            continue
-        
+        artist = href.split('/')[3]
+        image = DRIVER.find('//img[@class="center"]').get_attribute('src')
         name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
         name = PATH / 'Images' / SITE / name
 

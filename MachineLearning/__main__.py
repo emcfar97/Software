@@ -8,4 +8,13 @@ parser.add_argument(
     '-n', '--num', type=int,
     help='Number of streams', default=2
     )
+parser.add_argument(
+    '-n', '--num', type=int,
+    help='Number of streams', default=2
+    )
+parser.add_argument(
+    '-n', '--num', type=int,
+    help='Number of streams', default=2
+    )
+    
 args = parser.parse_args()

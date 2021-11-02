@@ -10,7 +10,7 @@ class Clips(QLabel):
      
     def configure_gui(self):
         
-        self.setStyleSheet('background: blue')
+        self.setStyleSheet('background: yellow')
         self.setText('clips')
 
     def create_widgets(self):
