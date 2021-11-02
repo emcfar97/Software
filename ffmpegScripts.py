@@ -2,6 +2,7 @@ import ffmpeg
 from os import path
 from pathlib import Path
 from ffprobe import FFProbe
+from send2trash import send2trash
 from re import search, sub, findall, IGNORECASE
 
 EXT = '\.(mp4|flv|mkv|avi|wmv|mov|mpg|mpeg|divx|rm|ram|vob|3gp)'
@@ -10,12 +11,13 @@ USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 DOWN = USER / r'Downloads\Images'
 SOURCE = USER / r'Videos\Captures'
 DEST = USER / r'Dropbox\Videos\Captures'
+CRF = 21
 
 def get_stream(files, text):
         
     new = DEST / files[0].with_suffix('.mp4').name
 
-    if text and text in 'yes':
+    if text and text in ('y', 'ye', 'yes'):
 
         stream = [
             ffmpeg.input(str(file)).drawtext(
@@ -76,16 +78,16 @@ while True:
                             x=int(metadata.width) * .70, 
                             y=int(metadata.height) * .85,
                             shadowcolor='white', shadowx=2, shadowy=2
-                            ).output(str(mp4), crf=20, preset='fast').run()
+                            ).output(str(mp4), crf=CRF, preset='fast').run()
 
                     else: 
                         ffmpeg.input(str(file)) \
-                        .output(str(mp4), crf=20, preset='fast') \
+                        .output(str(mp4), crf=CRF, preset='fast') \
                         .run()
 
                 except Exception as error: print(error); continue
 
-                file.unlink()
+                send2trash(str(file))
 
         elif user_input == '2': # concat videos
             
@@ -101,10 +103,10 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                try: ffmpeg.concat(*stream).output(str(new),crf=20,preset='fast').run()
+                try: ffmpeg.concat(*stream).output(str(new), crf=CRF,preset='fast').run()
                 except Exception as error: print(error); continue
                 
-                for file in files: file.unlink()
+                for file in files: send2trash(str(file))
 
         elif user_input == '3': # change framerate
             
@@ -128,12 +130,12 @@ while True:
                         )
                     ffmpeg.concat(*stream) \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(new), crf=20, preset='fast') \
+                        .output(str(new), crf=CRF, preset='fast') \
                         .run()
                         
                 except Exception as error: print(error); continue
 
-                for file in files: file.unlink()
+                for file in files: send2trash(str(file))
 
         elif user_input == '4': # split video
 
@@ -158,7 +160,7 @@ while True:
                     ffmpeg.input(str(file)) \
                         .trim(start=start) \
                         .setpts('PTS-STARTPTS') \
-                        .output(str(new), preset='veryslow') \
+                        .output(str(new), crf=CRF, preset='veryslow') \
                         .run()
 
                 else:
@@ -166,7 +168,7 @@ while True:
                     ffmpeg.input(str(file)) \
                         .trim(start=start, end=end) \
                         .setpts('PTS-STARTPTS') \
-                        .output(str(new), preset='veryslow') \
+                        .output(str(new), crf=CRF, preset='veryslow') \
                         .run()
 
             else: raise FileNotFoundError
@@ -175,7 +177,7 @@ while True:
             
             url = input('Enter url: ')
             name = DOWN / f'{url.split("/")[3]}.mp4'
-            ffmpeg.input(url).output(str(name)).run()
+            ffmpeg.input(url).output(str(name, crf=CRF)).run()
 
         elif user_input == '6': # adjust directories
 
