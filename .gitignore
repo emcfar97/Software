@@ -3,7 +3,6 @@
 *.hdf5
 *.pyd
 *.exe
-*.env
 __pycache__
 .vscode
 ffmpeg-20190824-1cfba7f-win64-static
