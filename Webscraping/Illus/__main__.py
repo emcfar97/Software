@@ -15,6 +15,11 @@ parser.add_argument(
     help='Favorites argument (default 1)',
     default=1
     )
+parser.add_argument(
+    '-d', '--depth', type=int,
+    help='Favorites argument (default 1)',
+    default=1000
+    )
 args = parser.parse_args()
 
-start(args.init, args.fav)
+start(args.init, args.fav, args.depth)

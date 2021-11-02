@@ -1,12 +1,10 @@
-def start(initialize=1):
+def start(initialize=1, depth=1000):
 
     import threading, subprocess
     from . import favorites, foundry, furaffinity, twitter
 
     # process = subprocess.Popen([
-    #     r'Webscraping\PixivUtil\PixivUtil2.exe',
-    #     '-s', '6', 'y', '-x'
-    #     #         start end  stop
+    #     r'python Webscraping\Pixivutil\PixivUtil2.py --start_action 6 --ep 7',
     #     ])
     
     threads = [
@@ -18,4 +16,4 @@ def start(initialize=1):
     for thread in threads: thread.start()
     for thread in threads: thread.join()
 
-    favorites.start(initialize)
+    favorites.start(initialize, depth=depth)

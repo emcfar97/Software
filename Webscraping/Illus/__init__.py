@@ -1,10 +1,10 @@
-def start(initialize=1, favorites=True):
+def start(initialize=1, favorites=True, depth=1000):
     
     import threading
     from . import gelbooru
     from .. import Favorites, sankaku
 
-    if favorites: Favorites.start()
+    if favorites: Favorites.start(initialize, depth)
 
     threads = [
         threading.Thread(target=gelbooru.start, args=(initialize,)),
