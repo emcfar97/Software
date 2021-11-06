@@ -20,6 +20,8 @@ A set of projects that I've developed, either individually or as a team, over th
 ## 2017
 ## 2018
 ## 2019
+[CS 303 Spring 2019](https://github.com/Rayos1/Library-Employees)
+[CS 303 Spring 2019](https://github.com/Rayos1/Morse-Code-Decoder)
 ## 2020
 [CS 470 Fall 2020](https://github.com/Rayos1/CS-470-Fall-2020)
 ## 2021
