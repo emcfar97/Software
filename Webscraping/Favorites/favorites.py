@@ -23,7 +23,7 @@ def main(paths, upload, sankaku=0, gelbooru=0):
             MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         DRIVER.find('//input[@type="submit"]', click=True)
-        if re.search(EXT[-12:], path,re.IGNORECASE): time.sleep(25)
+        if re.search(EXT[-12:], path, re.IGNORECASE): time.sleep(25)
         else: time.sleep(5)
         
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
@@ -216,11 +216,16 @@ if __name__ == '__main__':
         default=True
         )
     parser.add_argument(
-        '-u', '--upload', type=bool,
+        '-d', '--depth', type=int,
+        help='Upload argument (default -1)',
+        default=-1
+        )
+    parser.add_argument(
+        '-u', '--upload', type=int,
         help='Upload argument (default 0)',
         default=0
         )
 
     args = parser.parse_args()
     
-    start(args.init, args.head, args.upload)
+    start(args.init, args.head, args.depth, args.upload)
