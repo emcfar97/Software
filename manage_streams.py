@@ -111,7 +111,7 @@ class Browser(WEBDRIVER):
         except Exception as error:
             if fetch: raise error
 
-def start(): Browser()
+def main(): Browser()
 
 parser = argparse.ArgumentParser(
     prog='manage_streams', 
