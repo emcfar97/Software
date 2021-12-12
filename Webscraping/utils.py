@@ -167,10 +167,11 @@ REMOVE = {
     'mosaic_censoring', 'censored', 'uncensored',
     'male_focus', 'multiple_boys', 'multiple_girls', 
     'pantyhose', 'no_humans', 'scenery', 'asian', 'what'
-    'animal_ears'
+    'animal_ears', 'slut'
     }
 REPLACE = {
     '3d': '3d_cg',
+    '69':'69_position',
     '[4-9]boys': 'multiple_boys',
     '[4-9]girls': 'multiple_girls',
     'animate.*_gif': 'animated',
@@ -183,11 +184,13 @@ REPLACE = {
     '(female|male)_pubic_hair': 'pubic_hair',
     '(female|male)_solo|solo_focus': 'solo',
     'insertion': 'object_insertion',
+    'kissing':'kiss',
     'legs_spread|legs_apart': 'spread_legs',
     'mature_female': 'mature',
     'muscle': 'muscular',
     'nipple_tweak':'nipple_tweaking',
     'no_pan': 'no_panties',
+    'on_all_fours': 'all_fours',
     'oshiri': 'ass',
     'pantsu': 'panties',
     'plugsuit': 'bodysuit',

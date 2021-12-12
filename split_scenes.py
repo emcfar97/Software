@@ -20,7 +20,7 @@ parser.add_argument( # downscale
     )
 parser.add_argument( # threshold
     '-t', '--threshold', type=int,
-    help='Threshold value for scene change', default=25, 
+    help='Threshold value for scene change', default=50, 
     )
 parser.add_argument( # minimum
     '-m', '--minimum', type=int,

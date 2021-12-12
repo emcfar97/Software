@@ -9,7 +9,7 @@ def initialize(url, query=0):
     def next_page(page):
                 
         try: return page.get('href')[26:]
-        except IndexError: return False
+        except AttributeError: return False
 
     if not query:
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
@@ -82,7 +82,7 @@ def start(initial=True, headless=True):
     if initial:
         hrefs = initialize(DRIVER.login(SITE))
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
-        
+    
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     DRIVER.close()
 

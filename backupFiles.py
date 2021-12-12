@@ -1,5 +1,4 @@
 import re
-from os import walk
 from pathlib import Path
 from datetime import date
 from shutil import copy, copytree
@@ -88,10 +87,10 @@ for drive in get_drives():
             
             val = get_version(val)
             
-            if not val: continue            
+            if not val: continue
+            
+            print(f'\t{val}')         
             if key.is_file(): copy(key, val)
             else: copytree(key, val)
-
-            print(f'\t{val}') 
 
 input('\nDone')

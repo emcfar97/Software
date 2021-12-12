@@ -36,10 +36,12 @@ def page_handler(hrefs):
         progress.next()
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
         artist = href.split('/')[3]
-        image = DRIVER.find('//img[@class="center"]').get_attribute('src')
-        name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
-        name = PATH / 'Images' / SITE / name
-
+        try:
+            image = DRIVER.find('//img[@class="center"]').get_attribute('src')
+            name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
+            name = PATH / 'Images' / SITE / name
+        except: continue
+        
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
     print()
