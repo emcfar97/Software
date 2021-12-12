@@ -143,7 +143,7 @@ while True:
 
             if file.exists():
                 
-                if latest := sorted(SOURCE.glob(f'{file.stem} Part [0-9]*')):
+                while (latest := sorted(SOURCE.glob(f'{file.stem} Part [0-9]*'))).exist():
                     
                     num = int(*findall(' (\d+)', latest[-1].stem))
                     new = sub(f' {num}+', f' {num+1:02}', latest[-1].name)
@@ -177,12 +177,12 @@ while True:
             
             url = input('Enter url: ')
             name = DOWN / f'{url.split("/")[3]}.mp4'
-            ffmpeg.input(url).output(str(name, crf=CRF)).run()
+            ffmpeg.input(url).output(str(name), crf=CRF).run()
 
         elif user_input == '6': # adjust directories
 
             user_input = input(
-                '\nChoose from:\n1 - Change root\n2 - Change source\n3 - Change destination\n'
+                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change CRF: {CRF}\n'
                 )
 
             if   user_input == '1': # change root
@@ -212,7 +212,7 @@ while True:
 
                 else: raise FileNotFoundError
                         
-            elif user_input == '3': # Change destination
+            elif user_input == '3': # change destination
 
                 path = Path(input('Enter path: '))
 
@@ -222,6 +222,10 @@ while True:
                     print('Success\n')
 
                 else: raise FileNotFoundError
+            
+            elif user_input == '4': # change CRF
+                
+                CRF = int(input('Enter value (integer): '))
 
         elif user_input == '7': # check directories
             
