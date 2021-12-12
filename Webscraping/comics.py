@@ -73,7 +73,6 @@ def page_handler(hrefs):
                         )
                 if name.name in [i[0] for i in comic_records[cover.name]['comics']]: continue
                 if not save_image(name, src):
-                    MYSQL.rollback()
                     break
             
                 tags, rating, exif = generate_tags(
@@ -120,31 +119,10 @@ def page_handler(hrefs):
 
     print()
 
-def start(initial=1, headless=True, mode=1):
+def file_handler(folders):
     
-    global MYSQL, DRIVER
-
-    if mode:
-        
-        MYSQL = CONNECT()
-        DRIVER = WEBDRIVER(headless)
-
-        if initial: 
-            
-            hrefs = initialize()
-            MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
-
-        page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
-        DRIVER.close()
-        return
-
     import send2trash
-
-    MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(headless, None)
-
-    path = USER / r'Downloads\Images\Comics'
-    folders = list(path.iterdir())
+    
     if not (length := len(folders)): return
     progress = IncrementalBar('Comic', max=length)
 
@@ -163,6 +141,7 @@ def start(initial=1, headless=True, mode=1):
             for num, file in enumerate(folder.iterdir())
             ]
         cover = images[0][2]
+        imagedata, comics = [], []
         
         for num, hash_, image, _ in images:
 
@@ -170,21 +149,50 @@ def start(initial=1, headless=True, mode=1):
                 general=get_tags(DRIVER, image), 
                 custom=True, rating=True, exif=False
                 )
-            imagedata = MYSQL.execute(INSERT[3], (
-                    image.name, artist, tags, rating, 
-                    3, hash_, None, None, None
-                    )
+            imagedata.append(
+                (image.name, artist, tags, rating, 
+                3, hash_, None, None, None)
                 )
-            comics = MYSQL.execute(INSERT[4], (
-                    image.name, cover.name
-                    )
-                )
-            if not (imagedata and comics): break; continue
+            comics.append((image.name, cover.name))
+            
+        else:
+            
+            if (
+                MYSQL.execute(INSERT[3], imagedata, many=1) and
+                MYSQL.execute(INSERT[4], comics, many=1)
+                ):
+                MYSQL.commit()
+                
+            else:
+                MYSQL.rollback()
+                break
 
         MYSQL.commit()
         send2trash.send2trash(str(folder))
         
-    print()
+def start(initial=1, headless=True, mode=1):
+    
+    global MYSQL, DRIVER
+
+    MYSQL = CONNECT()
+        
+    if mode:
+        
+        DRIVER = WEBDRIVER(headless)
+
+        if initial:
+            
+            hrefs = initialize()
+            MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+
+        page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    
+    else:    
+        
+        DRIVER = WEBDRIVER(headless, None)
+
+        path = USER / r'Downloads\Images\Comics'
+        file_handler(list(path.iterdir()))
 
     DRIVER.close()
 
