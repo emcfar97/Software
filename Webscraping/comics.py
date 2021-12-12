@@ -170,7 +170,7 @@ def file_handler(folders):
         MYSQL.commit()
         send2trash.send2trash(str(folder))
         
-def start(initial=1, headless=True, mode=1):
+def main(initial=1, headless=True, mode=1):
     
     global MYSQL, DRIVER
 
@@ -219,4 +219,4 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
-    start(args.init, args.head, args.mode)
+    main(args.init, args.head, args.mode)

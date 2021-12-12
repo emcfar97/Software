@@ -23,7 +23,7 @@ def similarity(path):
             
     except: return True
     
-def start(extract=True, add='', path=PATH):
+def main(extract=True, add='', path=PATH):
     
     if extract: extract_files(path)
     
@@ -96,4 +96,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    start(args.extract, args.add, args.path)
+    main(args.extract, args.add, args.path)

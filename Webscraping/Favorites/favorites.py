@@ -190,7 +190,7 @@ def initialize():
     MYSQL.execute(INSERT[2], paths, many=1, commit=1)
     MYSQL.execute(DELETE[2], commit=1)
 
-def start(initial=True, headless=True, depth=0, upload=0):
+def main(initial=True, headless=True, depth=0, upload=0):
 
     global MYSQL, DRIVER
     MYSQL = CONNECT()
@@ -228,4 +228,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    start(args.init, args.head, args.depth, args.upload)
+    main(args.init, args.head, args.depth, args.upload)

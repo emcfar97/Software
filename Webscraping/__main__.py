@@ -26,7 +26,7 @@ if args.arg == 0: # webscraping
         threading.Thread(target=Illus.start, args=(args.init,)),
         threading.Thread(target=comics.start, args=(args.init,))
         ]
-    for thread in threads: thread.start()
+    for thread in threads: thread.main()
     for thread in threads: thread.join()
 
     get_starred()
@@ -43,7 +43,7 @@ elif args.arg == 1: # insert_records
         threading.Thread(target=insert_records.start),
         threading.Thread(target=imagefap.start),
         ]
-    for thread in threads: thread.start()
+    for thread in threads: thread.main()
     for thread in threads: thread.join()
 
     get_starred()
@@ -55,5 +55,5 @@ else:
     # from Webscraping.Favorites import deviantart
     from Webscraping.Photos import blogspot
 
-    # deviantart.start(1, 0)
-    blogspot.start(1, 0)
+    # deviantart.main(1, 0)
+    blogspot.main(1, 0)

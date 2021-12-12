@@ -38,7 +38,7 @@ def page_handler(url, title, page=0):
 
         page += 1
 
-def start():
+def main():
         
     for file in PATH.glob('*json'):
 
@@ -50,4 +50,4 @@ def start():
 
 if __name__ == '__main__':
     
-    start()
+    main()

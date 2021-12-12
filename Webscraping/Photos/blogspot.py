@@ -54,7 +54,7 @@ def page_handler(hrefs, tag):
         
     print()
 
-def start(index, headless=True):
+def main(index, headless=True):
 
     global MYSQL, DRIVER
     MYSQL = CONNECT()
@@ -90,4 +90,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    start(args.index, args.head)
+    main(args.index, args.head)

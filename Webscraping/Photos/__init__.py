@@ -1,4 +1,4 @@
-def start(initialize=1):
+def main(initialize=1):
 
     import threading 
 
@@ -12,5 +12,5 @@ def start(initialize=1):
         # threading.Thread(target=posespace.start, args=(initiailze,))
         threading.Thread(target=sankaku.start, args=(initialize, True, 0)),
         ]
-    for thread in threads: thread.start()
+    for thread in threads: thread.main()
     for thread in threads: thread.join()

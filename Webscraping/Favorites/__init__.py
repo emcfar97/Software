@@ -1,4 +1,4 @@
-def start(initialize=1, depth=1000):
+def main(initialize=1, depth=1000):
 
     import threading, subprocess
     from . import favorites, foundry, furaffinity, twitter
@@ -13,7 +13,7 @@ def start(initialize=1, depth=1000):
         threading.Thread(target=foundry.start, args=(initialize,)),
         threading.Thread(target=furaffinity.start, args=(initialize,)),
         ]
-    for thread in threads: thread.start()
+    for thread in threads: thread.main()
     for thread in threads: thread.join()
 
-    favorites.start(initialize, depth=depth)
+    favorites.main(initialize, depth=depth)
