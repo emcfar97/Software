@@ -219,6 +219,57 @@ def Remove_Intro(path):
     path.write_bytes(temp.read_bytes())
     SQL.commit()
 
+def Clean_Database():
+
+    import sqlite3, re
+    from pathlib import Path
+
+    select1 = 'SELECT save_name FROM pixiv_master_image WHERE save_name=?'
+    select2 = 'SELECT save_name FROM pixiv_manga_image WHERE save_name=?'
+    update1 = 'UPDATE pixiv_master_image SET save_name=? WHERE save_name=?'
+    update2 = 'UPDATE pixiv_manga_image SET save_name=? WHERE save_name=?'
+    datab = sqlite3.connect(r'Webscraping\Pixivutil\db.sqlite')
+    cursor = datab.cursor()
+    path = Path(r'C:\Users\Emc11\Dropbox\ん\Images\pixiv')
+    emoji = '🔞🍚🍀🍣🐄🌊'
+
+    for file in path.glob(f'*[{emoji}]*'):
+
+        new = re.sub('|'.join(emoji), '', file.name)
+        new = file.with_name(new)
+        path = cursor.execute(select1, (str(file),)).fetchone()
+        cursor.execute(update1, (str(new), str(file)))
+        path = cursor.execute(select2, (str(file),)).fetchone()
+        cursor.execute(update2, (str(new), str(file)))
+        
+        file.rename(new)
+        datab.commit()
+
+def unnamed(path):
+
+    from Webscraping import CONNECT, utils
+    from pathlib import Path
+
+    MYSQL = CONNECT()
+    SELECT = 'SELECT path FROM imagedata WHERE hash=%s OR path=%s'
+    path = Path(path)
+    num = 0
+
+    for file in path.glob('**/*.*'):
+
+        hash_ = utils.get_hash(file)
+        target = MYSQL.execute(SELECT, (hash_, file.name), fetch=1)
+        if len(target) == 1 and (target:=target[0][0]) is not None:
+            
+            p = utils.PATH / target[:2] / target[2:4] / target
+            
+            if p.exists():
+                
+                file.unlink()
+                num += 1
+                
+    print(f'{num} files deleted')
+
 def make_stitch():
     
     import cv2
@@ -248,26 +299,6 @@ def make_stitch():
     
     status, image = stitcher.stitch(frames)
     cv2.imwrite(str(test / 'p.jpg'), image)
-
-def pathwalk(top, topdown=False, followlinks=False):
-    """
-    See Python docs for os.walk, exact same behavior but it yields Path() instances instead
-    """
-    names = list(top.iterdir())
-
-    dirs = (node for node in names if node.is_dir() is True)
-    nondirs =(node for node in names if node.is_dir() is False)
-
-    if topdown:
-        yield top, dirs, nondirs
-
-    for name in dirs:
-        if followlinks or name.is_symlink() is False:
-            for x in pathwalk(name, topdown, followlinks):
-                yield x
-
-    if topdown is not True:
-        yield top, dirs, nondirs
 
 parser = argparse.ArgumentParser(
     prog='test', 
