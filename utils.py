@@ -18,7 +18,7 @@ def Normalize_Database():
     
     MYSQL = CONNECT()
     DROPBOX = USER / r'Dropbox\ん'
-    RESERVE = r'Downloads\Test\Reserve'
+    RESERVE = r'Downloads\Reserve'
     parts = ", ".join([f"'{part}'" for part in DROPBOX.parts]).replace('\\', '')
     SELECT = f'SELECT full_path(path, {parts}) FROM imagedata WHERE NOT ISNULL(path)'
     select = 'SELECT src, href FROM imagedata WHERE path=%s'
@@ -30,6 +30,13 @@ def Normalize_Database():
         )
     windows = set(DROPBOX.glob('[0-9a-f][0-9a-f]/[0-9a-f][0-9a-f]/*.*'))
     x, y = database - windows, windows - database
+        
+    print(f'{len(x)} not in files')
+    print(f'{len(y)} not in database')
+    
+    if not input('Go through with deletes? ').lower() in ('y', 'ye', 'yes'):
+        
+        return
     
     for num, file in enumerate(x, 1):
         if any(*MYSQL.execute(select, (file.name,), fetch=1)):
@@ -45,7 +52,7 @@ def Normalize_Database():
 
     for num, file in enumerate(y, 1):
 
-        if re.match('+. \(.+\).\.+', file.name):
+        if re.match('.+ \(.+\)\..+', file.name):
             clean = re.sub(' \(.+\)', '', file.name)
             if file.with_name(clean).exists():
                 file.unlink()
@@ -80,18 +87,19 @@ def Copy_Files(files, dest, sym=False):
         if sym and not name.exists(): name.symlink_to(path)
         else: name.write_bytes(path.read_bytes())
 
-def Download_Nhentai(*args):
+def Download_Nhentai():
     '''Code, artist, range'''
     
-    import requests, bs4, re
+    import requests, bs4, re, ast
     from Webscraping import USER
     from Webscraping.utils import save_image
 
     path = USER / r'Downloads\Images\Comics'
+    comic = USER / r'Dropbox\Software\comics.txt'
     
-    for arg in args:
+    for arg in comic.read_text().splitlines()[:-1]:
 
-        code, artist, range_ = arg
+        code, artist, range_ = ast.literal_eval(arg)
 
         comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
         comic.mkdir(exist_ok=True)
@@ -106,8 +114,9 @@ def Download_Nhentai(*args):
             image = bs4.BeautifulSoup(page.content, 'lxml')
             src = image.find(src=re.compile('.+galleries.+')).get('src')       
             name = comic / src.split('/')[-1]
+            if name.exists(): continue
             save_image(name, src)
-
+            
 def Resize_Images(source, pattern, size=[800, 1200]):
     
     from PIL import Image
@@ -126,6 +135,8 @@ def Resize_Images(source, pattern, size=[800, 1200]):
             image.thumbnail(size[::-1])
 
         image.save(dest / file.name)
+        
+    return dest
 
 def Prepare_Art_Files(project, parents=''):
 
@@ -140,7 +151,8 @@ def Prepare_Art_Files(project, parents=''):
     _, version = re.split('^\D+', project)
 
     # files
-    head = dropbox / 'Pictures' / 'Projects' / parents
+    print('Files')
+    head = dropbox / 'Pictures' / 'Projects' / parents / name
     files = project_dir / 'Files'
     files.mkdir(exist_ok=True)
     
@@ -151,6 +163,7 @@ def Prepare_Art_Files(project, parents=''):
     shutil.move(psd, files / psd.name)
 
     # videos
+    print('Videos')
     head = dropbox / 'Videos' / 'Captures' / parents
     videos = project_dir / 'Videos'
     videos.mkdir(exist_ok=True)
@@ -162,17 +175,43 @@ def Prepare_Art_Files(project, parents=''):
     shutil.copy(clip_time, videos / clip_time.name)
     
     # illustrations
+    print('Illustrations')
     head = dropbox / 'Pictures' / 'Artwork' / parents
     illus = project_dir / 'Illustrations'
     illus.mkdir(exist_ok=True)
     
     source_illus = head / name / version
-    
     shutil.copytree(source_illus, illus, dirs_exist_ok=True)
+    downscaled = Resize_Images(source_illus, '**/*.*')
+    shutil.move(str(downscaled), str(project_dir))
     
-    Resize_Images(source_illus, '**/*.*')
+    # zips
+    print('Zip')
+    names = {
+        files:  ['Files', 'ファイル'],
+        videos: ['Videos', 'タイムラプス'],
+        illus:  ['Illustrations', 'CG'],
+        }
+    for name, langs in names.items():
+        for lang in langs:
+            folder = shutil.copytree(
+                str(name), str(downloads / lang), dirs_exist_ok=True
+                )
+            shutil.make_archive(str(project_dir / lang), 'zip', str(name))
+            shutil.rmtree(folder)
 
-def Splice_Image(folder, foreground, pattern):
+    # text
+    project_struct = project_dir / 'Structure.txt'
+    project_struct.touch()
+    
+    text = 'English\n'
+    text += f'Contents ({len(illus.iterdir())} files in total):'
+    
+    for dir in illus.glob('*'):
+        if dir.is_dir(): 
+            text += f'・{dir.name} ({len(dir.iterdir())} files)'
+
+def Splice_Images(folder, foreground, pattern):
 
     from pathlib import Path
     from PIL import Image
@@ -186,6 +225,26 @@ def Splice_Image(folder, foreground, pattern):
         background.paste(foreground, (0, 0), foreground)
         
         background.save(str(image))
+
+def pathwalk(top, topdown=False, followlinks=False):
+    """
+    See Python docs for os.walk, exact same behavior but it yields Path() instances instead
+    """
+    names = list(top.iterdir())
+
+    dirs = (node for node in names if node.is_dir() is True)
+    nondirs =(node for node in names if node.is_dir() is False)
+
+    if topdown:
+        yield top, dirs, nondirs
+
+    for name in dirs:
+        if followlinks or name.is_symlink() is False:
+            for x in pathwalk(name, topdown, followlinks):
+                yield x
+
+    if topdown is not True:
+        yield top, dirs, nondirs
 
 parser = argparse.ArgumentParser(
     prog='test', 
