@@ -269,6 +269,86 @@ def get_starred(headless=True):
 
     DRIVER.close()
 
+def extract_files(path, dest=None, headless=True):
+    
+    import re, bs4
+    from urllib.parse import urlparse
+    from Webscraping.utils import save_image
+        
+    def get_url(driver, src):
+
+        driver.get(src)
+        time.sleep(5)
+        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        url = html.find(src=re.compile('.+mp4\Z'))
+
+        return url.get('src')
+
+    def extract_errors(path):
+        
+        if path.exists():
+            
+            for image in errors_txt.read_text().split('\n'):
+            
+                image = image.strip()
+                name = path.parent / image.split('/')[-1].split('?')[0]
+                save_image(name, image)
+                
+    driver = WEBDRIVER(headless=headless, profile=None)
+    errors_txt = path / 'Errors.txt'
+    extract_errors(errors_txt)
+    errors = []
+        
+    for file in path.glob('*json'):
+
+        for url in json_generator(file):
+            
+            path = urlparse(url['url']).path[1:]
+            if re.match('https://i.imgur.com/.+gif', url['url']):
+                path.replace('gif', 'mp4')
+            elif re.search('.+/watch.+', url['url']):
+                try: path = get_url(driver, url['url'])
+                except Exception as error:
+                    print(error)
+                    continue
+
+            name = dest / path.split('/')[-1]
+            if name.exists(): continue
+            try: image = (
+                    f'https://{url["title"]}'
+                    if url['url'] == 'about:blank' else 
+                    url['url']
+                    )
+            except KeyError: continue
+            
+            if name.suffix == '.gifv':
+                name = name.with_suffix('.mp4')
+                image = image.replace('gifv', 'mp4')
+            elif name.suffix == '.webp':
+                name = name.with_suffix('.jpg')
+            
+            if not save_image(name, image): errors.append(image)
+            elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
+                try: name.rename(name.with_suffix('.mp4'))
+                except: name.unlink(missing_ok=1)
+        
+        file.unlink()
+    
+    if errors: errors_txt.write_text('\n'.join(errors))
+
+    for file in dest.glob('*webp'):
+
+        name = file.with_suffix('.jpg')
+        name.write_bytes(file.read_bytes())
+        file.unlink()
+        
+    for file in dest.glob('*gifv'):
+
+        name = file.with_suffix('.mp4')
+        image = f'https://i.imgur.com/{name.name}'
+        save_image(name, image)
+        file.unlink()
+
 def json_generator(path):
 
     generator = json.load(open(path, encoding='utf-8'))
