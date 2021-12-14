@@ -6,7 +6,7 @@ from selenium.webdriver.common.keys import Keys
 
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 
-def main(paths, upload, sankaku=0, gelbooru=0):
+def page_handler(paths, upload, sankaku=0, gelbooru=0):
     
     if not paths: return
     if upload: limit = get_limit()

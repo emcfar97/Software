@@ -1,4 +1,4 @@
-from Webscraping.Photos import start
+from Webscraping.Photos import main
 
 import argparse
 
@@ -12,4 +12,4 @@ parser.add_argument(
     )
 args = parser.parse_args()
 
-start(args.init)
+main(args.init)

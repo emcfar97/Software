@@ -9,11 +9,11 @@ def main(initialize=1, depth=1000):
     
     threads = [
         # threading.Thread(target=process.wait),
-        threading.Thread(target=twitter.start, args=(initialize,)),
-        threading.Thread(target=foundry.start, args=(initialize,)),
-        threading.Thread(target=furaffinity.start, args=(initialize,)),
+        threading.Thread(target=twitter.main, args=(initialize,)),
+        threading.Thread(target=foundry.main, args=(initialize,)),
+        threading.Thread(target=furaffinity.main, args=(initialize,)),
         ]
-    for thread in threads: thread.main()
+    for thread in threads: thread.start()
     for thread in threads: thread.join()
 
     favorites.main(initialize, depth=depth)

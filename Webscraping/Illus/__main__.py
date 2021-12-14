@@ -1,4 +1,4 @@
-from Webscraping.Illus import start
+from Webscraping.Illus import main
 
 import argparse
 
@@ -22,4 +22,4 @@ parser.add_argument(
     )
 args = parser.parse_args()
 
-start(args.init, args.fav, args.depth)
+main(args.init, args.fav, args.depth)

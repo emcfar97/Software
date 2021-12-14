@@ -6,11 +6,11 @@ def main(initialize=1):
     from . import flickr, posespace, elitebabes, instagram, blogspot
     
     threads = [
-        threading.Thread(target=flickr.start, args=(initialize,)),
-        threading.Thread(target=elitebabes.start, args=(initialize,)),
-        # threading.Thread(target=instagram.start, args=(initiailze,)),
-        # threading.Thread(target=posespace.start, args=(initiailze,))
-        threading.Thread(target=sankaku.start, args=(initialize, True, 0)),
+        threading.Thread(target=flickr.main, args=(initialize,)),
+        threading.Thread(target=elitebabes.main, args=(initialize,)),
+        # threading.Thread(target=instagram.main, args=(initiailze,)),
+        # threading.Thread(target=posespace.main, args=(initiailze,))
+        threading.Thread(target=sankaku.main, args=(initialize, True, 0)),
         ]
-    for thread in threads: thread.main()
+    for thread in threads: thread.start()
     for thread in threads: thread.join()

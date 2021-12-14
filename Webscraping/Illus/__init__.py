@@ -7,8 +7,8 @@ def main(initialize=1, favorites=True, depth=1000):
     if favorites: Favorites.main(initialize, depth)
 
     threads = [
-        threading.Thread(target=gelbooru.start, args=(initialize,)),
-        threading.Thread(target=sankaku.start, args=(initialize, True, 1))
+        threading.Thread(target=gelbooru.main, args=(initialize,)),
+        threading.Thread(target=sankaku.main, args=(initialize, True, 1))
         ]
-    for thread in threads: thread.main()
+    for thread in threads: thread.start()
     for thread in threads: thread.join()

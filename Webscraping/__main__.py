@@ -22,11 +22,11 @@ if args.arg == 0: # webscraping
     from Webscraping import Photos, Illus, comics
     
     threads = [
-        threading.Thread(target=Photos.start, args=(args.init,)),
-        threading.Thread(target=Illus.start, args=(args.init,)),
-        threading.Thread(target=comics.start, args=(args.init,))
+        threading.Thread(target=Photos.main, args=(args.init,)),
+        threading.Thread(target=Illus.main, args=(args.init,)),
+        threading.Thread(target=comics.main, args=(args.init,))
         ]
-    for thread in threads: thread.main()
+    for thread in threads: thread.start()
     for thread in threads: thread.join()
 
     get_starred()
@@ -43,7 +43,7 @@ elif args.arg == 1: # insert_records
         threading.Thread(target=insert_records.start),
         threading.Thread(target=imagefap.start),
         ]
-    for thread in threads: thread.main()
+    for thread in threads: thread.start()
     for thread in threads: thread.join()
 
     get_starred()
