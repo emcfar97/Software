@@ -71,7 +71,7 @@ def favorite(targets, saved=False):
             except: pass
 
         saved = True
-
+    
     return saved
      
 def upload_image(path, href, src, site):
@@ -197,7 +197,7 @@ def main(initial=True, headless=True, depth=0, upload=0):
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    main(MYSQL.execute(SELECT[4].format(not upload), fetch=1)[-depth:], upload)
+    page_handler(MYSQL.execute(SELECT[4].format(not upload), fetch=1)[-depth:], upload)
     DRIVER.close()
     
 if __name__ == '__main__':
