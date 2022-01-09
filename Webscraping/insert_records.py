@@ -1,8 +1,8 @@
 import argparse, cv2, re
-from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, extract_files
+from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, send2trash, extract_files
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
-PATH = USER / r'Downloads\Images\Generic'
+PATH = USER / r'Downloads\Images'
 MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg')
 
 def similarity(path):
@@ -25,7 +25,7 @@ def similarity(path):
     
 def main(extract=True, add='', path=PATH):
     
-    if extract: extract_files(path)
+    if extract: extract_files(path / 'Generic', path)
     
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(profile=None)
@@ -41,7 +41,7 @@ def main(extract=True, add='', path=PATH):
         progress.next()
         try:
             if (dest := get_name(file, 1)).exists() or similarity(file):
-                file.unlink()
+                send2trash.send2trash(str(file))
                 continue
             
             if not (hash_ := get_hash(file)): continue

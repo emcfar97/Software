@@ -1,4 +1,4 @@
-import os, time, json
+import os, time, json, send2trash
 from pathlib import Path
 import mysql.connector as sql
 from configparser import ConfigParser
@@ -259,47 +259,54 @@ def get_starred(headless=True):
     ADDRESS = '//button[@aria-label="Remove from Starred"]'
 
     DRIVER.get('https://www.dropbox.com/starred', wait=4)
+    time.sleep(5)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-
-    for star in html.findAll('span', {"data-testid": "files-filename"}):
+    starred = html.findAll('span', {"data-testid": "files-filename"})
+    
+    for star in starred:
 
         DRIVER.find(ADDRESS, click=True)
         MYSQL.execute(UPDATE, (star.text,), commit=1)
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
     DRIVER.close()
 
-def extract_files(path, dest=None, headless=True):
+def extract_files(source, dest=None, headless=True):
     
     import re, bs4
     from urllib.parse import urlparse
-    from Webscraping.utils import save_image
+    from Webscraping.utils import USER, save_image
         
     def get_url(driver, src):
 
         driver.get(src)
-        time.sleep(5)
+        time.sleep(4)
         html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-        url = html.find(src=re.compile('.+mp4\Z'))
+        url = html.find(content=re.compile('.+mp4'))
 
-        return url.get('src')
+        return url.get('content')
 
-    def extract_errors(path):
+    def extract_errors(path, dest):
         
         if path.exists():
             
-            for image in errors_txt.read_text().split('\n'):
+            for image in path.read_text().split('\n'):
             
                 image = image.strip()
-                name = path.parent / image.split('/')[-1].split('?')[0]
-                save_image(name, image)
-                
+                name = dest / image.split('/')[-1].split('?')[0]
+                if not name.exists(): save_image(name, image)
+            
+        else: path.touch()
+    
+    if isinstance(source, str): source = USER / source
+    if dest is None: dest = source
+    else: dest = USER / dest
+    
     driver = WEBDRIVER(headless=headless, profile=None)
-    errors_txt = path / 'Errors.txt'
-    extract_errors(errors_txt)
+    errors_txt = source / 'Errors.txt'
+    extract_errors(errors_txt, dest)
     errors = []
         
-    for file in path.glob('*json'):
+    for file in source.glob('*json'):
 
         for url in json_generator(file):
             
@@ -307,9 +314,11 @@ def extract_files(path, dest=None, headless=True):
             if re.match('https://i.imgur.com/.+gif', url['url']):
                 path.replace('gif', 'mp4')
             elif re.search('.+/watch.+', url['url']):
-                try: path = get_url(driver, url['url'])
-                except Exception as error:
-                    print(error)
+                try: 
+                    path = get_url(driver, url['url'])
+                    url['url'] = path
+                except:
+                    errors.append(url['url'])
                     continue
 
             name = dest / path.split('/')[-1]
@@ -321,18 +330,18 @@ def extract_files(path, dest=None, headless=True):
                     )
             except KeyError: continue
             
-            if name.suffix == '.gifv':
-                name = name.with_suffix('.mp4')
-                image = image.replace('gifv', 'mp4')
-            elif name.suffix == '.webp':
-                name = name.with_suffix('.jpg')
+            # if name.suffix == '.gifv':
+            #     name = name.with_suffix('.mp4')
+            #     image = image.replace('gifv', 'mp4')
+            # elif name.suffix == '.webp':
+            #     name = name.with_suffix('.jpg')
             
             if not save_image(name, image): errors.append(image)
             elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
                 try: name.rename(name.with_suffix('.mp4'))
                 except: name.unlink(missing_ok=1)
         
-        file.unlink()
+        send2trash.send2trash(str(file))
     
     if errors: errors_txt.write_text('\n'.join(errors))
 
