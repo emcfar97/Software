@@ -21,7 +21,7 @@ ImageHash==4.2.1
 imageio==2.11.1
 imageio-ffmpeg==0.4.5
 imutils==0.5.4
-lxml==4.6.4
+lxml==4.6.5
 mechanize==0.4.7
 moviepy==1.0.3
 mysql-connector-python==8.0.27
