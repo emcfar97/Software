@@ -59,7 +59,7 @@ GENERAL = {
     }
 CUSTOM = {
     'naked_clothes': 'naked_apron|naked_belt|naked_bandage|naked_cape|naked_cloak|naked_overalls|naked_ribbon|naked_robe|naked_shirt', 
-    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra OR pasties) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust OR o_ring_top) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR femboy',
+    'aphorisms': '((((nipples OR nipple_slip OR areolae OR areola_slip OR breasts_outside OR no_bra OR pasties) OR (no_panties OR pussy OR penis OR no_underwear))) AND ((bare_shoulders OR breast_cutout OR breastless_clothes OR breast_curtain OR capelet OR cape OR corset OR halter_neck OR open_jacket OR sash OR shawl OR shrug_<clothing> OR underboob OR underbust OR o_ring_top) OR (belt OR corset OR dress OR japanese_clothes OR loincloth OR pelvic_curtain OR sarong OR sash OR skirt OR showgirl_skirt OR side_slit OR tabard))) OR (condom_belt OR leggings OR thighhighs OR thigh_boots) OR naked_clothes OR amazon_position OR nipple_chain OR belly_chain OR femboy',
     'clothes_lift': 'clothes_lift|skirt_lift|shirt_lift|dress_lift|sweater_lift|bra_lift|bikini_lift|kimino_lift|apron_lift',
     'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)',
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
@@ -123,7 +123,7 @@ ARTIST = {
     'xin&obi月曜日れ34ab': ['obiwan', 0],
     'typo_(requiemdusk)': ['optionaltypo', 1],
     'owler': ['owler', 1],
-    'personalami': ['personal_ami', 1],
+    'personal_ami': ['personalami', 1],
     'otmm': ['redrop', 0],
     'otsumami': ['redrop', 0],
     'redrop_おつまみ': ['redrop', 0],
@@ -186,7 +186,10 @@ REPLACE = {
     'insertion': 'object_insertion',
     'kissing':'kiss',
     'legs_spread|legs_apart': 'spread_legs',
+    'female': '1girl',
+    'male': '1boy',
     'mature_female': 'mature',
+    'mostly_nude': 'functionally_nude',
     'muscle': 'muscular',
     'nipple_tweak':'nipple_tweaking',
     'no_pan': 'no_panties',
