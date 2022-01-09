@@ -40,8 +40,8 @@ elif args.arg == 1: # insert_records
     from Webscraping.Photos import imagefap
 
     threads = [
-        threading.Thread(target=insert_records.start),
-        threading.Thread(target=imagefap.start),
+        threading.Thread(target=insert_records.main),
+        threading.Thread(target=imagefap.main),
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
