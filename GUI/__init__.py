@@ -1,11 +1,24 @@
-import qimage2ndarray
+import qimage2ndarray, traceback
 from os import path
 from pathlib import Path
 from cv2 import VideoCapture
 import mysql.connector as sql
+from mysql.connector import pooling
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QObject, pyqtSignal
-from PyQt5.QtWidgets import QCompleter, QMenu, QAction, QActionGroup, QFileDialog
+from PyQt5.QtCore import QRunnable, Qt, QObject, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QCompleter, QLabel, QMenu, QAction, QActionGroup, QFileDialog, QMessageBox
+
+BATCH = 10000
+CREDENTIALS = r'GUI\credentials.ini'
+AUTOCOMPLETE = r'GUI\autocomplete.txt'
+
+ROOT = Path(Path().cwd().drive)
+PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
+parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
+BASE = f'SELECT full_path(imagedata.path, {parts}), artist, tags, rating, stars, type, site FROM imagedata'
+COMIC = 'SELECT parent FROM comic WHERE path=get_name(%s)'
+UPDATE = 'UPDATE imagedata SET {} WHERE path=get_name(%s)'
+DELETE = 'DELETE FROM imagedata WHERE path=get_name(%s)'
 
 class CONNECT(QObject):
     
@@ -14,57 +27,63 @@ class CONNECT(QObject):
     finishedUpdate = pyqtSignal(object)
     finishedDelete = pyqtSignal(object)
 
-    def __init__(self):
+    def __init__(self, parent):
 
-        super(CONNECT, self).__init__()
-        self.DATAB = sql.connect(option_files=CREDENTIALS)
-        self.CURSOR = self.DATAB.cursor(buffered=True)
-
-    def execute(self, statement, arguments=None, many=0, fetch=0, source=None):
+        super(CONNECT, self).__init__(parent)
+        self.DATAB = pooling.MySQLConnectionPool(
+            pool_name="mypool", pool_size=10,
+            pool_reset_session=True,
+            option_files=CREDENTIALS
+            )
+        self.current = ''
+        self.transactions = {
+            'SELECT': None,
+            'UPDATE': [],
+            'DELETE': []
+            }
+    
+    def execute(self, statement, arguments=None, many=0, fetch=0, source=None, emit=1):
+        
+        type = statement.split()[0]
+        match = type == self.current
+        
+        if match:
+            
+            if type == 'SELECT': return
+            
+            elif arguments in self.transactions[type]: return
+                
+        elif type != 'SELECT': self.transactions[type].append(arguments)
         
         try:
-            if many: self.CURSOR.executemany(statement, arguments)
-            else: self.CURSOR.execute(statement, arguments)
-
-            if statement.startswith('SELECT'):
-
-                if fetch: return self.CURSOR.fetchall()
-
-                self.finishedSelect.emit(self.CURSOR.fetchall())
-                
-                return
-                
-            elif statement.startswith('UPDATE'):
-
-                self.DATAB.commit()
-                self.finishedUpdate.emit(source)
-                
-            elif statement.startswith('DELETE'):
-
-                self.finishedDelete.emit(arguments)
-
-            self.finishedTransaction.emit(1)
+            self.current = type
+            conn = self.DATAB.get_connection()
+            cursor = conn.cursor()
+            
+            if many: cursor.executemany(statement, arguments)
+            else: cursor.execute(statement, arguments)
+            self.current = ''
 
         except sql.errors.ProgrammingError as error:
             
-            print('Programming', error, statement)
+            message = QMessageBox(
+                QMessageBox.warning, str(error.errno), str(error)
+                )
+            message.show()
             return
 
-        except sql.errors.DatabaseError as error:
+        # except sql.errors.DatabaseError as error:
 
-            print('Database', error, statement)
-            try: self.reconnect(1)
-            except Exception as error:
-                print('\tDatabase', error, statement)
+            # print('Database', error)
+            # if error.errno == 1205: return
+            # self.reconnect(1, 3)
             
-            return
+            # return
 
         except sql.errors.InterfaceError as error:
 
-            print('Interface', error, statement)
-            try: self.reconnect(1)
-            except Exception as error:
-                print('\tInterface', error, statement)
+            print('Interface', error)
+            # self.reconnect(1, 3)
 
             return
             
@@ -72,9 +91,47 @@ class CONNECT(QObject):
         
             print('Error', error)
             return
+        
+        finally:
+                
+            if   statement.startswith('SELECT'):
+                
+                self.transactions[type] = None
+                
+                if fetch: 
+                    fetch = cursor.fetchall()
+                    cursor.close()
+                    conn.close()
+                    return fetch
 
-        return
+                self.finishedSelect.emit(cursor.fetchall())
+                cursor.close()
+                conn.close()
+                return
+                
+            elif statement.startswith('UPDATE'):
+                
+                index = self.transactions[type].index(arguments)
+                del self.transactions[type][index]
 
+                self.finishedUpdate.emit(source)
+                
+                conn.commit()
+                cursor.close()
+                conn.close()
+                
+            elif statement.startswith('DELETE'):
+                
+                index = self.transactions[type].index(arguments)
+                del self.transactions[type][index]
+
+                self.finishedDelete.emit(arguments)
+                
+                self.cursor = cursor
+                self.conn = conn
+
+            if emit: self.finishedTransaction.emit(1)
+            
     def rollback(self): self.DATAB.rollback()
 
     def reconnect(self, attempts=5, time=6):
@@ -85,8 +142,114 @@ class CONNECT(QObject):
     
     def rowcount(self): return self.CURSOR.rowcount
 
-    def close(self): self.DATAB.close()
+    def close(self): return; self.DATAB.close()
+    
+class Worker(QRunnable):
+    '''
+    Worker thread
 
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try: result = self.fn(*self.args, **self.kwargs)
+        except: traceback.print_exc()
+
+class Timer(QLabel):
+    
+    def __init__(self, parent, toplevel):
+        
+        super(QLabel, self).__init__(parent)
+        
+        self.toplevel = toplevel
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.countdown)
+        self.setAlignment(Qt.AlignCenter)
+
+    def start(self, gallery,  time):
+        
+        parent = self.parent()
+        self.gallery = iter(gallery)
+        self.image = next(self.gallery)
+        parent.update(self.image)
+        
+        self.setGeometry(
+            int(parent.width() * .85), 
+            int(parent.height() * .85), 
+            75, 75
+            )
+        self.setStyleSheet('background: white; font: 20px')
+        
+        self.time, self.current = time, time
+        self.updateText()
+        self.timer.start(1000)
+
+    def pause(self):
+
+        if self.timer.isActive(): self.timer.stop()
+        else: self.timer.start(1000)
+
+    def updateText(self, delta=1):
+
+        self.current = (self.current - delta) % self.time
+        self.setText('{}:{:02}'.format(*divmod(self.current, 60)))
+        self.setStyleSheet(f'''
+            background: white; font: 20px;
+            color: {"red" if self.current <= 5 else "black"}
+            ''')
+           
+    def countdown(self):
+        
+        if self.current: self.updateText()
+        
+        else:
+
+            worker = Worker(
+                self.toplevel.mysql.execute, 
+                UPDATE.format(f'date_used=CURDATE()'),
+                [self.image.data(Qt.UserRole)[0]],
+                emit=0
+                )
+            self.toplevel.threadpool.start(worker)
+            self.updateText()
+        
+            try:
+                self.image = next(self.gallery)
+                self.parent().update(self.image)
+
+            except StopIteration:
+
+                self.timer.stop()
+                self.parent().update()
+                self.setText('End of session')
+                self.setStyleSheet(
+                    'background: black; color: white; font: 20px'
+                    )
+                self.setGeometry(
+                        int(self.parent().width() * .4),
+                        int(self.parent().height() * .1),
+                        125, 75
+                        )
 class Completer(QCompleter):
 
     def __init__(self, model, parent=None):
@@ -143,23 +306,6 @@ def get_frame(path):
     if image is None: return QPixmap()
     return qimage2ndarray.array2qimage(image).rgbSwapped()
 
-def remove_redundancies():
-
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()  
-    SELECT = 'SELECT path, artist, tags FROM imagedata WHERE NOT ISNULL(path)'
-    UPDATE = 'UPDATE imagedata SET artist=%s, tags=%s WHERE path=%s'
-
-    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
-
-        artist = f' {" ".join(set(artist.split()))} '.replace('-', '_')
-        tags = f' {" ".join(set(tags.split()))} '.replace('-', '_')
-        MYSQL.execute(UPDATE, (artist, tags, path))
-
-    MYSQL.commit()
-    MYSQL.close()
-
 def update_autocomplete():
 
     from pathlib import Path
@@ -182,6 +328,23 @@ def update_autocomplete():
     
     MYSQL.close()
 
+def remove_redundancies():
+
+    from Webscraping import CONNECT
+
+    MYSQL = CONNECT()  
+    SELECT = 'SELECT path, artist, tags FROM imagedata WHERE NOT ISNULL(path)'
+    UPDATE = 'UPDATE imagedata SET artist=%s, tags=%s WHERE path=%s'
+
+    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
+
+        artist = f' {" ".join(set(artist.split()))} '.replace('-', '_')
+        tags = f' {" ".join(set(tags.split()))} '.replace('-', '_')
+        MYSQL.execute(UPDATE, (artist, tags, path))
+
+    MYSQL.commit()
+    MYSQL.close()
+
 def copy_to(widget, images, sym=False):
 
         paths = [
@@ -192,7 +355,6 @@ def copy_to(widget, images, sym=False):
             
         folder = Path(QFileDialog.getExistingDirectory(
             widget, 'Open Directory', str(PATH.parent),
-            QFileDialog.ShowDirsOnly
             ))
 
         for path in paths:
@@ -200,16 +362,3 @@ def copy_to(widget, images, sym=False):
             name = folder / path.name
             if sym and not name.exists(): name.symlink_to(path)
             else: name.write_bytes(path.read_bytes())
-
-BATCH = 10000
-CREDENTIALS = r'GUI\credentials.ini'
-AUTOCOMPLETE = r'GUI\autocomplete.txt'
-
-ROOT = Path(Path().cwd().drive)
-PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
-parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
-BASE = f'SELECT full_path(imagedata.path, {parts}), artist, tags, rating, stars, type, site FROM imagedata'
-COMIC = 'SELECT parent FROM comic WHERE path=get_name(%s)'
-GESTURE = 'UPDATE imagedata SET date_used=CURDATE() WHERE path=get_name(%s)'
-MODIFY = 'UPDATE imagedata SET {} WHERE path=get_name(%s)'
-DELETE = 'DELETE FROM imagedata WHERE path=get_name(%s)'
