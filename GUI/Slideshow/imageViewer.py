@@ -8,10 +8,11 @@ class imageViewer(QLabel):
     
     def __init__(self, parent):
         
-        super(QWidget, self).__init__(parent)
+        super(QLabel, self).__init__(parent)
         self.setAlignment(Qt.AlignCenter)
         self.setMinimumSize(
-            self.parent().width() * .3, self.parent().height() * .3
+            int(self.parent().width() * .3), 
+            int(self.parent().height() * .3)
             )
     
     def update(self, pixmap):

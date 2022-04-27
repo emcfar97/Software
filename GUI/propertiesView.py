@@ -30,7 +30,7 @@ class Properties(QMainWindow):
         self.props.setLayout(self.prop_layout)
         self.stats.setLayout(self.stat_layout)
         
-        size = self.parent.width() * .25, self.parent.height() * .5
+        size = int(self.parent.width() * .25), int(self.parent.height() * .5)
         position = QCursor().pos()
         resolution = QDesktopWidget().screenGeometry(position)
         screen = resolution.width(), resolution.height()
