@@ -121,7 +121,7 @@ class Gallery(QTableView):
 
     def mouseDoubleClickEvent(self, event):
 
-        self.load_comic.emit(self.currentIndex())
+        self.load_comic.emit([self.currentIndex(), 0])
 
     def contextMenuEvent(self, event):
         
@@ -145,7 +145,7 @@ class Gallery(QTableView):
 
         elif action == 'Read comic':
             
-            self.load_comic.emit(self.currentIndex())
+            self.load_comic.emit([self.currentIndex(), 1])
 
         elif action == 'Find more by artist':
 
@@ -310,13 +310,13 @@ class Gallery(QTableView):
         
         elif key_press in (Qt.Key_Return, Qt.Key_Enter):
             
-            self.load_comic.emit(self.currentIndex())
+            self.load_comic.emit([self.currentIndex(), 2])
 
         else: self.parent().parent().keyPressEvent(event)
 
     def resizeEvent(self, event):
 
-        self.table.width = event.size().width() // COLUMNS
+        self.table.width = int(event.size().width() // COLUMNS)
 
 class Model(QAbstractTableModel):
 
@@ -324,7 +324,7 @@ class Model(QAbstractTableModel):
 
         QAbstractTableModel.__init__(self, parent)
         self.wrapper = textwrap.TextWrapper(width=70)
-        self.width = self.parent().parent().width() // COLUMNS
+        self.width = int(self.parent().parent().width() // COLUMNS)
         self.images = []
         
     def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
@@ -337,26 +337,26 @@ class Model(QAbstractTableModel):
 
     def columnCount(self, parent=None): return 5
 
-    def canFetchMore(self, index):
+    # def canFetchMore(self, index):
         
-        if index.isValid():
-            return False
+        # if index.isValid():
+        #     return False
 
-        mysql = self.parent().parent().parent().mysql
-        return mysql.rowcount() > len(self.images)
+        # mysql = self.parent().parent().parent().mysql
+        # return mysql.rowcount() > len(self.images)
 
-    def fetchMore(self, index, fetch=BATCH):
+    # def fetchMore(self, index, fetch=BATCH):
 
-        mysql = self.parent().parent().parent().mysql
-        start = len(self.images)
-        remainder = mysql.rowcount() - start
-        items_to_fetch = min(fetch, remainder)
+        # mysql = self.parent().parent().parent().mysql
+        # start = len(self.images)
+        # remainder = mysql.rowcount() - start
+        # items_to_fetch = min(fetch, remainder)
 
-        self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
+        # self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
 
-        self.images += mysql.CURSOR.fetchmany(fetch)
+        # self.images += mysql.CURSOR.fetchmany(fetch)
 
-        self.endInsertRows()
+        # self.endInsertRows()
     
     def data(self, index, role):
         
@@ -413,7 +413,8 @@ class Model(QAbstractTableModel):
                 )
             return '\n'.join(tags + rest)
 
-        if role == Qt.SizeHintRole: return QSize(self.width, self.width)
+        if role == Qt.SizeHintRole: 
+            return QSize(self.width, self.width)
         
         if role == Qt.UserRole: return data
         
