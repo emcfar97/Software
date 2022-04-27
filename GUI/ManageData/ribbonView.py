@@ -1,7 +1,7 @@
 import re
 from .. import BASE, AUTOCOMPLETE, Completer
-from PyQt5.QtCore import QTimer, Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QAbstractItemView, QPushButton, QCheckBox, QStyle, QMenu, QAction
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QAction
 
 ENUM = {
     'All': '',
@@ -24,7 +24,8 @@ class Ribbon(QWidget):
         self.create_widgets()
         
     def configure_gui(self):
-         
+        
+        self.query = ''
         self.undo = ['']
         self.redo = []
         
@@ -77,13 +78,14 @@ class Ribbon(QWidget):
         self.layout.addWidget(self.multi)
         self.tags.setFocus()
         
-    def update_query(self, event=None, op='[<>=!]=?'):
+    def update_query(self, event=None, limit=1000000, op='[<>=!]=?'):
         
         query = {}
         join = ''
         order = self.get_order()
         string = self.tags.text()
         if string: self.update_history(string)
+        if event: query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
         images = self.parent().parent()
         
         # query parsing
@@ -101,6 +103,10 @@ class Ribbon(QWidget):
 
                 order = f'ORDER BY {val}'
 
+            elif col == 'limit':
+                
+                limit = val
+                
             elif re.search('\*', val):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
@@ -113,7 +119,7 @@ class Ribbon(QWidget):
             elif re.search('\D', val):
 
                 token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
-
+            
             query[col] = query.get(col, []) + [token]
         
         # menu parsing
@@ -148,7 +154,7 @@ class Ribbon(QWidget):
             f'({" OR ".join(val)})' for val in query.values() if val
             )
         
-        self.query = f'{BASE} {join} WHERE {filter} {order}'
+        self.query = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
 
         return self.query
 
