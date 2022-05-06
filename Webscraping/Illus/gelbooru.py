@@ -1,6 +1,6 @@
 import argparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import IncrementalBar, save_image, get_hash, get_name, generate_tags, bs4, requests, re, ARTIST
+from ..utils import ARTIST, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re 
 
 SITE = 'gelbooru'
     
@@ -8,8 +8,8 @@ def initialize(url, query=0):
     
     def next_page(pages):
 
-        try: return pages[pages.index(' ') + 3].get('href')
-        except IndexError: return False
+        try: return pages.find(alt="next").get('href')
+        except AttributeError: return False
 
     if not query:
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
@@ -23,7 +23,7 @@ def initialize(url, query=0):
         if (target.get('href'),) not in query
         ]
         
-    next = next_page(html.find(id='paginator').contents)
+    next = next_page(html.find(id='paginator'))
     if hrefs and next: return hrefs + initialize(next, query)
     else: return hrefs
     
@@ -50,14 +50,17 @@ def page_handler(hrefs):
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
+        image = html.find(href=True, text='Original image').get('href')
+        
+        name = get_name(image.split('/')[-1], 0)
         type_ = 1 if 'photo_(medium)' in tags else 2
+        if len(tags.split()) < 10 and save_image(name, image):
+            tags += ' ' + get_tags(DRIVER, name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
         
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
-        image = html.find(href=True, text='Original image').get('href')
-        name = get_name(image.split('/')[-1], 0)
         hash_ = get_hash(image, 1)
         
         if MYSQL.execute(UPDATE[0], (
@@ -72,17 +75,17 @@ def page_handler(hrefs):
 def main(initial=True, headless=True):
     
     global MYSQL, DRIVER
-    MYSQL = CONNECT()
-    
+    MYSQL = CONNECT()    
+    DRIVER = WEBDRIVER(headless)
+        
     if initial:
 
-        DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
         hrefs = initialize(url)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
-        DRIVER.close()
-
+    
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    DRIVER.close()
 
 if __name__ == '__main__':
 
