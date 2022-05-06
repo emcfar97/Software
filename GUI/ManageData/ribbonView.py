@@ -3,7 +3,7 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtCore import QTimer, Qt, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QCompleter
 
-from ..utils import AUTOCOMPLETE, BASE
+from GUI.utils import AUTOCOMPLETE, BASE
 
 ENUM = {
     'All': '',
