@@ -8,7 +8,7 @@ import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.action_chains import ActionChains
 
 CREDENTIALS = ConfigParser(delimiters='=') 
-CREDENTIALS.read('credentials.ini')
+CREDENTIALS.read(r'Webscraping\credentials.ini')
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
 EXT = 'jpe?g|png|gif|webm|mp4'
