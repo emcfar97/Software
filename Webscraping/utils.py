@@ -5,8 +5,8 @@ from io import BytesIO
 from ffprobe import FFProbe
 from imagehash import dhash
 from progress.bar import IncrementalBar
-from PIL import Image, UnidentifiedImageError, ImageFile
-from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB
+from PIL import Image, GifImagePlugin, UnidentifiedImageError, ImageFile
+from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB, CAP_PROP_FRAME_COUNT, CAP_PROP_POS_FRAMES
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 PATH = USER / r'Dropbox\ん'
@@ -47,7 +47,7 @@ GENERAL = {
     'pussy': 'pussy|vagina|shaved_pussy', 
     'pussy_juice': 'pussy_juice|pussy_juices|pussy_juice_trail|pussy_juice_puddle|pussy_juice_stain|pussy_juice_drip_through_clothes', 
     'revealing_clothes': 'revealing_clothes|torn_clothes|micro_bikini|crop_top|pussy_peek|midriff|cleavage_cutout|wardrobe_malfunction|breast_slip|nipple_slip|areola_slip|no_panties|no_bra|pelvic_curtain|side_slit|breasts_outside|see-through|partially_visible_vulva|functionally_nude|breastless_clothes|bare_shoulders|one_breast_out',
-    'sex': '(sex OR aftersex OR vaginal OR anal OR oral OR fellatio OR cunnilingus OR blowjob OR handjob OR frottage OR tribadism OR group_sex OR hetero OR yaoi OR yuri OR clothed_sex OR paizuri) AND NOT solo', 
+    'sex': '(sex OR aftersex OR vaginal OR anal OR oral OR fellatio OR cunnilingus OR anilingus OR blowjob OR handjob OR frottage OR tribadism OR group_sex OR hetero OR yaoi OR yuri OR clothed_sex OR paizuri) AND NOT solo', 
     'sex_toy': 'sex_toys|vibrator|dildo|butt_plug|artificial_vagina',
     # 'solo': 'solo OR (1girl AND NOT (1boy OR 2boys OR 3boys OR multiple_boys)) OR (1boy AND NOT (1girl OR 2girls OR 3girls OR multiple_girls) OR NOT sex)', 
     'standing_sex': '(standing_on_one_leg OR (standing AND (leg_up OR leg_lift))) AND sex',
@@ -83,6 +83,7 @@ ARTIST = {
     'akchu': ['akchu', -1],
     'ringoya_(alp)': ['alp', 0],
     'aomori': ['aomori', 1],
+    'auntrbq': ['kate_kuray', -1],
     'ばん!': ['ban', -1],
     'bigdeadalive': ['bigdead93', 1],
     'bow': ['bow_(bhp)', 0],
@@ -115,6 +116,7 @@ ARTIST = {
     'ななひめ': ['nanahime', -1],
     '♣3': ['nanaya_(daaijianglin)', 0],
     '♣3@金曜日西り02a': ['nanaya_(daaijianglin)', 0],
+    'club3': ['nanaya_(daaijianglin)', 0],
     'thiccwithaq': ['nyantcha', 0],
     'にの子': ['ninoko', -1],
     'xin&obiwan': ['obiwan', 0],
@@ -123,9 +125,10 @@ ARTIST = {
     'xin&obi月曜日れ34ab': ['obiwan', 0],
     'typo_(requiemdusk)': ['optionaltypo', 1],
     'owler': ['owler', 1],
-    'personal_ami': ['personalami', 1],
+    'oryou':['oryo_(oryo04)', 0],
     'otmm': ['redrop', 0],
     'otsumami': ['redrop', 0],
+    'personal_ami': ['personalami', 1],
     'redrop_おつまみ': ['redrop', 0],
     'rtil': ['rtil', 1],
     'xtilxtil': ['rtil', 1],
@@ -140,6 +143,8 @@ ARTIST = {
     'sue': ['suertee34', -1],
     'arctic char': ['tabata_hisayuki', -1],
     'arcticchar': ['tabata_hisayuki', -1],
+    'takemura_sessyu': ['takemura_sesshu', 0],
+    'takemura_sesshuu': ['takemura_sesshu', 0],
     'てだいん': ['tedain', -1],
     'tetisuka': ['tetisuka', -1],
     'tetsu': ['tetsu_(kimuchi)', 0],
@@ -161,7 +166,7 @@ ARTIST = {
 REMOVE = {
     '3d', 'photorealistic', 'realistic', 'photo', 'blurry',
     'cum', 'cum_in_pussy', 'pov', 'solo',
-    'blurry', 'blurry_foreground', 'blurry_background',
+    'blurry', 'blurry_foreground', 'blurry_background', 'depth_of_field',
     'sex', 'after_sex', 'sex_from_behind', 'vaginal', 'anal',
     'doggystyle', 'missionary', 'cowgirl_position', 'cowgirl', 'boy_on_top'
     'mosaic_censoring', 'censored', 'uncensored',
@@ -175,8 +180,10 @@ REPLACE = {
     '[4-9]boys': 'multiple_boys',
     '[4-9]girls': 'multiple_girls',
     'animate.*_gif': 'animated',
+    'dripping_semen':'cumdrip',
     'anal_object_insertion':'anal object_insertion',
     'anal_masturbation|penile_masturbation|vaginal_masturbation': 'masturbation',
+    'nakadashi': 'cum cum_in_pussy',
     'mosaic_censoring': 'mosaic_censor',
     'bar_censoring': 'bar_censor',
     'blur_censoring': 'blur_censor',
@@ -198,6 +205,7 @@ REPLACE = {
     'pantsu': 'panties',
     'plugsuit': 'bodysuit',
     '\w*pointed_ears': 'pointed_ears',
+    'semen': 'cum',
     'shaking':'trembling',
     'squatting_cowgirl_position': 'squatting cowgirl_position',
     'standing_sex': 'standing sex',
@@ -280,6 +288,26 @@ def get_hash(image, src=False):
 
     return f'{dhash(image)}'
 
+def video_generator(path, step=1):
+    
+    temp_dir = tempfile.TemporaryDirectory()
+    vidcap = VideoCapture(str(path))
+    success, frame = vidcap.read()
+        
+    while success:
+            
+        if (vidcap.get(CAP_PROP_POS_FRAMES) % step) == 0:
+            
+            temp = ROOT.parent / temp_dir.name / f'{next(tempfile._get_candidate_names())}.jpg'
+            temp.write_bytes(imencode('.jpg', frame)[-1])
+            yield temp
+            
+        success, frame = vidcap.read()
+    
+    else:
+        temp_dir.cleanup()
+        vidcap.release()
+
 def get_tags(driver, path, filter=False):
 
     tags = set()
@@ -289,28 +317,28 @@ def get_tags(driver, path, filter=False):
     if video:
 
         tags.add('animated')
+        
         if path.suffix in ('.webm', '.mp4'):
             try:
                 for stream in FFProbe(str(path)).streams:
-                    if stream.codec_type == 'audio': 
+                    if stream.codec_type == 'audio':
                         tags.add('audio')
                         break
             except: pass
-        temp_dir = tempfile.TemporaryDirectory()
-        vidcap = VideoCapture(str(path))
-        success, frame = vidcap.read()
- 
-        while success:
-            
-            temp = ROOT.parent / temp_dir.name / f'{next(tempfile._get_candidate_names())}.jpg'
-            temp.write_bytes(imencode('.jpg', frame)[-1])
-            frames.append(temp)
-            success, frame = vidcap.read()
 
-        else:
-            step = 90 * log((len(frames) * .002) + 1) + 1
-            frames = frames[::round(step)]
-    
+            vidcap = VideoCapture(str(path))
+            frame_count = int(vidcap.get(CAP_PROP_FRAME_COUNT))
+            vidcap.release()
+        
+        elif path.suffix in ('.gif'):
+            
+            gifcap = GifImagePlugin.GifImageFile(str(path))
+            frame_count = gifcap.n_frames
+            gifcap.close()
+            
+        step = 90 * log((frame_count * .002) + 1) + 1
+        frames = video_generator(path, round(step))
+        
     else: frames.append(path)
     
     for frame in frames:
@@ -332,9 +360,7 @@ def get_tags(driver, path, filter=False):
                     driver.find('//button[@type="submit"]', click=True)
                 driver.refresh()
     
-    else:
-        if video: temp_dir.cleanup()
-        if filter: tags.difference_update(REMOVE)
+    if filter: tags.difference_update(REMOVE)
     
     return ' '.join(tags)
 
