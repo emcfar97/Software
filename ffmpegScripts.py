@@ -143,7 +143,9 @@ while True:
 
             if file.exists():
                 
-                while (latest := sorted(SOURCE.glob(f'{file.stem} Part [0-9]*'))).exist():
+                latest = sorted(SOURCE.glob(f'{file.stem} Part [0-9]*'))
+                
+                if latest:
                     
                     num = int(*findall(' (\d+)', latest[-1].stem))
                     new = sub(f' {num}+', f' {num+1:02}', latest[-1].name)
