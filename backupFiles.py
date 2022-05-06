@@ -55,7 +55,7 @@ def get_version(paths):
     modified = date.fromtimestamp(latest.stat().st_mtime)
     difference = date.today() - modified
 
-    if difference.days <= 15: return False
+    if difference.days < 15: return False
     stem = re.sub(' - \d+', f' - {version + 1:02}', latest.stem)
 
     return latest.with_stem(stem)
@@ -67,19 +67,19 @@ for drive in get_drives():
 
     for root, dirs, files in path_walk(drive):
 
-        if 'Software' in root.parts: continue
-        
         targets = {}
         head = SOURCE / Path(*root.parts[1:])
         
-        for path in root.iterdir():
+        for path in root.glob('* - [0-9][0-9].*'):
             
+            path = path.with_name(path.name.replace(' Backup', ''))
             dropbox = head / re.sub(r' - \d+', '', path.name)
+      
             if dropbox.suffix == '.scriv':
                 
                 dropbox = dropbox.parent.with_suffix(dropbox.suffix)
 
-            if re.search(r' - \d', path.stem) and last_modified(dropbox):
+            if last_modified(dropbox):
                 
                 targets[dropbox] = targets.get(dropbox, []) + [path]
 
