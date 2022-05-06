@@ -51,7 +51,7 @@ SOURCE = args.source
 DEST = args.destination
 EXT = 'mp4|flv|mkv|avi|wmv|mov|mpg|mpeg|divx|rm|ram|vob|3gp'
 
-def split_scenes(video):
+def main(video):
     
     if not video.exists():
         video = SOURCE / video.name
@@ -59,22 +59,27 @@ def split_scenes(video):
         folder = DEST / video.stem
         folder.mkdir(exist_ok=True)
         name = folder / video.name
-        
+    
+    # read file, get time, framerate and duration
     try:
         stream = FFProbe(str(video)).streams[0]
         start_time = get_time(stream.start_time)
         framerate = stream.framerate
         duration = get_time(stream.duration_seconds())
+        
     except:
         stream = VideoFileClip(str(video))
         start_time = get_time(stream.start)
         framerate = stream.fps
         duration = get_time(stream.duration)
     
+    # get scene timestamps
     scenes = find_scenes(video, framerate)
     if get_time(scenes[0][0]) != start_time:
         scenes.insert(0, (start_time, scenes[0][0]))
-
+    [print(scene) for scene in scenes]
+    
+    # get individual clips
     for num, (start, end) in enumerate(scenes, start=1):
         
         if num == 1: 
@@ -143,5 +148,7 @@ def trim(input_path, output_path, start, end):
         )
     output.run()
 
-if VIDEO.is_file(): split_scenes(VIDEO)
-else: [split_scenes(video) for video in VIDEO.glob(f'*{EXT}')]
+if __name__ == '__main__':
+    
+    if VIDEO.is_file(): main(VIDEO)
+    else: [main(video) for video in VIDEO.glob(f'*{EXT}')]
