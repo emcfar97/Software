@@ -12,6 +12,11 @@ parser.add_argument(
     '-i', '--init', type=bool,
     help='initialize', default=True
     )
+parser.add_argument(
+    '-f', '--fav', type=int,
+    help='Favorites argument (default 1)',
+    default=1
+    )
 
 args = parser.parse_args()
 
@@ -23,7 +28,7 @@ if args.arg == 0: # webscraping
     
     threads = [
         threading.Thread(target=Photos.main, args=(args.init,)),
-        threading.Thread(target=Illus.main, args=(args.init,)),
+        threading.Thread(target=Illus.main, args=(args.init, args.fav)),
         threading.Thread(target=comics.main, args=(args.init,))
         ]
     for thread in threads: thread.start()

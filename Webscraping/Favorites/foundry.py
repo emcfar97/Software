@@ -1,6 +1,6 @@
 import argparse
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, IncrementalBar, bs4, re
+from ..utils import PATH, IncrementalBar, bs4, re, save_image
 
 SITE = 'foundry'
 
@@ -30,7 +30,7 @@ def page_handler(hrefs):
 
     if not hrefs: return
     progress = IncrementalBar(SITE, max=MYSQL.rowcount)
-
+    
     for href, in hrefs:
         
         progress.next()
@@ -38,11 +38,16 @@ def page_handler(hrefs):
         artist = href.split('/')[3]
         try:
             image = DRIVER.find('//img[@class="center"]').get_attribute('src')
-            name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
-            name = PATH / 'Images' / SITE / name
+            error = 0
+            
         except: continue
-        
+            
+        name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
+        name = PATH / 'Images' / SITE / name
+
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
+        if error:
+            save_image(name, image)
     
     print()
 

@@ -1,5 +1,5 @@
 import argparse, spacy
-from .. import USER, WEBDRIVER, CONNECT, INSERT, json_generator
+from .. import USER, WEBDRIVER, CONNECT, INSERT, send2trash, json_generator
 from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 REMOVE = 'gif.|girl.|sex.|pic.|ass|cock|naked|nude|pornstar|porn|&|\d'
@@ -84,7 +84,7 @@ def main(headless=True):
                 error = error_
                 print(error, '\n'); continue
         
-        if not error: file.unlink()
+        if not error: send2trash.send2trash(str(file))
         print()
 
     DRIVER.close()

@@ -7,10 +7,10 @@ MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg
 
 def similarity(path):
 
-    if re.search(EXT, path.suffix, re.IGNORECASE): 
+    if re.search(EXT[:9], path.suffix, re.IGNORECASE): 
         match = MATCH[0]
         image = cv2.imread(str(path))
-    else: 
+    else:
         match = MATCH[1]
         image = cv2.VideoCapture(str(path)).read()[-1]
 
@@ -40,7 +40,7 @@ def main(extract=True, add='', path=PATH):
         
         progress.next()
         try:
-            if (dest := get_name(file, 1)).exists() or similarity(file):
+            if (dest := get_name(file, 1)).exists():# or similarity(file):
                 send2trash.send2trash(str(file))
                 continue
             
@@ -68,20 +68,22 @@ def main(extract=True, add='', path=PATH):
                 if file.replace(dest): MYSQL.commit()
                 else: MYSQL.rollback()
             
-        except Exception as error: print(error, '\n')
+        except Exception as error: print('\n', error, '\n')
     
     DRIVER.close()
     print('\nDone')
 
 if __name__ == '__main__':
 
+    from Webscraping import get_starred
+    
     parser = argparse.ArgumentParser(
         prog='insert records', 
         )
     parser.add_argument(
-        '-e', '--extract', type=bool,
-        help='Mode argument (default True)',
-        default=True
+        '-e', '--extract', type=int,
+        help='Mode argument (default 1)',
+        default=1
         )
     parser.add_argument(
         '-a', '--add', type=str,
@@ -97,3 +99,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     main(args.extract, args.add, args.path)
+    get_starred()

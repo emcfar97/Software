@@ -105,6 +105,7 @@ def main(initial=True, headless=True, mode=1):
     mode = MODE[mode]
 
     if initial:
+        
         url = DRIVER.login(SITE)
         hrefs = initialize(mode, url)
         MYSQL.execute(INSERT, hrefs, many=1, commit=1)

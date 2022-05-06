@@ -178,13 +178,14 @@ def main(initial=1, headless=True, mode=1):
         
     if mode:
         
-        DRIVER = WEBDRIVER(headless)
-
         if initial:
             
+            DRIVER = WEBDRIVER(headless)
             hrefs = initialize()
             MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
-
+            
+        else: DRIVER = WEBDRIVER(headless, None)
+        
         page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     
     else:    
@@ -198,6 +199,8 @@ def main(initial=1, headless=True, mode=1):
 
 if __name__ == '__main__':
 
+    from Webscraping import get_starred
+    
     parser = argparse.ArgumentParser(
         prog='comics', 
         )
@@ -220,3 +223,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args.init, args.head, args.mode)
+
+    get_starred()

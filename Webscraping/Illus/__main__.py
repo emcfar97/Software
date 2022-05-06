@@ -1,3 +1,4 @@
+from Webscraping import get_starred
 from Webscraping.Illus import main
 
 import argparse
@@ -23,3 +24,5 @@ parser.add_argument(
 args = parser.parse_args()
 
 main(args.init, args.fav, args.depth)
+
+get_starred()

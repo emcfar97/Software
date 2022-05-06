@@ -176,7 +176,7 @@ def edit(search, replace):
         
 def initialize():
     
-    data = sqlite3.connect(r'Webscraping\Pixivutil\db.sqlite')
+    data = sqlite3.connect(r'Webscraping\Pixivutil2\db.sqlite')
     MYSQL.execute(
         INSERT[2], data.execute(SELECT[5]).fetchall(), many=1, commit=1
         )

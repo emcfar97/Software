@@ -124,6 +124,7 @@ class WEBDRIVER:
             )
         options = webdriver.firefox.options.Options()
         options.headless = headless
+        
         self.driver = webdriver.Firefox(
             firefox_profile=profile, firefox_binary=binary, 
             options=options, service_log_path=None, 
@@ -261,12 +262,14 @@ def get_starred(headless=True):
     DRIVER.get('https://www.dropbox.com/starred', wait=4)
     time.sleep(5)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-    starred = html.findAll('span', {"data-testid": "files-filename"})
+    starred = html.findAll('a', {"data-testid": "files-filename"})
     
     for star in starred:
 
         DRIVER.find(ADDRESS, click=True)
         MYSQL.execute(UPDATE, (star.text,), commit=1)
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        starred = html.findAll('span', {"data-testid": "files-filename"})
 
     DRIVER.close()
 
@@ -297,16 +300,21 @@ def extract_files(source, dest=None, headless=True):
             
         else: path.touch()
     
-    if isinstance(source, str): source = USER / source
+    if isinstance(source, str): 
+        source = USER / source
+        iterator = source.glob('*json')
+    elif isinstance(source, list): iterator = source
+    elif isinstance(source, Path): iterator = source.glob('*json')
+    
     if dest is None: dest = source
     else: dest = USER / dest
-    
+        
     driver = WEBDRIVER(headless=headless, profile=None)
     errors_txt = source / 'Errors.txt'
     extract_errors(errors_txt, dest)
     errors = []
         
-    for file in source.glob('*json'):
+    for file in iterator:
 
         for url in json_generator(file):
             
@@ -329,13 +337,7 @@ def extract_files(source, dest=None, headless=True):
                     url['url']
                     )
             except KeyError: continue
-            
-            # if name.suffix == '.gifv':
-            #     name = name.with_suffix('.mp4')
-            #     image = image.replace('gifv', 'mp4')
-            # elif name.suffix == '.webp':
-            #     name = name.with_suffix('.jpg')
-            
+                        
             if not save_image(name, image): errors.append(image)
             elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
                 try: name.rename(name.with_suffix('.mp4'))

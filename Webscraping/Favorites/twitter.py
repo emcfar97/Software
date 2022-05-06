@@ -8,21 +8,22 @@ SITE = 'twitter'
 def initialize(url, retry=0):
 
     DRIVER.get(f'https://{SITE}.com/{url}/likes')
-    query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
+    time.sleep(5)
 
     while True:
-
+        
+        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        hrefs = [
-            (*href, SITE) for href in
-            {
-                (re.sub('/photo/\d+', '', href.get('href')),) for href in 
-                html.findAll(
-                    href=re.compile('/.+/status/.+')
-                    )
-                } - query
-            ]
-        MYSQL.execute(INSERT[1], hrefs, many=1)
+        try:
+            hrefs = [
+                (*href, SITE) for href in
+                {
+                    (re.sub('/photo/\d+', '', href.get('href')),) for href in 
+                    html.find('section').findAll(href=re.compile('/.+/status/.+'))
+                    } - query
+                ]
+            MYSQL.execute(INSERT[1], hrefs, many=1)
+        except AttributeError: continue
         
         if not hrefs:
             if retry >= 2: break
@@ -43,6 +44,14 @@ def page_handler(hrefs):
         progress.next()
         DRIVER.get(f'https://{SITE}.com{href}')
 
+        # time.sleep(5)
+        # html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        # target = html.find('article', {'data-testid': 'tweet'})
+        # images = target.findAll(
+        #     name=re.compile('img|video'), 
+        #     src=re.compile('(.+?format.+)|(.+.mp4)')
+        #     )
+        
         for _ in range(3):
             try:
                 time.sleep(3)
@@ -63,7 +72,7 @@ def page_handler(hrefs):
 
                 except (IndexError, AttributeError, TypeError): continue
         
-        if not images or images[0].name == 'video': continue
+        if not images: continue
         
         for image in images:
 
