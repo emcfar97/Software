@@ -1,7 +1,9 @@
 import re
-from .. import BASE, AUTOCOMPLETE, Completer
-from PyQt5.QtCore import QTimer, Qt, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QAction
+from PyQt6.QtGui import QAction
+from PyQt6.QtCore import QTimer, Qt, pyqtSignal
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QCompleter
+
+from ..utils import AUTOCOMPLETE, BASE
 
 ENUM = {
     'All': '',
@@ -45,19 +47,20 @@ class Ribbon(QWidget):
         for button, event, icon in zip(
             [self.back, self.forward, self.menu],
             [self.go_back, self.go_forward, self.menu.showMenu],
-            [QStyle.SP_ArrowBack, QStyle.SP_ArrowForward, QStyle.SP_ArrowDown]
+            ['SP_ArrowBack', 'SP_ArrowForward', 'SP_ArrowDown']
             ):
             
-            button.setIcon(self.style().standardIcon(icon))
             button.clicked.connect(event)
             button.setEnabled(False)
+            pixmap = getattr(QStyle.StandardPixmap, icon)
+            button.setIcon(self.style().standardIcon(pixmap))
             self.history.addWidget(button)
 
         # Search function
         self.tags = QLineEdit(self)
         self.tags.setPlaceholderText('Enter tags')
         self.tags.setCompleter(
-            Completer(open(AUTOCOMPLETE).read().split())
+            QCompleter(open(AUTOCOMPLETE).read().split())
             )
         self.tags.returnPressed.connect(self.parent().select_records)
                 
@@ -67,7 +70,8 @@ class Ribbon(QWidget):
         self.tags.textChanged.connect(lambda: self.timer.start(1000))
         
         self.refresh = QPushButton(self)
-        self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        pixmap = getattr(QStyle.StandardPixmap, 'SP_BrowserReload')
+        self.refresh.setIcon(self.style().standardIcon(pixmap))
         self.refresh.clicked.connect(self.parent().select_records)
                 
         self.multi = QCheckBox('Multi-selection', self)
@@ -76,7 +80,6 @@ class Ribbon(QWidget):
         self.layout.addWidget(self.tags)
         self.layout.addWidget(self.refresh)
         self.layout.addWidget(self.multi)
-        self.tags.setFocus()
         
     def update_query(self, event=None, limit=1000000, op='[<>=!]=?'):
         
@@ -86,7 +89,7 @@ class Ribbon(QWidget):
         string = self.tags.text()
         if string: self.update_history(string)
         if event: query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
-        images = self.parent().parent()
+        enums = self.parent().parent().gallery.enums
         
         # query parsing
         for token in re.findall(f'\w+{op}[\w\*\.]+', string):
@@ -106,7 +109,7 @@ class Ribbon(QWidget):
             elif col == 'limit':
                 
                 limit = val
-                
+
             elif re.search('\*', val):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
@@ -119,11 +122,11 @@ class Ribbon(QWidget):
             elif re.search('\D', val):
 
                 token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
-            
+
             query[col] = query.get(col, []) + [token]
         
         # menu parsing
-        for text, col in zip(['type', 'rating'], [images.type, images.rating]):
+        for text, col in zip(['type', 'rating'], [enums['type'], enums['rating']]):
 
             if (val:=ENUM[col.checkedAction().text()]) and text not in query:
                 query[text] = [val]
@@ -135,7 +138,7 @@ class Ribbon(QWidget):
         # tag parsing
         if string.strip():
     
-            string = re.sub('([-*]?\w+( OR [-*]?\w+)+)', r'(\1)', string)
+            string = re.sub('([-*]?\w+( OR [-*]?\w+)+\*)', r'(\1)', string)
             string = re.sub('NOT ', '-', string.strip())
             string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
             string = re.sub('(\+AND|OR) ', '', string)
@@ -146,6 +149,7 @@ class Ribbon(QWidget):
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
                 ]
         
+        # remove null paths
         if not any(query) or 'type' in query:
             
             query[''] = ['NOT ISNULL(imagedata.path)']
@@ -160,12 +164,14 @@ class Ribbon(QWidget):
 
     def get_order(self, ORDER={'Ascending':'ASC','Descending':'DESC'}):
         
-        images = self.parent().parent()
-        order = images.order[1].checkedAction().text()
-        column = images.order[0].checkedAction().text()
+        enums = self.parent().parent().gallery.enums
+        column = enums['order'][0].checkedAction().text()
         
         if column:
+            
             column = 'RAND()' if column == 'Random' else column
+            order = enums['order'][1].checkedAction().text()
+            
             return f'ORDER BY {column} {ORDER[order]}'
 
         return ''
@@ -219,20 +225,26 @@ class Ribbon(QWidget):
 
         action = event.text()
 
-        if action in self.undo:
+        match event.text():
+                
+            case self.undo:
 
-            while action != self.undo[-1]: self.go_back(update=False)
+                while action != self.undo[-1]: 
+                    
+                    self.go_back(update=False)
 
-        elif action in self.redo:
+            case self.redo:
 
-            while action in self.redo: self.go_forward(update=False)
-        
+                while action in self.redo: 
+                    
+                    self.go_forward(update=False)
+            
         self.update_history()
 
     def keyPressEvent(self, event):
     
-        key_press = event.key()
+        match event.key():
+            
+            case (Qt.Key.Key_Return|Qt.Key.Key_Enter): pass
 
-        if key_press in (Qt.Key_Return, Qt.Key_Enter): pass
-
-        else: self.parent().parent().keyPressEvent(event)
+            case _: self.parent().parent().keyPressEvent(event)

@@ -1,7 +1,8 @@
 from moviepy.editor import VideoFileClip
-from PyQt5.QtCore import QUrl
-from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from PyQt6.QtCore import QUrl
+from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+from PyQt6.QtMultimedia import QMediaPlayer, QImageCapture, QAudioOutput
 
 from GUI.slideshow.controls import Controls
 
@@ -9,17 +10,26 @@ class videoPlayer(QVideoWidget):
 
     def __init__(self, parent):
         
-        super(QVideoWidget, self).__init__(parent)
+        super(videoPlayer, self).__init__(parent)
+        self.capture = QImageCapture()
         self.player = QMediaPlayer(self)
-        self.player.setVolume(50) 
+        self.audioOutput = QAudioOutput()
+        self.player.setAudioOutput(self.audioOutput)
         self.player.setVideoOutput(self)
+        
+        self.player.setLoops(QMediaPlayer.Loops.Infinite)
         self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
-
+        self.player.positionChanged.connect(self.positionChanged)
+        
     def update(self, path):
         
-        if path: path = QUrl.fromLocalFile(path)
-        self.player.setMedia(QMediaContent(path))
+        if not path: return
+        
+        path = QUrl.fromLocalFile(path)
+        self.player.setSource(path)
         self.player.play()
+
+    def capture(self): pass
     
     def rotate(self, path, sign):
         
@@ -36,9 +46,12 @@ class videoPlayer(QVideoWidget):
 
     def pause(self):
 
-        status = self.player.state()
-        if status == QMediaPlayer.PlayingState: self.player.pause()
-        elif status == QMediaPlayer.PausedState: self.player.play()
+        match self.player.PlaybackState:
+            
+            case QMediaPlayer.PlaybackState.PlayingState: self.player.pause()
+            case QMediaPlayer.PlaybackState.PausedState: self.player.play()
+
+    def stop(self): self.player.stop()
 
     def position(self, delta):
 
@@ -46,26 +59,33 @@ class videoPlayer(QVideoWidget):
 
     def volume(self, delta):
         
-        if self.player.isAudioAvailable(): 
+        if self.player.hasAudio(): 
             
-            self.player.setVolume(self.player.volume() + delta)
+            self.audioOutput.setVolume(self.player.volume() + delta)
 
     def mute(self):
         
-        if self.player.isAudioAvailable(): 
+        if self.player.hasAudio(): 
     
             self.player.setMuted(not self.player.isMuted())
 
-    def stop(self): self.player.stop()
-
+    def positionChanged(self, event): pass
+        
     def mediaStatusChanged(self, status):
         
-        if status == QMediaPlayer.EndOfMedia: self.player.play()
-
-        elif status not in (2, 1):
-
-            self.parent().setCurrentIndex(1)
-    
-    def wheelEvent(self, event):
-        
-        self.volume(event.angleDelta().y() // 12)  
+        match status:
+            
+            case QMediaPlayer.MediaStatus.LoadedMedia:
+                
+                self.parent().setCurrentIndex(1)
+                print(self.player.duration())
+                
+            case QMediaPlayer.MediaStatus.InvalidMedia:
+                
+                message = QMessageBox()
+                message.setWindowTitle('Error')
+                message.setText('The entered credentials are incorrect')
+                
+            case _: print(status)
+            
+    def wheelEvent(self, event): self.volume(event.angleDelta().y() // 12)  

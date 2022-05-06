@@ -1,9 +1,7 @@
-from PyQt5.QtWidgets import QApplication
-
-from GUI.machinelearning import MachineLearning
+from PyQt6.QtWidgets import QApplication
 
 Qapp = QApplication([])
 
-app = MachineLearning()
+app = App()
 
-Qapp.exec_()
+Qapp.exec()

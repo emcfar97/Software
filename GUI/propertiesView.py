@@ -1,7 +1,8 @@
-from  . import AUTOCOMPLETE, Completer
-from PyQt5.QtGui import QCursor
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QCursor, QScreen
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox, QCompleter
+
+from GUI.utils import AUTOCOMPLETE
 
 class Properties(QMainWindow):
 
@@ -32,7 +33,8 @@ class Properties(QMainWindow):
         
         size = int(self.parent.width() * .25), int(self.parent.height() * .5)
         position = QCursor().pos()
-        resolution = QDesktopWidget().screenGeometry(position)
+
+        resolution = QScreen().Geometry(position)
         screen = resolution.width(), resolution.height()
         screen_position = position - resolution.topLeft()
         screen_position = [screen_position.x(), screen_position.y()]
@@ -60,8 +62,8 @@ class Properties(QMainWindow):
         self.site = LineEdit(self, True)
         
         self.path.setDisabled(True)
-        self.tags.setCompleter(Completer(tags.split()))
-        self.artist.setCompleter(Completer(artist.split()))
+        self.tags.setCompleter(QCompleter(tags.split()))
+        self.artist.setCompleter(QCompleter(artist.split()))
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration', 'Comic'])
@@ -77,7 +79,7 @@ class Properties(QMainWindow):
         self.prop_layout.addLayout(self.form)
 
         horizontal = QHBoxLayout()
-        horizontal.setAlignment(Qt.AlignRight)
+        horizontal.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.prop_layout.addLayout(horizontal)
         for text in ['OK', 'Cancel', 'Apply']:
             option = QPushButton(text)
@@ -127,11 +129,11 @@ class Properties(QMainWindow):
         
     def keyPressEvent(self, event):
         
-        key_press = event.key()
-
-        if key_press in (Qt.Key_Return, Qt.Key_Enter): self.output()
+        match event.key():
+            
+            case (Qt.Key.Key_Return|Qt.Key.Key_Enter): self.output()
         
-        if key_press == Qt.Key_Escape: self.close()
+            case Qt.Key.Key_Escape: self.close()
 
 class LineEdit(QLineEdit):
 

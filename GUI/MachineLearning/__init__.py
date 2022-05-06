@@ -1,12 +1,16 @@
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QStatusBar, QAction
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
+from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QStatusBar
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QIcon, QAction
 
 from GUI.machinelearning.designView import Design
 from GUI.machinelearning.datasetView import Dataset
 from GUI.machinelearning.trainView import Train
 
 class MachineLearning(QMainWindow):
+
+    populateGallery = pyqtSignal()
+    closedWindow = pyqtSignal(object)
+    key_pressed = pyqtSignal(object)
     
     def __init__(self, parent=None):
         
@@ -121,3 +125,9 @@ class MachineLearning(QMainWindow):
         key_press = event.key()
                 
         if key_press == Qt.Key_Escape: self.close()
+        
+        else: self.key_pressed.emit(event)
+            
+    def closeEvent(self, event):
+        
+        self.closedWindow.emit(self)
