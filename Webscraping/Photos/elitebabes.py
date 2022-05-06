@@ -1,6 +1,6 @@
 import argparse
 from .. import CONNECT, WEBDRIVER, INSERT, SELECT, DELETE
-from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+from ..utils import ARTIST, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
 SITE = 'elitebabes'
 
@@ -39,16 +39,21 @@ def page_handler(hrefs):
         page_source = requests.get(f'https://www.{SITE}.com/{href}')
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
         try:
-            artist = html.find(href=re.compile(
+            artists = [
+                artist.get('href').split('/')[-2].replace('-', '_') 
+                for artist in html.findAll(href=re.compile(
                 f'https://www.{SITE}.com/model/.+'
-                )).get('href')
-            artist = artist.split('/')[-2]
+                ))
+                ]
         except AttributeError:
-            artist = html.find(class_='unlinkedtag').text
+            try: artists = html.find(class_='unlinkedtag').text
+            except:continue
         
+        artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         images = html.find(
             class_=re.compile('list-(justified-container|gallery a css)')
             )
+        if images is None: continue
 
         for image in images.findAll('a'):
 
@@ -64,7 +69,7 @@ def page_handler(hrefs):
             hash_ = get_hash(name)
 
             if not MYSQL.execute(INSERT[3],
-                (name.name, artist.replace('-', '_'), tags, 
+                (name.name, ' '.join(artists), tags, 
                 rating, 1, hash_, src, SITE, href), 
                 ):
                 MYSQL.rollback()
