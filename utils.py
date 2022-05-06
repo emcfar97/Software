@@ -11,8 +11,9 @@ def run():
     exec(f'{function}({arguments})')
 
 def Normalize_Database():
+    ''''''
 
-    import re
+    import re, send2trash
     from pathlib import Path
     from Webscraping import CONNECT, USER, utils
     
@@ -55,7 +56,7 @@ def Normalize_Database():
         if re.match('.+ \(.+\)\..+', file.name):
             clean = re.sub(' \(.+\)', '', file.name)
             if file.with_name(clean).exists():
-                file.unlink()
+                send2trash.send2trash(str(file))
                 continue
 
         hash_ = utils.get_hash(file)
@@ -66,7 +67,7 @@ def Normalize_Database():
             try: 
                 if not file.exists(): file.rename(name)
                 else: file.replace(USER / RESERVE / file.name)
-            except FileExistsError: file.unlink()
+            except FileExistsError: send2trash.send2trash(str(file))
         else:
             try: file.replace(USER / RESERVE / file.name)
             except: continue
@@ -75,6 +76,7 @@ def Normalize_Database():
         except: print('0 files moved')
     
 def Copy_Files(files, dest, sym=False):
+    '''Copies list of files to a specified directory, either as a direct copy or a symlink'''
     
     from pathlib import Path
 
@@ -98,7 +100,7 @@ def Download_Nhentai():
     comic = USER / r'Dropbox\Software\comics.txt'
     
     for arg in comic.read_text().splitlines()[:-1]:
-
+        
         code, artist, range_ = ast.literal_eval(arg)
 
         comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
@@ -117,19 +119,21 @@ def Download_Nhentai():
             if name.exists(): continue
             save_image(name, src)
             
-def Resize_Images(source, pattern, size=[800, 1200]):
+def Resize_Images(source, pattern='*', size=[800, 1200]):
+    '''Reisizes all images from source matching the pattern to a given size'''
     
     from PIL import Image
     from pathlib import Path
+    from Webscraping.utils import USER
 
     source = Path(source)
-    dest = Path(r'C:\Users\Emc11\Downloads') / f'{source.parent.name} Downscaled'
+    dest = USER / 'Downloads' / f'{source.parent.name} Downscaled'
     dest.mkdir(exist_ok=True)
 
     for file in source.glob(pattern):
 
         image = Image.open(file)
-        if image.height > image.width:
+        if image.height >= image.width:
             image.thumbnail(size)
         else:
             image.thumbnail(size[::-1])
@@ -139,6 +143,7 @@ def Resize_Images(source, pattern, size=[800, 1200]):
     return dest
 
 def Prepare_Art_Files(project, parents=''):
+    ''''''
 
     import shutil, re
     from Webscraping.utils import USER
@@ -160,7 +165,7 @@ def Prepare_Art_Files(project, parents=''):
     psd = (head / project).with_suffix('.psd')
     
     shutil.copy(clip, files / clip.name)
-    shutil.move(psd, files / psd.name)
+    shutil.copy(psd, files / psd.name)
 
     # videos
     print('Videos')
@@ -171,7 +176,7 @@ def Prepare_Art_Files(project, parents=''):
     obs, = list((dropbox / 'Videos' / 'Captures').glob('*.mp4'))
     clip_time = (head / name / version / project).with_suffix('.mp4')
     
-    shutil.move(obs, videos / obs.name)
+    shutil.copy(obs, videos / obs.name)
     shutil.copy(clip_time, videos / clip_time.name)
     
     # illustrations
@@ -180,10 +185,10 @@ def Prepare_Art_Files(project, parents=''):
     illus = project_dir / 'Illustrations'
     illus.mkdir(exist_ok=True)
     
-    source_illus = head / name / version
-    shutil.copytree(source_illus, illus, dirs_exist_ok=True)
-    downscaled = Resize_Images(source_illus, '**/*.*')
-    shutil.move(str(downscaled), str(project_dir))
+    shutil.copytree(head / name / version, illus, dirs_exist_ok=True)
+    
+    downscaled = Resize_Images(illus, '**/*.*')
+    # shutil.move(downscaled, project_dir)
     
     # zips
     print('Zip')
@@ -194,6 +199,7 @@ def Prepare_Art_Files(project, parents=''):
         }
     for name, langs in names.items():
         for lang in langs:
+            if (downloads / lang + 'zip').exists(): continue
             folder = shutil.copytree(
                 str(name), str(downloads / lang), dirs_exist_ok=True
                 )
@@ -201,17 +207,24 @@ def Prepare_Art_Files(project, parents=''):
             shutil.rmtree(folder)
 
     # text
+    print('Text')
     project_struct = project_dir / 'Structure.txt'
     project_struct.touch()
     
     text = 'English\n'
-    text += f'Contents ({len(illus.iterdir())} files in total):'
+    text += f'Contents ({len(list(illus.iterdir()))} files in total):\n'
     
-    for dir in illus.glob('*'):
-        if dir.is_dir(): 
-            text += f'・{dir.name} ({len(dir.iterdir())} files)'
+    for dir in illus.glob('**/*.*'):
+        if dir.is_dir():
+            text += f'・{dir.stem} ({len(dir.iterdir())} files)'
+        else: text += f'\t{dir.stem}\n'.replace(f'{project} - ', '')
+    else: project_struct.write_text(text)
+            
+    psd.unlink()
+    obs.unlink()
 
 def Splice_Images(folder, foreground, pattern):
+    '''Combines all images matching the pattern in specified folder with a given foreground'''
 
     from pathlib import Path
     from PIL import Image
@@ -225,6 +238,102 @@ def Splice_Images(folder, foreground, pattern):
         background.paste(foreground, (0, 0), foreground)
         
         background.save(str(image))
+
+def Download_Xhamster():
+    ''''''
+    
+    import requests, bs4, re, time
+    from Webscraping import USER, WEBDRIVER
+    from Webscraping.utils import save_image, get_name
+
+    def return_quality(element):
+        
+        return element.contents[0].contents[1].text
+        
+    driver = WEBDRIVER(headless=0)
+    path = USER / r'Downloads\Images'
+    xhamster = USER / r'Dropbox\Software\xhamster.txt'
+    url = 'https://9xbuddy.org/process?url='
+    
+    for i in xhamster.read_text().split():
+        
+        driver.get(url + i)
+        content = requests.get(url + i).content
+        time.sleep(5)
+        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        target = html.find('div', class_=re.compile('mb-\d mt-\d text-center'))
+        option = max(target.contents[1:], key=lambda x: return_quality(x))
+        href = option.find(href=True).get('href')
+        name = path.parent / (href.split('=')[-1] + '.mp4')
+        if not name.exists(): requests.get(href)
+        
+    input('Finished?')
+
+def Download_Ehentai(url, wait=1, folder='Games'):
+    ''''''
+    
+    import requests, re, time
+    from Webscraping import USER, WEBDRIVER
+    
+    def download_image():
+        
+        src = driver.find('//*[@id="img"]').get_attribute('src')
+        name = comic / src.split('/')[-1]
+        if not name.exists():
+            name.write_bytes(requests.get(src).content)
+    
+    def is_page_end():
+        
+        element = driver.find('//body/div[1]/div[1]/div[1]/div', fetch=1)
+        current, total = element.text.split(' / ')
+        
+        return current == total
+    
+    path = USER / r'Downloads\Images' / folder
+    driver = WEBDRIVER(headless=0, profile=None)
+    
+    driver.get(url)
+    title = driver.find('//*[@id="gn"]').text
+    comic = path / title
+    comic.mkdir(exist_ok=True)
+    
+    while True:
+        
+        if re.match('.+/s/.+-\d', driver.current_url()):
+            
+            try: download_image()
+            except: continue
+            driver.find('//*[@id="next"]', click=True)
+            time.sleep(wait)
+            
+        if is_page_end(): break
+
+def Extract_Frames(source, fps=1, dest=None):
+    '''Extracts frames from a given source animation, with optional fps and inital number'''
+    
+    from pathlib import Path
+    from cv2 import VideoCapture, imencode, CAP_PROP_POS_FRAMES
+    
+    path = Path(source)
+    if dest is None:
+        from Webscraping import USER
+        
+        parent = USER / 'Pictures' / 'Screenshots' / path.stem
+        parent.mkdir(exist_ok=1)
+    
+    vidcap = VideoCapture(source)
+    success, frame = vidcap.read()
+
+    while success:
+        
+        if (vidcap.get(CAP_PROP_POS_FRAMES) % fps) == 0:
+            
+            temp = parent / f'{vidcap.get(CAP_PROP_POS_FRAMES):003}.jpg'
+            temp.write_bytes(imencode('.jpg', frame)[-1])
+        
+        success, frame = vidcap.read()
+        
+    else: vidcap.release()
 
 def pathwalk(top, topdown=False, followlinks=False):
     """
