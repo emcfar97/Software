@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QLabel
+from PyQt5.QtWidgets import QWidget, QLabel
     
 class FileExplorer(QLabel):
      

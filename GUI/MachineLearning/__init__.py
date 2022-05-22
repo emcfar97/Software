@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QStatusBar
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QIcon, QAction
+from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QStatusBar, QAction
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QIcon
 
 from GUI.machinelearning.designView import Design
 from GUI.machinelearning.datasetView import Dataset

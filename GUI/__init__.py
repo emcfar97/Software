@@ -1,135 +1,361 @@
-from dotenv import load_dotenv
-from PyQt6.QtGui import QScreen
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy
-from GUIold.__main__ import Qapp
+import qimage2ndarray, traceback
+from os import path
+from pathlib import Path
+from cv2 import VideoCapture
+import mysql.connector as sql
+from mysql.connector import pooling
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import QRunnable, Qt, QObject, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QCompleter, QLabel, QMenu, QAction, QActionGroup, QFileDialog, QMessageBox
 
-from GUIold.managedata import ManageData
-from GUIold.machinelearning import MachineLearning
-from GUIold.videosplitter import VideoSplitter
+BATCH = 10000
+CREDENTIALS = r'GUIold\credentials.ini'
+AUTOCOMPLETE = r'GUIold\autocomplete.txt'
 
-load_dotenv()
+ROOT = Path(Path().cwd().drive)
+PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
+parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
+BASE = f'SELECT full_path(imagedata.path, {parts}), artist, tags, rating, stars, type, site FROM imagedata'
+COMIC = 'SELECT parent FROM comic WHERE path=get_name(%s)'
+UPDATE = 'UPDATE imagedata SET {} WHERE path=get_name(%s)'
+DELETE = 'DELETE FROM imagedata WHERE path=get_name(%s)'
 
-class App(QMainWindow):
-
-    def __init__(self):
-        
-        super(App, self).__init__()
-        self.setWindowTitle('Custom GUI')
-        self.configure_gui()
-        self.create_widgets()
-        self.create_menu()
-        self.show()
-
-    def configure_gui(self):
-        
-        resolution = QScreen.geometry()
-        
-        self.setBaseSize(
-            int(resolution.width() * .35), 
-            int(resolution.height() * .48)
-            )
-        self.frame = QGroupBox()
-        self.layout = QVBoxLayout()
-        self.frame.setLayout(self.layout)
-        
-        self.layout.setAlignment(Qt.AlignHCenter)
-        self.setContentsMargins(10, 10, 10, 15)
-        # self.frame.setFixedHeight(height // 3)
-        self.setCentralWidget(self.frame)
-        
-    def create_widgets(self):
-        
-        self.windows = {}
-        options = {
-            'Manage Data': ManageData, 
-            'Gesture Draw': GestureDraw, 
-            'Machine Learning': MachineLearning,
-            'Video Splitter': VideoSplitter,
-            }
-            
-        for name, app in options.items():
-            
-            option = QPushButton(name, self)
-            option.setStyleSheet('''
-                QPushButton::focus:!hover {background: #b0caef};
-                text-align: left;
-                padding: 20px;
-                font: 12px;
-                ''')
-            option.clicked.connect(
-                lambda checked, x=name, y=app: self.select(x, y)
-                )
-            option.setSizePolicy(
-                QSizePolicy.Expanding, QSizePolicy.Expanding
-                )
-            
-            self.layout.addWidget(option)
+class CONNECT(QObject):
     
-    def create_menu(self): pass
+    finishedTransaction = pyqtSignal(object)
+    finishedSelect = pyqtSignal(object)
+    finishedUpdate = pyqtSignal(object)
+    finishedDelete = pyqtSignal(object)
 
-    def select(self, title, app):
+    def __init__(self, parent):
+
+        super(CONNECT, self).__init__(parent)
+        self.DATAB = pooling.MySQLConnectionPool(
+            pool_name="mypool", pool_size=10,
+            pool_reset_session=True,
+            option_files=CREDENTIALS
+            )
+        self.current = ''
+        self.transactions = {
+            'SELECT': None,
+            'UPDATE': [],
+            'DELETE': []
+            }
+    
+    def execute(self, statement, arguments=None, many=0, fetch=0, source=None, emit=1):
         
-        app = app(self)
-        app.closedWindow.connect(self.closed_window)
-        app.key_pressed.connect(self.keyPressEvent)
-        self.windows[title] = self.windows.get(title, []) + [app]
-        self.hide()
-
-    def closed_window(self, event):
-
-        self.windows[event.windowTitle()].remove(event)
-        if not any(self.windows.values()): self.show()
-
-    def keyPressEvent(self, event):
-
-        key_press = event.key()
-        modifiers = event.modifiers()
-        ctrl = modifiers == Qt.KeyboardModifier.ControlModifier
-
-        if ctrl:
-            
-            match key_press:
-                
-                case Qt.Key_1: self.select('Manage Data', ManageData)
-
-                case Qt.Key_2: self.select('Gesture Draw', GestureDraw)
-
-                case Qt.Key_3: self.select('Machine Learning', MachineLearning)
-                
-                case Qt.Key_4: self.select('Video Splitter', VideoSplitter)
-
-        match key_press:
-            
-            case (Qt.Key_Return, Qt.Key_Enter):
-            
-                if not self.isHidden(): self.focusWidget().click()
-
-            case Qt.Key_Escape: self.close()
-
-    def closeEvent(self, event): QApplication.quit()
-
-class GestureDraw(QMainWindow):
-
-    populateGallery = pyqtSignal()
-    closedWindow = pyqtSignal(object)
-    key_pressed = pyqtSignal(object)
-
-    def __init__(self):
+        type = statement.split()[0]
+        match = type == self.current
         
-        super(App, self).__init__()
-        self.setWindowTitle('Custom GUI')
-        self.configure_gui()
-        self.create_widgets()
-        self.create_menu()
-        self.show()
+        if match:
+            
+            if type == 'SELECT': return
+            
+            elif arguments in self.transactions[type]: return
+                
+        elif type != 'SELECT': self.transactions[type].append(arguments)
+        
+        try:
+            self.current = type
+            conn = self.DATAB.get_connection()
+            cursor = conn.cursor()
+            
+            if many: cursor.executemany(statement, arguments)
+            else: cursor.execute(statement, arguments)
+            self.current = ''
 
-    def configure_gui(self): pass
+        except sql.errors.ProgrammingError as error:
+            
+            QMessageBox.warning(CONNECT.parent(), str(error.errno), str(error))
+            return
 
-    def create_widgets(self): pass
+        # except sql.errors.DatabaseError as error:
 
-    def create_menu(self): pass
+            # print('Database', error)
+            # if error.errno == 1205: return
+            # self.reconnect(1, 3)
+            
+            # return
 
-    def keyPressEvent(self, event): pass
+        except sql.errors.InterfaceError as error:
 
-    def closeEvent(self, event): pass
+            print('Interface', error)
+            # self.reconnect(1, 3)
+
+            return
+            
+        except Exception as error:
+        
+            print('Error', error)
+            return
+        
+        finally:
+                
+            if   statement.startswith('SELECT'):
+                
+                self.transactions[type] = None
+                
+                if fetch: 
+                    fetch = cursor.fetchall()
+                    cursor.close()
+                    conn.close()
+                    return fetch
+
+                self.finishedSelect.emit(cursor.fetchall())
+                cursor.close()
+                conn.close()
+                return
+                
+            elif statement.startswith('UPDATE'):
+                
+                index = self.transactions[type].index(arguments)
+                del self.transactions[type][index]
+
+                self.finishedUpdate.emit(source)
+                
+                conn.commit()
+                cursor.close()
+                conn.close()
+                
+            elif statement.startswith('DELETE'):
+                
+                index = self.transactions[type].index(arguments)
+                del self.transactions[type][index]
+
+                self.finishedDelete.emit(arguments)
+                
+                self.cursor = cursor
+                self.conn = conn
+
+            if emit: self.finishedTransaction.emit(1)
+            
+    def rollback(self): self.DATAB.rollback()
+
+    def reconnect(self, attempts=5, time=6):
+
+        self.DATAB.reconnect(attempts, time)
+
+    def commit(self): self.DATAB.commit()
+    
+    def rowcount(self): return self.CURSOR.rowcount
+
+    def close(self): return; self.DATAB.close()
+    
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try: result = self.fn(*self.args, **self.kwargs)
+        except: traceback.print_exc()
+
+class Timer(QLabel):
+    
+    def __init__(self, parent, toplevel):
+        
+        super(QLabel, self).__init__(parent)
+        
+        self.toplevel = toplevel
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.countdown)
+        self.setAlignment(Qt.AlignCenter)
+
+    def start(self, gallery,  time):
+        
+        parent = self.parent()
+        self.gallery = iter(gallery)
+        self.image = next(self.gallery)
+        parent.update(self.image)
+        
+        self.setGeometry(
+            int(parent.width() * .85), 
+            int(parent.height() * .85), 
+            75, 75
+            )
+        self.setStyleSheet('background: white; font: 20px')
+        
+        self.time, self.current = time, time
+        self.updateText()
+        self.timer.start(1000)
+
+    def pause(self):
+
+        if self.timer.isActive(): self.timer.stop()
+        else: self.timer.start(1000)
+
+    def updateText(self, delta=1):
+
+        self.current = (self.current - delta) % self.time
+        self.setText('{}:{:02}'.format(*divmod(self.current, 60)))
+        self.setStyleSheet(f'''
+            background: white; font: 20px;
+            color: {"red" if self.current <= 5 else "black"}
+            ''')
+           
+    def countdown(self):
+        
+        if self.current: self.updateText()
+        
+        else:
+
+            worker = Worker(
+                self.toplevel.mysql.execute, 
+                UPDATE.format(f'date_used=CURDATE()'),
+                [self.image.data(Qt.UserRole)[0]],
+                emit=0
+                )
+            self.toplevel.threadpool.start(worker)
+            self.updateText()
+        
+            try:
+                self.image = next(self.gallery)
+                self.parent().update(self.image)
+
+            except StopIteration:
+
+                self.timer.stop()
+                self.parent().update()
+                self.setText('End of session')
+                self.setStyleSheet(
+                    'background: black; color: white; font: 20px'
+                    )
+                self.setGeometry(
+                        int(self.parent().width() * .4),
+                        int(self.parent().height() * .1),
+                        125, 75
+                        )
+class Completer(QCompleter):
+
+    def __init__(self, model, parent=None):
+
+        super(Completer, self).__init__(model, parent)
+
+        self.setCaseSensitivity(Qt.CaseInsensitive)
+        self.setCompletionMode(QCompleter.PopupCompletion)
+        self.setWrapAround(False)
+
+    # # Add texts instead of replace
+    # def pathFromIndex(self, index):
+
+    #     path = QCompleter.pathFromIndex(self, index)
+
+    #     lst = str(self.widget().text()).split(',')
+
+    #     if len(lst) > 1:
+    #         path = '%s, %s' % (','.join(lst[:-1]), path)
+
+    #     return path
+
+    # # Add operator to separate between texts
+    # def splitPath(self, path):
+
+    #     path = str(path.split(',')[-1]).lstrip(' ')
+        
+    #     return [path]
+        
+def create_submenu(parent, name, items, check=None, get_menu=False):
+        
+    if name is None: menu = parent
+    else: menu = QMenu(name, parent)
+    action_group = QActionGroup(menu)
+
+    for num, item in enumerate(items):
+        
+        action = QAction(item, menu, checkable=True)
+        if num == check: action.setChecked(True)
+        action_group.triggered.connect(parent.parent().parent().populate)
+        action_group.addAction(action)
+        menu.addAction(action)
+
+    else:
+        if name is not None: parent.addMenu(menu)
+        action_group.setExclusive(True)
+    
+    if get_menu: return action_group, menu
+    return action_group
+
+def get_frame(path):
+
+    image = VideoCapture(path).read()[-1]
+    if image is None: return QPixmap()
+    return qimage2ndarray.array2qimage(image).rgbSwapped()
+
+def update_autocomplete():
+
+    from pathlib import Path
+    from Webscraping import CONNECT
+
+    MYSQL = CONNECT()
+    
+    artist, tags = MYSQL.execute(
+        '''SELECT 
+        GROUP_CONCAT(DISTINCT artist ORDER BY artist SEPARATOR ""), 
+        GROUP_CONCAT(DISTINCT tags ORDER BY tags SEPARATOR "") 
+        FROM imagedata''',
+        fetch=1)[0]
+    text = (
+        ' '.join(sorted(set(artist.split()))), 
+        ' '.join(sorted(set(tags.split())))
+        )
+    text = ('\n'.join(text)).encode('ascii', 'ignore')
+    Path(r'GUIold\autocomplete.txt').write_text(text.decode())
+    
+    MYSQL.close()
+
+def remove_redundancies():
+
+    from Webscraping import CONNECT
+
+    MYSQL = CONNECT()  
+    SELECT = 'SELECT path, artist, tags FROM imagedata WHERE NOT ISNULL(path)'
+    UPDATE = 'UPDATE imagedata SET artist=%s, tags=%s WHERE path=%s'
+
+    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
+
+        artist = f' {" ".join(set(artist.split()))} '.replace('-', '_')
+        tags = f' {" ".join(set(tags.split()))} '.replace('-', '_')
+        MYSQL.execute(UPDATE, (artist, tags, path))
+
+    MYSQL.commit()
+    MYSQL.close()
+
+def copy_to(widget, images, sym=False):
+
+        paths = [
+            Path(index.data(Qt.UserRole)[0])
+            for index in images
+            if index.data(300) is not None
+            ]
+            
+        folder = Path(QFileDialog.getExistingDirectory(
+            widget, 'Open Directory', str(PATH.parent),
+            ))
+
+        for path in paths:
+
+            name = folder / path.name
+            if sym and not name.exists(): name.symlink_to(path)
+            else: name.write_bytes(path.read_bytes())

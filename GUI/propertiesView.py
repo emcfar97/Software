@@ -1,8 +1,7 @@
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QCursor, QScreen
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox, QCompleter
-
-from GUI.utils import AUTOCOMPLETE
+from  . import AUTOCOMPLETE, Completer
+from PyQt5.QtGui import QCursor
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 
 class Properties(QMainWindow):
 
@@ -32,21 +31,18 @@ class Properties(QMainWindow):
         self.stats.setLayout(self.stat_layout)
         
         size = int(self.parent.width() * .25), int(self.parent.height() * .5)
-        position = QCursor().pos()
-
-        resolution = QScreen().Geometry(position)
+        position = self.mapToGlobal(QCursor().pos())
+        resolution = QDesktopWidget().screenGeometry(position)
         screen = resolution.width(), resolution.height()
-        screen_position = position - resolution.topLeft()
-        screen_position = [screen_position.x(), screen_position.y()]
-        position = [position.x(), position.y()]
+        positions = [position.x(), position.y()]
 
-        for num, (i, j, k, l) in enumerate(
-            zip(size, position, screen_position, screen)
+        for num, (i, j, k) in enumerate(
+            zip(size, position, screen)
             ):
-            if (displacement := l - (i + j)) < 0: 
-                position[num] += displacement
-
-        self.setGeometry(*position, *size)  
+            if (displacement := k - (i + j)) < 0: 
+                positions[num] += displacement
+        print(position, positions)
+        self.setGeometry(position.x(), position.y(), *size)  
         
     def create_widgets(self):
         
@@ -62,8 +58,8 @@ class Properties(QMainWindow):
         self.site = LineEdit(self, True)
         
         self.path.setDisabled(True)
-        self.tags.setCompleter(QCompleter(tags.split()))
-        self.artist.setCompleter(QCompleter(artist.split()))
+        self.tags.setCompleter(Completer(tags.split()))
+        self.artist.setCompleter(Completer(artist.split()))
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration', 'Comic'])
@@ -79,7 +75,7 @@ class Properties(QMainWindow):
         self.prop_layout.addLayout(self.form)
 
         horizontal = QHBoxLayout()
-        horizontal.setAlignment(Qt.AlignmentFlag.AlignRight)
+        horizontal.setAlignment(Qt.AlignRight)
         self.prop_layout.addLayout(horizontal)
         for text in ['OK', 'Cancel', 'Apply']:
             option = QPushButton(text)
@@ -129,11 +125,11 @@ class Properties(QMainWindow):
         
     def keyPressEvent(self, event):
         
-        match event.key():
-            
-            case (Qt.Key.Key_Return|Qt.Key.Key_Enter): self.output()
+        key_press = event.key()
+
+        if key_press in (Qt.Key_Return, Qt.Key_Enter): self.output()
         
-            case Qt.Key.Key_Escape: self.close()
+        if key_press == Qt.Key_Escape: self.close()
 
 class LineEdit(QLineEdit):
 

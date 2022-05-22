@@ -10,7 +10,7 @@ __pycache__
 ffmpeg-20190824-1cfba7f-win64-static
 GUI/test*.*
 GUI/managedata/autocomplete.txt
-GUIold*
+GUInew*
 MachineLearning/Datasets/*
 MachineLearning/*/Checkpoints
 MachineLearning/*/Models
