@@ -1,5 +1,5 @@
 # GUI
-This is a suite of files for a graphical user interface that navigates and selects from a gallery of images for the purposes of illustration reference and practice. Originally implemented in Tkinter and SQLite, the project is now coded in PyQt6 and MySQL.\
+This is a suite of files for a graphical user interface that navigates and selects from a gallery of images for the purposes of illustration reference and practice. Originally implemented in Tkinter and SQLite, the project is now coded in PyQt5 and MySQL.\
 Consists of six applications:
 ### Machine Learning
 Experimental. App for GUI-ifying the machine learning process, a la PerceptiLabs.
