@@ -30,19 +30,26 @@ class Properties(QMainWindow):
         self.props.setLayout(self.prop_layout)
         self.stats.setLayout(self.stat_layout)
         
-        size = int(self.parent.width() * .25), int(self.parent.height() * .5)
-        position = self.mapToGlobal(QCursor().pos())
-        resolution = QDesktopWidget().screenGeometry(position)
-        screen = resolution.width(), resolution.height()
-        positions = [position.x(), position.y()]
+        size = [
+            int(self.parent.width() * .25), 
+            int(self.parent.height() * .5)
+            ]
+        position = [
+            self.mapToGlobal(QCursor().pos()).x(), 
+            self.mapToGlobal(QCursor().pos()).y()
+            ]
+        resolution = QDesktopWidget().screenGeometry(
+            self.mapToGlobal(QCursor().pos())
+            )
+        screen = [
+            resolution.bottomRight().x(), 
+            resolution.bottomRight().y()
+            ]
 
-        for num, (i, j, k) in enumerate(
-            zip(size, position, screen)
-            ):
+        for num, (i, j, k) in enumerate(zip(size, position, screen)):
             if (displacement := k - (i + j)) < 0: 
-                positions[num] += displacement
-        print(position, positions)
-        self.setGeometry(position.x(), position.y(), *size)  
+                position[num] += displacement
+        self.setGeometry(*position, *size)  
         
     def create_widgets(self):
         
