@@ -1,13 +1,21 @@
 from PyQt5.QtWidgets import QApplication, QInputDialog, QMainWindow, QVBoxLayout,  QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAbstractItemView
 from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal, pyqtSlot
 
-from GUI import CONNECT, AUTOCOMPLETE, Completer, Worker, Timer, update_autocomplete, remove_redundancies, copy_to
+from GUI import CONNECT, AUTOCOMPLETE, Completer, Worker, Timer, update_autocomplete, remove_redundancies, copy_to, create_submenu_
 from GUI.managedata import ManageData
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
 from GUI.managedata.ribbonView import Ribbon
 from GUI.machinelearning import MachineLearning
 from GUI.videosplitter import VideoSplitter
+
+GESTURE = {
+    '30 seconds': '30', 
+    '1 minute': '60', 
+    '2 minutes': '120', 
+    '5 minutes': '300', 
+    'Custom Time': None
+    }
 
 class App(QMainWindow):
     
@@ -176,17 +184,20 @@ class GestureDraw(QMainWindow):
         
         # File
         file = self.menubar.addMenu('File')
-        file.addAction('Update Autocomplete')
-        file.addAction('Remove Redundancies')
         file.addAction('Copy Images to')
-        file.addAction('Gesture Draw')
+        self.gesture_menu = create_submenu_(
+            self, 'Gesture Draw', GESTURE.keys(), check=False
+            )[0]
+        file.addMenu(self.gesture_menu)
         file.addSeparator()
-        file.addAction('Exit')
+        file.addAction('Exit', self.close, shortcut='CTRL+W')
         
         # database
         database = self.menubar.addMenu('Database')
         database.addAction('Reconnect')
         database.addAction('Get current statement')
+        database.addAction('Update Autocomplete')
+        database.addAction('Remove Redundancies')
         
         # View
         view = self.menubar.addMenu('View')
@@ -224,7 +235,7 @@ class GestureDraw(QMainWindow):
                 'You are either missing images or a time',
                 QMessageBox.Ok
                 )
-
+            
     def update_statusbar(self):
         
         total = self.gallery.total()
@@ -277,32 +288,26 @@ class GestureDraw(QMainWindow):
         action = event.text()
         
         # Files
-        if action == 'Update Autocomplete':
-
-            worker = Worker(update_autocomplete)
-            self.threadpool.start(worker)
-
-            self.ribbon.tags.setCompleter(
-                Completer(open(AUTOCOMPLETE).read().split())
-                )
-
-        elif action == 'Remove Redundancies':
-            
-            worker = Worker(remove_redundancies)
-            self.threadpool.start(worker)
-            
-        elif action == 'Copy Images to':
+        if action == 'Copy Images to':
             
             copy_to(self, self.gallery.selectedIndexes())
             
-        elif action == 'Gesture Draw':
+        elif action in GESTURE.keys():
             
-            time, ok = QInputDialog.getText(self, "Gesture Draw", "Enter time:")
-		
-            if ok:
+            
+            if action == 'Custom Time':
+                
+                time, ok = QInputDialog.getText(self, "Dialog", "Enter time:")
+            
+                if ok:
+                    
+                    gallery = self.gallery.selectedIndexes()
+                    self.start_session(gallery, time)
+                    
+            else:
                 
                 gallery = self.gallery.selectedIndexes()
-                self.start_session(gallery, time)
+                self.start_session(gallery, GESTURE[action])
 
         elif action == 'Exit': self.close()
         
@@ -315,15 +320,29 @@ class GestureDraw(QMainWindow):
         elif action == 'Current Statement':
             
             QMessageBox.information(self, 'Current Statement', self.ribbon.query)
+            
+        elif action == 'Update Autocomplete':
+
+            worker = Worker(update_autocomplete)
+            self.threadpool.start(worker)
+
+            self.ribbon.tags.setCompleter(
+                Completer(open(AUTOCOMPLETE).read().split())
+                )
+
+        elif action == 'Remove Redundancies':
+            
+            worker = Worker(remove_redundancies)
+            self.threadpool.start(worker)
 
     def keyPressEvent(self, event):
         
         key_press = event.key()
 
-        if key_press in (Qt.Key_Return, Qt.Key_Enter): self.start_session()
+        if key_press == Qt.Key_Space: self.timer.pause()
 
-        elif key_press == Qt.Key_Space: self.timer.pause()
-
+        elif key_press in (Qt.Key_Left, Qt.Key_Right): pass
+        
         elif key_press == Qt.Key_Escape:
 
             if self.stack.currentIndex():
@@ -340,6 +359,10 @@ class GestureDraw(QMainWindow):
         
         else: self.key_pressed.emit(event)
 
+    def mousePressEvent(self, event):
+        
+        if event.button() == Qt.MouseButton.LeftButton: self.timer.pause()
+    
     def closeEvent(self, event):
                     
         self.threadpool.clear()
