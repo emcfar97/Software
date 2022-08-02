@@ -25,6 +25,7 @@ def similarity(path):
     
 def main(extract=True, add='', path=PATH):
     
+    if isinstance(path, str): path = USER / path
     if extract: extract_files(path / 'Generic', path)
     
     MYSQL = CONNECT()
