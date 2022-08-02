@@ -92,10 +92,11 @@ def Copy_Files(files, dest, sym=False):
 def Download_Nhentai():
     '''Code, artist, range'''
     
-    import requests, bs4, re, ast
-    from Webscraping import USER
+    import requests, bs4, re, ast, time
+    from Webscraping import USER, WEBDRIVER
     from Webscraping.utils import save_image
 
+    driver = WEBDRIVER()
     path = USER / r'Downloads\Images\Comics'
     comic = USER / r'Dropbox\Software\comics.txt'
     
@@ -105,19 +106,21 @@ def Download_Nhentai():
 
         comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
         comic.mkdir(exist_ok=True)
-        
-        page_source = requests.get(f'https://nhentai.net/g/{code}')
-        html = bs4.BeautifulSoup(page_source.content, 'lxml')
-        pages = html.findAll('a', class_='gallerythumb')
 
+        driver.get(f'https://nhentai.net/g/{code}')
+        html = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
+        pages = html.findAll('a', class_='gallerythumb')
+        
         for page in pages[range_[0] - 1:range_[1]]:
 
-            page = requests.get(f'https://nhentai.net{page.get("href")}')
-            image = bs4.BeautifulSoup(page.content, 'lxml')
+            page = driver.get(f'https://nhentai.net{page.get("href")}')
+            image = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
             src = image.find(src=re.compile('.+galleries.+')).get('src')       
             name = comic / src.split('/')[-1]
             if name.exists(): continue
             save_image(name, src)
+            
+    driver.close()
             
 def Resize_Images(source, pattern='*', size=[800, 1200]):
     '''Reisizes all images from source matching the pattern to a given size'''
@@ -145,19 +148,17 @@ def Resize_Images(source, pattern='*', size=[800, 1200]):
 def Prepare_Art_Files(project, parents=''):
     ''''''
 
-    import shutil, re
+    import shutil, ffprobe, time
     from Webscraping.utils import USER
 
     dropbox = USER / 'Dropbox'
     downloads = USER / 'Downloads'
     project_dir = downloads / project
     project_dir.mkdir(exist_ok=True)
-    name, _ = re.split(' \d+\Z', project)
-    _, version = re.split('^\D+', project)
 
     # files
     print('Files')
-    head = dropbox / 'Pictures' / 'Projects' / parents / name
+    head = dropbox / 'Pictures' / 'Projects' / parents
     files = project_dir / 'Files'
     files.mkdir(exist_ok=True)
     
@@ -174,10 +175,10 @@ def Prepare_Art_Files(project, parents=''):
     videos.mkdir(exist_ok=True)
     
     obs, = list((dropbox / 'Videos' / 'Captures').glob('*.mp4'))
-    clip_time = (head / name / version / project).with_suffix('.mp4')
+    clip_time = (head / project / project).with_suffix('.mp4')
     
-    shutil.copy(obs, videos / obs.name)
     shutil.copy(clip_time, videos / clip_time.name)
+    shutil.copy(obs, videos / obs.name)
     
     # illustrations
     print('Illustrations')
@@ -185,10 +186,14 @@ def Prepare_Art_Files(project, parents=''):
     illus = project_dir / 'Illustrations'
     illus.mkdir(exist_ok=True)
     
-    shutil.copytree(head / name / version, illus, dirs_exist_ok=True)
+    try:
+        shutil.copytree(head / project, illus, dirs_exist_ok=True)
+    except FileNotFoundError:
+        for file in head.glob(f'{project}*'):
+            shutil.copy(file, illus)
     
     downscaled = Resize_Images(illus, '**/*.*')
-    # shutil.move(downscaled, project_dir)
+    shutil.move(downscaled, project_dir)
     
     # zips
     print('Zip')
@@ -199,7 +204,7 @@ def Prepare_Art_Files(project, parents=''):
         }
     for name, langs in names.items():
         for lang in langs:
-            if (downloads / lang + 'zip').exists(): continue
+            if (downloads / (lang + 'zip')).exists(): continue
             folder = shutil.copytree(
                 str(name), str(downloads / lang), dirs_exist_ok=True
                 )
@@ -210,20 +215,41 @@ def Prepare_Art_Files(project, parents=''):
     print('Text')
     project_struct = project_dir / 'Structure.txt'
     project_struct.touch()
+
+    clip = round(float(ffprobe.FFProbe(clip_time).video[0].duration) / 60)
+    obs_time = round(float(ffprobe.FFProbe(obs).video[0].duration) / 60)
     
-    text = 'English\n'
-    text += f'Contents ({len(list(illus.iterdir()))} files in total):\n'
+    text = ''
+    langs = [
+        [
+            f'Contents ({len(list(illus.iterdir()))} files in total):\n',
+            f'Contents (4 files in total):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} min)\n\t・OBS ({obs_time} min)\n\n'],
+        [
+            f'【内容】（合計{len(list(illus.iterdir()))}ファイル):\n',
+            f'【内容】（合計4ファイル):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} 分)\n\t・OBS ({obs_time} 分)']
+        ]    
     
-    for dir in illus.glob('**/*.*'):
-        if dir.is_dir():
-            text += f'・{dir.stem} ({len(dir.iterdir())} files)'
-        else: text += f'\t{dir.stem}\n'.replace(f'{project} - ', '')
-    else: project_struct.write_text(text)
+    for lang in langs: 
+        
+        # Add illustration segment
+        text += lang[0]
+        
+        # Add illustration files
+        for dir in illus.glob('**/*.*'):
+            if dir.is_dir():
+                text += f'・{dir.stem} ({len(dir.iterdir())} files)'
+            else: text += f'\t{dir.stem}\n'.replace(f'{project} - ', '')
+        text += '\n'
             
+        # Add files/timelapse segment
+        text += lang[1]
+    
+    else: project_struct.write_text(text, encoding="utf-8")
+             
     psd.unlink()
     obs.unlink()
 
-def Splice_Images(folder, foreground, pattern):
+def Splice_Images(folder, foreground, pattern='*'):
     '''Combines all images matching the pattern in specified folder with a given foreground'''
 
     from pathlib import Path
@@ -269,19 +295,12 @@ def Download_Xhamster():
         
     input('Finished?')
 
-def Download_Ehentai(url, wait=1, folder='Games'):
+def Download_Ehentai(url, wait=2, folder='Games'):
     ''''''
     
     import requests, re, time
     from Webscraping import USER, WEBDRIVER
-    
-    def download_image():
         
-        src = driver.find('//*[@id="img"]').get_attribute('src')
-        name = comic / src.split('/')[-1]
-        if not name.exists():
-            name.write_bytes(requests.get(src).content)
-    
     def is_page_end():
         
         element = driver.find('//body/div[1]/div[1]/div[1]/div', fetch=1)
@@ -290,50 +309,89 @@ def Download_Ehentai(url, wait=1, folder='Games'):
         return current == total
     
     path = USER / r'Downloads\Images' / folder
-    driver = WEBDRIVER(headless=0, profile=None)
+    driver = WEBDRIVER()#profile=None)
     
     driver.get(url)
     title = driver.find('//*[@id="gn"]').text
-    comic = path / title
-    comic.mkdir(exist_ok=True)
+    dest = path / re.sub('[/\:*?"<>]', ' ', title)
+    dest.mkdir(exist_ok=True)
+    driver.find('/html/body/div[6]/div[1]/div/a', click=True)
     
-    while True:
-        
-        if re.match('.+/s/.+-\d', driver.current_url()):
-            
-            try: download_image()
-            except: continue
-            driver.find('//*[@id="next"]', click=True)
-            time.sleep(wait)
-            
-        if is_page_end(): break
+    while not is_page_end():
 
-def Extract_Frames(source, fps=1, dest=None):
-    '''Extracts frames from a given source animation, with optional fps and inital number'''
+        src = driver.find('//*[@id="img"]').get_attribute('src')
+        name = dest / src.split('/')[-1]
+        if not name.exists():
+            name.write_bytes(requests.get(src).content)
+            
+        driver.find('//*[@id="next"]', click=True)
+        time.sleep(wait)
     
+    driver.close()
+    
+def Extract_Frames(source, fps=1, dest=None):
+    '''Extracts frames from a given source animation, with optional fps and destination'''
+    
+    from Webscraping import USER
     from pathlib import Path
     from cv2 import VideoCapture, imencode, CAP_PROP_POS_FRAMES
     
     path = Path(source)
-    if dest is None:
-        from Webscraping import USER
-        
-        parent = USER / 'Pictures' / 'Screenshots' / path.stem
-        parent.mkdir(exist_ok=1)
     
+    if dest is None:
+        dest = USER / 'Pictures' / 'Screenshots' / path.stem
+        
+    if dest.exists():
+        for file in dest.iterdir():
+            file.unlink()
+        
+    dest.mkdir(exist_ok=1)
+        
     vidcap = VideoCapture(source)
     success, frame = vidcap.read()
 
     while success:
         
-        if (vidcap.get(CAP_PROP_POS_FRAMES) % fps) == 0:
+        if ((vidcap.get(CAP_PROP_POS_FRAMES) % fps) - 1) in (-1, 0):
             
-            temp = parent / f'{vidcap.get(CAP_PROP_POS_FRAMES):003}.jpg'
-            temp.write_bytes(imencode('.jpg', frame)[-1])
+            image = dest / f'{vidcap.get(CAP_PROP_POS_FRAMES)}.jpg'
+            image.write_bytes(imencode('.jpg', frame)[-1])
         
         success, frame = vidcap.read()
         
     else: vidcap.release()
+
+def Remove_Emoji():
+
+    import sqlite3, re, emoji
+    from Webscraping import USER
+
+    path = USER / r'Dropbox\ん\Images\pixiv'
+    emoji = emoji.unicode_emoji
+    files = 0
+    
+    select1 = 'SELECT save_name FROM pixiv_master_image WHERE save_name=?'
+    select2 = 'SELECT save_name FROM pixiv_manga_image WHERE save_name=?'
+    update1 = 'UPDATE pixiv_master_image SET save_name=? WHERE save_name=?'
+    update2 = 'UPDATE pixiv_manga_image SET save_name=? WHERE save_name=?'
+    datab = sqlite3.connect(r'Webscraping\PixivUtil2\db.sqlite')
+    cursor = datab.cursor()
+
+    for file in path.glob(f'*[{emoji}]*'):
+
+        new = re.sub('|'.join(emoji), '', file.name)
+        new = file.with_name(new)
+        path = cursor.execute(select1, (str(file),)).fetchone()
+        cursor.execute(update1, (str(new), str(file)))
+        path = cursor.execute(select2, (str(file),)).fetchone()
+        cursor.execute(update2, (str(new), str(file)))
+        
+        try: file.rename(new)
+        except FileExistsError: file.unlink()
+        datab.commit()
+        files += 1
+        
+    print(f'{files} files cleaned')
 
 def pathwalk(top, topdown=False, followlinks=False):
     """
