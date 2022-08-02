@@ -3,8 +3,10 @@ from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, EXT
 from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, bs4, requests, re
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.keys import Keys
+from pathlib import Path
 
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
+RATINGS = {3:'explicit', 2:'questionable', 1:'safe'}
 
 def page_handler(paths, upload, sankaku=0, gelbooru=0):
     
@@ -41,10 +43,10 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
         except: continue
         
         if targets and not upload: saved = favorite(targets)
-        elif upload and (sankaku < limit or gelbooru < 50):
-            saved, type_ = upload(path, href, src, site)  
-            if type_: sankaku += 1
-            else: gelbooru += 1
+        elif upload  and (sankaku < limit or gelbooru < 50):
+            saved, type_ = upload_image(path, href, src, site)  
+            if type_ == 1: sankaku += 1
+            elif type_ == 0: gelbooru += 1
         else: saved = False
                         
         if saved and src is None: os.remove(path)
@@ -73,73 +75,68 @@ def favorite(targets, saved=False):
         saved = True
     
     return saved
-     
+
 def upload_image(path, href, src, site):
 
-    if site == 'foundry':
-        artist = href.split('/')[3]
-        href = f'http://www.hentai-foundry.com{href}'
-    elif site == 'furaffinity':
-        artist = src.split('/')[4]
-        href = f'https://www.furaffinity.net{href}'
-    elif site == 'twitter':
-        artist = href.split('/')[0]
-        href = f'https://twitter.com{href}'
-    elif site == 'pixiv':
-        artist = path.split('\\')[-1].split('-')[0].strip()
-        if href is None:
-            href = f"/artworks/{path.split('-')[-1].strip().split('_')[0]}"
-        href = f'https://www.pixiv.net{href}'
-
-    try: artist, site = ARTIST[artist]
-    except KeyError: return False, 0
-
+    match site:
+        case 'foundry':
+            
+            artist = href.split('/')[3]
+            href = f'http://www.hentai-foundry.com{href}'
+            
+        case 'furaffinity':
+            
+            artist = src.split('/')[4]
+            href = f'https://www.furaffinity.net{href}'
+            src = 'http:' + src
+            
+        case 'pixiv':
+            
+            artist = path.split('\\')[-1].split('-')[0].strip()
+            if href is None:
+                href = f"/artworks/{path.split('-')[-1].strip().split('_')[0]}"
+            href = f'https://www.pixiv.net{href}'
+            
+        case 'twitter':
+            
+            artist = href.split('/')[0]
+            href = f'https://twitter.com{href}'
+    
+    artist = ARTIST.get(artist, 0)
+    if not (artist and src): return False, None
+        
     with tempfile.NamedTemporaryFile(suffix='.jpg') as temp:
         
         temp.write(bytes(requests.get(src).content)) 
-        tags = get_tags(DRIVER, temp.name)
+        tags = get_tags(DRIVER, Path(temp.name))
         if 'comic' in tags: return False, 0
 
         general, rating = generate_tags(
             general=tags, rating=True, exif=False
             )
-        tags = ' '.join(set(tags + general + [artist]))
-        if len(tags) < 10: tags.append('tagme')
+        tags = ' '.join(set(tags.split() + general.split() + [artist])).replace('qwd', '')
+        if tags.count(' ') < 10: tags + 'tagme'
         
-        if site:
+        if site: # sankaku
             DRIVER.get('https://chan.sankakucomplex.com/post/upload')
-            DRIVER.find_element_by_xpath('//*[@id="post_file"]').send_keys(temp.name)
-            DRIVER.find_element_by_xpath('//*[@id="post_source"]').send_keys(href)
-            DRIVER.find_element_by_xpath('//*[@id="post_tags"]').send_keys(tags)
-            DRIVER.find_element_by_tag_name('html').send_keys(Keys.ESCAPE)
-            DRIVER.find_element_by_xpath(f'//*[@id="post_rating_{rating}"]').click()
-            
-            # try:
-            DRIVER.find_element_by_xpath('//body/div[4]/div[1]/form/div/table/tfoot/tr/td[2]/input').click()
-            # except ElementClickInterceptedException:
-            #     DRIVER.find_element_by_xpath('//*[@id="post_tags"]').click()
-            #     DRIVER.find_element_by_tag_name('html').send_keys(Keys.ESCAPE)
-            #     DRIVER.find_element_by_xpath('//body/div[4]/div[1]/form/div/table/tfoot/tr/td[2]/input').click()
-            DRIVER.find_element_by_xpath('//*[@title="Add to favorites"]').click()
+            DRIVER.find('//*[@id="post_file"]', keys=temp.name)
+            DRIVER.find('//*[@id="post_source"]', keys=href)
+            DRIVER.find('//*[@id="post_tags"]', keys=tags)
+            DRIVER.find(f'//*[@id="post_rating_{RATINGS[rating]}"]', click=True)
+            DRIVER.find('//*[@value="Upload"]', click=True)
+            DRIVER.find('//*[@title="Add to favorites"]', click=True)
         
-        else: 
+        else: # gelbooru
             DRIVER.get('https://gelbooru.com/index.php?page=post&s=add')
-            DRIVER.find_element_by_xpath('//body/div[4]/div[4]/form/input[1]').send_keys(temp.name)
-            DRIVER.find_element_by_xpath('//body/div[4]/div[4]/form/input[2]').send_keys(href)
-            DRIVER.find_element_by_xpath('//*[@id="tags"]').send_keys(tags)
-            
-            if rating == 'erotic':
-                DRIVER.find_element_by_xpath('//body/div[4]/div[4]/form/input[4]').click()
-            elif rating == 'questionable':
-                DRIVER.find_element_by_xpath('//body/div[4]/div[4]/form/input[5]').click()
-            else:
-                DRIVER.find_element_by_xpath('//body/div[4]/div[4]/form/input[6]').click()
-
-            DRIVER.find_element_by_xpath('//body/div[4]/div[4]/form/input[7]').click()
-            DRIVER.find_element_by_partial_link_text('Add to favorites').click()
+            DRIVER.find('//*[@id="fileUpload"]', keys=temp.name)
+            DRIVER.find('//*[@name="source"]', keys=href)
+            DRIVER.find('//*[@id="tags"]', keys=tags)
+            DRIVER.find(f'//*[@id="post_rating_{RATINGS[rating][:1]}"]', click=True)
+            DRIVER.find('//*[@value="Upload"]', click=True)
+            DRIVER.find('Add to favorites', click=True)
         
         return True, site
-
+  
 def get_limit():
     
     DRIVER.get('https://chan.sankakucomplex.com/user/upload_limit')
