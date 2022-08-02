@@ -13,35 +13,40 @@ def run():
 def Check_Predictions(sql=False, num=25):
     
     from Webscraping import USER
-    from MachineLearning import Model
+    from MachineLearning.Tensorflow import Model
 
     path = USER / r'Dropbox\ん'
-    model = Model('deepdanbooru.hdf5')
+    model = Model('Medium-07.hdf5')
 
     if sql:
         
-        from Webscraping import CONNECT
-        
-        MYSQL = CONNECT()
-        SELECT = f'''
-            SELECT full_path(path), tags, type 
-            FROM imagedata 
-            WHERE SUBSTR(path, 32, 5) IN ('.jpg', '.png')
-            ORDER BY RAND() LIMIT {num}
-            '''
-
-        for image, tags, type_ in MYSQL.execute(SELECT, fetch=1):
-
-            tags = sorted(tags.split())
-            image = path / image
-            prediction = model.predict(image)
-            similar = set(tags) & set(prediction)
-
-    else:
-
         import cv2
         import numpy as np
         from PIL import Image
+        from os import path
+        from Webscraping import CONNECT, ROOT
+        
+        PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
+        parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
+
+        MYSQL = CONNECT()
+        SELECT = f'''
+            SELECT full_path(path, {parts}) FROM imagedata 
+            WHERE SUBSTR(path, 33, 5) IN ('.jpg', '.png')
+            ORDER BY RAND() LIMIT {num}
+            '''
+
+        for image, in MYSQL.execute(SELECT, fetch=1):
+
+            prediction = model.predict(image)
+
+            image_ = np.array(Image.open(image))
+            image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
+            cv2.imshow(prediction, image_)
+            cv2.waitKey(0)
+
+    else:
+
         from random import choices
 
         glob = list(path.glob('[0-9a-f]/[0-9a-f]/*jpg'))
@@ -50,7 +55,7 @@ def Check_Predictions(sql=False, num=25):
 
             prediction = model.predict(image)
 
-            image_ = np.aray(Image.open(image))
+            image_ = np.array(Image.open(image))
             image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
             cv2.imshow(prediction, image_)
             cv2.waitKey(0)
@@ -115,15 +120,13 @@ def Find_symmetric_videos():
             
         if symmetric(frames): print(path)
 
-def Download_Youtube():
+def Download_Youtube(username='', password=''):
 
-    import os
+    import os, send2trash
     from Webscraping import USER, json_generator
     from Webscraping.utils import IncrementalBar
 
     path = USER / r'Downloads\Images\Youtube'
-    username = ""
-    password = ""
 
     for file in path.iterdir():
         
@@ -131,15 +134,15 @@ def Download_Youtube():
         urls = list(json_generator(file))
         progress = IncrementalBar('Files', max=len(urls))
 
-        for url in urls[::-1]:
+        for url in urls:
 
             progress.next()
 
             try:
                 
                 url = url['url']
-                name = "youtube-dl -u "+username+" -p "+password+' -o "'+str(path)+'" '+url
-                cmd = f'youtube-dl -u "{username}" -p "{password}" -o "{path}"  {url}"'
+                name = path.parent / f"{url.split('=')[-1]}.mp4"
+                cmd = f'youtube-dl -u "{username}" -p "{password}" -o "{name}"  "{url}"'
                 os.system(cmd)
 
             except Exception as error_:
@@ -148,7 +151,7 @@ def Download_Youtube():
                 error = error_
                 continue
         
-        if not error: file.unlink()
+        # if not error: send2trash.send2trash(file)
 
 def Remove_Intro(path):
 
@@ -219,32 +222,85 @@ def Remove_Intro(path):
     path.write_bytes(temp.read_bytes())
     SQL.commit()
 
-def Clean_Database():
-
-    import sqlite3, re
+def Extract_Sprite(path):
+    
+    import cv2, skimage
+    import numpy as np
     from pathlib import Path
 
-    select1 = 'SELECT save_name FROM pixiv_master_image WHERE save_name=?'
-    select2 = 'SELECT save_name FROM pixiv_manga_image WHERE save_name=?'
-    update1 = 'UPDATE pixiv_master_image SET save_name=? WHERE save_name=?'
-    update2 = 'UPDATE pixiv_manga_image SET save_name=? WHERE save_name=?'
-    datab = sqlite3.connect(r'Webscraping\Pixivutil\db.sqlite')
-    cursor = datab.cursor()
-    path = Path(r'C:\Users\Emc11\Dropbox\ん\Images\pixiv')
-    emoji = '🔞🍚🍀🍣🐄🌊'
+    path = Path(path)
 
-    for file in path.glob(f'*[{emoji}]*'):
-
-        new = re.sub('|'.join(emoji), '', file.name)
-        new = file.with_name(new)
-        path = cursor.execute(select1, (str(file),)).fetchone()
-        cursor.execute(update1, (str(new), str(file)))
-        path = cursor.execute(select2, (str(file),)).fetchone()
-        cursor.execute(update2, (str(new), str(file)))
+    for file in path.glob('**/*.jpg'):
         
-        file.rename(new)
-        datab.commit()
+        image = cv2.imread(str(file))
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
+        alpha = cv2.threshold(gray, 16, 255, cv2.THRESH_BINARY)[1]
 
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        # temp = cv2.morphologyEx(alpha, cv2.MORPH_CLOSE, kernel)
+        # temp = cv2.erode(temp, (3,3), iterations=3)
+        # temp = temp[:, :, 3]
+        # temp[np.all(temp[:, :, 0:3] == (0, 0, 0), 2)] = 0
+        # alpha
+        
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        alpha = cv2.morphologyEx(alpha, cv2.MORPH_CLOSE, kernel)
+        alpha = cv2.erode(alpha, (3,3), iterations=3)
+        
+        b, g, r, a = cv2.split(image)
+        rgba = [b, g, r, alpha]
+        image = cv2.merge(rgba, 4)
+        
+        cv2.imwrite(str(file.parent / file.with_suffix('.png').name), image)
+
+def Project_Stats():
+
+    import re
+    from Webscraping import USER
+
+    projects = USER / r'Dropbox/Pictures/Projects'
+    artwork = USER / r'Dropbox/Pictures/Artwork'
+    videos = USER / r'Dropbox/Videos/Captures'
+    
+    open = 'Open Projects:\n'
+    closed = 'Closed Projects\n'
+    planned = 'Planned Projects\n'
+    
+    for file in projects.glob('**/*.clip'):
+        
+        project = r'\\'.join(file.parts[6:-1])
+        if len(file.parts[6:-1]) < 2: continue
+        
+        video = videos / project / file.stem
+        art = artwork / project / re.findall('.+ (\d+)', file.stem)[0]
+        if not video.exists():
+            video = videos / project / re.findall('.+ (\d+)', file.stem)[0]
+        # if not art.exists():
+        #     art = artwork / project
+        
+        if list(video.iterdir()) and not art.exists(): 
+            
+            latest = list(video.iterdir())[-1]
+            open += f'\t{file.name} ({latest.stem})\n'
+            # open += f'\t\t{file.name}\n'
+
+        elif list(video.iterdir()) and art.exists(): 
+            
+            closed += f'\t{file.name}\n'
+            # closed += f'\t\t{file.name}\n'
+
+        elif not (video.exists() and art.exists()): 
+            
+            planned += f'\t{file.name}\n'
+            # planned += f'\t\t{file.name}\n'
+
+        # print(file)
+        # print(f'{video}: {video.exists()} | {art}: {art.exists()}\n')
+    print(open)
+    print(closed)
+    print(planned)
+        
 def unnamed(path):
 
     from Webscraping import CONNECT, utils
@@ -256,49 +312,63 @@ def unnamed(path):
     num = 0
 
     for file in path.glob('**/*.*'):
-
+        
+        if file.suffix not in ('.jpg', '.jpeg', '.png', '.gif', '.webm', 'mp4'): continue
         hash_ = utils.get_hash(file)
         target = MYSQL.execute(SELECT, (hash_, file.name), fetch=1)
         if len(target) == 1 and (target:=target[0][0]) is not None:
             
-            p = utils.PATH / target[:2] / target[2:4] / target
-            
-            if p.exists():
+            if (utils.PATH / target[:2] / target[2:4] / target).exists():
                 
                 file.unlink()
                 num += 1
                 
     print(f'{num} files deleted')
 
-def make_stitch():
+def parser():
     
-    import cv2
+    import re
+    import pyparsing as pp
+    from pyparsing import pyparsing_common
+
+    LPAR, RPAR = map(pp.Suppress, '()')
+    expr = pp.Forward()
+    operand = pyparsing_common.real | pyparsing_common.integer | pyparsing_common.identifier
+    factor = operand | pp.Group(LPAR + expr + RPAR)
+    term = factor + pp.ZeroOrMore(pp.oneOf('* AND ') + factor )
+    expr <<= term + pp.ZeroOrMore(pp.oneOf('+ OR') + term )
+
+    expr = pp.infixNotation(operand,
+        [
+        (pp.oneOf('- NOT'), 1, pp.opAssoc.RIGHT),
+        (pp.oneOf('* AND'), 2, pp.opAssoc.LEFT),
+        (pp.oneOf('+ OR'), 2, pp.opAssoc.LEFT),
+        ])
+
+    string = 'standing sex ass'
+
+    print(expr.parseString(string))
+
+def Find_Larger_Image():
+
+    from PIL.Image import open
     from pathlib import Path
-    from Webscraping import USER
+    from Webscraping import WEBDRIVER
 
-    def get_frames(path):
+    webdriver = WEBDRIVER(0, 0)
+    path = Path(r'C:\Users\Emc11\Dropbox\ん')
+
+    for file in path.glob('**/*g'):
         
-        frames = []
-        vidcap = cv2.VideoCapture(str(path))
-        success, frame = vidcap.read()
-
-        while success:
+        image = open(file)
+        
+        if image.height < 500 or image.width < 500:
             
-            frames.append(frame)
-            success, frame = vidcap.read()
-        
-        return tuple(frames)
+            webdriver.get('https://www.google.com/imghp?hl=en&tab=wi&ogbl')
+            webdriver.find('//body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[3]', click=1)
+            webdriver.find('//body/div[1]/div[3]/div/div[2]/form/div[1]/div/a', click=1)
+            webdriver.find('//*[@id="awyMjb"]', keys=str(file))
 
-    test = USER / r'Downloads\Test'
-    stitcher = cv2.Stitcher.create(cv2.Stitcher_SCANS)
-    stitcher.setPanoConfidenceThresh(0.1)
-    
-    path = Path(input('Enter path: '))
-    if path.is_file(): frames = get_frames(path)
-    else: frames = [cv2.imread(str(path)) for path in path.iterdir()]
-    
-    status, image = stitcher.stitch(frames)
-    cv2.imwrite(str(test / 'p.jpg'), image)
 
 parser = argparse.ArgumentParser(
     prog='test', 
