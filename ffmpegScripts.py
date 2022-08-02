@@ -11,7 +11,7 @@ USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 DOWN = USER / r'Downloads\Images'
 SOURCE = USER / r'Videos\Captures'
 DEST = USER / r'Dropbox\Videos\Captures'
-CRF = 21
+CRF = 15
 
 def get_stream(files, text):
         
@@ -22,7 +22,7 @@ def get_stream(files, text):
         stream = [
             ffmpeg.input(str(file)).drawtext(
                 text=file.stem, fontsize=45, 
-                x=int(FFProbe(file).streams[0].width) * .70, 
+                x=int(FFProbe(file).streams[0].width) * .66, 
                 y=int(FFProbe(file).streams[0].height) * .85,
                 shadowcolor='white', shadowx=2, shadowy=2
                 ) 
@@ -45,6 +45,27 @@ def get_folders():
             )
         
     return targets
+
+def get_time(file, type):
+
+    time = input(f'Enter {type} time (seconds or hh:mm:ss): ')
+    
+    if search('\d{2}:\d{2}:\d{2}.+', time): return time
+    
+    if time == '':
+        
+        if type == 'end' or time == -1:
+            
+            time = float(FFProbe(file).streams[0].duration)
+        
+        else:
+        
+            time == '0'
+
+    min, sec = divmod(float(time), 60)
+    hour, min = divmod(min, 60)
+
+    return f'{hour:02.0f}:{min:02.0f}:{sec:06.3f}'
 
 while True:
     
@@ -140,40 +161,24 @@ while True:
         elif user_input == '4': # split video
 
             file = Path(input('Enter filepath: ').strip((' \'"')))
-
-            if file.exists():
+            
+            latest = sorted(file.parent.glob(f'{file.stem} — Part [0-9][0-9]*'))
+            
+            if latest:
                 
-                latest = sorted(SOURCE.glob(f'{file.stem} Part [0-9]*'))
-                
-                if latest:
-                    
-                    num = int(*findall(' (\d+)', latest[-1].stem))
-                    new = sub(f' {num}+', f' {num+1:02}', latest[-1].name)
+                num = int(*findall(' (\d+)', latest[-1].stem))
+                stem = sub(f' {num}+', f' {num+1:02}', latest[-1].stem)
 
-                else: new = f'{file.stem} Part 00{file.suffix}'
+            else: stem = f'{file.stem} — Part 00'
 
-                new = file.with_name(new)
+            new = file.with_stem(stem)
 
-                start = input('Enter start time (seconds or hh:mm:ss): ')
-                end = input('Enter end time (seconds or hh:mm:ss): ')
-                
-                if end == '':
-                    
-                    ffmpeg.input(str(file)) \
-                        .trim(start=start) \
-                        .setpts('PTS-STARTPTS') \
-                        .output(str(new), crf=CRF, preset='veryslow') \
-                        .run()
-
-                else:
-                    
-                    ffmpeg.input(str(file)) \
-                        .trim(start=start, end=end) \
-                        .setpts('PTS-STARTPTS') \
-                        .output(str(new), crf=CRF, preset='veryslow') \
-                        .run()
-
-            else: raise FileNotFoundError
+            start = get_time(file, 'start')
+            end = get_time(file, 'end')
+                       
+            ffmpeg.input(str(file), ss=(start), to=(end)) \
+                .output(str(new), crf=CRF, preset='veryslow', acodec='copy',vcodec='copy') \
+                .run()
 
         elif user_input == '5': # download m3u8
             

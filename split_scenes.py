@@ -129,24 +129,9 @@ def find_scenes(video_path, framerate):
 
 def trim(input_path, output_path, start, end):
 
-    input_stream = ffmpeg.input(input_path)
-
-    vid = (
-        input_stream.video
-        .trim(start=start, end=end)
-        .setpts('PTS-STARTPTS')
-        )
-    aud = (
-        input_stream.audio
-        .filter_('atrim', start=start, end=end)
-        .filter_('asetpts', 'PTS-STARTPTS')
-        )
-
-    joined = ffmpeg.concat(vid, aud, v=1, a=1).node
-    output = ffmpeg.output(
-        joined[0], joined[1], output_path, preset='fast'
-        )
-    output.run()
+    ffmpeg.input(input_path, ss=(start), to=(end)) \
+        .output(output_path, preset='fast') \
+        .run()
 
 if __name__ == '__main__':
     
