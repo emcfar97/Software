@@ -1,4 +1,4 @@
-def main(initialize=1, depth=1000):
+def main(initialize=1, depth=-1):
 
     import threading, subprocess
     from . import favorites, foundry, furaffinity, twitter
