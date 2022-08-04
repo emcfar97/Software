@@ -89,7 +89,7 @@ class Ribbon(QWidget):
         images = self.parent().parent()
         
         # query parsing
-        for token in re.findall(f'\w+{op}[\w\*\.]+', string):
+        for token in re.findall(f'\w+{op}[\w\*\-\.]+', string):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
@@ -135,7 +135,7 @@ class Ribbon(QWidget):
         # tag parsing
         if string.strip():
     
-            string = re.sub('([-*]?\w+( OR [-*]?\w+)+\*)', r'(\1)', string)
+            string = re.sub('([-*]?\w+( OR [-*]?\w+)+)', r'(\1)', string)
             string = re.sub('NOT ', '-', string.strip())
             string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
             string = re.sub('(\+AND|OR) ', '', string)
