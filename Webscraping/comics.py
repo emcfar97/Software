@@ -44,8 +44,8 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        page_source = requests.get(f'https://{SITE}.net{href}')
-        html = bs4.BeautifulSoup(page_source.content, 'lxml')
+        DRIVER.get(f'https://{SITE}.net{href}')
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
         cover = None
         target = html.findAll(href=re.compile('/artist/.+'))
@@ -96,6 +96,7 @@ def page_handler(hrefs):
                 break
             
         else:
+            if cover is None: break
             imagedata = comic_records[cover.name]['imagedata']
             comics = comic_records[cover.name]['comics']
 
@@ -177,18 +178,16 @@ def main(initial=1, headless=True, mode=1):
     MYSQL = CONNECT()
         
     if mode:
+            
+        DRIVER = WEBDRIVER(headless)
         
         if initial:
-            
-            DRIVER = WEBDRIVER(headless)
             hrefs = initialize()
             MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
-            
-        else: DRIVER = WEBDRIVER(headless, None)
-        
+                    
         page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
     
-    else:    
+    else:
         
         DRIVER = WEBDRIVER(headless, None)
 
