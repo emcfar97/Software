@@ -11,10 +11,13 @@ ffmpeg-20190824-1cfba7f-win64-static
 GUI/test*.*
 GUI/managedata/autocomplete.txt
 GUInew*
-MachineLearning/Datasets/*
+MachineLearning/Datasets
 MachineLearning/*/Checkpoints
 MachineLearning/*/Models
 MachineLearning/*/Logs
 Music
 Webscraping/pixivutil2
 Webscraping/comic_data.json
+WebDev/Lib
+WebDev/Scripts
+WebDev/pyvenv.cfg
