@@ -26,7 +26,7 @@ def initialize(url, retry=0):
         except AttributeError: continue
         
         if not hrefs:
-            if retry >= 2: break
+            if retry >= 3: break
             else: retry += 1
         else: retry = 0
             
@@ -43,14 +43,6 @@ def page_handler(hrefs):
 
         progress.next()
         DRIVER.get(f'https://{SITE}.com{href}')
-
-        # time.sleep(5)
-        # html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        # target = html.find('article', {'data-testid': 'tweet'})
-        # images = target.findAll(
-        #     name=re.compile('img|video'), 
-        #     src=re.compile('(.+?format.+)|(.+.mp4)')
-        #     )
         
         for _ in range(3):
             try:
@@ -70,7 +62,16 @@ def page_handler(hrefs):
                     artist = href.split('/')[1].lower()
                     break
 
-                except (IndexError, AttributeError, TypeError): continue
+                except (IndexError, AttributeError, TypeError): 
+                    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+                    
+                    if html.findAll(text='Hmm...this page doesn’t exist. Try searching for something else.'):
+                    
+                        MYSQL.execute(DELETE[1], (href), commit=1)
+                        continue
+                    
+                    elif html.findAll(text='This Tweet is from a suspended account. '):
+                        continue
         
         if not images: continue
         

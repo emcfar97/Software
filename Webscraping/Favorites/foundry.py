@@ -1,5 +1,6 @@
 import argparse
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
+import selenium.common.exceptions as exceptions
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
 from ..utils import PATH, IncrementalBar, bs4, re, save_image
 
 SITE = 'foundry'
@@ -39,6 +40,11 @@ def page_handler(hrefs):
         try:
             image = DRIVER.find('//img[@class="center"]').get_attribute('src')
             error = 0
+            
+        except exceptions.NoSuchElementException: 
+            error = DRIVER.find('//*[@id="errorBox"]')
+            MYSQL.execute(DELETE[1], (href,), commit=1)
+            continue
             
         except: continue
             
