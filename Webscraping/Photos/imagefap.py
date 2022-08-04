@@ -1,4 +1,4 @@
-import argparse, spacy
+import argparse, spacy, time
 from .. import USER, WEBDRIVER, CONNECT, INSERT, send2trash, json_generator
 from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
 
@@ -32,6 +32,7 @@ def page_handler(url, title):
 
     for image in images:
         
+        time.sleep(1)
         progress.next()
         href = f'https://www.imagefap.com/{image.get("href")}'
         page_source = requests.get(href).content
