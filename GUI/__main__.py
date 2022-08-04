@@ -195,7 +195,7 @@ class GestureDraw(QMainWindow):
         # database
         database = self.menubar.addMenu('Database')
         database.addAction('Reconnect')
-        database.addAction('Get current statement')
+        database.addAction('Current statement')
         database.addAction('Update Autocomplete')
         database.addAction('Remove Redundancies')
         
