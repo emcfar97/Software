@@ -27,5 +27,3 @@ A set of projects that I've developed, either individually or as a team, over th
 [CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
 ## 2022
 [CS 451 Spring 2022](https://github.com/CS451-Commerce-Bank-Webpage/CommerceBankApp)
-# Music
-A suite of music related files primarily written for iPhone's Pythonista app, including an app for practicing scale degrees of musical keys and producing random melodies. Has been abandoned for the time being.
