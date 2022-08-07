@@ -1,3 +1,4 @@
+from __future__ import absolute_import, division, print_function
 import argparse
 
 def run():
@@ -352,17 +353,16 @@ def parser():
 def Find_Larger_Image():
 
     from PIL.Image import open
-    from pathlib import Path
-    from Webscraping import WEBDRIVER
+    from Webscraping import WEBDRIVER, USER
 
     webdriver = WEBDRIVER(0, 0)
-    path = Path(r'C:\Users\Emc11\Dropbox\ん')
+    path = USER / r'Dropbox\ん'
 
     for file in path.glob('**/*g'):
         
         image = open(file)
         
-        if image.height < 500 or image.width < 500:
+        if min(image.height, image.width) < 500:
             
             webdriver.get('https://www.google.com/imghp?hl=en&tab=wi&ogbl')
             webdriver.find('//body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[3]', click=1)
