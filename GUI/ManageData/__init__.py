@@ -281,12 +281,14 @@ class ManageData(QMainWindow):
             self.threadpool.start(worker)
     
     def mousePressEvent(self, event):
-           
-        if event.button() == Qt.MouseButton.BackButton:
+        
+        button_press = event.button()
+        
+        if button_press == Qt.MouseButton.ExtraButton1:
             
             self.ribbon.go_back()
             
-        elif event.button() == Qt.MouseButton.ForwardButton:
+        elif button_press == Qt.MouseButton.ExtraButton2:
             
             self.ribbon.go_forward()
     
@@ -295,7 +297,7 @@ class ManageData(QMainWindow):
         key_press = event.key()
         modifiers = event.modifiers()
         alt = modifiers == Qt.AltModifier
-
+        
         if alt:
             
             if key_press == Qt.Key_Left: self.ribbon.go_back()
