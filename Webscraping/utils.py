@@ -65,7 +65,7 @@ CUSTOM = {
     'hand_expression': 'lactation AND (grabbing OR grabbing_own_breasts)',
     'leaning': 'leaning|leaning_forward|leaning_back|leaning_on_object|leaning_on_table|leaning_on_rail',
     'loops': 'loops|thigh_strap|necklace|neck_ring|anklet|bracelet|armlet',  
-    'pokies': 'nipples_visible_through_clothes',
+    'visible_nipples': 'nipples_visible_through_clothes|erect_nipples|covered_erect_nipples',
     }
 RATING = {
     3: 'sex|aftersex|hetero|vaginal|anal|anus|cum|penis|vagina|pussy|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion', 
@@ -177,7 +177,7 @@ REMOVE = {
     'mosaic_censoring', 'censored', 'uncensored',
     'male_focus', 'multiple_boys', 'multiple_girls', 
     'pantyhose', 'no_humans', 'scenery', 'asian', 'what'
-    'animal_ears', 'slut'
+    'animal_ears', 'slut', 'hymen', 'intact_hymen'
     }
 REPLACE = {
     '3d': '3d_cg',
@@ -193,6 +193,7 @@ REPLACE = {
     'bar_censoring': 'bar_censor',
     'blur_censoring': 'blur_censor',
     'blowjob': 'fellatio',
+    'casual': 'casual_clothes',
     '(female|male)_pubic_hair': 'pubic_hair',
     '(female|male)_solo|solo_focus': 'solo',
     'insertion': 'object_insertion',
@@ -204,6 +205,7 @@ REPLACE = {
     'mostly_nude': 'functionally_nude',
     'muscle': 'muscular',
     'nipple_tweak':'nipple_tweaking',
+    'covered_erect_nipples|nipples_through_clothes|nipples_visible_through_clothes|erect_nipples':'visible_nipples',
     'no_pan': 'no_panties',
     'on_all_fours': 'all_fours',
     'oshiri': 'ass',
