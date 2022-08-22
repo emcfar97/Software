@@ -1,6 +1,6 @@
 import argparse, json
 from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from .utils import bs4, requests, re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
+from .utils import bs4, re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'nhentai'
 
@@ -61,8 +61,8 @@ def page_handler(hrefs):
         for image in html.findAll('a', class_='gallerythumb'):
             
             try:
-                page_source = requests.get(f'https://{SITE}.net{image.get("href")}')
-                image = bs4.BeautifulSoup(page_source.content, 'lxml')
+                DRIVER.get(f'https://{SITE}.net{image.get("href")}')
+                image = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
                 src = image.find(src=re.compile('.+galleries.+')).get('src')
                 name = get_name(src)
 
@@ -92,7 +92,7 @@ def page_handler(hrefs):
                     )
         
             except Exception as error:
-                print('\n', error, href, src)
+                print('\n', error, href)
                 break
             
         else:
