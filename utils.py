@@ -92,18 +92,16 @@ def Copy_Files(files, dest, sym=False):
 def Download_Nhentai():
     '''Code, artist, range'''
     
-    import requests, bs4, re, ast, time
+    import bs4, re, ast, json
     from Webscraping import USER, WEBDRIVER
     from Webscraping.utils import save_image
 
     driver = WEBDRIVER()
     path = USER / r'Downloads\Images\Comics'
-    comic = USER / r'Dropbox\Software\comics.txt'
+    comic = USER / r'Dropbox\Software\Webscraping\comics.json'
     
-    for arg in comic.read_text().splitlines()[:-1]:
+    for code, artist, range_ in json.load(open(comic))[""][:-1]:
         
-        code, artist, range_ = ast.literal_eval(arg)
-
         comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
         comic.mkdir(exist_ok=True)
 
@@ -193,6 +191,7 @@ def Prepare_Art_Files(project, parents=''):
             shutil.copy(file, illus)
     
     downscaled = Resize_Images(illus, '**/*.*')
+    downscaled = downscaled.with_stem(downscaled.stem.replace(f'{project} ', ''))
     shutil.move(downscaled, project_dir)
     
     # zips
@@ -300,6 +299,7 @@ def Download_Ehentai(url, wait=2, folder='Games'):
     
     import requests, re, time
     from Webscraping import USER, WEBDRIVER
+    from progress.bar import IncrementalBar
         
     def is_page_end():
         
@@ -309,12 +309,14 @@ def Download_Ehentai(url, wait=2, folder='Games'):
         return current == total
     
     path = USER / r'Downloads\Images' / folder
-    driver = WEBDRIVER()#profile=None)
+    driver = WEBDRIVER(profile=None)
     
     driver.get(url)
     title = driver.find('//*[@id="gn"]').text
     dest = path / re.sub('[/\:*?"<>]', ' ', title)
     dest.mkdir(exist_ok=True)
+    length = driver.find('//*[contains(text(),"pages")]').text.split()[0]
+    progress = IncrementalBar('Images', max=int(length))
     driver.find('/html/body/div[6]/div[1]/div/a', click=True)
     
     while not is_page_end():
@@ -325,6 +327,7 @@ def Download_Ehentai(url, wait=2, folder='Games'):
             name.write_bytes(requests.get(src).content)
             
         driver.find('//*[@id="next"]', click=True)
+        progress.next()
         time.sleep(wait)
     
     driver.close()
@@ -363,11 +366,11 @@ def Extract_Frames(source, fps=1, dest=None):
 
 def Remove_Emoji():
 
-    import sqlite3, re, emoji
+    import sqlite3, emoji, re
     from Webscraping import USER
 
     path = USER / r'Dropbox\ん\Images\pixiv'
-    emoji = emoji.unicode_emoji
+    emojis = ''.join(emoji.EMOJI_DATA.keys())
     files = 0
     
     select1 = 'SELECT save_name FROM pixiv_master_image WHERE save_name=?'
@@ -377,12 +380,16 @@ def Remove_Emoji():
     datab = sqlite3.connect(r'Webscraping\PixivUtil2\db.sqlite')
     cursor = datab.cursor()
 
-    for file in path.glob(f'*[{emoji}]*'):
-
-        new = re.sub('|'.join(emoji), '', file.name)
+    for file in path.glob(f'*[{emojis}]*'):
+        
+        try:
+            new = re.sub(f'({"|".join(emojis)})', '', file.name)
+        except: continue
         new = file.with_name(new)
+        
         path = cursor.execute(select1, (str(file),)).fetchone()
         cursor.execute(update1, (str(new), str(file)))
+        
         path = cursor.execute(select2, (str(file),)).fetchone()
         cursor.execute(update2, (str(new), str(file)))
         
@@ -392,6 +399,20 @@ def Remove_Emoji():
         files += 1
         
     print(f'{files} files cleaned')
+
+def Convert_Webp(folder, ext='jpg'):
+    
+    from pathlib import Path
+    from PIL import Image
+
+    folder = Path(folder)
+
+    for image in folder.glob('*webp'):
+
+        new = image.with_suffix(f'.{ext}')
+        webp = Image.open(str(image)).convert('RGB')
+        webp.save(str(new))
+        image.unlink()
 
 def pathwalk(top, topdown=False, followlinks=False):
     """
@@ -414,8 +435,8 @@ def pathwalk(top, topdown=False, followlinks=False):
         yield top, dirs, nondirs
 
 parser = argparse.ArgumentParser(
-    prog='test', 
-    description='Run test functions'
+    prog='utils', 
+    description='Run utility functions'
     )
 parser.add_argument(
     '-f', '--func', type=str,
@@ -428,3 +449,4 @@ parser.add_argument(
     )
 
 run()
+Remove_Emoji()
