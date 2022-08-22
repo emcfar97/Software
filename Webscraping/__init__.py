@@ -6,6 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions as exceptions
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 
 CREDENTIALS = ConfigParser(delimiters='=') 
 CREDENTIALS.read(r'Webscraping\credentials.ini')
@@ -118,6 +119,10 @@ class WEBDRIVER:
 
     def __init__(self, headless=True, profile=True, wait=15):
         
+        self.headless = headless
+        self.profile = profile
+        self.wait = wait
+        
         if profile: profile = webdriver.FirefoxProfile(self.get_profile())
         binary = webdriver.firefox.firefox_binary.FirefoxBinary(
             str(WEBDRIVER.PATH / 'firefox.exe')
@@ -132,14 +137,14 @@ class WEBDRIVER:
             )
         self.driver.implicitly_wait(wait)
         self.options = {
-            1: self.driver.find_element_by_xpath,
-            2: self.driver.find_element_by_id,
-            3: self.driver.find_element_by_name,
-            4: self.driver.find_element_by_link_text,
-            5: self.driver.find_element_by_partial_link_text,
-            6: self.driver.find_element_by_tag_name,
-            7: self.driver.find_element_by_class_name,
-            8: self.driver.find_element_by_css_selector,
+            1: By.XPATH,
+            2: By.ID,
+            3: By.NAME,
+            4: By.LINK_TEXT,
+            5: By.PARTIAL_LINK_TEXT,
+            6: By.TAG_NAME,
+            7: By.CLASS_NAME,
+            8: By.CSS_SELECTOR,
             }
 
     def get_profile(self):
@@ -154,6 +159,13 @@ class WEBDRIVER:
             try: 
                 self.driver.get(url)
                 time.sleep(wait)
+                
+            # except (
+            #     exceptions.InvalidSessionIdException,
+            #     exceptions.NoSuchWindowException
+            #     ):
+            #     self.__init__(self.headless, self.profile, self.wait)
+                
             except (
                 exceptions.TimeoutException,
                 exceptions.WebDriverException,
@@ -166,7 +178,7 @@ class WEBDRIVER:
         for _ in range(5):
         
             try:
-                element = self.options[type_](address)
+                element = self.driver.find_element(self.options[type_], address)
                 
                 if click: element.click()
                 if keys: element.send_keys(keys)
@@ -174,6 +186,12 @@ class WEBDRIVER:
                 if enter: element.send_keys(Keys.RETURN)
 
                 return element
+                
+            # except (
+            #     exceptions.InvalidSessionIdException,
+            #     exceptions.NoSuchWindowException
+            #     ):
+            #     self.__init__(self.headless, self.profile, self.wait)
 
             except Exception as error_:
                 if fetch: raise error_
@@ -181,19 +199,27 @@ class WEBDRIVER:
 
         if fetch: raise error
     
-    def page_source(self, error=None):
+    def page_source(self, wait=0, error=None):
+        
+        time.sleep(wait)
         
         for _ in range(5):
             try: return self.driver.page_source
+            
             except exceptions.InvalidArgumentException as error_:
                 error = error_
                 return self.driver.page_source.encode('ascii', 'ignore').decode('unicode_escape')
+                
+            # except (
+            #     exceptions.InvalidSessionIdException,
+            #     exceptions.NoSuchWindowException
+            #     ) as error_:
+            #     error = error_
+            #     self.__init__(self.headless, self.profile, self.wait)
+            
             except exceptions.WebDriverException as error_:
                 error = error_
                 self.refresh()
-            except exceptions.InvalidSessionIdException as error_:
-                error = error_
-                print()
                 
         raise error
     
@@ -275,7 +301,7 @@ def get_starred(headless=True):
 
 def extract_files(source, dest=None, headless=True):
     
-    import re, bs4
+    import re, bs4, pathlib
     from urllib.parse import urlparse
     from Webscraping.utils import USER, save_image
         
@@ -300,16 +326,16 @@ def extract_files(source, dest=None, headless=True):
             
         else: path.touch()
     
-    if isinstance(source, str): 
-        source = USER / source
+    if isinstance(source, str):
+        source = pathlib.Path(source)
         iterator = source.glob('*json')
     elif isinstance(source, list): iterator = source
     elif isinstance(source, Path): iterator = source.glob('*json')
     
     if dest is None: dest = source
     else: dest = USER / dest
-        
-    driver = WEBDRIVER(headless=headless, profile=None)
+    
+    driver = WEBDRIVER(headless=headless)#, profile=None)
     errors_txt = source / 'Errors.txt'
     extract_errors(errors_txt, dest)
     errors = []
@@ -328,7 +354,13 @@ def extract_files(source, dest=None, headless=True):
                 except:
                     errors.append(url['url'])
                     continue
-
+            elif re.match('https://www.reddit.com/r/.+', url['url']):
+                driver.get(url['url'], wait=10)
+                html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+                image = html.findAll(src=True)#.get('src')
+                # name = DOWN / f'{url.split("/")[3]}.mp4'
+                # ffmpeg.input(url).output(str(name), crf=CRF).run()
+            
             name = dest / path.split('/')[-1]
             if name.exists(): continue
             try: image = (
