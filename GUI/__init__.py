@@ -1,16 +1,17 @@
 import qimage2ndarray, traceback
-from os import path
 from pathlib import Path
 from cv2 import VideoCapture
-import mysql.connector as sql
 from mysql.connector import pooling
+from os import path, getenv, environ
+from dotenv import load_dotenv, set_key
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import QRunnable, Qt, QObject, QTimer, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QCompleter, QLabel, QMenu, QAction, QActionGroup, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QCompleter, QLabel, QMenu, QAction, QActionGroup, QFileDialog
 
+load_dotenv(r'GUI\.env')
+CREDENTIALS = r'GUI\credentials.ini'
+AUTOCOMPLETE = r'GUI\autocomplete.txt'
 BATCH = 10000
-CREDENTIALS = r'GUIold\credentials.ini'
-AUTOCOMPLETE = r'GUIold\autocomplete.txt'
 
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
@@ -33,7 +34,8 @@ class CONNECT(QObject):
         self.DATAB = pooling.MySQLConnectionPool(
             pool_name="mypool", pool_size=10,
             pool_reset_session=True,
-            option_files=CREDENTIALS
+            user=getenv('USER'), password=getenv('PASS'),
+            host=getenv('HOST'), database=getenv('DATA'),
             )
         self.current = ''
         self.transactions = {
@@ -45,68 +47,51 @@ class CONNECT(QObject):
     def execute(self, statement, arguments=None, many=0, fetch=0, source=None, emit=1):
         
         type = statement.split()[0]
-        match = type == self.current
         
-        if match:
+        if type == self.current: # match
             
-            if type == 'SELECT': return
-            
-            elif arguments in self.transactions[type]: return
+            if type == 'SELECT' or arguments in self.transactions[type]:
+                self.current = ''
+                return
                 
-        elif type != 'SELECT': self.transactions[type].append(arguments)
-        
-        try:
+        elif type != 'SELECT': # no match
+            
+            self.transactions[type].append(arguments)
             self.current = type
+            
+        try:
             conn = self.DATAB.get_connection()
             cursor = conn.cursor()
             
             if many: cursor.executemany(statement, arguments)
             else: cursor.execute(statement, arguments)
-            self.current = ''
 
-        except sql.errors.ProgrammingError as error:
-            
-            QMessageBox.warning(CONNECT.parent(), str(error.errno), str(error))
-            return
-
-        # except sql.errors.DatabaseError as error:
-
-            # print('Database', error)
-            # if error.errno == 1205: return
-            # self.reconnect(1, 3)
-            
-            # return
-
-        except sql.errors.InterfaceError as error:
-
-            print('Interface', error)
-            # self.reconnect(1, 3)
-
-            return
-            
         except Exception as error:
-        
-            print('Error', error)
-            return
-        
+            
+            print('Error:', error)
+            
         finally:
+            
+            self.current = ''
+            
+            if   type == 'SELECT':
+                self.transactions['SELECT'] = None
                 
-            if   statement.startswith('SELECT'):
-                
-                self.transactions[type] = None
-                
-                if fetch: 
+                if fetch:
+                    
                     fetch = cursor.fetchall()
+                    
                     cursor.close()
                     conn.close()
                     return fetch
 
                 self.finishedSelect.emit(cursor.fetchall())
+                
                 cursor.close()
                 conn.close()
                 return
                 
-            elif statement.startswith('UPDATE'):
+            elif type == 'UPDATE':
                 
                 index = self.transactions[type].index(arguments)
                 del self.transactions[type][index]
@@ -117,7 +102,7 @@ class CONNECT(QObject):
                 cursor.close()
                 conn.close()
                 
-            elif statement.startswith('DELETE'):
+            elif type == 'DELETE':
                 
                 index = self.transactions[type].index(arguments)
                 del self.transactions[type][index]
@@ -276,7 +261,8 @@ class Completer(QCompleter):
         
     #     return [path]
         
-def create_submenu(parent, name, items, check=None, get_menu=False):
+def create_submenu(parent, name, items, trigger, check=None, get_menu=False):
+    '''Create submenu based on parent widget, name, items'''
         
     if name is None: menu = parent
     else: menu = QMenu(name, parent)
@@ -286,7 +272,7 @@ def create_submenu(parent, name, items, check=None, get_menu=False):
         
         action = QAction(item, menu, checkable=True)
         if num == check: action.setChecked(True)
-        action_group.triggered.connect(parent.parent().parent().populate)
+        action_group.triggered.connect(trigger)
         action_group.addAction(action)
         menu.addAction(action)
 
@@ -296,6 +282,34 @@ def create_submenu(parent, name, items, check=None, get_menu=False):
     
     if get_menu: return action_group, menu
     return action_group
+
+def create_submenu_(parent, name, items, trigger=None, check=None):
+    '''Create submenu based on parent widget, name, items'''
+        
+    menu = QMenu(name, parent)
+    action_group = QActionGroup(menu)
+    action_group.setExclusive(True)
+    if trigger: action_group.triggered.connect(trigger)
+
+    for num, item in enumerate(items):
+        
+        if isinstance(item, list):
+            
+            action = create_submenu_(menu, '', item, trigger)[1]
+            menu.addMenu(action)
+        
+        elif item is None:
+            
+            menu.addSeparator(); continue
+        
+        else:
+            
+            action = QAction(item, menu, checkable=bool(check))
+            if num == check: action.setChecked(True)
+            action_group.addAction(action)
+            menu.addAction(action)
+
+    return menu, action_group
 
 def get_frame(path):
 
@@ -321,7 +335,7 @@ def update_autocomplete():
         ' '.join(sorted(set(tags.split())))
         )
     text = ('\n'.join(text)).encode('ascii', 'ignore')
-    Path(r'GUIold\autocomplete.txt').write_text(text.decode())
+    Path(AUTOCOMPLETE).write_text(text.decode())
     
     MYSQL.close()
 
@@ -349,9 +363,9 @@ def copy_to(widget, images, sym=False):
             for index in images
             if index.data(300) is not None
             ]
-            
+        
         folder = Path(QFileDialog.getExistingDirectory(
-            widget, 'Open Directory', str(PATH.parent),
+            widget, 'Open Directory', getenv('COPY_DIR', '*')
             ))
 
         for path in paths:
@@ -359,3 +373,6 @@ def copy_to(widget, images, sym=False):
             name = folder / path.name
             if sym and not name.exists(): name.symlink_to(path)
             else: name.write_bytes(path.read_bytes())
+        
+        set_key(r'GUI\.env', 'COPY_DIR', str(folder))
+        load_dotenv(r'GUI\.env')
