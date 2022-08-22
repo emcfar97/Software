@@ -89,7 +89,7 @@ class Ribbon(QWidget):
         images = self.parent().parent()
         
         # query parsing
-        for token in re.findall(f'\w+{op}[\w\*\-\.]+', string):
+        for token in re.findall(f'\w+{op}[\w\*\-\.()]+', string):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
@@ -102,6 +102,7 @@ class Ribbon(QWidget):
             elif col == 'order':
 
                 order = f'ORDER BY {val}'
+                continue
 
             elif col == 'limit':
                 
