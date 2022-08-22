@@ -12,6 +12,7 @@ DOWN = USER / r'Downloads\Images'
 SOURCE = USER / r'Videos\Captures'
 DEST = USER / r'Dropbox\Videos\Captures'
 CRF = 15
+PRESET = 'slow'
 
 def get_stream(files, text):
         
@@ -99,11 +100,11 @@ while True:
                             x=int(metadata.width) * .70, 
                             y=int(metadata.height) * .85,
                             shadowcolor='white', shadowx=2, shadowy=2
-                            ).output(str(mp4), crf=CRF, preset='fast').run()
+                            ).output(str(mp4), crf=CRF, preset=PRESET).run()
 
                     else: 
                         ffmpeg.input(str(file)) \
-                        .output(str(mp4), crf=CRF, preset='fast') \
+                        .output(str(mp4), crf=CRF, preset=PRESET) \
                         .run()
 
                 except Exception as error: print(error); continue
@@ -124,7 +125,7 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                try: ffmpeg.concat(*stream).output(str(new), crf=CRF,preset='fast').run()
+                try: ffmpeg.concat(*stream).output(str(new), crf=CRF,preset=PRESET).run()
                 except Exception as error: print(error); continue
                 
                 for file in files: send2trash(str(file))
@@ -151,7 +152,7 @@ while True:
                         )
                     ffmpeg.concat(*stream) \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(new), crf=CRF, preset='fast') \
+                        .output(str(new), crf=CRF, preset=PRESET) \
                         .run()
                         
                 except Exception as error: print(error); continue
@@ -177,7 +178,7 @@ while True:
             end = get_time(file, 'end')
                        
             ffmpeg.input(str(file), ss=(start), to=(end)) \
-                .output(str(new), crf=CRF, preset='veryslow', acodec='copy',vcodec='copy') \
+                .output(str(new), crf=CRF, preset=PRESET, acodec='copy',vcodec='copy') \
                 .run()
 
         elif user_input == '5': # download m3u8
@@ -189,7 +190,7 @@ while True:
         elif user_input == '6': # adjust directories
 
             user_input = input(
-                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change CRF: {CRF}\n'
+                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change CRF: {CRF}\n5 - Change preset: {PRESET}\n'
                 )
 
             if   user_input == '1': # change root
@@ -233,6 +234,10 @@ while True:
             elif user_input == '4': # change CRF
                 
                 CRF = int(input('Enter value (integer): '))
+            
+            elif user_input == '5': # change preset
+                
+                CRF = input('Enter value (veryfast, fast, slow, veryslow): ')
 
         elif user_input == '7': # check directories
             
