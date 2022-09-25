@@ -19,9 +19,6 @@ ap.add_argument(
     )
 args = vars(ap.parse_args())
 
-# video = r'C:\Users\Emc11\Videos\2021-0215-1120.mp4'
-# video = r'C:\Users\Emc11\Videos\2021-0208-0934.mp4'
-
 def get_frame(path, success=True):
 
     vidcap = cv2.VideoCapture(str(path))
