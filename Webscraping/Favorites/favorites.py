@@ -190,7 +190,7 @@ def initialize():
 def main(initial=True, headless=True, depth=0, upload=0):
 
     global MYSQL, DRIVER
-    MYSQL = CONNECT()
+    MYSQL = CONNECT('desktop')
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
@@ -214,7 +214,7 @@ if __name__ == '__main__':
         )
     parser.add_argument(
         '-d', '--depth', type=int,
-        help='Upload argument (default -1)',
+        help='Depth argument (default -1)',
         default=-1
         )
     parser.add_argument(
