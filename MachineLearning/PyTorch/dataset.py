@@ -1,4 +1,4 @@
-'''File for dataset logic'''
+'''File for collecting, organizing, and saving PyTorch datasets'''
 
 from PIL import Image
 from natsort import natsorted

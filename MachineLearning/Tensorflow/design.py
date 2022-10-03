@@ -1,1 +1,1 @@
-'''File for design of neural network'''
+'''File for designing Tensorflow models'''

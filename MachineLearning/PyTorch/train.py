@@ -1,4 +1,4 @@
-'''File for training, saving, and loading models'''
+'''File for training, saving, and loading PyTorch models'''
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)

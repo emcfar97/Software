@@ -1,4 +1,4 @@
-'''File for dataset logic'''
+'''File for collecting, organizing, and saving Tensorflow datasets'''
 
 import os
 from .. import DATA, BATCH, HEIGHT, WIDTH, np

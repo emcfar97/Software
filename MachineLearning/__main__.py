@@ -9,8 +9,8 @@ parser.add_argument(
     help='Number of streams', default=2
     )
 parser.add_argument(
-    '-n', '--num', type=int,
-    help='Number of streams', default=2
+    '-p', '--project', type=int,
+    help='Name of project'
     )
 parser.add_argument(
     '-n', '--num', type=int,

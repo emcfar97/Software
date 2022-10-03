@@ -1,4 +1,4 @@
-'''File for design of neural network'''
+'''File for designing PyTorch models'''
 
 class NeuralNetwork(nn.Module):
 
