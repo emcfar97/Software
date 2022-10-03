@@ -40,7 +40,7 @@ def Normalize_Database():
         return
     
     for num, file in enumerate(x, 1):
-        if any(*MYSQL.execute(select, (file.name,), fetch=1)):
+        if any(MYSQL.execute(select, (file.name,), fetch=1)):
             MYSQL.execute(UPDATE, (file.name,))
         else:
             MYSQL.execute(DELETE, (file.name,))
@@ -449,4 +449,3 @@ parser.add_argument(
     )
 
 run()
-Remove_Emoji()
