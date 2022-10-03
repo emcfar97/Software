@@ -12,7 +12,7 @@ CREDENTIALS = ConfigParser(delimiters='=')
 CREDENTIALS.read(r'Webscraping\credentials.ini')
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
-EXT = 'jpe?g|png|gif|webm|mp4'
+EXT = 'jpe?g|png|webp|gif|webm|mp4'
 
 SELECT = [
     'SELECT href FROM imagedata WHERE site=%s',
@@ -50,13 +50,13 @@ DELETE = [
 
 class CONNECT:
 
-    def __init__(self):
+    def __init__(self, target='mysql'):
 
         self.DATAB = sql.connect(
-            user=CREDENTIALS.get('mysql', 'username'), 
-            password=CREDENTIALS.get('mysql', 'password'), 
-            database=CREDENTIALS.get('mysql', 'database'), 
-            host=CREDENTIALS.get('mysql', 'hostname')
+            user=CREDENTIALS.get(target, 'username'), 
+            password=CREDENTIALS.get(target, 'password'), 
+            database=CREDENTIALS.get(target, 'database'), 
+            host=CREDENTIALS.get(target, 'hostname')
             )
         self.CURSOR = self.DATAB.cursor(buffered=True)
         self.rowcount = -1
@@ -305,20 +305,11 @@ def extract_files(source, dest=None, headless=True):
     from urllib.parse import urlparse
     from Webscraping.utils import USER, save_image
         
-    def get_url(driver, src):
-
-        driver.get(src)
-        time.sleep(4)
-        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-        url = html.find(content=re.compile('.+mp4'))
-
-        return url.get('content')
-
     def extract_errors(path, dest):
         
         if path.exists():
             
-            for image in path.read_text().split('\n'):
+            for image in path.read_text().split():
             
                 image = image.strip()
                 name = dest / image.split('/')[-1].split('?')[0]
@@ -345,50 +336,46 @@ def extract_files(source, dest=None, headless=True):
         for url in json_generator(file):
             
             path = urlparse(url['url']).path[1:]
+            
             if re.match('https://i.imgur.com/.+gif', url['url']):
-                path.replace('gif', 'mp4')
-            elif re.search('.+/watch.+', url['url']):
-                try: 
-                    path = get_url(driver, url['url'])
-                    url['url'] = path
-                except:
-                    errors.append(url['url'])
-                    continue
-            elif re.match('https://www.reddit.com/r/.+', url['url']):
+                
+                path.replace('gif', 'webm')
+                
+            if re.match('https://www.reddit.com/r/.+', url['url']):
+                
                 driver.get(url['url'], wait=10)
                 html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-                image = html.findAll(src=True)#.get('src')
-                # name = DOWN / f'{url.split("/")[3]}.mp4'
-                # ffmpeg.input(url).output(str(name), crf=CRF).run()
-            
+                try: image = html.find('source', src=True).get('src')
+                except AttributeError:
+                    errors.append(image)
+                    continue
+                
+            else:  
+ 
+                try: image = (
+                        f'https://{url["title"]}'
+                        if url['url'] == 'about:blank' else 
+                        url['url']
+                        )
+                except KeyError: continue
+                
             name = dest / path.split('/')[-1]
+            if name.suffix == '':
+                name = dest / image.split('/')[-1].split('?')[0]
             if name.exists(): continue
-            try: image = (
-                    f'https://{url["title"]}'
-                    if url['url'] == 'about:blank' else 
-                    url['url']
-                    )
-            except KeyError: continue
                         
             if not save_image(name, image): errors.append(image)
             elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
-                try: name.rename(name.with_suffix('.mp4'))
+                try: name.rename(name.with_suffix('.webm'))
                 except: name.unlink(missing_ok=1)
         
+        errors_txt.write_text('\n'.join(errors))
         send2trash.send2trash(str(file))
-    
-    if errors: errors_txt.write_text('\n'.join(errors))
-
-    for file in dest.glob('*webp'):
-
-        name = file.with_suffix('.jpg')
-        name.write_bytes(file.read_bytes())
-        file.unlink()
         
     for file in dest.glob('*gifv'):
 
-        name = file.with_suffix('.mp4')
-        image = f'https://i.imgur.com/{name.name}'
+        name = file.with_suffix('.webm')
+        image = f'https://i.imgur.com/{name.stem}.mp4'
         save_image(name, image)
         file.unlink()
 
