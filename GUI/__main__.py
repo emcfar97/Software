@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QInputDialog, QMainWindow, QVBoxLayout,  QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAbstractItemView
+from PyQt5.QtWidgets import QApplication, QInputDialog, QMainWindow, QVBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QSizePolicy, QAbstractItemView
 from PyQt5.QtCore import QThreadPool, Qt, pyqtSignal, pyqtSlot
 
 from GUI import CONNECT, AUTOCOMPLETE, Completer, Worker, Timer, update_autocomplete, remove_redundancies, copy_to, create_submenu_
