@@ -8,4 +8,6 @@ class Dataset(QWidget):
         # self.layout = QHBoxLayout(self)
         self.create_widgets()
 
+    def configure_gui(self): pass
+    
     def create_widgets(self): pass

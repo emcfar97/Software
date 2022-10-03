@@ -12,7 +12,7 @@
     "MaxPool2D": {},
     "MaxPool3D": {},
     "AbstractRNNCell": {
-        trainable=True, name=None, dtype=None, dynamic=False
+        "trainable"=True, "name"=None, "dtype"=None, "dynamic"=False
         },
     "ConvLSTM2D": {},
     "GRU": {},
