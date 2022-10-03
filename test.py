@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 import argparse
 
 def run():
@@ -260,44 +259,60 @@ def Project_Stats():
     import re
     from Webscraping import USER
 
-    projects = USER / r'Dropbox/Pictures/Projects'
-    artwork = USER / r'Dropbox/Pictures/Artwork'
-    videos = USER / r'Dropbox/Videos/Captures'
+    def tabber(parts, tabbed='', folders=['', '', '', '', '', '']):
+        
+        for num, part in enumerate(parts[6:-1], start=1):
+            
+            if part != folders[num]:
+                folders[num] = part
+                tabbed += '{}{}\n'.format('\t' * num, part)
+                
+        return tabbed
+    
+    projects = USER / r'Dropbox\Pictures\Projects'
+    artwork = USER / r'Dropbox\Pictures\Artwork'
+    videos = USER / r'Dropbox\Videos\Captures'
+    video_glob = '[0-9]*-[0-9]*-[0-9]*.mp4'
     
     open = 'Open Projects:\n'
-    closed = 'Closed Projects\n'
-    planned = 'Planned Projects\n'
+    closed = 'Closed Projects:\n'
+    planned = 'Planned Projects:\n'
     
-    for file in projects.glob('**/*.clip'):
+    for project in projects.glob('**/*.clip'):
         
-        project = r'\\'.join(file.parts[6:-1])
-        if len(file.parts[6:-1]) < 2: continue
+        if len(project.parts[6:-1]) < 2: continue
         
-        video = videos / project / file.stem
-        art = artwork / project / re.findall('.+ (\d+)', file.stem)[0]
-        if not video.exists():
-            video = videos / project / re.findall('.+ (\d+)', file.stem)[0]
-        # if not art.exists():
-        #     art = artwork / project
+        head = r'\\'.join(project.parts[6:-1])
+        head = re.sub(r'\\\\page\d+.clip', '', head)
         
-        if list(video.iterdir()) and not art.exists(): 
-            
-            latest = list(video.iterdir())[-1]
-            open += f'\t{file.name} ({latest.stem})\n'
-            # open += f'\t\t{file.name}\n'
+        video = videos / head / project.stem
+        art = artwork / head / project.stem
+        
+        if re.match('page\d+', project.stem): video = videos.parent
+        if re.match('page\d+', project.stem): art = artwork.parent
+        
+        video_path = video.exists()
+        videos_exist = bool(list(video.glob(video_glob))) if video_path else False
+        art_path = art.exists()
+        art_exists = bool(list(art.iterdir())) if art_path else False
+        
+        if videos_exist and not art_exists:
 
-        elif list(video.iterdir()) and art.exists(): 
+            latest = list(video.glob(video_glob))[-1]
             
-            closed += f'\t{file.name}\n'
-            # closed += f'\t\t{file.name}\n'
+            open += tabber(project.parts)
+            open += f'\t\t\t\t{project.stem} ({latest.stem})\n'
 
-        elif not (video.exists() and art.exists()): 
+        elif videos_exist and art_exists:
             
-            planned += f'\t{file.name}\n'
-            # planned += f'\t\t{file.name}\n'
+            closed += tabber(project.parts)
+            closed += f'\t\t\t\t{project.stem}\n'
+                    
+        elif not (video_path and art_path):
+            
+            planned += tabber(project.parts)
+            planned += f'\t\t\t\t{project.stem}\n'
 
-        # print(file)
-        # print(f'{video}: {video.exists()} | {art}: {art.exists()}\n')
     print(open)
     print(closed)
     print(planned)
@@ -314,7 +329,7 @@ def unnamed(path):
 
     for file in path.glob('**/*.*'):
         
-        if file.suffix not in ('.jpg', '.jpeg', '.png', '.gif', '.webm', 'mp4'): continue
+        if file.suffix not in ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.webm', 'mp4'): continue
         hash_ = utils.get_hash(file)
         target = MYSQL.execute(SELECT, (hash_, file.name), fetch=1)
         if len(target) == 1 and (target:=target[0][0]) is not None:
@@ -352,23 +367,172 @@ def parser():
 
 def Find_Larger_Image():
 
+    import bs4, re
     from PIL.Image import open
     from Webscraping import WEBDRIVER, USER
+    from Webscraping.utils import save_image
 
-    webdriver = WEBDRIVER(0, 0)
+    DRIVER = WEBDRIVER(0, 0)
     path = USER / r'Dropbox\ん'
+    regex = '(.+img2.+png)'
 
     for file in path.glob('**/*g'):
         
         image = open(file)
         
-        if min(image.height, image.width) < 500:
+        if min(image.height, image.width) < 500 and (not image.height == 1320 and not image.width == 1000):
             
-            webdriver.get('https://www.google.com/imghp?hl=en&tab=wi&ogbl')
-            webdriver.find('//body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[3]', click=1)
-            webdriver.find('//body/div[1]/div[3]/div/div[2]/form/div[1]/div/a', click=1)
-            webdriver.find('//*[@id="awyMjb"]', keys=str(file))
+            DRIVER.get('https://www.google.com/imghp?hl=en&tab=wi&ogbl')
+            DRIVER.find('//body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[3]', click=1)
+            DRIVER.find('//body/div[1]/div[3]/div/div[2]/form/div[1]/div/a', click=1)
+            DRIVER.find('//*[@id="awyMjb"]', keys=str(file))
+            
+            try: DRIVER.find('//*[text()="All sizes"]', click=True, fetch=1)
+            except: continue
+            html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+            images = html.findAll('div', {'data-ow':True, 'data-oh':True})
+            largest = sorted(images, key=lambda x:int(x.get('data-oh')))[-1]
+            href = largest.find('a', target='_blank')
+            
+            DRIVER.get(href.get('href'), wait=5)
+            html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+            src = html.findAll('img', src=re.compile(regex))
+            if len(src) == 1:
+                save_image(file, src[0].get('src'))
+            else:
+                continue
 
+def check_predictions(num=25):
+    
+    import cv2
+    import numpy as np
+    from PIL import Image
+    from pathlib import Path
+    from Webscraping import CONNECT, WEBDRIVER
+    from Webscraping.utils import PATH, get_tags
+    from MachineLearning.Tensorflow import Model
+
+    model = Model(
+        r'deepdanbooru.hdf5', 
+        r'deepdanbooru\tags.txt'
+        )
+    driver = WEBDRIVER(profile=0)
+    mysql = CONNECT()
+
+    parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
+    SELECT = f'''
+        SELECT full_path(path, {parts}) FROM imagedata 
+        WHERE SUBSTR(path, 33, 5) IN ('.jpg', '.png')
+        ORDER BY RAND() LIMIT {num}
+        '''
+
+    for image, in mysql.execute(SELECT, fetch=1):
+
+        prediction_1 = model.predict(image)
+        prediction_2 = get_tags(driver, Path(image)).split()
+
+        # print(sorted(prediction_1), sorted(prediction_2))
+        print(f'Difference: {len(set(prediction_1) ^ set(prediction_2))} Intersection: {len(set(prediction_1) & set(prediction_2))}')
+        
+        # image_ = np.array(Image.open(image))
+        # image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
+        # cv2.imshow(image, image_)
+        # cv2.waitKey(0)
+
+def pinterest(folder, user, board):
+
+    import re, time, bs4
+    from Webscraping import WEBDRIVER
+    from Webscraping.utils import save_image
+    from selenium.webdriver.common.keys import Keys
+
+    driver = WEBDRIVER(0)
+    driver.get(board)
+    time.sleep(3)
+
+    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    images = html.find(class_="gridCentered").contents[1].contents[0]
+    sections = html.find(class_='mainContainer').findAll('a', href=re.compile(f'/{user}/.+'))
+    
+    for image in images:
+        
+        image = image.find('a', href=re.compile('/pin/.+'))
+        driver.get(f'https://pinterest.com/{image.get("href")}')
+        time.sleep(3)
+        
+        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        targets = html.find(class_="gridCentered").findAll(
+            'img', src=re.compile(f'https://i.pinimg.com/+')
+            )
+
+        for target in targets:
+            src = target.get('src')
+            image = save_image()
+            name = f"{hash(src)}.{image.format}"
+            if name.exists(): continue
+            image.thumbnail([500, 500])
+            image.save(path / folder / name)
+
+        total = total | targets
+        for _ in range(2):
+            driver.find('html', Keys.PAGE_DOWN)
+            time.sleep(2)
+    
+    for section in board[2:]:
+
+        driver.get(f'https://pinterest.com/{section.get("href")}')
+        time.sleep(3)
+
+        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        targets = html.find(class_="gridCentered").findAll(
+            'img', src=re.compile(f'https://i.pinimg.com/+')
+            )
+
+        for target in targets:
+            src = target.get('src')
+            image = save_image()
+            name = f"{hash(src)}.{image.format}"
+            if name.exists(): continue
+            image.thumbnail([500, 500])
+            image.save(path / folder / name)
+
+        total = total | targets
+        for _ in range(2):
+            driver.find('html', Keys.PAGE_DOWN)
+            time.sleep(2)
+
+    driver.close()
+
+def f():
+    
+    from Webscraping import CONNECT, WEBDRIVER
+    from Webscraping.utils import PATH, get_tags, generate_tags
+
+    DRIVER = WEBDRIVER(0, profile=None)
+    mysql = CONNECT()
+    SELECT = 'SELECT path FROM userdata.imagedata WHERE tags=" qwd " AND NOT ISNULL(path)'
+    UPDATE = 'UPDATE userdata.imagedata SET tags=%s, rating=%s WHERE path=%s'
+    DELETE = 'DELETE FROM userdata.imagedata WHERE path=%s'
+    x = mysql.execute(SELECT, fetch=1)
+    for file, in mysql.execute(SELECT, fetch=1):
+            
+        file = PATH / file[0:2] / file[2:4] / file
+        if not file.exists(): mysql.execute(DELETE, (file.name,), commit=1)
+
+        try: 
+            if len(file.read_bytes()) == 0:
+                if mysql.execute(DELETE, (file.name,)):
+                    file.unlink()
+                    mysql.commit()
+        except FileNotFoundError: 
+            mysql.execute(DELETE, (file.name,), commit=1)
+        
+        tags, rating = generate_tags(
+            general=get_tags(DRIVER, file, True), 
+            custom=True, rating=True, exif=False
+            )
+        
+        mysql.execute(UPDATE, (f' {tags} ', rating, file.name), commit=1)
 
 parser = argparse.ArgumentParser(
     prog='test', 
