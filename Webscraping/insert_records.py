@@ -47,7 +47,7 @@ def main(extract=True, add='', path=PATH):
             
             if not (hash_ := get_hash(file)): continue
 
-            if dest.suffix.lower() in ('.jpg', '.png'):
+            if dest.suffix.lower() in ('.jpg', '.png', '.webp'):
 
                 tags, rating, exif = generate_tags(
                     general=get_tags(DRIVER, file, True), 
@@ -55,7 +55,7 @@ def main(extract=True, add='', path=PATH):
                     )
                 save_image(file, exif=exif)
 
-            elif dest.suffix.lower() in ('.gif', '.webm', '.mp4'):
+            elif dest.suffix.lower() in ('.gif', '.mp4', '.webm'):
                 
                 tags, rating = generate_tags(
                     general=get_tags(DRIVER, file, True), 
