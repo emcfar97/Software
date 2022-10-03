@@ -46,9 +46,21 @@ def save_image(name, image=None, exif=b''):
 
         elif re.search('gif|webm|mp4', name.suffix):
             
-            name.write_bytes(
-                requests.get(image, headers=HEADERS).content
-                )
+            if 'gfycat' in image:
+                
+                name = download_gfycat(image)
+                
+            elif 'redgif' in image:
+                
+                name = download_redgif(image)
+                
+            else: 
+                if name.suffix == '.mp4':
+                    name = name.with_suffix('.webm')
+                    
+                name.write_bytes(
+                    requests.get(image, headers=HEADERS).content
+                    )
     
     except UnidentifiedImageError: return False
     except OSError as error:
@@ -58,6 +70,36 @@ def save_image(name, image=None, exif=b''):
     except: pass
     
     return name.exists()
+
+def download_redgif(name, url, exif=b''):
+    # Use redgif API to download a url's contents to the specified name
+    
+    sess = requests.Session()
+        
+    image_ID = url.split('/')[-1].lower()
+    request = sess.get(f'https://api.redgifs.com/v2/gifs/{image_ID}')
+    
+    rawData = request.json()
+    hd_video_url = rawData['gif']['urls']['hd']
+    
+    name.write_bytes(sess.get(hd_video_url).content)
+    
+    return name
+
+def download_gfycat(name, url, exif=b''):
+    # Use gfycat API to download a url's contents to the specified name
+    
+    sess = requests.Session()
+    
+    image_ID = url.split('/')[-1].lower()
+    request = sess.get(f'https://api.gfycat.com/v1/gfycats/{image_ID}')
+    
+    rawData = request.json()
+    hd_video_url = rawData['gfyItem']['webmUrl']
+    
+    name.write_bytes(sess.get(hd_video_url).content)
+    
+    return name
 
 def get_name(path, hasher=1):
     '''Return pathname (from optional hash of image)'''
@@ -85,7 +127,7 @@ def get_hash(image, src=False):
                 )
         except: return None
     
-    elif re.search('jp.*g|png|gif', image.suffix, re.IGNORECASE): 
+    elif re.search('jp.*g|png|webp|gif', image.suffix, re.IGNORECASE): 
         
         try: image = Image.open(image)
         except: return None
@@ -103,7 +145,7 @@ def get_hash(image, src=False):
 
     return f'{dhash(image)}'
 
-def video_generator(path, step=1):
+def frame_generator(path, step=1):
     
     temp_dir = tempfile.TemporaryDirectory()
     vidcap = VideoCapture(str(path))
@@ -152,8 +194,15 @@ def get_tags(driver, path, filter=False):
             gifcap.close()
             
         step = 90 * log((frame_count * .002) + 1) + 1
-        frames = video_generator(path, round(step))
+        frames = frame_generator(path, round(step))
+    
+    elif path.suffix in ('.webp'):
         
+        temp = tempfile.mkstemp('.png')[1]
+        webp = Image.open(str(path)).convert('RGB')
+        webp.save(temp)
+        frames.append(temp)
+    
     else: frames.append(path)
     
     for frame in frames:
