@@ -1,16 +1,37 @@
 from pathlib import Path
-from .. import get_frame, copy_to#, create_menu
+from qute.utilities.menus import menuFromDictionary
+from .. import ROOT, create_submenu_, get_frame, copy_to
 from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtCore import Qt, QTimer, QStringListModel, QVariant
-from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QMenu, QAction, QActionGroup
+from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QMessageBox, QAction
 
 from GUI.slideshow.imageViewer import imageViewer
 from GUI.slideshow.videoPlayer import videoPlayer
 
+MENU = {
+    'Fullscreen': None,
+    'Sep1': None,
+    'Slideshow': None,
+    'Sep2': None,
+    'Rotate right': None,
+    'Rotate left': None,
+    'Sep3': None,
+    'Copy': None,
+    'Delete': None,
+    'Sep4': None,
+    'Properties': None
+    }
+SLIDESHOW = [
+    ['Pause', 'Play', 0], 
+    None, 
+    ['Speed - Slow', 'Speed - Medium', 'Speed - Fast', 1]
+    ]
+
 class Slideshow(QMainWindow):
     
-    def __init__(self, parent, gallery=list(), index=0):
+    def __init__(self, parent=None, gallery=list(), index=0):
         
         super(Slideshow, self).__init__()
         self.parent = parent
@@ -26,7 +47,8 @@ class Slideshow(QMainWindow):
         
         self.stack = QStackedWidget(self)
         self.setCentralWidget(self.stack)
-
+        self.setMouseTracking(True)
+        
     def create_widgets(self, gallery):
         
         self.model = Model(self, gallery)
@@ -36,10 +58,15 @@ class Slideshow(QMainWindow):
         self.stack.addWidget(self.image)
         self.stack.addWidget(self.video)
         
-        self.setMouseTracking(True)
         self.timer = QTimer()
         self.timer.timeout.connect(
             lambda: self.setCursor(Qt.BlankCursor)
+            )
+        
+        # self.video.player.mediaStatusChanged.connect(lambda: self.move(+1))
+        self.slideshow = QTimer()
+        self.slideshow.timeout.connect(
+            lambda: self.move(+1)
             )
         
     def create_menu(self):
@@ -60,72 +87,33 @@ class Slideshow(QMainWindow):
         # Help
         help = self.menubar.addMenu('Help')
         
-        menu = QMenu(self)
-        # menu = create_menu(
-            # self,
-            
-            # )
-
-        self.full = QAction(
-            'Fullscreen', menu, triggered=self.fullscreen
-            )
-        menu.addAction(self.full)
+        self.fullAction = QAction('Fullscreen', triggered=self.fullscreen)
         
-        self.play_menu = QMenu('Slideshow')
-        group1 = QActionGroup(self.play_menu)
-        group1.setExclusive(True)
-        self.play_menu.addActions([
-                QAction(
-                    'Pause', self.play_menu, triggered=self.playEvent, checked=True
-                    ),
-                QAction(
-                    'Play', self.play_menu, triggered=self.playEvent
-                    )
-            ])
-        self.play_menu.addSeparator()
-        group2 = QActionGroup(self.play_menu)
-        group2.setExclusive(True)
-        self.play_menu.addActions([
-                QAction(
-                    'Speed - Slow', self.play_menu, triggered=self.playEvent
-                ),
-                QAction(
-                    'Speed - Medium', self.play_menu, triggered=self.playEvent, checked=True
-                ),
-                QAction(
-                    'Speed - Fast', self.play_menu, triggered=self.playEvent
-                )
-            ])
-        # menu.addMenu(self.play_menu)
+        MENU['Fullscreen'] = self.fullAction
+        MENU['Slideshow'] = create_submenu_(
+            self, 'Slideshow', SLIDESHOW, self.playEvent
+            )[0]
+        MENU['Rotate right'] = lambda: self.rotate(+1)
+        MENU['Rotate left'] = lambda: self.rotate(-1)
+        MENU['Copy'] = self.copy
+        MENU['Delete'] = self.delete
+        if self.parent is not None: 
+            MENU['Properties'] = self.openEditor
         
-        menu.addSeparator()
+        self.menu = menuFromDictionary(MENU, self)
+        self.menu.insertSeparator(self.menu.children()[1])
+        self.menu.insertMenu(self.menu.children()[1], MENU['Slideshow'])
+        MENU['Slideshow'].removeAction(MENU['Slideshow'].children()[0])
         
-        menu.addAction(QAction(
-            'Rotate right', menu, triggered=lambda: self.rotate(+1)
-            ))
-        menu.addAction(QAction(
-            'Rotate left', menu, triggered=lambda: self.rotate(-1)
-            ))
-        
-        menu.addSeparator()
-        
-        menu.addAction(QAction(
-            'Copy', menu, triggered=self.copy
-            ))
-        menu.addAction(QAction(
-            'Delete', menu, triggered=self.delete
-            ))
-        
-        menu.addSeparator()
-        
-        menu.addAction(QAction(
-            'Properties', menu, triggered=self.openEditor
-            ))
-
-        self.menu = menu
-
     def move(self, delta=0):
         
+        if self.slideshow.isActive() and self.stack.currentIndex == 1:
+            
+            print('Video: ', self.stack.currentIndex == 1)
+            print('Slideshow: ', self.slideshow.isActive())
+            print('EndofMedia: ', self.video.mediaStatus == QMediaPlayer.EndOfMedia)
+            # return 0
+            
         if not self.model.gallery:
             self.image.no_image()
             return 0
@@ -136,12 +124,11 @@ class Slideshow(QMainWindow):
 
         if path is None: pixmap = QPixmap()
         else:
-            if path.endswith(('.jpg', '.png')):
+            if path.endswith(('.jpg', '.png', 'webp')):
                 image = QImage(path)
                 path = None
             elif path.endswith(('.gif', '.mp4', '.webm')):
                 image = get_frame(path)
-            else: print(path)
             
             pixmap = QPixmap(image).scaled(
                 self.size(), Qt.KeepAspectRatio, 
@@ -151,6 +138,8 @@ class Slideshow(QMainWindow):
         self.image.update(pixmap)
         self.stack.setCurrentIndex(0)
         self.video.update(path)
+        
+        if self.slideshow.isActive(): self.slideshow.start()
     
     def fullscreen(self):
 
@@ -158,7 +147,7 @@ class Slideshow(QMainWindow):
 
             self.timer.stop()
             self.image.setStyleSheet('background: ')
-            self.full.setText('Fullscreen')
+            self.fullAction.setText('Fullscreen')
             self.setCursor(Qt.ArrowCursor)
             self.showMaximized()
             self.menubar.show()
@@ -166,7 +155,7 @@ class Slideshow(QMainWindow):
         else:
 
             self.image.setStyleSheet('background: black')
-            self.full.setText('Exit fullscreen')
+            self.fullAction.setText('Exit fullscreen')
             self.setCursor(Qt.BlankCursor)
             self.menubar.hide()
             self.showFullScreen()
@@ -175,7 +164,7 @@ class Slideshow(QMainWindow):
 
         path = self.model.index(self.index).data(Qt.UserRole)[0]
 
-        if path.endswith(('jpg', 'png')):
+        if path.endswith(('jpg', 'png', 'webp')):
             self.image.rotate(path, sign)
         
         else:
@@ -208,9 +197,24 @@ class Slideshow(QMainWindow):
         
         index = [self.model.index(self.index)]
 
-        if self.parent.delete_records(index):
-            del self.model.gallery[self.index]
-            self.model.layoutChanged.emit()
+        if self.parent:
+            if self.parent.delete_records(index):
+                del self.model.gallery[self.index]
+                self.model.layoutChanged.emit()
+                self.move()
+        else:
+            message = QMessageBox.question(
+                None, 'Delete', 
+                'Are you sure you want to delete this?',
+                QMessageBox.Yes | QMessageBox.No
+                )
+            
+            if message == QMessageBox.Yes:
+                
+                (ROOT / index[0]).unlink(True)
+                del self.model.gallery[self.index]
+                self.model.layoutChanged.emit()
+                self.move()
 
     def openEditor(self):
 
@@ -218,13 +222,20 @@ class Slideshow(QMainWindow):
         
         Properties(self.parent, [index.data(Qt.EditRole)])
     
-    def playEvent(self, event):
+    def playEvent(self, event=None):
         
-        match self.play_menu.activeAction().text:
+        if event.text() == 'Pause': 
+
+            self.slideshow.stop()
+            return
+        
+        match MENU['Slideshow'].children()[6].checkedAction().text():
             
-            case 'Speed - Slow': pass
-            case 'Speed - Medium': pass
-            case 'Speed - Fast': pass
+            case 'Speed - Slow': self.slideshow.start(30000)
+                
+            case 'Speed - Medium': self.slideshow.start(15000)
+                
+            case 'Speed - Fast': self.slideshow.start(5000)
           
     def contextMenuEvent(self, event):
         
@@ -234,10 +245,6 @@ class Slideshow(QMainWindow):
 
         action = event.text()
         
-        # if action == 'Copy Image to':
-            
-        #     copy_to(self, [self.model.index(self.index)])
-
         if action == 'Exit': self.close()
         
     def keyPressEvent(self, event):
@@ -308,7 +315,10 @@ class Slideshow(QMainWindow):
             self.setCursor(Qt.ArrowCursor)
             self.timer.start(1500)
         
-    def closeEvent(self, event): self.video.update(None)
+    def closeEvent(self, event): 
+        
+        self.slideshow.stop()
+        self.video.update(None)
 
 class Model(QStringListModel):
 
