@@ -4,14 +4,16 @@ from cv2 import VideoCapture
 from mysql.connector import pooling
 from os import path, getenv, environ
 from dotenv import load_dotenv, set_key
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QRunnable, Qt, QObject, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QCompleter, QLabel, QMenu, QAction, QActionGroup, QFileDialog
 
 load_dotenv(r'GUI\.env')
+LIMIT = getenv('LIMIT', '100000')
+BATCH = getenv('BATCH', '10000')
+COLUMNS = int(getenv('COLUMNS', '5'))
 CREDENTIALS = r'GUI\credentials.ini'
 AUTOCOMPLETE = r'GUI\autocomplete.txt'
-BATCH = 10000
 
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
@@ -286,7 +288,8 @@ def create_submenu(parent, name, items, trigger, check=None, get_menu=False):
 def create_submenu_(parent, name, items, trigger=None, check=None):
     '''Create submenu based on parent widget, name, items'''
         
-    menu = QMenu(name, parent)
+    if name is None: menu = parent
+    else: menu = QMenu(name, parent)
     action_group = QActionGroup(menu)
     action_group.setExclusive(True)
     if trigger: action_group.triggered.connect(trigger)
@@ -295,7 +298,7 @@ def create_submenu_(parent, name, items, trigger=None, check=None):
         
         if isinstance(item, list):
             
-            action = create_submenu_(menu, '', item, trigger)[1]
+            action = create_submenu_(menu, None, item[:-1], trigger, item[-1])[0]
             menu.addMenu(action)
         
         elif item is None:
@@ -304,7 +307,7 @@ def create_submenu_(parent, name, items, trigger=None, check=None):
         
         else:
             
-            action = QAction(item, menu, checkable=bool(check))
+            action = QAction(item, menu, checkable=(check is not None))
             if num == check: action.setChecked(True)
             action_group.addAction(action)
             menu.addAction(action)
@@ -314,7 +317,7 @@ def create_submenu_(parent, name, items, trigger=None, check=None):
 def get_frame(path):
 
     image = VideoCapture(path).read()[-1]
-    if image is None: return QPixmap()
+    if image is None: return QImage()
     return qimage2ndarray.array2qimage(image).rgbSwapped()
 
 def update_autocomplete():
@@ -367,12 +370,14 @@ def copy_to(widget, images, sym=False):
         folder = Path(QFileDialog.getExistingDirectory(
             widget, 'Open Directory', getenv('COPY_DIR', '*')
             ))
-
-        for path in paths:
-
-            name = folder / path.name
-            if sym and not name.exists(): name.symlink_to(path)
-            else: name.write_bytes(path.read_bytes())
         
+        if folder:
+            
+            for path in paths:
+
+                name = folder / path.name
+                if sym and not name.exists(): name.symlink_to(path)
+                else: name.write_bytes(path.read_bytes())
+            
         set_key(r'GUI\.env', 'COPY_DIR', str(folder))
         load_dotenv(r'GUI\.env')

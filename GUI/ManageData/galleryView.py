@@ -1,11 +1,16 @@
 import textwrap
-from .. import BATCH, get_frame
+from .. import COLUMNS, get_frame, create_submenu, create_submenu_
 from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap, QDrag
-from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QSize, QMimeData, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QActionGroup
+from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QSize, QMimeData, pyqtSignal, QRect, QPoint
+from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QStyledItemDelegate
 
-COLUMNS = 5.18
+CONSTANTS = {
+    'Sort': ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'],
+    'Order': ['Ascending', 'Descending'],
+    'Rating': ['Explicit', 'Questionable', 'Safe'],
+    'Type': ['All', 'Photo', 'Illus', 'Comic']
+    }
 
 class Gallery(QTableView):
     
@@ -17,7 +22,8 @@ class Gallery(QTableView):
     def __init__(self, parent):
 
         super(QTableView, self).__init__(parent)
-        self.table = Model(self)   
+        self.setItemDelegate(PaintDelegate(self))
+        self.table = Model(self)
         self.setModel(self.table)
         self.menu = self.create_menu()
         for header in [self.horizontalHeader(), self.verticalHeader()]:
@@ -33,27 +39,60 @@ class Gallery(QTableView):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.contextMenuEvent)
         
+        self.setStyleSheet('''
+            QTableView {
+                outline: 0;
+            }
+            QTableView::item:selected {   
+                background: #CDE8FF;
+                border: 1px solid #99D1FF
+            }
+            QTableView::item:!selected:hover
+            {   
+                background: #E5F3FF;
+            }
+        ''')
+        
     def create_menu(self):
         
         menu = QMenu(self)
         parent = self.parent()
         self.comic = QAction('Read comic', menu)
         
-        temp_menu, sortMenu = self.create_submenu(
+        temp_menu, sortMenu = create_submenu(
             menu, 'Sort by', 
             ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'], 
-            check=0, get_menu=True
+            check=0, trigger=parent.select_records, get_menu=True
             )
         sortMenu.addSeparator()
-        parent.order = [temp_menu, self.create_submenu(
-            sortMenu, None, ['Ascending', 'Descending'], check=0
+        parent.order = [temp_menu, create_submenu(
+            sortMenu, None, ['Ascending', 'Descending'], check=0, trigger=parent.select_records
             )]
-        parent.rating = self.create_submenu(
-            menu, 'Rating', ['Explicit', 'Questionable', 'Safe'], check=2
+        parent.rating = create_submenu(
+            menu, 'Rating', ['Explicit', 'Questionable', 'Safe'], check=2, trigger=parent.select_records
             )
-        parent.type = self.create_submenu(
-            menu, 'Type', ['All', 'Photo', 'Illus', 'Comic'], check=0
+        parent.type = create_submenu(
+            menu, 'Type', ['All', 'Photo', 'Illus', 'Comic'], check=0, trigger=parent.select_records
             )
+        
+        # sortMenu, temp_menu = create_submenu_(
+        #     menu, 'Sort by', CONSTANTS['Sort'], 
+        #     trigger=parent.select_records, check=0
+        #     )
+        # sortMenu.addSeparator()
+        # parent.order = [temp_menu, create_submenu_(
+        #     sortMenu, None, CONSTANTS['Order'],
+        #     trigger=parent.select_records, check=0
+        #     )[1]
+        #     ]
+        # parent.rating = create_submenu_(
+        #     menu, 'Rating', CONSTANTS['Rating'],
+        #     trigger=parent.select_records, check=2
+        #     )[1]
+        # parent.type = create_submenu_(
+        #     menu, 'Type', CONSTANTS['Type'],
+        #     trigger=parent.select_records
+        #     )[1]
 
         menu.addSeparator()
         menu.addAction(QAction('Copy', menu))
@@ -67,26 +106,6 @@ class Gallery(QTableView):
         menu.triggered.connect(self.menuPressEvent)
 
         return menu
-
-    def create_submenu(self, parent, name, items, check=None, get_menu=False): 
-        
-        if name is None: menu = parent
-        else: menu = QMenu(name, parent)
-        action_group = QActionGroup(menu)
-
-        for num, item in enumerate(items):
-            action = QAction(item, menu, checkable=True)
-            if num == check: action.setChecked(True)
-            action_group.triggered.connect(self.parent().select_records)
-            action_group.addAction(action)
-            menu.addAction(action)
-
-        else:
-            if name is not None: parent.addMenu(menu)
-            action_group.setExclusive(True)
-        
-        if get_menu: return action_group, menu
-        return action_group
     
     def copy_path(self):
         
@@ -107,23 +126,23 @@ class Gallery(QTableView):
         self.table.images = images
         self.table.layoutChanged.emit()
     
-    def pixmap(self):
+    # def pixmap(self):
         
-        # for image in self.selectedIndexes()[0]:
+        # # for image in self.selectedIndexes()[0]:
         
-        path = self.currentIndex().data(Qt.UserRole)[0]
-        image = (
-            get_frame(path) 
-            if path.endswith(('.mp4', '.webm')) else 
-            QImage(path)
-            )
+        # path = self.currentIndex().data(Qt.UserRole)[0]
+        # image = (
+        #     get_frame(path) 
+        #     if path.endswith(('.mp4', '.webm')) else 
+        #     QImage(path)
+        #     )
 
-        image = image.scaled(
-            100, 100, Qt.KeepAspectRatio, 
-            transformMode=Qt.SmoothTransformation
-            )
+        # image = image.scaled(
+        #     100, 100, Qt.KeepAspectRatio, 
+        #     transformMode=Qt.SmoothTransformation
+        #     )
             
-        return QPixmap(image)
+        # return QPixmap(image)
             
     def openPersistentEditor(self):
         
@@ -134,13 +153,19 @@ class Gallery(QTableView):
         Properties(self.parent().parent(), gallery)
     
     def selectionChanged(self, select, deselect):
-        
+            
         self.selection.emit(select, deselect)
 
     def mouseDoubleClickEvent(self, event):
 
         self.load_comic.emit([self.currentIndex(), 0])
 
+    # def mouseReleaseEvent(self, event):
+        
+        # button_press = event.button()
+        
+        # self.parent().parent().mousePressEvent(event)
+        
     # def mouseMoveEvent(self, event):
         
         # drag = QDrag(self)
@@ -348,6 +373,8 @@ class Gallery(QTableView):
         self.table.width = int(event.size().width() // COLUMNS)
 
 class Model(QAbstractTableModel):
+    
+    number_populated = pyqtSignal(int)
 
     def __init__(self, parent):
 
@@ -356,7 +383,9 @@ class Model(QAbstractTableModel):
         self.width = int(self.parent().parent().width() // COLUMNS)
         self.images = []
         
-    def flags(self, index): return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+    def flags(self, index):
+        
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
     
     def rowCount(self, parent=None):
 
@@ -364,7 +393,7 @@ class Model(QAbstractTableModel):
 
         return rows + bool(cols)
 
-    def columnCount(self, parent=None): return 5
+    def columnCount(self, parent=None): return COLUMNS
 
     # def canFetchMore(self, index):
         
@@ -381,11 +410,16 @@ class Model(QAbstractTableModel):
         # remainder = mysql.rowcount() - start
         # items_to_fetch = min(fetch, remainder)
 
+        # if items_to_fetch <= 0:
+        #     return
+        
         # self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
 
         # self.images += mysql.CURSOR.fetchmany(fetch)
 
         # self.endInsertRows()
+        
+        # self.number_populated.emit(items_to_fetch)
     
     def data(self, index, role):
         
@@ -397,22 +431,7 @@ class Model(QAbstractTableModel):
         
         data = self.images[ind]
 
-        if role == Qt.DecorationRole:
-            
-            path = data[0]
-
-            image = (
-                get_frame(path) 
-                if path.endswith(('.mp4', '.webm')) else 
-                QImage(path)
-                )
-
-            image = image.scaled(
-                self.width, self.width, Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
-                )
-                
-            return QPixmap(image)
+        if role == Qt.DecorationRole: return data[0]
 
         if role == Qt.EditRole:
             
@@ -440,10 +459,10 @@ class Model(QAbstractTableModel):
             rest = self.wrapper.wrap(
                 f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()} Site: {sit}'
                 )
+            
             return '\n'.join(tags + rest)
 
-        if role == Qt.SizeHintRole: 
-            return QSize(self.width, self.width)
+        if role == Qt.SizeHintRole: return QSize(self.width, self.width)
         
         if role == Qt.UserRole: return data
         
@@ -457,8 +476,37 @@ class Model(QAbstractTableModel):
         
         if role == Qt.EditRole and index.isValid():
             
+            self._data[index.row()][index.column()] = value
             self.dataChanged.emit(index, index, [Qt.DisplayRole])
 
             return True
             
         return False
+
+class PaintDelegate(QStyledItemDelegate):
+    
+    def paint(self, painter, option, index):
+
+        QStyledItemDelegate.paint(self, painter, option, index)
+
+        if index.data(Qt.DecorationRole) is not None:
+
+            path = index.data(Qt.DecorationRole)
+            width = self.parent().table.width
+            rect = QPoint(width, width)
+                      
+            painter.save()
+
+            image = (
+                get_frame(path) 
+                if path.endswith(('.mp4', '.webm')) else 
+                QImage(path)
+                )
+            image = image.scaled(
+                rect.x() - 10, rect.x() - 10, Qt.KeepAspectRatio, 
+                transformMode=Qt.SmoothTransformation
+                )
+            
+            offset = rect - QPoint(image.size().width() - 5, image.size().height())
+            painter.drawImage(option.rect.topLeft() + offset/2, image)
+            painter.restore()

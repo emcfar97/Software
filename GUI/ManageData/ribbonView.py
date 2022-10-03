@@ -1,5 +1,5 @@
 import re
-from .. import BASE, AUTOCOMPLETE, Completer
+from .. import BASE, AUTOCOMPLETE, LIMIT, Completer
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QAction
 
@@ -78,7 +78,7 @@ class Ribbon(QWidget):
         self.layout.addWidget(self.multi)
         self.tags.setFocus()
         
-    def update_query(self, event=None, limit=1000000, op='[<>=!]=?'):
+    def update_query(self, event=None, op='[<>=!]=?'):
         
         query = {}
         join = ''
@@ -142,6 +142,7 @@ class Ribbon(QWidget):
             string = re.sub('(\+AND|OR) ', '', string)
             string = re.sub('-\+', '-', string)
             if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
+            string = string.replace('++', '+')
 
             query['tags'] = [
                 f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
@@ -155,7 +156,7 @@ class Ribbon(QWidget):
             f'({" OR ".join(val)})' for val in query.values() if val
             )
         
-        self.query = f'{BASE} {join} WHERE {filter} {order} LIMIT {limit}'
+        self.query = f'{BASE} {join} WHERE {filter} {order} LIMIT {LIMIT}'
 
         return self.query
 
