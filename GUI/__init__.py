@@ -62,6 +62,8 @@ class CONNECT(QObject):
             self.current = type
             
         try:
+            
+            self.parent().setCursor(Qt.BusyCursor)
             conn = self.DATAB.get_connection()
             cursor = conn.cursor()
             
@@ -75,6 +77,7 @@ class CONNECT(QObject):
         finally:
             
             self.current = ''
+            self.parent().setCursor(Qt.ArrowCursor)
             
             if   type == 'SELECT':
                 self.transactions['SELECT'] = None
@@ -361,23 +364,23 @@ def remove_redundancies():
 
 def copy_to(widget, images, sym=False):
 
-        paths = [
-            Path(index.data(Qt.UserRole)[0])
-            for index in images
-            if index.data(300) is not None
-            ]
+    paths = [
+        Path(index.data(Qt.UserRole)[0])
+        for index in images
+        if index.data(300) is not None
+        ]
+    
+    folder = Path(QFileDialog.getExistingDirectory(
+        widget, 'Open Directory', getenv('COPY_DIR', '*')
+        ))
+    
+    if folder:
         
-        folder = Path(QFileDialog.getExistingDirectory(
-            widget, 'Open Directory', getenv('COPY_DIR', '*')
-            ))
-        
-        if folder:
-            
-            for path in paths:
+        for path in paths:
 
-                name = folder / path.name
-                if sym and not name.exists(): name.symlink_to(path)
-                else: name.write_bytes(path.read_bytes())
-            
-        set_key(r'GUI\.env', 'COPY_DIR', str(folder))
-        load_dotenv(r'GUI\.env')
+            name = folder / path.name
+            if sym and not name.exists(): name.symlink_to(path)
+            else: name.write_bytes(path.read_bytes())
+        
+    set_key(r'GUI\.env', 'COPY_DIR', str(folder))
+    load_dotenv(r'GUI\.env')
