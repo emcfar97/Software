@@ -5,5 +5,6 @@ from GUI.machinelearning.DesignView import Design
 Qapp = QApplication([])
 
 app = Design()
+app.showMaximized()
 
 Qapp.exec_()

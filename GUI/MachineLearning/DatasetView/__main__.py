@@ -4,6 +4,7 @@ from GUI.machinelearning.DatasetView import Dataset
 
 Qapp = QApplication([])
 
+app.showMaximized()
 app = Dataset()
 
 Qapp.exec_()

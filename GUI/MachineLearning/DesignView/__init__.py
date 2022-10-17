@@ -1,10 +1,12 @@
 from PyQt5.QtWidgets import QDockWidget, QWidget, QVBoxLayout, QTabWidget, QTreeWidget, QSizePolicy
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from random import randint
 
 class Design(QTabWidget):
 
-    def __init__(self, parent):
+    key_pressed = pyqtSignal(object)
+    
+    def __init__(self, parent=None):
         
         super(Design, self).__init__(parent)
         self.setTabsClosable(True)
