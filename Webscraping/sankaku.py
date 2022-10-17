@@ -77,6 +77,9 @@ def page_handler(hrefs, mode):
             ]
 
         name = get_name(image.split('/')[-1].split('?e=')[0], 0)
+        if name.suffix in ('jpg', 'png'): name = name.with_suffix('.webp')
+        elif name.suffix == 'mp4': name = name.with_suffix('.webm')
+        
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(DRIVER, name)
         tags, rating, exif = generate_tags(

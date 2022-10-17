@@ -29,9 +29,8 @@ def save_image(name, image=None, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
     try:
-        if re.search('jp.*g|png', name.suffix):
+        if re.search('jp.*g|png|webp', name.suffix):
 
-            name = name.with_suffix('.webp')
             
             if image:
                 img = Image.open(BytesIO(
@@ -41,18 +40,15 @@ def save_image(name, image=None, exif=b''):
                 
             else: img = Image.open(name)    
             
-            img = img.convert('RGB')
+            name = name.with_suffix('.webp')
+            img = img.convert('RGBA')
             img.save(name, 'webp', exif=exif)
 
-        elif re.search('gif|webm|mp4', name.suffix):
+        elif re.search('gif|mp4|webm', name.suffix):
             
-            if 'gfycat' in image:
+            if 'gfycat' in image: download_gfycat(name, image)
                 
-                name = download_gfycat(image)
-                
-            elif 'redgif' in image:
-                
-                name = download_redgif(image)
+            elif 'redgif' in image: download_redgif(name, image)
                 
             else: 
                 if name.suffix == '.mp4':

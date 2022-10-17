@@ -53,6 +53,9 @@ def page_handler(hrefs):
         image = html.find(href=True, text='Original image').get('href')
         
         name = get_name(image.split('/')[-1], 0)
+        if name.suffix in ('jpg', 'png'): name = name.with_suffix('.webp')
+        elif name.suffix == 'mp4': name = name.with_suffix('.webm')
+        
         type_ = 1 if 'photo_(medium)' in tags else 2
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(DRIVER, name)
