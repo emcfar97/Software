@@ -1,4 +1,4 @@
-import os, time, json, send2trash
+import os, time, json
 from pathlib import Path
 import mysql.connector as sql
 from configparser import ConfigParser
@@ -288,20 +288,20 @@ def get_starred(headless=True):
     DRIVER.get('https://www.dropbox.com/starred', wait=4)
     time.sleep(5)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-    starred = html.findAll('a', {"data-testid": "files-filename"})
+    starred = html.findAll('a', {"data-testid": "filename-link"})
     
     for star in starred:
 
         DRIVER.find(ADDRESS, click=True)
         MYSQL.execute(UPDATE, (star.text,), commit=1)
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        starred = html.findAll('span', {"data-testid": "files-filename"})
+        starred = html.findAll('span', {"data-testid": "filename-link"})
 
     DRIVER.close()
 
 def extract_files(source, dest=None, headless=True):
     
-    import re, bs4, pathlib
+    import re, bs4, pathlib, send2trash, subprocess
     from urllib.parse import urlparse
     from Webscraping.utils import USER, save_image
         
@@ -309,11 +309,21 @@ def extract_files(source, dest=None, headless=True):
         
         if path.exists():
             
-            for image in path.read_text().split():
+            images = path.read_text().split()
             
-                image = image.strip()
+            for image in images:
+            
                 name = dest / image.split('/')[-1].split('?')[0]
-                if not name.exists(): save_image(name, image)
+                
+                if name.suffix == '': name = name.with_suffix('.webm')
+                elif name.suffix == '.m3u8':
+                    name = dest / image.split('/')[3]
+                    name = name.with_suffix('.webm')
+                    subprocess.run(['ffmpeg', '-i', image, name])
+                    
+                if save_image(name, image): images.remove(image)
+                
+                path.write_text('\n'.join(images))
             
         else: path.touch()
     
@@ -326,18 +336,19 @@ def extract_files(source, dest=None, headless=True):
     if dest is None: dest = source
     else: dest = USER / dest
     
-    driver = WEBDRIVER(headless=headless)#, profile=None)
     errors_txt = source / 'Errors.txt'
     extract_errors(errors_txt, dest)
     errors = []
         
+    driver = WEBDRIVER(headless=headless, profile=None)
+    
     for file in iterator:
 
         for url in json_generator(file):
             
             path = urlparse(url['url']).path[1:]
             
-            if re.match('https://i.imgur.com/.+gif', url['url']):
+            if re.match('https://i.imgur.com/.+gif.*', url['url']):
                 
                 path.replace('gif', 'webm')
                 
@@ -350,8 +361,7 @@ def extract_files(source, dest=None, headless=True):
                     errors.append(image)
                     continue
                 
-            else:  
- 
+            else:
                 try: image = (
                         f'https://{url["title"]}'
                         if url['url'] == 'about:blank' else 
@@ -363,7 +373,7 @@ def extract_files(source, dest=None, headless=True):
             if name.suffix == '':
                 name = dest / image.split('/')[-1].split('?')[0]
             if name.exists(): continue
-                        
+               
             if not save_image(name, image): errors.append(image)
             elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
                 try: name.rename(name.with_suffix('.webm'))
@@ -380,7 +390,7 @@ def extract_files(source, dest=None, headless=True):
         file.unlink()
 
 def json_generator(path):
-
+    
     generator = json.load(open(path, encoding='utf-8'))
 
     for object in generator[0]['windows'].values():

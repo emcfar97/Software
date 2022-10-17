@@ -1,5 +1,5 @@
-import argparse, cv2, re
-from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, send2trash, extract_files
+import argparse, cv2, re, send2trash
+from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, extract_files
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
 PATH = USER / r'Downloads\Images'
