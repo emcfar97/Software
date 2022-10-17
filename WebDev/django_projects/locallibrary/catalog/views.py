@@ -107,7 +107,6 @@ class MyView(LoginRequiredMixin, generic.View):
     login_url = '/login/'
     redirect_field_name = 'redirect_to'
     
-
 @login_required
 @permission_required('catalog.can_mark_returned', raise_exception=True)
 def renew_book_librarian(request, pk):
