@@ -374,5 +374,6 @@ Qapp = QApplication([])
 
 app = App()
 Qapp.setQuitOnLastWindowClosed(False)
+Qapp.setStyleSheet("QMessageBox { messagebox-text-interaction-flags: 5; }")
 
 Qapp.exec_()
