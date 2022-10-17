@@ -1,9 +1,10 @@
 import textwrap
-from .. import COLUMNS, get_frame, create_submenu, create_submenu_
-from ..propertiesView import Properties
 from PyQt5.QtGui import QImage, QPixmap, QDrag
 from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QSize, QMimeData, pyqtSignal, QRect, QPoint
 from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QStyledItemDelegate
+
+from .. import COLUMNS, get_frame, create_submenu, create_submenu_
+from ..propertiesView import Properties
 
 CONSTANTS = {
     'Sort': ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'],
@@ -472,12 +473,12 @@ class Model(QAbstractTableModel):
         
         return QVariant()
     
-    def setData(self, index, value, role):
+    def setData(self, index, value, role=Qt.EditRole):
         
         if role == Qt.EditRole and index.isValid():
             
             self._data[index.row()][index.column()] = value
-            self.dataChanged.emit(index, index, [Qt.DisplayRole])
+            self.dataChanged.emit(index, index)
 
             return True
             
@@ -507,6 +508,6 @@ class PaintDelegate(QStyledItemDelegate):
                 transformMode=Qt.SmoothTransformation
                 )
             
-            offset = rect - QPoint(image.size().width() - 5, image.size().height())
+            offset = rect - QPoint(image.size().width(), image.size().height())
             painter.drawImage(option.rect.topLeft() + offset/2, image)
             painter.restore()
