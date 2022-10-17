@@ -135,18 +135,8 @@ class Ribbon(QWidget):
 
         # tag parsing
         if string.strip():
-    
-            string = re.sub('([-*]?\w+( OR [-*]?\w+)+)', r'(\1)', string)
-            string = re.sub('NOT ', '-', string.strip())
-            string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
-            string = re.sub('(\+AND|OR) ', '', string)
-            string = re.sub('-\+', '-', string)
-            if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
-            string = string.replace('++', '+')
-
-            query['tags'] = [
-                f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
-                ]
+            
+            query['tags'] = [self.tag_parser(string)]
         
         if not any(query) or 'type' in query:
             
@@ -159,7 +149,27 @@ class Ribbon(QWidget):
         self.query = f'{BASE} {join} WHERE {filter} {order} LIMIT {LIMIT}'
 
         return self.query
+    
+    def tag_parser(self, string):
+    
+        # string = re.sub('([-*]?\w+( OR [-*]?\w+)+)', r'(\1)', string)
+        # string = re.sub('NOT ', '-', string.strip())
+        # string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
+        # string = re.sub('(\+AND|OR) ', '', string)
+        # string = re.sub('-\+', '-', string)
+        # if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
 
+        string = re.sub('([-*]?\w+( OR [-*]?\w+)+\*)', r'(\1)', string)
+        string = re.sub('NOT ', '-', string.strip())
+        string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
+        string = re.sub('(\+AND|OR) ', '', string)
+        string = re.sub('-\+', '-', string)
+        if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
+        
+        string = string.replace('++', '+')
+
+        return f'MATCH(tags, artist) AGAINST("{string}" IN BOOLEAN MODE)'
+    
     def get_order(self, ORDER={'Ascending':'ASC','Descending':'DESC'}):
         
         images = self.parent().parent()
