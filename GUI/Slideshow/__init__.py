@@ -124,7 +124,7 @@ class Slideshow(QMainWindow):
 
         if path is None: pixmap = QPixmap()
         else:
-            if path.endswith(('.jpg', '.png', 'webp')):
+            if path.endswith('.webp'):
                 image = QImage(path)
                 path = None
             elif path.endswith(('.gif', '.mp4', '.webm')):
@@ -164,7 +164,7 @@ class Slideshow(QMainWindow):
 
         path = self.model.index(self.index).data(Qt.UserRole)[0]
 
-        if path.endswith(('jpg', 'png', 'webp')):
+        if path.endswith('.webp'):
             self.image.rotate(path, sign)
         
         else:
