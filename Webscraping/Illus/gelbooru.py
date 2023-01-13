@@ -1,6 +1,6 @@
 import argparse
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import ARTIST, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re 
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
+from ..utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re 
 
 SITE = 'gelbooru'
     
@@ -50,11 +50,14 @@ def page_handler(hrefs):
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
-        image = html.find(href=True, text='Original image').get('href')
+        try: image = html.find(href=True, text='Original image').get('href')
+        except:
+            MYSQL.execute(DELETE[0], (href,), commit=1)
+            continue
         
         name = get_name(image.split('/')[-1], 0)
-        if name.suffix in ('jpg', 'png'): name = name.with_suffix('.webp')
-        elif name.suffix == 'mp4': name = name.with_suffix('.webm')
+        if name.suffix in ('.jpg', '.png'): name = name.with_suffix('.webp')
+        elif name.suffix == '.mp4': name = name.with_suffix('.webm')
         
         type_ = 1 if 'photo_(medium)' in tags else 2
         if len(tags.split()) < 10 and save_image(name, image):
@@ -62,7 +65,9 @@ def page_handler(hrefs):
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
-        
+        for key, value in REPLACE.items():
+            tags = re.sub(f' {key} ', f' {value} ', tags)
+            
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         hash_ = get_hash(image, 1)
         

@@ -1,6 +1,6 @@
 import argparse, time
 from . import CONNECT, SELECT, UPDATE, DELETE, WEBDRIVER
-from .utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re, ARTIST
+from .utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
 
 SITE = 'sankaku'
 MODE = [
@@ -77,8 +77,8 @@ def page_handler(hrefs, mode):
             ]
 
         name = get_name(image.split('/')[-1].split('?e=')[0], 0)
-        if name.suffix in ('jpg', 'png'): name = name.with_suffix('.webp')
-        elif name.suffix == 'mp4': name = name.with_suffix('.webm')
+        if name.suffix in ('.jpg', '.png'): name = name.with_suffix('.webp')
+        elif name.suffix == '.mp4': name = name.with_suffix('.webm')
         
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(DRIVER, name)
@@ -86,6 +86,8 @@ def page_handler(hrefs, mode):
             tags, metadata, True, artists, True
             )
         tags = tags.encode('ascii', 'ignore').decode()
+        for key, value in REPLACE.items():
+            tags = re.sub(f' {key} ', f' {value} ', tags)
 
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         artists = ' '.join(artists).encode('ascii', 'ignore').decode()
