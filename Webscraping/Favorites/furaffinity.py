@@ -42,15 +42,16 @@ def page_handler(hrefs):
             MYSQL.execute('DELETE FROM favorites WHERE href=%s', (href,), commit=1)
             continue      
                         
-        artist = html.find(
-            'a', href=re.compile('/user/+(?!chairekakia)'), id=False
-            ).get('href').split('/')[2]
         image = html.find('a', href=re.compile('//d.+')).get('href')
-        try:
-            name = ' - '.join((artist, re.findall('_.+', image)[0][1:]))
-        except: 
-            # name = ' - '.join((artist, image.split('/')[-1]))
-            continue
+        name = re.sub('.+\.(.+)_(.+)', r'\1 - \2', image)
+        name = PATH / 'Images' / SITE / name
+        
+        if name.suffix == ' ':
+            artist = html.find(
+                'a', href=re.compile('/user/+(?!chairekakia)'), id=False
+                ).get('href').split('/')[2]
+            name = f'{artist} - {image.split("/")[-1]}png'
+            # continue
         name = PATH / 'Images' / SITE / name
 
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
@@ -60,7 +61,7 @@ def page_handler(hrefs):
 def main(initial=True, headless=True):
     
     global MYSQL, DRIVER
-    MYSQL = CONNECT()
+    MYSQL = CONNECT('desktop')
     DRIVER = WEBDRIVER(headless)
     
     if initial:

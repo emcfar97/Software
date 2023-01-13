@@ -60,7 +60,7 @@ def page_handler(hrefs):
 def main(initial=True, headless=True):
     
     global MYSQL, DRIVER
-    MYSQL = CONNECT()
+    MYSQL = CONNECT('desktop')
     DRIVER = WEBDRIVER(headless)
     
     if initial:

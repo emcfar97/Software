@@ -5,32 +5,34 @@ from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
 
-def initialize(url, retry=0):
+def initialize(url, limit=3, retry=0):
 
     DRIVER.get(f'https://{SITE}.com/{url}/likes')
-    time.sleep(5)
 
     while True:
         
         query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         try:
+            target = html.find('section').contents[-1]
             hrefs = [
                 (*href, SITE) for href in
                 {
                     (re.sub('/photo/\d+', '', href.get('href')),) for href in 
-                    html.find('section').findAll(href=re.compile('/.+/status/.+'))
+                    target.findAll(href=re.compile('/.+/status/.+'))
                     } - query
                 ]
             MYSQL.execute(INSERT[1], hrefs, many=1)
         except AttributeError: continue
         
         if not hrefs:
-            if retry >= 3: break
-            else: retry += 1
+            if retry < limit: retry += 1
+            else: break
         else: retry = 0
             
-        for _ in range(2): DRIVER.find('html', Keys.PAGE_DOWN, type_=6)
+        for _ in range(3): 
+            DRIVER.find('html', Keys.PAGE_DOWN, type_=6)
+            time.sleep(2)
                 
     MYSQL.commit()
 
@@ -67,11 +69,16 @@ def page_handler(hrefs):
                     
                     if html.findAll(text='Hmm...this page doesn’t exist. Try searching for something else.'):
                     
-                        MYSQL.execute(DELETE[1], (href), commit=1)
+                        MYSQL.execute(DELETE[1], (href,), commit=1)
                         continue
                     
                     elif html.findAll(text='This Tweet is from a suspended account. '):
+                        MYSQL.execute(DELETE[2], (re.sub('(/.+/)\d+', r'\1', href),), commit=1)
                         continue
+                    
+                    # elif html.findAll(text='This Tweet is from a suspended account. '):
+                    #     MYSQL.execute(DELETE[2], (re.sub('(/.+/)\d+', r'\1', href),), commit=1)
+                    #     continue
         
         if not images: continue
         
@@ -85,15 +92,13 @@ def page_handler(hrefs):
 
         else: MYSQL.execute(DELETE[1], (href,), commit=1)
         
-    print()
-
 def main(initial=True, headless=True):
     
     global MYSQL, DRIVER
-    MYSQL = CONNECT()
+    MYSQL = CONNECT('desktop')
     DRIVER = WEBDRIVER(headless)
     
-    if initial: 
+    if initial:
         url = DRIVER.login(SITE)
         initialize(url)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
