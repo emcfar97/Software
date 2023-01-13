@@ -1,13 +1,13 @@
 import textwrap
-from PyQt5.QtGui import QImage, QPixmap, QDrag
-from PyQt5.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QSize, QMimeData, pyqtSignal, QRect, QPoint
-from PyQt5.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QAction, QStyledItemDelegate
+from PyQt6.QtGui import QPixmap, QAction#, QDrag
+from PyQt6.QtWidgets import QApplication, QTableView, QAbstractItemView, QMenu, QStyledItemDelegate
+from PyQt6.QtCore import QAbstractTableModel, QItemSelection, QVariant, QModelIndex, Qt, QPoint, QSize, pyqtSignal#, QMimeData
 
-from .. import COLUMNS, get_frame, create_submenu, create_submenu_
-from ..propertiesView import Properties
+from GUI.utils import COLUMNS, get_frame, create_submenu, create_submenu_, copy_path
+from GUI.propertiesView import Properties
 
 CONSTANTS = {
-    'Sort': ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'],
+    'Sort': ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Date', 'Random'],
     'Order': ['Ascending', 'Descending'],
     'Rating': ['Explicit', 'Questionable', 'Safe'],
     'Type': ['All', 'Photo', 'Illus', 'Comic']
@@ -17,27 +17,28 @@ class Gallery(QTableView):
     
     selection = pyqtSignal(QItemSelection, QItemSelection)
     find_artist = pyqtSignal(QModelIndex)
-    delete = pyqtSignal(list)
     load_comic = pyqtSignal(object)
+    delete = pyqtSignal(list)
 
     def __init__(self, parent):
 
         super(QTableView, self).__init__(parent)
         self.setItemDelegate(PaintDelegate(self))
-        self.table = Model(self)
+        self.table = Model(self)   
         self.setModel(self.table)
-        self.menu = self.create_menu()
-        for header in [self.horizontalHeader(), self.verticalHeader()]:
-            header.setSectionResizeMode(header.Stretch)
-            header.hide()
-        else: header.setSectionResizeMode(header.ResizeToContents)
+        self.create_menu()
         
-        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.setVerticalScrollMode(1)
-        self.setGridStyle(0)
+        for header in [self.horizontalHeader(), self.verticalHeader()]:
+            header.setSectionResizeMode(header.ResizeMode.Stretch)
+            header.hide()
+        else: header.setSectionResizeMode(header.ResizeMode.ResizeToContents)
+        
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerItem)
+        self.setGridStyle(Qt.PenStyle.NoPen)
 
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.contextMenuEvent)
         
         self.setStyleSheet('''
@@ -56,70 +57,59 @@ class Gallery(QTableView):
         
     def create_menu(self):
         
-        menu = QMenu(self)
+        self.enums = {}
+        self.menu = QMenu(self)
         parent = self.parent()
-        self.comic = QAction('Read comic', menu)
+        self.comic = QAction('Read comic', self.menu)
         
         temp_menu, sortMenu = create_submenu(
-            menu, 'Sort by', 
-            ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Random'], 
-            check=0, trigger=parent.select_records, get_menu=True
+            self.menu, 'Sort by', 
+            ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Date', 'Random'], check=0, trigger=self.menuPressEvent, get_menu=True
             )
         sortMenu.addSeparator()
-        parent.order = [temp_menu, create_submenu(
-            sortMenu, None, ['Ascending', 'Descending'], check=0, trigger=parent.select_records
+        self.enums['order'] = [temp_menu, create_submenu(
+            sortMenu, None, ['Ascending', 'Descending'], check=0,          trigger=parent.populateGallery.emit,
             )]
-        parent.rating = create_submenu(
-            menu, 'Rating', ['Explicit', 'Questionable', 'Safe'], check=2, trigger=parent.select_records
-            )
-        parent.type = create_submenu(
-            menu, 'Type', ['All', 'Photo', 'Illus', 'Comic'], check=0, trigger=parent.select_records
-            )
         
+        self.enums['rating'] = create_submenu(
+            self.menu, 'Rating', ['Explicit', 'Questionable', 'Safe'], check=2,trigger=parent.populateGallery.emit
+            )
+        self.enums['type'] = create_submenu(
+            self.menu, 'Type', ['All', 'Photo', 'Illus', 'Comic'], check=0,trigger=parent.populateGallery.emit,
+            )
+
         # sortMenu, temp_menu = create_submenu_(
         #     menu, 'Sort by', CONSTANTS['Sort'], 
-        #     trigger=parent.select_records, check=0
+        #     trigger=parent.populateGallery.emit, check=0
         #     )
         # sortMenu.addSeparator()
         # parent.order = [temp_menu, create_submenu_(
         #     sortMenu, None, CONSTANTS['Order'],
-        #     trigger=parent.select_records, check=0
+        #     trigger=parent.populateGallery.emit, check=0
         #     )[1]
         #     ]
         # parent.rating = create_submenu_(
         #     menu, 'Rating', CONSTANTS['Rating'],
-        #     trigger=parent.select_records, check=2
+        #     trigger=parent.populateGallery.emit, check=2
         #     )[1]
         # parent.type = create_submenu_(
         #     menu, 'Type', CONSTANTS['Type'],
-        #     trigger=parent.select_records
+        #     trigger=parent.populateGallery.emit
         #     )[1]
-
-        menu.addSeparator()
-        menu.addAction(QAction('Copy', menu))
-        menu.addAction(QAction('Delete', menu))            
-        menu.addSeparator()
-        self.artist = QAction('Find more by artist', menu)
-        menu.addAction(self.artist)
-        menu.addSeparator()
-        menu.addAction(QAction('Properties', menu))
-
-        menu.triggered.connect(self.menuPressEvent)
-
-        return menu
-    
-    def copy_path(self):
         
-        cb = QApplication.clipboard()
-        cb.clear(mode=cb.Clipboard)
+        self.menu.addSeparator()
+        self.menu.addAction(QAction('Copy', self.menu))
+        self.menu.addAction(QAction('Delete', self.menu))
+                   
+        self.menu.addSeparator()
+        self.artist = QAction('Find more by artist', self.menu)
+        self.menu.addAction(self.artist)
         
-        paths = ', '.join(
-            f"{index.data(Qt.UserRole)[0]}" 
-            for index in self.selectedIndexes()
-            if index.data(300) is not None
-            )
-        cb.setText(paths, mode=cb.Clipboard)
+        self.menu.addSeparator()
+        self.menu.addAction(QAction('Properties', self.menu))
 
+        self.menu.triggered.connect(self.menuPressEvent)
+        
     def total(self): return len(self.table.images)
 
     def update(self, images):
@@ -129,32 +119,31 @@ class Gallery(QTableView):
     
     # def pixmap(self):
         
-        # # for image in self.selectedIndexes()[0]:
+        # for image in self.selectedIndexes()[0]:
         
-        # path = self.currentIndex().data(Qt.UserRole)[0]
         # image = (
         #     get_frame(path) 
         #     if path.endswith(('.mp4', '.webm')) else 
-        #     QImage(path)
+        #     QPixmap(path)
         #     )
-
         # image = image.scaled(
-        #     100, 100, Qt.KeepAspectRatio, 
-        #     transformMode=Qt.SmoothTransformation
+        #     100, 100, 
+        #     Qt.AspectRatioMode.KeepAspectRatio, 
+        #     transformMode=Qt.TransformationMode.SmoothTransformation
         #     )
-            
-        # return QPixmap(image)
-            
+        
+        # return image
+        
     def openPersistentEditor(self):
         
         gallery = [
-            index.data(Qt.EditRole) for index in self.selectedIndexes() 
-            if index.data(Qt.EditRole) is not None
+            index.data(Qt.ItemDataRole.EditRole) for index in self.selectedIndexes() 
+            if index.data(Qt.ItemDataRole.EditRole) is not None
             ]
         Properties(self.parent().parent(), gallery)
     
     def selectionChanged(self, select, deselect):
-            
+        
         self.selection.emit(select, deselect)
 
     def mouseDoubleClickEvent(self, event):
@@ -177,51 +166,53 @@ class Gallery(QTableView):
         # drag.setPixmap(self.pixmap())
         # drag.setHotSpot(event.pos())
         # drag.exec_(Qt.MoveAction)
-            
+        
     def contextMenuEvent(self, event):
         
-        index = self.currentIndex().data(Qt.EditRole)
+        index = self.currentIndex().data(Qt.ItemDataRole.EditRole)
         
         if index and index[5].pop() == 'Comic':
+            
             self.menu.insertAction(self.artist, self.comic)
+            
         else: self.menu.removeAction(self.comic)
         
         self.menu.popup(self.mapToGlobal(event))
-    
+            
     def menuPressEvent(self, event):
 
-        action = event.text()
+        if isinstance(event, bool): return
         
-        if action == 'Copy': self.copy_path()
-
-        elif action == 'Delete':
-
-            self.delete.emit(self.selectedIndexes())
-
-        elif action == 'Read comic':
+        match event.text():
             
-            self.load_comic.emit([self.currentIndex(), 1])
+            case 'Copy': copy_path(self.selectedIndexes())
 
-        elif action == 'Find more by artist':
+            case 'Delete':
 
-            self.find_artist.emit(self.currentIndex())
+                self.delete.emit(self.selectedIndexes())
 
-        elif action == 'Properties':
+            case 'Read comic':
+            
+                self.load_comic.emit([self.currentIndex(), 1])
 
-            self.openPersistentEditor()
+            case 'Find more by artist':
 
+                self.find_artist.emit(self.currentIndex())
+
+            case 'Properties': self.openPersistentEditor()
+            
     def keyPressEvent(self, event):
         
         key_press = event.key()
         mode = self.selectionModel()
         modifier = event.modifiers()
-        ctrl = modifier == Qt.ControlModifier
-        shift = modifier == Qt.ShiftModifier
-        alt = modifier == Qt.AltModifier
+        ctrl = modifier == Qt.KeyboardModifier.ControlModifier
+        shift = modifier == Qt.KeyboardModifier.ShiftModifier
+        alt = modifier == Qt.KeyboardModifier.AltModifier
 
         if alt:
             
-            if self.selectedIndexes() and key_press in (Qt.Key_Return, Qt.Key_Enter):
+            if self.selectedIndexes() and key_press in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             
                 self.openPersistentEditor()
             
@@ -230,21 +221,21 @@ class Gallery(QTableView):
         elif ctrl:
 
             if shift:
-                if key_press == Qt.Key_A: self.clearSelection()
+                if key_press == Qt.Key.Key_A: self.clearSelection()
 
-            elif key_press == Qt.Key_A: self.selectAll()
+            elif key_press == Qt.Key.Key_A: self.selectAll()
                     
-            elif key_press == Qt.Key_C: self.copy_path()
+            elif key_press == Qt.Key.Key_C: copy_path(self.selectedIndexes())
             
             else: self.parent().keyPressEvent(event)
             
-        elif key_press in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left):
+        elif key_press in (Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_Right, Qt.Key.Key_Left):
             
             index = self.currentIndex()
             row1, col1 = index.row(), index.column()
-            sign = 1 if key_press in (Qt.Key_Down, Qt.Key_Right) else -1
+            sign = 1 if key_press in (Qt.Key.Key_Down, Qt.Key.Key_Right) else -1
 
-            if key_press in (Qt.Key_Right, Qt.Key_Left):
+            if key_press in (Qt.Key.Key_Right, Qt.Key.Key_Left):
                 
                 row2 = row1
                 
@@ -255,7 +246,7 @@ class Gallery(QTableView):
 
                 col2 = (col1 + sign) % self.table.columnCount()
                 
-            elif key_press in (Qt.Key_Up, Qt.Key_Down):
+            elif key_press in (Qt.Key.Key_Up, Qt.Key.Key_Down):
                 
                 col2 = col1
 
@@ -269,11 +260,11 @@ class Gallery(QTableView):
                 
                 if row1 == row2: selection = QItemSelection(index, new)
                 
-                elif key_press in (Qt.Key_Right, Qt.Key_Left):
+                elif key_press in (Qt.Key.Key_Right, Qt.Key.Key_Left):
                     
                     selection = QItemSelection(index, new)
 
-                elif key_press in (Qt.Key_Up, Qt.Key_Down):
+                elif key_press in (Qt.Key.Key_Up, Qt.Key.Key_Down):
 
                     start, end = (0, 4) if (sign < 0) else (4, 0)
                     selection = QItemSelection(
@@ -289,11 +280,11 @@ class Gallery(QTableView):
 
             else: self.setCurrentIndex(new)
                     
-        elif key_press in (Qt.Key_PageUp, Qt.Key_PageDown):
+        elif key_press in (Qt.Key.Key_PageUp, Qt.Key.Key_PageDown):
             
             index = self.currentIndex()
             row1, col1 = index.row(), index.column()
-            sign = 1 if key_press == Qt.Key_PageDown else -1
+            sign = 1 if key_press == Qt.Key.Key_PageDown else -1
             
             row2 = row1 + (sign * 5)
             if 0 > row2: row2, col2 = 0, 0
@@ -325,9 +316,9 @@ class Gallery(QTableView):
 
             else: self.setCurrentIndex(new)
 
-        elif key_press in (Qt.Key_Home, Qt.Key_End):
+        elif key_press in (Qt.Key.Key_Home, Qt.Key.Key_End):
             
-            sign = 1 if key_press == Qt.Key_End else -1
+            sign = 1 if key_press == Qt.Key.Key_End else -1
 
             row1, col1 = (
                 (0, 0) if sign < 0 else 
@@ -363,16 +354,17 @@ class Gallery(QTableView):
 
             else: self.setCurrentIndex(new)
         
-        elif key_press in (Qt.Key_Return, Qt.Key_Enter):
+        elif key_press in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             
-            self.load_comic.emit([self.currentIndex(), 2])
+            self.load_comic.emit(self.currentIndex())
 
         else: self.parent().parent().keyPressEvent(event)
 
     def resizeEvent(self, event):
 
         self.table.width = int(event.size().width() // COLUMNS)
-
+        self.table.layoutChanged.emit()
+ 
 class Model(QAbstractTableModel):
     
     number_populated = pyqtSignal(int)
@@ -386,7 +378,7 @@ class Model(QAbstractTableModel):
         
     def flags(self, index):
         
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEditable
     
     def rowCount(self, parent=None):
 
@@ -395,7 +387,7 @@ class Model(QAbstractTableModel):
         return rows + bool(cols)
 
     def columnCount(self, parent=None): return COLUMNS
-
+    
     # def canFetchMore(self, index):
         
         # if index.isValid():
@@ -432,82 +424,86 @@ class Model(QAbstractTableModel):
         
         data = self.images[ind]
 
-        if role == Qt.DecorationRole: return data[0]
+        match role:
+            
+            case Qt.ItemDataRole.DecorationRole: return data[1]
 
-        if role == Qt.EditRole:
-            
-            data = data[:7]
-            
-            path = {data[0]}
-            artist = set(data[1].split())
-            tags = set(data[2].split())
-            rating = {data[3]}
-            stars = {data[4]}
-            type = {data[5]}
-            site = {data[6]}
+            case Qt.ItemDataRole.EditRole:
+                
+                data = data
+                
+                path = {data[1]}
+                artist = set(data[2].split())
+                tags = set(data[3].split())
+                rating = {data[4]}
+                stars = {data[5]}
+                type = {data[6]}
+                site = {data[7]}
 
-            tags.discard('qwd')
-            
-            return path, tags, artist, stars, rating, type, site
+                tags.discard('qwd')
+                
+                return path, tags, artist, stars, rating, type, site
 
-        if role == Qt.ToolTipRole:
-            
-            art, tag, rat, sta, typ, sit, = data[1:7]
-            
-            tags = self.wrapper.wrap(
-                ' '.join(sorted(tag.replace(' qwd ', ' ').split()))
-                )
-            rest = self.wrapper.wrap(
-                f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()} Site: {sit}'
-                )
-            
-            return '\n'.join(tags + rest)
+            case Qt.ItemDataRole.ToolTipRole:
+                
+                art, tag, rat, sta, typ, sit, = data[2:8]
+                
+                tags = self.wrapper.wrap(
+                    ' '.join(sorted(tag.replace(' qwd ', ' ').split()))
+                    )
+                rest = self.wrapper.wrap(
+                    f'Artist: {art.strip()} Rating: {rat.lower()} Stars: {sta} Type: {typ.lower()} Site: {sit}'
+                    )
+                return '\n'.join(tags + rest)
 
-        if role == Qt.SizeHintRole: return QSize(self.width, self.width)
-        
-        if role == Qt.UserRole: return data
-        
-        if role == 100: return (index.row() * 5), index.column()
-        
-        if role == 300: return ind
+            case Qt.ItemDataRole.SizeHintRole:
+                
+                return QSize(self.width, self.width)
+            
+            case Qt.ItemDataRole.UserRole: return data
+            
+            case 100: return (index.row() * 5), index.column()
+            
+            case 300: return ind
         
         return QVariant()
     
-    def setData(self, index, value, role=Qt.EditRole):
+    def setData(self, index, value, role):
         
-        if role == Qt.EditRole and index.isValid():
+        if role == Qt.ItemDataRole.EditRole and index.isValid():
             
             self._data[index.row()][index.column()] = value
             self.dataChanged.emit(index, index)
-
+            
             return True
             
         return False
-
+    
 class PaintDelegate(QStyledItemDelegate):
     
     def paint(self, painter, option, index):
 
         QStyledItemDelegate.paint(self, painter, option, index)
 
-        if index.data(Qt.DecorationRole) is not None:
+        if index.data(Qt.ItemDataRole.DecorationRole) is not None:
 
-            path = index.data(Qt.DecorationRole)
+            path = index.data(Qt.ItemDataRole.DecorationRole)
             width = self.parent().table.width
             rect = QPoint(width, width)
                       
             painter.save()
-
+            
             image = (
                 get_frame(path) 
                 if path.endswith(('.mp4', '.webm')) else 
-                QImage(path)
+                QPixmap(path)
                 )
             image = image.scaled(
-                rect.x() - 10, rect.x() - 10, Qt.KeepAspectRatio, 
-                transformMode=Qt.SmoothTransformation
+                rect.x() - 10, rect.x() - 10, 
+                Qt.AspectRatioMode.KeepAspectRatio, 
+                transformMode=Qt.TransformationMode.SmoothTransformation
                 )
             
             offset = rect - QPoint(image.size().width(), image.size().height())
-            painter.drawImage(option.rect.topLeft() + offset/2, image)
+            painter.drawPixmap(option.rect.topLeft() + (offset / 2), image)
             painter.restore()

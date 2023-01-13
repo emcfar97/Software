@@ -1,5 +1,13 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStatusBar
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+'''
+Experimental. App for splitting video into clips using the scenedetect module.
+'''
+
+from dotenv import load_dotenv
+from scenedetect.detectors import ContentDetector
+from scenedetect import VideoManager, SceneManager, FrameTimecode
+
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStatusBar
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 
 from GUI.videosplitter.fileView import FileExplorer
 from GUI.videosplitter.videoView import Video
@@ -8,7 +16,6 @@ from GUI.videosplitter.timelineView import Timeline
 
 class VideoSplitter(QMainWindow):
 
-    populateGallery = pyqtSignal()
     closedWindow = pyqtSignal(object)
     key_pressed = pyqtSignal(object)
     
@@ -60,25 +67,25 @@ class VideoSplitter(QMainWindow):
         file.addAction('Exit')
         
         # View
-        views = self.menubar.addMenu('View')
+        view = self.menubar.addMenu('View')
         
         # Help
         help = self.menubar.addMenu('Help')
 
     def menuPressEvent(self, event=None):
-
-        action = event.text()
         
-        # File
-        if action == 'Exit': self.close()
+        match event.text():
+        
+            # File
+            case 'Exit': self.close()
 
     def keyPressEvent(self, event):
 
-        key_press = event.key()
+        match event.key():
 
-        if key_press == Qt.Key_Escape: self.close()
-    
-        else: self.key_pressed.emit(event)
+            case Qt.Key.Key_Escape: self.close()
+        
+            case _: self.key_pressed.emit(event)
 
     def closeEvent(self, event):
         

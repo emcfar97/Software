@@ -1,10 +1,10 @@
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QStatusBar, QAction
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QStatusBar
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QIcon, QAction
 
-from GUI.machinelearning.DesignView import Design
-from GUI.machinelearning.DatasetView import Dataset
-from GUI.machinelearning.TrainView import Train
+from GUI.machinelearning.designView import Design
+from GUI.machinelearning.datasetView import Dataset
+from GUI.machinelearning.trainView import Train
 
 class MachineLearning(QMainWindow):
 

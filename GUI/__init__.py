@@ -1,386 +1,405 @@
-import qimage2ndarray, traceback
-from pathlib import Path
-from cv2 import VideoCapture
-from mysql.connector import pooling
-from os import path, getenv, environ
-from dotenv import load_dotenv, set_key
-from PyQt5.QtGui import QImage
-from PyQt5.QtCore import QRunnable, Qt, QObject, QTimer, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QCompleter, QLabel, QMenu, QAction, QActionGroup, QFileDialog
+from PyQt6.QtCore import Qt, QThreadPool, pyqtSignal, pyqtSlot
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QInputDialog, QSizePolicy, QAbstractItemView
 
-load_dotenv(r'GUI\.env')
-LIMIT = getenv('LIMIT', '100000')
-BATCH = getenv('BATCH', '10000')
-COLUMNS = int(getenv('COLUMNS', '5'))
-CREDENTIALS = r'GUI\credentials.ini'
-AUTOCOMPLETE = r'GUI\autocomplete.txt'
+from GUI.utils import ROOT, AUTOCOMPLETE, Worker, Timer, Authenticate, update_autocomplete, remove_redundancies, copy_to
+from GUI.managedata import ManageData
+from GUI.managedata.galleryView import Gallery
+from GUI.managedata.previewView import Preview
+from GUI.managedata.ribbonView import Ribbon
+from GUI.machinelearning import MachineLearning
+from GUI.videosplitter import VideoSplitter
 
-ROOT = Path(Path().cwd().drive)
-PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
-parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
-BASE = f'SELECT full_path(imagedata.path, {parts}), artist, tags, rating, stars, type, site FROM imagedata'
-COMIC = 'SELECT parent FROM comic WHERE path=get_name(%s)'
-UPDATE = 'UPDATE imagedata SET {} WHERE path=get_name(%s)'
-DELETE = 'DELETE FROM imagedata WHERE path=get_name(%s)'
+GESTURE = {
+    '30 seconds': '30', 
+    '1 minute': '60', 
+    '2 minutes': '120', 
+    '5 minutes': '300', 
+    'Custom Time': None
+    }
 
-class CONNECT(QObject):
+class App(QMainWindow):
+
+    def __init__(self):
+        
+        super(App, self).__init__()
+        self.setWindowTitle('Custom GUI')
+        self.configure_gui()
+        self.create_widgets()
+        self.create_menu()
+        self.show()
+
+    def configure_gui(self):
+        
+        resolution = self.screen().size()
+        width, height = resolution.width(),  resolution.height()
+
+        self.setGeometry(
+            int(width * .34), int(height * .29),
+            int(width * .35), int(height * .48)
+            )
+        self.frame = QGroupBox()
+        self.layout = QVBoxLayout()
+        self.frame.setLayout(self.layout)
+        
+        self.layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.setContentsMargins(10, 10, 10, 15)
+        self.frame.setFixedHeight(height // 3)
+        self.setCentralWidget(self.frame)
+        
+    def create_widgets(self):
+        
+        self.windows = {}
+        options = {
+            'Manage Data': ManageData, 
+            'Gesture Draw': GestureDraw, 
+            'Machine Learning': MachineLearning,
+            'Video Splitter': VideoSplitter,
+            }
+            
+        for name, app in options.items():
+            
+            option = QPushButton(name, self)
+            option.setStyleSheet('''
+                QPushButton::focus:!hover {background: #b0caef};
+                text-align: left;
+                padding: 20px;
+                font: 12px;
+                ''')
+            option.clicked.connect(
+                lambda checked, x=name, y=app: self.select(x, y)
+                )
+            option.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+                )
+            
+            self.layout.addWidget(option)
     
-    finishedTransaction = pyqtSignal(object)
-    finishedSelect = pyqtSignal(object)
-    finishedUpdate = pyqtSignal(object)
-    finishedDelete = pyqtSignal(object)
+    def create_menu(self): pass
+
+    def select(self, title, app):
+        
+        app = app(self)
+        app.closedWindow.connect(self.closed_window)
+        app.key_pressed.connect(self.keyPressEvent)
+        self.windows[title] = self.windows.get(title, []) + [app]
+        self.hide()
+
+    def closed_window(self, event):
+
+        self.windows[event.windowTitle()].remove(event)
+        if not any(self.windows.values()): self.show()
+
+    def keyPressEvent(self, event):
+
+        key_press = event.key()
+        modifiers = event.modifiers()
+        ctrl = modifiers == Qt.KeyboardModifier.ControlModifier
+        num = event.modifiers() == Qt.KeyboardModifier.KeypadModifier
+
+        if ctrl:
+            
+            match key_press:
+                
+                case Qt.Key.Key_1: self.select('Manage Data', ManageData)
+
+                case Qt.Key.Key_2: self.select('Gesture Draw', GestureDraw)
+
+                case Qt.Key.Key_3: self.select('Machine Learning', MachineLearning)
+                
+                case Qt.Key.Key_4: self.select('Video Splitter', VideoSplitter)
+
+        match key_press:
+            
+            case (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            
+                if not self.isHidden(): self.focusWidget().click()
+
+            case Qt.Key.Key_Escape: self.close()
+
+    def closeEvent(self, event): QApplication.quit()
+
+class GestureDraw(QMainWindow):
+
+    populateGallery = pyqtSignal()
+    closedWindow = pyqtSignal(object)
+    key_pressed = pyqtSignal(object)
 
     def __init__(self, parent):
-
-        super(CONNECT, self).__init__(parent)
-        self.DATAB = pooling.MySQLConnectionPool(
-            pool_name="mypool", pool_size=10,
-            pool_reset_session=True,
-            user=getenv('USER'), password=getenv('PASS'),
-            host=getenv('HOST'), database=getenv('DATA'),
-            )
-        self.current = ''
-        self.transactions = {
-            'SELECT': None,
-            'UPDATE': [],
-            'DELETE': []
-            }
-    
-    def execute(self, statement, arguments=None, many=0, fetch=0, source=None, emit=1):
         
-        type = statement.split()[0]
+        super(App, self).__init__()
+        self.setWindowTitle('Gesture Draw')
+        self.parent = parent
+        self.configure_gui()
+        self.create_widgets()
+        self.create_menu()
+        self.order[0].actions()[-1].trigger()
+        self.show()
+
+        authenticator = Authenticate()
+        self.mysql = authenticator.success()
+        self.mysql.finishedTransaction.connect(self.select_records)
+        self.mysql.finishedSelect.connect(lambda x: self.preview.update(None))
+        self.mysql.finishedSelect.connect(self.gallery.clearSelection)
+        self.mysql.finishedSelect.connect(self.gallery.update)
+        self.mysql.finishedSelect.connect(self.update_statusbar)
+        self.mysql.finishedUpdate.connect(lambda x: self.windows.discard(x))
+        self.mysql.finishedDelete.connect(self.delete_records)
         
-        if type == self.current: # match
-            
-            if type == 'SELECT' or arguments in self.transactions[type]:
-                self.current = ''
-                return
-                
-        elif type != 'SELECT': # no match
-            
-            self.transactions[type].append(arguments)
-            self.current = type
-            
-        try:
-            
-            self.parent().setCursor(Qt.BusyCursor)
-            conn = self.DATAB.get_connection()
-            cursor = conn.cursor()
-            
-            if many: cursor.executemany(statement, arguments)
-            else: cursor.execute(statement, arguments)
+    def configure_gui(self):
 
-        except Exception as error:
-            
-            print('Error:', error)
-            
-        finally:
-            
-            self.current = ''
-            self.parent().setCursor(Qt.ArrowCursor)
-            
-            if   type == 'SELECT':
-                self.transactions['SELECT'] = None
-                
-                if fetch:
-                    
-                    fetch = cursor.fetchall()
-                    
-                    cursor.close()
-                    conn.close()
-                    return fetch
+        self.stack = QStackedWidget(self)
+        self.setCentralWidget(self.stack)  
 
-                self.finishedSelect.emit(cursor.fetchall())
-                
-                cursor.close()
-                conn.close()
-                return
-                
-            elif type == 'UPDATE':
-                
-                index = self.transactions[type].index(arguments)
-                del self.transactions[type][index]
+        resolution = self.geometry()
+        width, height = resolution.width(),  resolution.height()
+        self.setGeometry(0, 0, width // 2, height)
 
-                self.finishedUpdate.emit(source)
-                
-                conn.commit()
-                cursor.close()
-                conn.close()
-                
-            elif type == 'DELETE':
-                
-                index = self.transactions[type].index(arguments)
-                del self.transactions[type][index]
+    def create_widgets(self):
 
-                self.finishedDelete.emit(arguments)
-                
-                self.cursor = cursor
-                self.conn = conn
+        self.windows = set()
+        self.threadpool = QThreadPool()
 
-            if emit: self.finishedTransaction.emit(1)
-            
-    def rollback(self): self.DATAB.rollback()
-
-    def reconnect(self, attempts=5, time=6):
-
-        self.DATAB.reconnect(attempts, time)
-
-    def commit(self): self.DATAB.commit()
-    
-    def rowcount(self): return self.CURSOR.rowcount
-
-    def close(self): return; self.DATAB.close()
-    
-class Worker(QRunnable):
-    '''
-    Worker thread
-
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
-
-    :param callback: The function callback to run on this worker thread. Supplied args and kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-    '''
-
-    def __init__(self, fn, *args, **kwargs):
+        self.gallery = Gallery(self)
+        self.preview = Preview(self)
+        self.timer = Timer(self.preview, self)
         
-        super(Worker, self).__init__()
+        self.stack.addWidget(self.gallery)
+        self.stack.addWidget(self.preview)
+        
+        self.statusbar = QStatusBar(self)
+        self.setStatusBar(self.statusbar)
+        self.statusbar.setFixedHeight(30)
+        self.installEventFilter(self)
 
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
+        self.gallery.selection.connect(self.update_statusbar)
+        self.gallery.find_artist.connect(self.find_by_artist)
+        self.gallery.setContentsMargins(5, 0, 5, 0)
+        
+        for action in self.gallery.menu.actions():
+            
+            if action.text() in ['Delete', 'Properties']:
+                
+                self.gallery.menu.removeAction(action)
+                
+        self.preview.label.setStyleSheet(f'background: black')
 
+    def create_menu(self):
+        
+        self.menubar = self.menuBar()
+        self.toolbar = self.addToolBar('Ribbon')
+
+        self.ribbon = Ribbon(self)
+        self.toolbar.addWidget(self.ribbon)
+
+        self.menubar.triggered.connect(self.menuPressEvent)
+        self.toolbar.actionTriggered.connect(self.menuPressEvent)
+        self.ribbon.selection_mode.connect(self.setSelectionMode)
+        self.ribbon.multi.click()
+        self.ribbon.tags.setFocus()
+
+        # File
+        file = self.menubar.addMenu('File')
+        file.addAction('Add image(s)')
+        file.addAction('Copy Images to', lambda: copy_to(self, self.gallery.selectedIndexes()), shortcut='CTRL+SHIFT+C')
+        self.gesture_menu = create_submenu_(
+            self, 'Gesture Draw', GESTURE.keys(), check=False
+            )[0]
+        file.addMenu(self.gesture_menu)
+        file.addSeparator()
+        file.addAction('Exit', self.close, shortcut='CTRL+W')
+        
+        # database
+        database = self.menubar.addMenu('Database')
+        database.addAction('Reconnect')
+        database.addAction('Current statement')
+        database.addAction('Update Autocomplete')
+        database.addAction('Remove Redundancies')
+        
+        # View
+        view = self.menubar.addMenu('View')
+        
+        # Help
+        help = self.menubar.addMenu('Help')
+    
     @pyqtSlot()
-    def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-
-        # Retrieve args/kwargs here; and fire processing using them
-        try: result = self.fn(*self.args, **self.kwargs)
-        except: traceback.print_exc()
-
-class Timer(QLabel):
-    
-    def __init__(self, parent, toplevel):
+    def select_records(self):
         
-        super(QLabel, self).__init__(parent)
-        
-        self.toplevel = toplevel
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.countdown)
-        self.setAlignment(Qt.AlignCenter)
+        worker = Worker(self.mysql.execute, self.ribbon.update_query())
+        self.threadpool.start(worker)
 
-    def start(self, gallery,  time):
+    def start_session(self, gallery, time):
         
-        parent = self.parent()
-        self.gallery = iter(gallery)
-        self.image = next(self.gallery)
-        parent.update(self.image)
-        
-        self.setGeometry(
-            int(parent.width() * .85), 
-            int(parent.height() * .85), 
-            75, 75
-            )
-        self.setStyleSheet('background: white; font: 20px')
-        
-        self.time, self.current = time, time
-        self.updateText()
-        self.timer.start(1000)
+        if gallery and time:
 
-    def pause(self):
+            self.menubar.hide()
+            self.toolbar.hide()
+            self.statusbar.hide()
 
-        if self.timer.isActive(): self.timer.stop()
-        else: self.timer.start(1000)
-
-    def updateText(self, delta=1):
-
-        self.current = (self.current - delta) % self.time
-        self.setText('{}:{:02}'.format(*divmod(self.current, 60)))
-        self.setStyleSheet(f'''
-            background: white; font: 20px;
-            color: {"red" if self.current <= 5 else "black"}
-            ''')
-           
-    def countdown(self):
-        
-        if self.current: self.updateText()
+            if ':' in time:
+                min, sec = time.split(':')
+                time = (int(min) * 60) + int(sec)
+            else: time = int(time)
+            
+            self.stack.setCurrentIndex(1)
+            self.timer.start(gallery, time)
         
         else:
-
-            worker = Worker(
-                self.toplevel.mysql.execute, 
-                UPDATE.format(f'date_used=CURDATE()'),
-                [self.image.data(Qt.UserRole)[0]],
-                emit=0
+            QMessageBox.information(
+                self, '', 
+                'You are either missing images or a time',
+                QMessageBox.Ok
                 )
-            self.toplevel.threadpool.start(worker)
-            self.updateText()
+
+    def update_statusbar(self):
         
-            try:
-                self.image = next(self.gallery)
-                self.parent().update(self.image)
+        total = self.gallery.total()
+        select = len(self.gallery.selectedIndexes())
 
-            except StopIteration:
+        total = (
+            f'{total} image' 
+            if (total == 1) else 
+            f'{total} images'
+            )
 
-                self.timer.stop()
-                self.parent().update()
-                self.setText('End of session')
-                self.setStyleSheet(
-                    'background: black; color: white; font: 20px'
-                    )
-                self.setGeometry(
-                        int(self.parent().width() * .4),
-                        int(self.parent().height() * .1),
-                        125, 75
-                        )
-class Completer(QCompleter):
+        if select:
 
-    def __init__(self, model, parent=None):
-
-        super(Completer, self).__init__(model, parent)
-
-        self.setCaseSensitivity(Qt.CaseInsensitive)
-        self.setCompletionMode(QCompleter.PopupCompletion)
-        self.setWrapAround(False)
-
-    # # Add texts instead of replace
-    # def pathFromIndex(self, index):
-
-    #     path = QCompleter.pathFromIndex(self, index)
-
-    #     lst = str(self.widget().text()).split(',')
-
-    #     if len(lst) > 1:
-    #         path = '%s, %s' % (','.join(lst[:-1]), path)
-
-    #     return path
-
-    # # Add operator to separate between texts
-    # def splitPath(self, path):
-
-    #     path = str(path.split(',')[-1]).lstrip(' ')
+            select = (
+                f'{select} image selected' 
+                if (select == 1) else 
+                f'{select} images selected'
+                )
+                
+        else: select = ''
         
-    #     return [path]
-        
-def create_submenu(parent, name, items, trigger, check=None, get_menu=False):
-    '''Create submenu based on parent widget, name, items'''
-        
-    if name is None: menu = parent
-    else: menu = QMenu(name, parent)
-    action_group = QActionGroup(menu)
-
-    for num, item in enumerate(items):
-        
-        action = QAction(item, menu, checkable=True)
-        if num == check: action.setChecked(True)
-        action_group.triggered.connect(trigger)
-        action_group.addAction(action)
-        menu.addAction(action)
-
-    else:
-        if name is not None: parent.addMenu(menu)
-        action_group.setExclusive(True)
+        self.statusbar.showMessage(f'   {total}     {select}')
     
-    if get_menu: return action_group, menu
-    return action_group
+    def find_by_artist(self, index):
 
-def create_submenu_(parent, name, items, trigger=None, check=None):
-    '''Create submenu based on parent widget, name, items'''
+        artist = index.data(Qt.UserRole)[2]
         
-    if name is None: menu = parent
-    else: menu = QMenu(name, parent)
-    action_group = QActionGroup(menu)
-    action_group.setExclusive(True)
-    if trigger: action_group.triggered.connect(trigger)
+        if artist:
+            
+            self.ribbon.setText(' OR '.join(artist.split()))
 
-    for num, item in enumerate(items):
+        else: QMessageBox.information(
+            self, 'Find by artist', 'This image has no artist'
+            )
+
+    def setSelectionMode(self, event):
         
-        if isinstance(item, list):
+        if event:
             
-            action = create_submenu_(menu, None, item[:-1], trigger, item[-1])[0]
-            menu.addMenu(action)
-        
-        elif item is None:
-            
-            menu.addSeparator(); continue
+            self.gallery.setSelectionMode(
+                QAbstractItemView.SelectionMode.MultiSelection
+                )
         
         else:
             
-            action = QAction(item, menu, checkable=(check is not None))
-            if num == check: action.setChecked(True)
-            action_group.addAction(action)
-            menu.addAction(action)
-
-    return menu, action_group
-
-def get_frame(path):
-
-    image = VideoCapture(path).read()[-1]
-    if image is None: return QImage()
-    return qimage2ndarray.array2qimage(image).rgbSwapped()
-
-def update_autocomplete():
-
-    from pathlib import Path
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()
+            self.gallery.setSelectionMode(
+                QAbstractItemView.SelectionMode.ExtendedSelection
+                )
+            self.gallery.clearSelection()
     
-    artist, tags = MYSQL.execute(
-        '''SELECT 
-        GROUP_CONCAT(DISTINCT artist ORDER BY artist SEPARATOR ""), 
-        GROUP_CONCAT(DISTINCT tags ORDER BY tags SEPARATOR "") 
-        FROM imagedata''',
-        fetch=1)[0]
-    text = (
-        ' '.join(sorted(set(artist.split()))), 
-        ' '.join(sorted(set(tags.split())))
-        )
-    text = ('\n'.join(text)).encode('ascii', 'ignore')
-    Path(AUTOCOMPLETE).write_text(text.decode())
-    
-    MYSQL.close()
+    def menuPressEvent(self, event=None):
 
-def remove_redundancies():
-
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()  
-    SELECT = 'SELECT path, artist, tags FROM imagedata WHERE NOT ISNULL(path)'
-    UPDATE = 'UPDATE imagedata SET artist=%s, tags=%s WHERE path=%s'
-
-    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
-
-        artist = f' {" ".join(set(artist.split()))} '.replace('-', '_')
-        tags = f' {" ".join(set(tags.split()))} '.replace('-', '_')
-        MYSQL.execute(UPDATE, (artist, tags, path))
-
-    MYSQL.commit()
-    MYSQL.close()
-
-def copy_to(widget, images, sym=False):
-
-    paths = [
-        Path(index.data(Qt.UserRole)[0])
-        for index in images
-        if index.data(300) is not None
-        ]
-    
-    folder = Path(QFileDialog.getExistingDirectory(
-        widget, 'Open Directory', getenv('COPY_DIR', '*')
-        ))
-    
-    if folder:
+        match event.text():
         
-        for path in paths:
+            # File
+            case 'Add image(s)':
+                
+                QMessageBox.information(
+                    self, 'Non existant function', 'That function does not exist'
+                    )
+            
+            case 'Copy Images to':
+            
+                copy_to(self, self.gallery.selectedIndexes())
+                
+            case GESTURE.keys():
+                
+                if event.text() == 'Custom Time':
+                    
+                    time, ok = QInputDialog.getText(self, "Dialog", "Enter time:")
+                
+                    if ok:
+                        
+                        gallery = self.gallery.selectedIndexes()
+                        self.start_session(gallery, time)
+                        
+                else:
+                    
+                    gallery = self.gallery.selectedIndexes()
+                    self.start_session(gallery, GESTURE[event.text()])
 
-            name = folder / path.name
-            if sym and not name.exists(): name.symlink_to(path)
-            else: name.write_bytes(path.read_bytes())
+            case 'Exit': self.close()
+            
+            # Database
+            case 'Reconnect':
+                
+                authenticator = Authenticate()
+                self.mysql = authenticator.success()
+                self.threadpool.clear()
+                self.threadpool = QThreadPool()
+            
+            case 'Current statement':
+                
+                QMessageBox.information(
+                    self, 'Current Statement', self.ribbon.query
+                    )
+                
+            case 'Update Autocomplete':
+
+                worker = Worker(update_autocomplete)
+                self.threadpool.start(worker)
+
+                self.ribbon.tags.setCompleter(
+                    QCompleter(open(AUTOCOMPLETE).read().split())
+                    )
+
+            case 'Remove Redundancies':
+                
+                worker = Worker(remove_redundancies)
+                self.threadpool.start(worker)
         
-    set_key(r'GUI\.env', 'COPY_DIR', str(folder))
-    load_dotenv(r'GUI\.env')
+    def keyPressEvent(self, event):
+
+        key_press = event.key()
+        modifiers = event.modifiers()
+        alt = modifiers == Qt.KeyboardModifier.AltModifier
+
+        if alt:
+            
+            match key_press:
+                
+                case Qt.Key.Key_Left: self.ribbon.go_back()
+                
+                case Qt.Key.Key_Right: self.ribbon.go_forward()
+            
+                case Qt.Key.Key_F4: self.close()
+
+                case _: self.key_pressed.emit(event)
+
+        match key_press:
+            
+            case Qt.Key.Key_F4: self.ribbon.tags.setFocus()
+            
+            case Qt.Key.Key_F5: self.select_records()
+
+            case Qt.Key.Key_Delete:
+                
+                self.delete_records(self.gallery.selectedIndexes())
+                            
+            case Qt.Key.Key_Escape: self.close()
+            
+            case (Qt.Key.Key_Up|Qt.Key.Key_Down|Qt.Key.Key_Right|Qt.Key.Key_Left|Qt.Key.Key_PageUp|Qt.Key.Key_PageDown|Qt.Key.Key_Home|Qt.Key.Key_End|Qt.Key.Key_Return|Qt.Key.Key_Enter):
+            
+                self.gallery.keyPressEvent(event)
+
+            case _: self.key_pressed.emit(event)
+        
+    def closeEvent(self, event):
+        
+        self.mysql.close()
+        self.threadpool.clear()
+        for window in self.windows: window.close()
+        self.closedWindow.emit(self)

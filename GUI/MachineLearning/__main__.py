@@ -1,10 +1,7 @@
-from PyQt5.QtWidgets import QApplication
-
-from GUI.machinelearning import MachineLearning
+from PyQt6.QtWidgets import QApplication
 
 Qapp = QApplication([])
 
-app = MachineLearning()
-Qapp.setStyleSheet("QMessageBox { messagebox-text-interaction-flags: 5; }")
+app = App()
 
-Qapp.exec_()
+Qapp.exec()

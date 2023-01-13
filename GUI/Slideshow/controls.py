@@ -6,7 +6,7 @@ class Controls(QWidget):
     
     def __init__(self, parent):
          
-        super().__init__(parent)
+        super(Controls, self).__init__(parent)
         self.total = 0
         self.configure_gui()
         self.create_widgets()
@@ -22,7 +22,7 @@ class Controls(QWidget):
         self.layout.addWidget(self.timeline)
         self.layout.addLayout(self.options)
         self.setFixedHeight(150)
-        # self.setMouseTracking(True)
+        self.setMouseTracking(True)
         
     def create_widgets(self):
         
@@ -86,3 +86,4 @@ class Controls(QWidget):
     def volumeChanged(self, event):
 
         self.parent().video.volume(self.volume.value())
+        

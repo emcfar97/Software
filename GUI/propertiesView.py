@@ -1,7 +1,8 @@
-from  . import AUTOCOMPLETE, Completer
-from PyQt5.QtGui import QCursor
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QCursor, QGuiApplication
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox, QCompleter
+
+from GUI.utils import AUTOCOMPLETE
 
 class Properties(QMainWindow):
 
@@ -38,23 +39,43 @@ class Properties(QMainWindow):
             self.mapToGlobal(QCursor().pos()).x(), 
             self.mapToGlobal(QCursor().pos()).y()
             ]
-        resolution = QDesktopWidget().screenGeometry(
+        resolution = QGuiApplication.screenAt(
             self.mapToGlobal(QCursor().pos())
-            )
+            ).geometry()
         screen = [
-            resolution.bottomRight().x(), 
-            resolution.bottomRight().y()
+            resolution.x() + resolution.width() - 1,
+            resolution.y() + resolution.height() - 1,
             ]
 
         for num, (i, j, k) in enumerate(zip(size, position, screen)):
-            if (displacement := k - (i + j)) < 0: 
+            
+            if (displacement := k - (i + j)) < 0:
+                
                 position[num] += displacement
-        self.setGeometry(*position, *size)  
+
+        self.setGeometry(*position, *size) 
         
     def create_widgets(self):
         
         self.modified = {}
         artist, tags = open(AUTOCOMPLETE).readlines()
+
+        # self.main = {
+        #     'Path': QLineEdit(self),
+        #     'Tags': LineEdit(self),
+        #     'Artist': LineEdit(self),
+        #     'Stars': ComboBox(self),
+        #     'Rating': ComboBox(self),
+        #     'Type': ComboBox(self),
+        #     'Site': LineEdit(self, True),
+        # }
+        
+        # self.main['path'].setReadOnly(True)
+        # self.main['tags'].setCompleter(Completer(tags.split()))
+        # self.main['artist'].setCompleter(Completer(artist.split()))
+        # self.main['stars'].addItems(['', '1', '2', '3', '4', '5'])
+        # self.main['rating'].addItems(['', 'Safe', 'Questionable', 'Explicit'])
+        # self.main['type'].addItems(['', 'Photograph', 'Illustration', 'Comic'])
 
         self.path = QLineEdit(self)
         self.tags = LineEdit(self)
@@ -64,9 +85,9 @@ class Properties(QMainWindow):
         self.type = ComboBox(self)
         self.site = LineEdit(self, True)
         
-        self.path.setDisabled(True)
-        self.tags.setCompleter(Completer(tags.split()))
-        self.artist.setCompleter(Completer(artist.split()))
+        self.path.setReadOnly(True)
+        self.tags.setCompleter(QCompleter(tags.split()))
+        self.artist.setCompleter(QCompleter(artist.split()))
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
         self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
         self.type.addItems(['', 'Photograph', 'Illustration', 'Comic'])
@@ -82,14 +103,21 @@ class Properties(QMainWindow):
         self.prop_layout.addLayout(self.form)
 
         horizontal = QHBoxLayout()
-        horizontal.setAlignment(Qt.AlignRight)
+        horizontal.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.prop_layout.addLayout(horizontal)
+        
         for text in ['OK', 'Cancel', 'Apply']:
+            
             option = QPushButton(text)
+            
             if text in ['OK', 'Apply']:
+            
                 option.clicked.connect(self.output)
+            
             else: option.clicked.connect(self.close)
+            
             horizontal.addWidget(option)
+            
         else: option.setEnabled(False)
     
         self.tags.textEdited.connect(lambda: option.setEnabled(True))
@@ -98,7 +126,7 @@ class Properties(QMainWindow):
         self.rating.activated.connect(lambda: option.setEnabled(True))
         self.type.activated.connect(lambda: option.setEnabled(True))
         self.site.textEdited.connect(lambda: option.setEnabled(True))
-        
+    
     def populate(self, indexes):
         
         path, tags, artist, stars, rating, type, site = (
@@ -122,21 +150,21 @@ class Properties(QMainWindow):
     def output(self, event=None):
         
         modified = {
-            self.form.itemAt(i, 0).widget().text(): 
-            self.form.itemAt(i, 1).widget().text()
+            self.form.itemAt(i, QFormLayout.ItemRole.LabelRole).widget().text(): 
+            self.form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget().text()
             for i in range(1, self.form.rowCount())
-            if self.form.itemAt(i, 1).widget().text()
+            if self.form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget().text()
             }
         
         self.update.emit(self, self.paths, modified)
         
     def keyPressEvent(self, event):
         
-        key_press = event.key()
-
-        if key_press in (Qt.Key_Return, Qt.Key_Enter): self.output()
+        match event.key():
+            
+            case (Qt.Key.Key_Return|Qt.Key.Key_Enter): self.output()
         
-        if key_press == Qt.Key_Escape: self.close()
+            case Qt.Key.Key_Escape: self.close()
 
 class LineEdit(QLineEdit):
 
