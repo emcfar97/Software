@@ -30,7 +30,6 @@ def save_image(name, image=None, exif=b''):
 
     try:
         if re.search('jp.*g|png|webp', name.suffix):
-
             
             if image:
                 img = Image.open(BytesIO(
