@@ -258,7 +258,8 @@ def Project_Stats():
 
     import re
     from Webscraping import USER
-
+    from utils import pathwalk
+    
     def tabber(parts, tabbed='', folders=['', '', '', '', '', '']):
         
         for num, part in enumerate(parts[6:-1], start=1):
@@ -278,12 +279,12 @@ def Project_Stats():
     closed = 'Closed Projects:\n'
     planned = 'Planned Projects:\n'
     
-    for project in projects.glob('**/*.clip'):
+    for projects in projects.glob('**/*.clip'):
         
         if len(project.parts[6:-1]) < 2: continue
         
         head = r'\\'.join(project.parts[6:-1])
-        head = re.sub(r'\\\\page\d+.clip', '', head)
+        head = re.sub(r'\\page\d+.clip', '', head)
         
         video = videos / head / project.stem
         art = artwork / head / project.stem
@@ -439,92 +440,28 @@ def check_predictions(num=25):
         # cv2.imshow(image, image_)
         # cv2.waitKey(0)
 
-def pinterest(folder, user, board):
-
-    import re, time, bs4
-    from Webscraping import WEBDRIVER
-    from Webscraping.utils import save_image
-    from selenium.webdriver.common.keys import Keys
-
-    driver = WEBDRIVER(0)
-    driver.get(board)
-    time.sleep(3)
-
-    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-    images = html.find(class_="gridCentered").contents[1].contents[0]
-    sections = html.find(class_='mainContainer').findAll('a', href=re.compile(f'/{user}/.+'))
-    
-    for image in images:
-        
-        image = image.find('a', href=re.compile('/pin/.+'))
-        driver.get(f'https://pinterest.com/{image.get("href")}')
-        time.sleep(3)
-        
-        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-        targets = html.find(class_="gridCentered").findAll(
-            'img', src=re.compile(f'https://i.pinimg.com/+')
-            )
-
-        for target in targets:
-            src = target.get('src')
-            image = save_image()
-            name = f"{hash(src)}.{image.format}"
-            if name.exists(): continue
-            image.thumbnail([500, 500])
-            image.save(path / folder / name)
-
-        total = total | targets
-        for _ in range(2):
-            driver.find('html', Keys.PAGE_DOWN)
-            time.sleep(2)
-    
-    for section in board[2:]:
-
-        driver.get(f'https://pinterest.com/{section.get("href")}')
-        time.sleep(3)
-
-        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-        targets = html.find(class_="gridCentered").findAll(
-            'img', src=re.compile(f'https://i.pinimg.com/+')
-            )
-
-        for target in targets:
-            src = target.get('src')
-            image = save_image()
-            name = f"{hash(src)}.{image.format}"
-            if name.exists(): continue
-            image.thumbnail([500, 500])
-            image.save(path / folder / name)
-
-        total = total | targets
-        for _ in range(2):
-            driver.find('html', Keys.PAGE_DOWN)
-            time.sleep(2)
-
-    driver.close()
-
 def f():
     
     from Webscraping import CONNECT, WEBDRIVER
     from Webscraping.utils import PATH, get_tags, generate_tags
 
-    DRIVER = WEBDRIVER(0, profile=None)
+    DRIVER = WEBDRIVER(profile=None)
     mysql = CONNECT()
-    SELECT = 'SELECT path FROM userdata.imagedata WHERE tags=" qwd " AND NOT ISNULL(path)'
+    SELECT = 'SELECT path FROM userdata.imagedata WHERE (tags=" qwd " OR tags=" qwd animated " OR tags=" animated qwd ") AND NOT ISNULL(path)'
     UPDATE = 'UPDATE userdata.imagedata SET tags=%s, rating=%s WHERE path=%s'
     DELETE = 'DELETE FROM userdata.imagedata WHERE path=%s'
     x = mysql.execute(SELECT, fetch=1)
-    for file, in mysql.execute(SELECT, fetch=1):
+    for file, in mysql.execute(SELECT, fetch=1)[::-1]:
             
         file = PATH / file[0:2] / file[2:4] / file
         if not file.exists(): mysql.execute(DELETE, (file.name,), commit=1)
 
-        try: 
+        try:
             if len(file.read_bytes()) == 0:
                 if mysql.execute(DELETE, (file.name,)):
                     file.unlink()
                     mysql.commit()
-        except FileNotFoundError: 
+        except FileNotFoundError:
             mysql.execute(DELETE, (file.name,), commit=1)
         
         tags, rating = generate_tags(
@@ -533,7 +470,7 @@ def f():
             )
         
         mysql.execute(UPDATE, (f' {tags} ', rating, file.name), commit=1)
-
+    
 parser = argparse.ArgumentParser(
     prog='test', 
     description='Run test functions'
