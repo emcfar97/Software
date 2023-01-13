@@ -61,7 +61,9 @@ def main(extract=True, add='', path=PATH):
                     general=get_tags(DRIVER, file, True), 
                     custom=True, rating=True, exif=False
                     )
-
+            
+            tags.replace('aphorisms', '')
+            
             if MYSQL.execute(INSERT[3], (
                 dest.name, '', ' '.join((tags, add)), 
                 rating, 1, hash_, None, None, None
