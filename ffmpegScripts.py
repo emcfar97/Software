@@ -2,6 +2,7 @@ import ffmpeg
 from os import path
 from pathlib import Path
 from ffprobe import FFProbe
+from tempfile import gettempdir
 from send2trash import send2trash
 from re import search, sub, findall, IGNORECASE
 
@@ -12,7 +13,8 @@ DOWN = USER / r'Downloads\Images'
 SOURCE = USER / r'Videos\Captures'
 DEST = USER / r'Dropbox\Videos\Captures'
 CRF = 15
-PRESET = 'slow'
+PRESET = 'fast'
+VSYNC = 2
 
 def get_stream(files, text):
         
@@ -89,7 +91,7 @@ while True:
             
             for file, mp4 in files:
 
-                try: 
+                try:
                 
                     if text and text in 'yes':
 
@@ -100,11 +102,11 @@ while True:
                             x=int(metadata.width) * .70, 
                             y=int(metadata.height) * .85,
                             shadowcolor='white', shadowx=2, shadowy=2
-                            ).output(str(mp4), crf=CRF, preset=PRESET).run()
+                            ).output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, vcodec='copy').run()
 
-                    else: 
+                    else:
                         ffmpeg.input(str(file)) \
-                        .output(str(mp4), crf=CRF, preset=PRESET) \
+                        .output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, vcodec='copy') \
                         .run()
 
                 except Exception as error: print(error); continue
@@ -125,7 +127,7 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                try: ffmpeg.concat(*stream).output(str(new), crf=CRF,preset=PRESET).run()
+                try: ffmpeg.concat(*stream).output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC).run()
                 except Exception as error: print(error); continue
                 
                 for file in files: send2trash(str(file))
@@ -145,14 +147,17 @@ while True:
                         if search(EXT, file.suffix, IGNORECASE)
                         ]
                     new, stream = get_stream(files, text)
+                    temp = Path(gettempdir(), new.name)
                     
                     duration = sum(
                         float(FFProbe(file).streams[0].duration)
                         for file in files
                         )
-                    ffmpeg.concat(*stream) \
+                    
+                    ffmpeg.concat(*stream).output(str(temp), crf=CRF, preset=PRESET, vsync=VSYNC).run()
+                    ffmpeg.concat(*[(str)]) \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(new), crf=CRF, preset=PRESET) \
+                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC) \
                         .run()
                         
                 except Exception as error: print(error); continue
@@ -190,7 +195,7 @@ while True:
         elif user_input == '6': # adjust directories
 
             user_input = input(
-                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change CRF: {CRF}\n5 - Change preset: {PRESET}\n'
+                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change CRF: {CRF}\n5 - Change preset: {PRESET}\n6 - Change vsync: {VSYNC}\n'
                 )
 
             if   user_input == '1': # change root
@@ -237,7 +242,11 @@ while True:
             
             elif user_input == '5': # change preset
                 
-                CRF = input('Enter value (veryfast, fast, slow, veryslow): ')
+                PRESET = input('Enter value (veryfast, fast, slow, veryslow): ')
+            
+            elif user_input == '6': # change vsync
+                
+                VSYNC = int(input('Enter value (integer): '))
 
         elif user_input == '7': # check directories
             
