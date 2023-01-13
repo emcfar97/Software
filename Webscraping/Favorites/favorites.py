@@ -7,12 +7,13 @@ from pathlib import Path
 
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
 RATINGS = {3:'explicit', 2:'questionable', 1:'safe'}
+MODE = ['checked=0', 'saved=0']
 
 def page_handler(paths, upload, sankaku=0, gelbooru=0):
     
     if not paths: return
     if upload: limit = get_limit()
-    progress = IncrementalBar('favorites', max=MYSQL.rowcount)
+    progress = IncrementalBar('favorites', max=len(paths))
 
     for (path, href, src, site,) in paths:
         
@@ -42,8 +43,8 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
             ]
         except: continue
         
-        if targets and not upload: saved = favorite(targets)
-        elif upload  and (sankaku < limit or gelbooru < 50):
+        if targets: saved = favorite(targets)
+        elif upload and (sankaku < limit or gelbooru < 50):
             saved, type_ = upload_image(path, href, src, site)  
             if type_ == 1: sankaku += 1
             elif type_ == 0: gelbooru += 1
@@ -99,10 +100,10 @@ def upload_image(path, href, src, site):
             
         case 'twitter':
             
-            artist = href.split('/')[0]
+            artist = href.split('/')[1]
             href = f'https://twitter.com{href}'
     
-    artist = ARTIST.get(artist, 0)
+    artist = ARTIST.get(artist.lower(), 0)
     if not (artist and src): return False, None
         
     with tempfile.NamedTemporaryFile(suffix='.jpg') as temp:
@@ -185,7 +186,7 @@ def initialize():
         ]
 
     MYSQL.execute(INSERT[2], paths, many=1, commit=1)
-    MYSQL.execute(DELETE[2], commit=1)
+    MYSQL.execute(DELETE[3], commit=1)
 
 def main(initial=True, headless=True, depth=0, upload=0):
 
@@ -194,7 +195,9 @@ def main(initial=True, headless=True, depth=0, upload=0):
     DRIVER = WEBDRIVER(headless, wait=30)
     
     if initial: initialize()
-    page_handler(MYSQL.execute(SELECT[4].format(not upload), fetch=1)[-depth:], upload)
+    page_handler(
+        MYSQL.execute(SELECT[4].format(MODE[upload]), fetch=1)[-depth:], upload
+        )
     DRIVER.close()
     
 if __name__ == '__main__':
@@ -214,8 +217,8 @@ if __name__ == '__main__':
         )
     parser.add_argument(
         '-d', '--depth', type=int,
-        help='Depth argument (default -1)',
-        default=-1
+        help='Depth argument (default 0)',
+        default=0
         )
     parser.add_argument(
         '-u', '--upload', type=int,
