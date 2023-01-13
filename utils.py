@@ -126,7 +126,7 @@ def Resize_Images(source, pattern='*', size=[800, 1200]):
     from PIL import Image
     from pathlib import Path
     from Webscraping.utils import USER
-
+    
     source = Path(source)
     dest = USER / 'Downloads' / f'{source.parent.name} Downscaled'
     dest.mkdir(exist_ok=True)
@@ -146,7 +146,7 @@ def Resize_Images(source, pattern='*', size=[800, 1200]):
 def Prepare_Art_Files(project, parents=''):
     ''''''
 
-    import shutil, ffprobe, time
+    import shutil, ffprobe
     from Webscraping.utils import USER
 
     dropbox = USER / 'Dropbox'
@@ -191,7 +191,7 @@ def Prepare_Art_Files(project, parents=''):
             shutil.copy(file, illus)
     
     downscaled = Resize_Images(illus, '**/*.*')
-    downscaled = downscaled.with_stem(downscaled.stem.replace(f'{project} ', ''))
+    downscaled = downscaled.rename('Downscaled')
     shutil.move(downscaled, project_dir)
     
     # zips
@@ -225,10 +225,10 @@ def Prepare_Art_Files(project, parents=''):
             f'Contents (4 files in total):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} min)\n\t・OBS ({obs_time} min)\n\n'],
         [
             f'【内容】（合計{len(list(illus.iterdir()))}ファイル):\n',
-            f'【内容】（合計4ファイル):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} 分)\n\t・OBS ({obs_time} 分)']
+            f'【内容】（合計4ファイル):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} 分)\n\t・OBS ({obs_time}分)']
         ]    
     
-    for lang in langs: 
+    for lang in langs:
         
         # Add illustration segment
         text += lang[0]
@@ -237,7 +237,7 @@ def Prepare_Art_Files(project, parents=''):
         for dir in illus.glob('**/*.*'):
             if dir.is_dir():
                 text += f'・{dir.stem} ({len(dir.iterdir())} files)'
-            else: text += f'\t{dir.stem}\n'.replace(f'{project} - ', '')
+            else: text += f'\t・{dir.stem}\n'.replace(f'{project} - ', '')
         text += '\n'
             
         # Add files/timelapse segment
@@ -254,6 +254,7 @@ def Splice_Images(folder, foreground, pattern='*'):
     from pathlib import Path
     from PIL import Image
 
+    num = 0
     folder = Path(folder)
     foreground = Image.open(foreground)
 
@@ -263,6 +264,9 @@ def Splice_Images(folder, foreground, pattern='*'):
         background.paste(foreground, (0, 0), foreground)
         
         background.save(str(image))
+        num += 1
+        
+    print(f'{num} images spliced')
 
 def Download_Xhamster():
     ''''''
@@ -400,18 +404,21 @@ def Remove_Emoji():
         
     print(f'{files} files cleaned')
 
-def Convert_Webp(folder, ext='jpg'):
+def Convert_Images(folder, source='webp', target='png', ignore=''):
     
+    import re
     from pathlib import Path
     from PIL import Image
 
     folder = Path(folder)
+    
+    for image in folder.glob(f'*{source}'):
 
-    for image in folder.glob('*webp'):
-
-        new = image.with_suffix(f'.{ext}')
-        webp = Image.open(str(image)).convert('RGB')
-        webp.save(str(new))
+        print(bool(re.search(ignore, image.suffix)))
+        # if re.search(ignore, image.suffix): continue
+        rename = image.with_suffix(f'.{target}')
+        new = Image.open(str(image)).convert('RGB')
+        new.save(str(rename))
         image.unlink()
 
 def pathwalk(top, topdown=False, followlinks=False):
