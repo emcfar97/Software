@@ -19,7 +19,7 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM imagedata WHERE site=%s AND ISNULL(path)',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
-    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE NOT (checked={{}} OR ISNULL(path))',
+    f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE {{}} AND NOT ISNULL(path)',
     f'''
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
         SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
@@ -45,6 +45,7 @@ UPDATE = [
 DELETE = [
     'DELETE FROM imagedata WHERE href=%s AND ISNULL(path)',
     'DELETE FROM favorites WHERE href=%s AND ISNULL(path)',
+    'DELETE FROM favorites WHERE href LIKE "%s%" AND ISNULL(path)',
     'DELETE FROM favorites WHERE SUBSTRING_INDEX(path, ".", -1) IN ("zip", "pixiv", "ini", "lnk")',
     ]
 
@@ -318,8 +319,8 @@ def extract_files(source, dest=None, headless=True):
                 if name.suffix == '': name = name.with_suffix('.webm')
                 elif name.suffix == '.m3u8':
                     name = dest / image.split('/')[3]
-                    name = name.with_suffix('.webm')
-                    subprocess.run(['ffmpeg', '-i', image, name])
+                    name = name.with_suffix('.mp4')
+                    subprocess.run(['ffmpeg', '-y', '-i', image, str(name)])
                     
                 if save_image(name, image): images.remove(image)
                 
@@ -329,28 +330,31 @@ def extract_files(source, dest=None, headless=True):
     
     if isinstance(source, str):
         source = pathlib.Path(source)
+        if source.is_file(): iterator = [source]
+        else: iterator = source.glob('*json')
+        errors_txt = source.parent / 'Errors.txt'
+        
+    elif isinstance(source, list):
+        iterator = source
+        errors_txt = source / 'Errors.txt'
+        
+    elif isinstance(source, Path):
         iterator = source.glob('*json')
-    elif isinstance(source, list): iterator = source
-    elif isinstance(source, Path): iterator = source.glob('*json')
+        errors_txt = source / 'Errors.txt'
     
     if dest is None: dest = source
     else: dest = USER / dest
     
-    errors_txt = source / 'Errors.txt'
     extract_errors(errors_txt, dest)
     errors = []
         
-    driver = WEBDRIVER(headless=headless, profile=None)
+    driver = WEBDRIVER(headless=headless)
     
     for file in iterator:
 
         for url in json_generator(file):
             
             path = urlparse(url['url']).path[1:]
-            
-            if re.match('https://i.imgur.com/.+gif.*', url['url']):
-                
-                path.replace('gif', 'webm')
                 
             if re.match('https://www.reddit.com/r/.+', url['url']):
                 
@@ -370,11 +374,31 @@ def extract_files(source, dest=None, headless=True):
                 except KeyError: continue
                 
             name = dest / path.split('/')[-1]
-            if name.suffix == '':
+            
+            if not name.suffix and 'imgur' in image:
+                
+                driver.get(image, wait=5)
+                html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+                
+                try: 
+                    image = html.find('source', src=True).get('src')
+                    name = dest / image.split('/')[-1]
+                except: errors.append(image); continue
+                
+            elif not name.suffix and re.search('redgifs|gfycat', image):
+                
                 name = dest / image.split('/')[-1].split('?')[0]
-            if name.exists(): continue
+                name = name.with_suffix('.webm')
                
-            if not save_image(name, image): errors.append(image)
+            if name.suffix == '.gifv':
+                        
+                name = name.with_suffix('.webm')
+                image = f'https://i.imgur.com/{name.stem}.mp4'
+                
+            if name.exists(): continue
+
+            elif not save_image(name, image): errors.append(image)
+            
             elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
                 try: name.rename(name.with_suffix('.webm'))
                 except: name.unlink(missing_ok=1)
@@ -382,13 +406,6 @@ def extract_files(source, dest=None, headless=True):
         errors_txt.write_text('\n'.join(errors))
         send2trash.send2trash(str(file))
         
-    for file in dest.glob('*gifv'):
-
-        name = file.with_suffix('.webm')
-        image = f'https://i.imgur.com/{name.stem}.mp4'
-        save_image(name, image)
-        file.unlink()
-
 def json_generator(path):
     
     generator = json.load(open(path, encoding='utf-8'))
