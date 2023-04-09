@@ -272,10 +272,10 @@ class Gallery(QTableView):
                         )
                     selection.merge(QItemSelection(
                         new,  self.table.index(row2, end)
-                        ), self.selectionModel().Select
+                        ), self.selectionModel().select
                         )
 
-                self.selectionModel().select(selection, mode.Select)
+                self.selectionModel().select(selection, mode.select)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -303,15 +303,15 @@ class Gallery(QTableView):
                 selection.merge(QItemSelection(
                     self.table.index(row1 + sign, 0), 
                     self.table.index(row2 - sign, 4)
-                    ), self.selectionModel().Select
+                    ), self.selectionModel().select
                     )
                 selection.merge(QItemSelection(
                     self.table.index(row2, col1), 
                     self.table.index(row2, 0)
-                    ), self.selectionModel().Select
+                    ), self.selectionModel().select
                     )
 
-                self.selectionModel().select(selection, mode.Select)
+                self.selectionModel().select(selection, mode.select)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)
@@ -341,15 +341,15 @@ class Gallery(QTableView):
                 selection.merge(QItemSelection(
                     self.table.index(row2 + sign, 0), 
                     self.table.index(row1 - sign, 4)
-                    ), self.selectionModel().Select
+                    ), self.selectionModel().select
                     )
                 selection.merge(QItemSelection(
                     self.table.index(row1, 0), 
                     self.table.index(row1, 4)
-                    ), self.selectionModel().Select
+                    ), self.selectionModel().select
                     )
 
-                self.selectionModel().select(selection, mode.Select)
+                self.selectionModel().select(selection, mode.select)
                 self.selectionModel().setCurrentIndex(new, mode.NoUpdate)
 
             else: self.setCurrentIndex(new)

@@ -139,11 +139,6 @@ class Ribbon(QWidget):
                 f'MATCH(tags, artist) AGAINST("{self.tag_parser(string)}" IN BOOLEAN MODE)'
                 ]
         
-        # remove null paths
-        if not any(query) or 'type' in query:
-            
-            query[''] = ['NOT ISNULL(imagedata.path)']
-
         filter = " AND ".join(
             f'({" OR ".join(val)})' for val in query.values() if val
             )

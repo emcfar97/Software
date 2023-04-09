@@ -87,7 +87,7 @@ class ManageData(QMainWindow):
         # File
         file = self.menubar.addMenu('File')
         file.addAction('Add image(s)')
-        file.addAction('Copy Images to', lambda: copy_to(self, self.gallery.selectedIndexes()))#, shortcut='CTRL+SHIFT+C')
+        file.addAction('Copy to', lambda: copy_to(self, self.gallery.selectedIndexes()))#, shortcut='CTRL+SHIFT+C')
         file.addSeparator()
         file.addAction('Exit', self.close)#, shortcut='CTRL+W')
         
@@ -110,6 +110,8 @@ class ManageData(QMainWindow):
         worker = Worker(self.mysql.execute, self.ribbon.update_query())
         self.threadpool.start(worker)
 
+    def insert_records(self): pass
+        
     def update_records(self, source, indexes, kwargs):
         
         parameters = []
@@ -148,7 +150,7 @@ class ManageData(QMainWindow):
             return
         
         paths = [
-            (index.data(Qt.UserRole)[1],) 
+            (index.data(Qt.ItemDataRole.UserRole)[1],) 
             for index in indexes
             if index.data(300) is not None
             ]
@@ -156,10 +158,10 @@ class ManageData(QMainWindow):
         message = QMessageBox.question(
             None, 'Delete', 
             'Are you sure you want to delete this?',
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
         
-        if message == QMessageBox.Yes:
+        if message == QMessageBox.StandardButton.Yes:
             
             worker = Worker(self.mysql.execute, DELETE, paths, many=1)
             self.threadpool.start(worker)
@@ -224,17 +226,14 @@ class ManageData(QMainWindow):
 
     def read_comic(self, event=None):
         
-        if event[1] == 1 or (
-            re.search('type=.comic', self.ribbon.query) and 
-            not re.search('comic=.+', self.ribbon.text())
-            ):
+        if re.search('type=.comic', self.ribbon.query) and not re.search('comic=.+', self.ribbon.text()):
             
-            path = event[0].data(Qt.UserRole)[1]
+            path = event[0].data(Qt.ItemDataRole.UserRole)[1]
             parent_, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
             self.ribbon.setText(f'comic={parent_}')
             
-            self.rating.actions()[0].trigger()
-            self.order[0].actions()[0].trigger()
+            self.gallery.enums['rating'].actions()[0].trigger()
+            self.gallery.enums['order'][0].actions()[0].trigger()
         
         else: self.start_slideshow()
     
