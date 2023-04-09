@@ -147,20 +147,24 @@ while True:
                         if search(EXT, file.suffix, IGNORECASE)
                         ]
                     new, stream = get_stream(files, text)
-                    temp = Path(gettempdir(), new.name)
+                    temp = Path(gettempdir(), files[0].name)
                     
                     duration = sum(
                         float(FFProbe(file).streams[0].duration)
                         for file in files
                         )
                     
-                    ffmpeg.concat(*stream).output(str(temp), crf=CRF, preset=PRESET, vsync=VSYNC).run()
-                    ffmpeg.concat(*[(str)]) \
+                    ffmpeg.concat(*stream) \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC) \
+                        .output(str(temp), crf=CRF, preset=PRESET, vsync=VSYNC) \
+                        .run()
+                    ffmpeg.input(str(temp)) \
+                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, vf='mpdecimate') \
                         .run()
                         
                 except Exception as error: print(error); continue
+                
+                finally: temp.unlink()
 
                 for file in files: send2trash(str(file))
 
