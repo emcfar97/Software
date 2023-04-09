@@ -1,6 +1,6 @@
-import argparse, spacy, time
-from .. import USER, WEBDRIVER, CONNECT, INSERT, send2trash, json_generator
-from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+import argparse, bs4, time, spacy, send2trash
+from .. import USER, WEBDRIVER, CONNECT, INSERT, json_generator
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, re, requests
 
 REMOVE = 'gif.|girl.|sex.|pic.|ass|cock|naked|nude|pornstar|porn|&|\d'
 PATH = USER / r'Downloads\Images\Imagefap'
@@ -44,21 +44,21 @@ def page_handler(url, title):
         if (name:=get_name(src)).exists(): continue
         save_image(name, src)
 
-        if name.suffix in ('.jpg', '.jpeg'):
+        if name.suffix == 'webp':
             
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name, True), 
+                general=get_tags(name, True), 
                 custom=True, rating=True, exif=True
                 )
             save_image(name, src, exif)
 
-        elif name.suffix in ('.gif', '.webm', '.mp4'):
+        elif name.suffix in ('.gif', '.webm'):
             
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, name, True), 
+                general=get_tags(name, True), 
                 custom=True, rating=True, exif=False
                 )
-
+        
         hash_ = get_hash(name)
         MYSQL.execute(INSERT[3], (
             name.name, artist, tags, rating,

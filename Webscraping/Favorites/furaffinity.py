@@ -1,6 +1,6 @@
-import argparse
+import argparse, bs4
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import PATH, IncrementalBar, bs4, re
+from ..utils import PATH, IncrementalBar, re
 
 SITE = 'furaffinity'
 

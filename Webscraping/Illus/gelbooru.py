@@ -1,6 +1,6 @@
-import argparse
-from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
-from ..utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re 
+import argparse, bs4
+from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
+from ..utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, requests, re 
 
 SITE = 'gelbooru'
     
@@ -52,16 +52,14 @@ def page_handler(hrefs):
             ]
         try: image = html.find(href=True, text='Original image').get('href')
         except:
-            MYSQL.execute(DELETE[0], (href,), commit=1)
+            MYSQL.execute(DELETE[5], (href,), commit=1)
             continue
         
         name = get_name(image.split('/')[-1], 0)
-        if name.suffix in ('.jpg', '.png'): name = name.with_suffix('.webp')
-        elif name.suffix == '.mp4': name = name.with_suffix('.webm')
         
         type_ = 1 if 'photo_(medium)' in tags else 2
         if len(tags.split()) < 10 and save_image(name, image):
-            tags += ' ' + get_tags(DRIVER, name)
+            tags += ' ' + get_tags(name)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
@@ -71,11 +69,13 @@ def page_handler(hrefs):
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         hash_ = get_hash(image, 1)
         
-        if MYSQL.execute(UPDATE[0], (
+        if MYSQL.execute(INSERT[3], (
             name.name, ' '.join(artists), tags, 
-            rating, type_, image, hash_, href
+            rating, type_, hash_, image, SITE, href
             )):
-            if save_image(name, image, exif): MYSQL.commit()
+            if save_image(name, image, exif):
+                MYSQL.execute(DELETE[5], (href,))
+                MYSQL.commit()
             else: MYSQL.rollback()
 
     print()

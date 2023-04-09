@@ -1,6 +1,6 @@
-import argparse, time
+import argparse, bs4, time
 from .. import CONNECT, INSERT, SELECT, WEBDRIVER
-from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, bs4, re, save_image
+from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, re, save_image
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'pinterest'
@@ -24,7 +24,7 @@ def page_handler(hrefs, section):
         if name.suffix in ('.jpg'):
 
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name, True), 
+                general=get_tags(name, True), 
                 custom=True, rating=True, exif=True
                 )
             save_image(name, exif=exif)
@@ -32,7 +32,7 @@ def page_handler(hrefs, section):
         elif name.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, name, True), 
+                general=get_tags(name, True), 
                 custom=True, rating=True, exif=False
                 )
 
@@ -40,7 +40,7 @@ def page_handler(hrefs, section):
         hash_ = get_hash(src, True)
 
         MYSQL.execute(INSERT[3], 
-            (name.name, '', tags, rating, 1, hash_, src, SITE, None), 
+            (name.name, '', tags, rating, 1, hash_, src, SITE, href), 
             commit=1
             )
         

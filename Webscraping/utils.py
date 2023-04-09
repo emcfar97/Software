@@ -1,10 +1,13 @@
-import piexif, bs4, requests, re, tempfile, hashlib, ast, json
-from . import ROOT, USER, EXT
+import piexif, requests, re, tempfile, json
+from . import ROOT, USER
 from math import log
 from io import BytesIO
+from hashlib import md5
 from ffprobe import FFProbe
 from imagehash import dhash
+from ast import literal_eval
 from progress.bar import IncrementalBar
+from deepdanbooru_onnx import DeepDanbooru
 from PIL import Image, GifImagePlugin, UnidentifiedImageError, ImageFile
 from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB, CAP_PROP_FRAME_COUNT, CAP_PROP_POS_FRAMES
 
@@ -14,6 +17,9 @@ RESIZE = [1320, 1000]
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
+MODEL = DeepDanbooru(
+    tags_path=r'MachineLearning\general-tags.txt', threshold=0.475
+    )
 
 data = json.load(open(r'Webscraping\constants.json', encoding='utf-8'))
 
@@ -29,7 +35,7 @@ def save_image(name, image=None, exif=b''):
     '''Save image to name (with optional exif metadata)'''
 
     try:
-        if re.search('jp.*g|png|webp', name.suffix):
+        if re.search('jp.*g|png|bmp|webp', name.suffix):
             
             if image:
                 img = Image.open(BytesIO(
@@ -66,7 +72,7 @@ def save_image(name, image=None, exif=b''):
     
     return name.exists()
 
-def download_redgif(name, url, exif=b''):
+def download_redgif(name, url):
     # Use redgif API to download a url's contents to the specified name
     
     sess = requests.Session()
@@ -81,7 +87,7 @@ def download_redgif(name, url, exif=b''):
     
     return name
 
-def download_gfycat(name, url, exif=b''):
+def download_gfycat(name, url):
     # Use gfycat API to download a url's contents to the specified name
     
     sess = requests.Session()
@@ -99,17 +105,25 @@ def download_gfycat(name, url, exif=b''):
 def get_name(path, hasher=1):
     '''Return pathname (from optional hash of image)'''
     
-    stem = path
+    if isinstance(path, str): suffix = f'.{path.split(".")[-1]}'
+    else: suffix = path.suffix
+
+    if suffix in ('.jpg', '.jpeg', '.png', '.bmp'): suffix = '.webp'
+    elif suffix in ('.mp4'): suffix = '.webm'
 
     if hasher:
+        
         if isinstance(path, str):
             data = requests.get(path, headers=HEADERS).content
         else: data = path.read_bytes()
-        hasher = hashlib.md5(data)
+        hasher = md5(data)
 
-        stem = f'{hasher.hexdigest()}.{re.findall(EXT, str(path), re.IGNORECASE)[0]}'
+        path = f'{hasher.hexdigest()}{suffix}'
+        
+    else:
+        path = f'{path.split(".")[0]}{suffix}'
     
-    return PATH / stem[0:2] / stem[2:4] / stem.lower().replace('jpeg','jpg')
+    return PATH / path[0:2] / path[2:4] / path
 
 def get_hash(image, src=False):
     '''Return perceptual hash of image'''
@@ -140,9 +154,13 @@ def get_hash(image, src=False):
 
     return f'{dhash(image)}'
 
-def frame_generator(path, step=1):
+def frame_generator(path, temp_dir=None, step=1):
     
-    temp_dir = tempfile.TemporaryDirectory()
+    cleanup = temp_dir
+    
+    if temp_dir is None: 
+        temp_dir = tempfile.TemporaryDirectory()
+        
     vidcap = VideoCapture(str(path))
     success, frame = vidcap.read()
         
@@ -156,19 +174,19 @@ def frame_generator(path, step=1):
             
         success, frame = vidcap.read()
     
-    else:
-        temp_dir.cleanup()
+    else: 
         vidcap.release()
+        if cleanup is None: temp_dir.cleanup()
 
-def get_tags(driver, path, filter=False):
+def get_tags(path, filter=False):
 
-    tags = set()
-    frames = []
-    video = path.suffix in ('.gif', '.webm', '.mp4')
+    tags=set()
+    
+    if path.suffix in ('.gif', '.webm', '.mp4'):
 
-    if video:
-
+        frames = []
         tags.add('animated')
+        temp_dir = tempfile.TemporaryDirectory()
         
         if path.suffix in ('.webm', '.mp4'):
             try:
@@ -189,35 +207,12 @@ def get_tags(driver, path, filter=False):
             gifcap.close()
             
         step = 90 * log((frame_count * .002) + 1) + 1
-        frames = frame_generator(path, round(step))
-    
-    elif path.suffix in ('.webp'):
-        
-        temp = tempfile.mkstemp('.png')[1]
-        webp = Image.open(str(path)).convert('RGB')
-        webp.save(temp)
-        frames.append(temp)
-    
-    else: frames.append(path)
-    
-    for frame in frames:
+        frames = list(frame_generator(path, temp_dir, round(step)))
 
-        driver.get('http://dev.kanotype.net:8003/deepdanbooru/')
-        driver.find('//*[@id="exampleFormControlFile1"]', str(frame))
-        driver.find('//button[@type="submit"]', click=True)
-
-        for _ in range(4):
-            html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-            try:
-                tags.update([
-                    tag.text for tag in html.find('tbody').findAll(href=True)
-                    ])
-                break
-            except AttributeError:
-                if driver.current_url().endswith('deepdanbooru/'):
-                    driver.find('//*[@id="exampleFormControlFile1"]',str(frame))
-                    driver.find('//button[@type="submit"]', click=True)
-                driver.refresh()
+        tags.update(*[set(i) for i in MODEL(frames)])
+        temp_dir.cleanup()
+    
+    else: tags = set(MODEL(str(path)))
     
     if filter: tags.difference_update(REMOVE)
     
@@ -275,7 +270,7 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
     
     tags = " ".join(tags)
     for key, value in REPLACE.items():
-        tags = re.sub(f' {key} ', f' {value} ', tags)
+        tags = tags.replace(f' {key} ', f' {value} ')
     else: tags = tags.replace('-', '_')
 
     return [tags] + rating if rating else tags
@@ -289,7 +284,7 @@ def evaluate(tags, pattern):
         # query = re.sub('(\w+)', r'"\1",', pattern)
         # query = re.sub('(\([^(\([^()]*\))]*\))', r'\1,', query)
         # # query = re.sub('([))])', '),),', query)
-        query = ast.literal_eval(query)
+        query = literal_eval(query)
                 
         return parse(tags.split(), query)
 

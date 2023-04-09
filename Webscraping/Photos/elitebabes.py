@@ -1,6 +1,6 @@
-import argparse
+import argparse, bs4
 from .. import CONNECT, WEBDRIVER, INSERT, SELECT, DELETE
-from ..utils import ARTIST, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+from ..utils import ARTIST, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, re, requests
 
 SITE = 'elitebabes'
 
@@ -62,9 +62,10 @@ def page_handler(hrefs):
             if not save_image(name, src): break
 
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name, True), 
+                general=get_tags(name, True), 
                 custom=True, rating=True, exif=True
                 )
+            
             save_image(name, src, exif)
             hash_ = get_hash(name)
 

@@ -1,11 +1,11 @@
-import time, argparse
+import argparse, bs4, time
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import PATH, IncrementalBar, bs4, re
+from ..utils import PATH, IncrementalBar, re
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
 
-def initialize(url, limit=3, retry=0):
+def initialize(url, limit=5, retry=0):
 
     DRIVER.get(f'https://{SITE}.com/{url}/likes')
 
@@ -30,9 +30,8 @@ def initialize(url, limit=3, retry=0):
             else: break
         else: retry = 0
             
-        for _ in range(3): 
-            DRIVER.find('html', Keys.PAGE_DOWN, type_=6)
-            time.sleep(2)
+        DRIVER.driver.execute_script("window.scrollTo(0, window.scrollY + 1080)")
+        time.sleep(2)
                 
     MYSQL.commit()
 

@@ -1,7 +1,7 @@
-import argparse, cv2, imutils, pathlib, time
+import argparse, bs4, cv2, imutils, pathlib, time
 import numpy as np
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, bs4, requests, save_image, tempfile
+from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, requests, save_image, tempfile
 
 SITE = 'posespace'
 
@@ -45,7 +45,7 @@ def page_handler(hrefs, url=f'https://www.{SITE}.com/img/contact/'):
             for image in make_gif(image):
 
                 tags, rating = generate_tags(
-                    general=get_tags(DRIVER, image, True), 
+                    general=get_tags(image, True), 
                     custom=True, rating=True, exif=False
                     )
                 name = get_name(image)
@@ -54,7 +54,7 @@ def page_handler(hrefs, url=f'https://www.{SITE}.com/img/contact/'):
 
                 MYSQL.execute(INSERT[3], 
                     (name.name, href[:-3], ' '.join((tags, add)),
-                    rating, 1, hash_, None, SITE, None)
+                    rating, 1, hash_, None, SITE, href)
                     )
             
             else: MYSQL.execute(DELETE[0], (href,), commit=1)

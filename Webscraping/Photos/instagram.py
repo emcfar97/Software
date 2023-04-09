@@ -1,6 +1,6 @@
-import argparse, time
+import argparse, bs4, time
 from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, re
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'instagram'
@@ -82,7 +82,7 @@ def page_handler(hrefs, retry=2):
             hash_ = get_hash(name) 
 
             tags, rating, exif = generate_tags(
-                general=get_tags(DRIVER, name, True), 
+                general=get_tags(name, True), 
                 custom=True, rating=True, exif=True
                 )
             if name.suffix.endswith(('jpg', 'png')): 

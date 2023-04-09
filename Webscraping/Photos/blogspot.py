@@ -40,14 +40,14 @@ def page_handler(hrefs, tag):
         name = get_name(href)
         if not save_image(name, href): continue
         tags, rating, exif = generate_tags(
-            get_tags(DRIVER, name, True) + tag,
+            get_tags(name, True) + tag,
             custom=True, rating=True, exif=True
             )
         save_image(name, href, exif)
         hash_ = get_hash(name)
         
-        MYSQL.execute(UPDATE[0],
-            (str(name), ' ', tags, rating, href, hash_, href),
+        MYSQL.execute(INSERT[3],
+            (name.name, '', tags, rating, 1, hash_, href, SITE, None),
             commit=1
             )
         progress.next()

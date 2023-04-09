@@ -1,13 +1,12 @@
-import argparse, time
-from . import CONNECT, SELECT, UPDATE, DELETE, WEBDRIVER
-from .utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, requests, re
+import argparse, bs4, time
+from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
+from .utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, requests, re
 
 SITE = 'sankaku'
 MODE = [
     ['idol', 1],
     ['chan', 2]
     ]
-INSERT = 'INSERT INTO imagedata(href, type, site) VALUES(%s, %s, %s)'
 
 def initialize(mode, url, query=0):
     
@@ -47,17 +46,17 @@ def page_handler(hrefs, mode):
     for href, in hrefs:
         
         progress.next()
-        page_source = requests.get(
-            f'https://{mode[0]}.sankakucomplex.com{href}'
-            ).content      
-        html = bs4.BeautifulSoup(page_source, 'lxml')
+        DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         while html.find(text=re.compile('(Too many requests)|(Please slow down)')):
             time.sleep(60)
             page_source = requests.get(
                 f'https://{mode[0]}.sankakucomplex.com{href}'
                 ).content   
             html = bs4.BeautifulSoup(page_source, 'lxml')
-        try: image = f'https:{html.find(id="highres", href=True).get("href")}'
+        try: 
+            src = html.find(id="highres", href=True)
+            image = f'https:{src.get("href")}'
         except AttributeError:
             if html.find(text='404: Page Not Found'): 
                 MYSQL.execute(DELETE[0], (href,), commit=1)
@@ -77,11 +76,9 @@ def page_handler(hrefs, mode):
             ]
 
         name = get_name(image.split('/')[-1].split('?e=')[0], 0)
-        if name.suffix in ('.jpg', '.png'): name = name.with_suffix('.webp')
-        elif name.suffix == '.mp4': name = name.with_suffix('.webm')
         
         if len(tags.split()) < 10 and save_image(name, image):
-            tags += ' ' + get_tags(DRIVER, name)
+            tags += ' ' + get_tags(name, filter=mode[1] == 1)
         tags, rating, exif = generate_tags(
             tags, metadata, True, artists, True
             )
@@ -94,10 +91,12 @@ def page_handler(hrefs, mode):
 
         hash_ = get_hash(image, 1)
 
-        if MYSQL.execute(UPDATE[0], (
-            name.name, artists, tags, rating, mode[1], image, hash_, href
+        if MYSQL.execute(INSERT[3], (
+            name.name, artists, tags, rating, mode[1], hash_, image, SITE, href
             )):
-            if save_image(name, image, exif): MYSQL.commit()
+            if save_image(name, image, exif):
+                MYSQL.execute(DELETE[4], (href, mode[1]))
+                MYSQL.commit()
             else: MYSQL.rollback()
     
     print()
@@ -113,7 +112,7 @@ def main(initial=True, headless=True, mode=1):
         
         url = DRIVER.login(SITE)
         hrefs = initialize(mode, url)
-        MYSQL.execute(INSERT, hrefs, many=1, commit=1)
+        MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
 
     page_handler(
         MYSQL.execute(

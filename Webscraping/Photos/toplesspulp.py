@@ -3,7 +3,7 @@ from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
 from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4
 from selenium.webdriver.common.keys import Keys
 
-SITE = 'topless'
+SITE = 'toplesspulp'
 
 def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
     
@@ -36,14 +36,14 @@ def page_handler(hrefs):
         name = get_name(href)
         if not save_image(name, href): continue
         tags, rating, exif = generate_tags(
-            get_tags(DRIVER, name, True) + ' casual_nudity',
+            get_tags(name, True) + ' casual_nudity',
             custom=True, rating=True, exif=True
             )
         save_image(name, href, exif)
         hash_ = get_hash(name)
         
-        MYSQL.execute(UPDATE[0],
-            (str(name), ' ', tags, rating, href, hash_, href),
+        MYSQL.execute(INSERT[3],
+            (name.name, '', tags, rating, 1, hash_, href, SITE, None),
             commit=1
             )
 

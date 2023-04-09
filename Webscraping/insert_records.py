@@ -1,5 +1,5 @@
 import argparse, cv2, re, send2trash
-from . import USER, WEBDRIVER, CONNECT, INSERT, EXT, extract_files
+from . import USER, CONNECT, INSERT, EXT, extract_files
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
 PATH = USER / r'Downloads\Images'
@@ -29,7 +29,6 @@ def main(extract=True, add='', path=PATH):
     if extract: extract_files(path / 'Generic', path)
     
     MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(profile=None)
         
     files = [
         file for file in path.iterdir() 
@@ -50,7 +49,7 @@ def main(extract=True, add='', path=PATH):
             if dest.suffix.lower() in ('.jpg', '.png', '.webp'):
 
                 tags, rating, exif = generate_tags(
-                    general=get_tags(DRIVER, file, True), 
+                    general=get_tags(file, True), 
                     custom=True, rating=True, exif=True
                     )
                 save_image(file, exif=exif)
@@ -58,11 +57,11 @@ def main(extract=True, add='', path=PATH):
             elif dest.suffix.lower() in ('.gif', '.mp4', '.webm'):
                 
                 tags, rating = generate_tags(
-                    general=get_tags(DRIVER, file, True), 
+                    general=get_tags(file, True), 
                     custom=True, rating=True, exif=False
                     )
             
-            tags.replace('aphorisms', '')
+            tags = tags.replace('aphorisms', '')
             
             if MYSQL.execute(INSERT[3], (
                 dest.name, '', ' '.join((tags, add)), 
@@ -73,7 +72,6 @@ def main(extract=True, add='', path=PATH):
             
         except Exception as error: print('\n', error, '\n')
     
-    DRIVER.close()
     print('\nDone')
 
 if __name__ == '__main__':

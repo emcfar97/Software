@@ -1,8 +1,7 @@
-import argparse, sqlite3, os, time, tempfile
+import argparse, bs4, sqlite3, os, time, tempfile
 from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, EXT
-from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, bs4, requests, re
+from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, requests, re
 import selenium.common.exceptions as exceptions
-from selenium.webdriver.common.keys import Keys
 from pathlib import Path
 
 IGNORE = '(too large)|(read query)|(file was uploaded)|(request failed:)'
@@ -109,7 +108,7 @@ def upload_image(path, href, src, site):
     with tempfile.NamedTemporaryFile(suffix='.jpg') as temp:
         
         temp.write(bytes(requests.get(src).content)) 
-        tags = get_tags(DRIVER, Path(temp.name))
+        tags = get_tags(Path(temp.name))
         if 'comic' in tags: return False, 0
 
         general, rating = generate_tags(
