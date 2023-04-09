@@ -89,60 +89,6 @@ def Copy_Files(files, dest, sym=False):
         if sym and not name.exists(): name.symlink_to(path)
         else: name.write_bytes(path.read_bytes())
 
-def Download_Nhentai():
-    '''Code, artist, range'''
-    
-    import bs4, re, ast, json
-    from Webscraping import USER, WEBDRIVER
-    from Webscraping.utils import save_image
-
-    driver = WEBDRIVER()
-    path = USER / r'Downloads\Images\Comics'
-    comic = USER / r'Dropbox\Software\Webscraping\comics.json'
-    
-    for code, artist, range_ in json.load(open(comic))[""][:-1]:
-        
-        comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
-        comic.mkdir(exist_ok=True)
-
-        driver.get(f'https://nhentai.net/g/{code}')
-        html = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
-        pages = html.findAll('a', class_='gallerythumb')
-        
-        for page in pages[range_[0] - 1:range_[1]]:
-
-            page = driver.get(f'https://nhentai.net{page.get("href")}')
-            image = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
-            src = image.find(src=re.compile('.+galleries.+')).get('src')       
-            name = comic / src.split('/')[-1]
-            if name.exists(): continue
-            save_image(name, src)
-            
-    driver.close()
-            
-def Resize_Images(source, pattern='*', size=[800, 1200]):
-    '''Reisizes all images from source matching the pattern to a given size'''
-    
-    from PIL import Image
-    from pathlib import Path
-    from Webscraping.utils import USER
-    
-    source = Path(source)
-    dest = USER / 'Downloads' / f'{source.parent.name} Downscaled'
-    dest.mkdir(exist_ok=True)
-
-    for file in source.glob(pattern):
-
-        image = Image.open(file)
-        if image.height >= image.width:
-            image.thumbnail(size)
-        else:
-            image.thumbnail(size[::-1])
-
-        image.save(dest / file.name)
-        
-    return dest
-
 def Prepare_Art_Files(project, parents=''):
     ''''''
 
@@ -184,15 +130,12 @@ def Prepare_Art_Files(project, parents=''):
     illus = project_dir / 'Illustrations'
     illus.mkdir(exist_ok=True)
     
-    try:
-        shutil.copytree(head / project, illus, dirs_exist_ok=True)
-    except FileNotFoundError:
-        for file in head.glob(f'{project}*'):
-            shutil.copy(file, illus)
-    
-    downscaled = Resize_Images(illus, '**/*.*')
+    # downscale
+    try: shutil.copytree(head / project, illus, dirs_exist_ok=True)
+    except FileNotFoundError: shutil.copytree(head, illus, dirs_exist_ok=True)
+    downscaled = Resize_Images(illus, '**/*.*', inplace=True)
     downscaled = downscaled.rename('Downscaled')
-    shutil.move(downscaled, project_dir)
+    downscaled = shutil.move(downscaled, project_dir)
     
     # zips
     print('Zip')
@@ -222,10 +165,14 @@ def Prepare_Art_Files(project, parents=''):
     langs = [
         [
             f'Contents ({len(list(illus.iterdir()))} files in total):\n',
-            f'Contents (4 files in total):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} min)\n\t・OBS ({obs_time} min)\n\n'],
+            f'Contents (4 files in total):\n\tCSP\n\tPSD\n\tCSP ({clip} min)\n\tOBS ({obs_time} min)\n\n',
+            '{} ({} files)'
+            ],
         [
             f'【内容】（合計{len(list(illus.iterdir()))}ファイル):\n',
-            f'【内容】（合計4ファイル):\n\t・CSP\n\t・PSD\n\t・CSP ({clip} 分)\n\t・OBS ({obs_time}分)']
+            f'【内容】（合計4ファイル):\n\t・CSP\n\t・PSD\n\t・CSP ({clip}分)\n\t・OBS ({obs_time}分)',
+            '{} ({}ファイル)',
+            ]
         ]    
     
     for lang in langs:
@@ -236,8 +183,8 @@ def Prepare_Art_Files(project, parents=''):
         # Add illustration files
         for dir in illus.glob('**/*.*'):
             if dir.is_dir():
-                text += f'・{dir.stem} ({len(dir.iterdir())} files)'
-            else: text += f'\t・{dir.stem}\n'.replace(f'{project} - ', '')
+                text += lang[2].format(dir.stem, len(dir.iterdir()))
+            else: text += f'    ・{dir.stem}\n'.replace(f'{project} - ', '')
         text += '\n'
             
         # Add files/timelapse segment
@@ -248,8 +195,36 @@ def Prepare_Art_Files(project, parents=''):
     psd.unlink()
     obs.unlink()
 
+def Resize_Images(folder, pattern='*', size=[800, 1200], inplace=False):
+    '''Reisizes all images from folder matching the pattern to a given size'''
+    
+    from PIL import Image
+    from pathlib import Path
+    from Webscraping.utils import USER
+    
+    num = 0
+    folder = Path(folder)
+    dest = USER / 'Downloads' / f'{folder.parent.name} Downscaled'
+    dest.mkdir(exist_ok=True)
+
+    for file in folder.glob(pattern):
+
+        image = Image.open(file)
+        if image.height >= image.width:
+            image.thumbnail(size)
+        else:
+            image.thumbnail(size[::-1])
+
+        if inplace: image.save(file)
+        image.save(dest / file.name)
+        num += 1
+    
+    print(f'{num} images resized')
+    
+    return dest
+
 def Splice_Images(folder, foreground, pattern='*'):
-    '''Combines all images matching the pattern in specified folder with a given foreground'''
+    '''Places a given foreground on all images matching the pattern in specified folder'''
 
     from pathlib import Path
     from PIL import Image
@@ -268,6 +243,59 @@ def Splice_Images(folder, foreground, pattern='*'):
         
     print(f'{num} images spliced')
 
+def Convert_Images(folder, source='webp', target='png', ignore=' '):
+    '''Convert all images with target extension to source, with optional ignoring'''
+    
+    import re
+    from pathlib import Path
+    from PIL import Image
+
+    num = 0
+    folder = Path(folder)
+    
+    for image in folder.glob(f'*{source}'):
+
+        if re.search(ignore, image.suffix): continue
+        rename = image.with_suffix(f'.{target}')
+        new = Image.open(str(image)).convert('RGBA')
+        new.save(str(rename))
+        image.unlink()
+        
+        num += 1
+    
+    print(f'{num} images converted')
+
+def Download_Nhentai():
+    '''Code, artist, range'''
+    
+    import bs4, re, json
+    from Webscraping import USER, WEBDRIVER
+    from Webscraping.utils import save_image
+
+    driver = WEBDRIVER()
+    path = USER / r'Downloads\Images\Comics'
+    comic = USER / r'Dropbox\Software\Webscraping\comics.json'
+    
+    for code, artist, range_ in json.load(open(comic)):
+        
+        comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
+        comic.mkdir(exist_ok=True)
+
+        driver.get(f'https://nhentai.net/g/{code}')
+        html = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
+        pages = html.findAll('a', class_='gallerythumb')
+        
+        for page in pages[range_[0] - 1:range_[1]]:
+
+            page = driver.get(f'https://nhentai.net{page.get("href")}')
+            image = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
+            src = image.find(src=re.compile('.+galleries.+')).get('src')       
+            name = comic / src.split('/')[-1]
+            if name.exists(): continue
+            save_image(name, src)
+            
+    driver.close()
+            
 def Download_Xhamster():
     ''''''
     
@@ -367,6 +395,8 @@ def Extract_Frames(source, fps=1, dest=None):
         success, frame = vidcap.read()
         
     else: vidcap.release()
+    
+    print(f'Extracted frames can be found at {dest}')
 
 def Remove_Emoji():
 
@@ -403,23 +433,6 @@ def Remove_Emoji():
         files += 1
         
     print(f'{files} files cleaned')
-
-def Convert_Images(folder, source='webp', target='png', ignore=''):
-    
-    import re
-    from pathlib import Path
-    from PIL import Image
-
-    folder = Path(folder)
-    
-    for image in folder.glob(f'*{source}'):
-
-        print(bool(re.search(ignore, image.suffix)))
-        # if re.search(ignore, image.suffix): continue
-        rename = image.with_suffix(f'.{target}')
-        new = Image.open(str(image)).convert('RGB')
-        new.save(str(rename))
-        image.unlink()
 
 def pathwalk(top, topdown=False, followlinks=False):
     """
