@@ -471,8 +471,11 @@ def copy_to(widget, images):
             if name.suffix == '.webp': 
                 name = name.with_suffix('.png')
         
-            image = Image.open(str(path)).convert('RGBA')
-            image.save(str(name))
-        
+                image = Image.open(str(path)).convert('RGBA')
+                image.save(str(name))
+            
+            else:
+                name.write_bytes(path.read_bytes())
+                
     set_key(r'GUI\.env', 'COPY_DIR', str(folder))
     load_dotenv(r'GUI\.env')
