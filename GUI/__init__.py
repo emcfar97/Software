@@ -200,7 +200,7 @@ class GestureDraw(QMainWindow):
         # File
         file = self.menubar.addMenu('File')
         file.addAction('Add image(s)')
-        file.addAction('Copy Images to', lambda: copy_to(self, self.gallery.selectedIndexes()), shortcut='CTRL+SHIFT+C')
+        file.addAction('Copy to', lambda: copy_to(self, self.gallery.selectedIndexes()), shortcut='CTRL+SHIFT+C')
         self.gesture_menu = create_submenu_(
             self, 'Gesture Draw', GESTURE.keys(), check=False
             )[0]
@@ -311,7 +311,7 @@ class GestureDraw(QMainWindow):
                     self, 'Non existant function', 'That function does not exist'
                     )
             
-            case 'Copy Images to':
+            case 'Copy to':
             
                 copy_to(self, self.gallery.selectedIndexes())
                 
