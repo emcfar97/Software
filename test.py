@@ -10,56 +10,6 @@ def run():
     
     exec(f'{function}({arguments})')
 
-def Check_Predictions(sql=False, num=25):
-    
-    from Webscraping import USER
-    from MachineLearning.Tensorflow import Model
-
-    path = USER / r'Dropbox\ん'
-    model = Model('Medium-07.hdf5')
-
-    if sql:
-        
-        import cv2
-        import numpy as np
-        from PIL import Image
-        from os import path
-        from Webscraping import CONNECT, ROOT
-        
-        PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
-        parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
-
-        MYSQL = CONNECT()
-        SELECT = f'''
-            SELECT full_path(path, {parts}) FROM imagedata 
-            WHERE SUBSTR(path, 33, 5) IN ('.jpg', '.png')
-            ORDER BY RAND() LIMIT {num}
-            '''
-
-        for image, in MYSQL.execute(SELECT, fetch=1):
-
-            prediction = model.predict(image)
-
-            image_ = np.array(Image.open(image))
-            image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
-            cv2.imshow(prediction, image_)
-            cv2.waitKey(0)
-
-    else:
-
-        from random import choices
-
-        glob = list(path.glob('[0-9a-f]/[0-9a-f]/*jpg'))
-
-        for image in choices(glob, k=num):
-
-            prediction = model.predict(image)
-
-            image_ = np.array(Image.open(image))
-            image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
-            cv2.imshow(prediction, image_)
-            cv2.waitKey(0)
-
 def Artist_statistics():
 
     from Webscraping import CONNECT
@@ -403,73 +353,79 @@ def Find_Larger_Image():
             else:
                 continue
 
-def check_predictions(num=25):
-    
-    import cv2
-    import numpy as np
-    from PIL import Image
-    from pathlib import Path
-    from Webscraping import CONNECT, WEBDRIVER
-    from Webscraping.utils import PATH, get_tags
-    from MachineLearning.Tensorflow import Model
-
-    model = Model(
-        r'deepdanbooru.hdf5', 
-        r'deepdanbooru\tags.txt'
-        )
-    driver = WEBDRIVER(profile=0)
-    mysql = CONNECT()
-
-    parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
-    SELECT = f'''
-        SELECT full_path(path, {parts}) FROM imagedata 
-        WHERE SUBSTR(path, 33, 5) IN ('.jpg', '.png')
-        ORDER BY RAND() LIMIT {num}
-        '''
-
-    for image, in mysql.execute(SELECT, fetch=1):
-
-        prediction_1 = model.predict(image)
-        prediction_2 = get_tags(driver, Path(image)).split()
-
-        # print(sorted(prediction_1), sorted(prediction_2))
-        print(f'Difference: {len(set(prediction_1) ^ set(prediction_2))} Intersection: {len(set(prediction_1) & set(prediction_2))}')
-        
-        # image_ = np.array(Image.open(image))
-        # image_ = cv2.cvtColor(image_, cv2.COLOR_RGB2BGR)
-        # cv2.imshow(image, image_)
-        # cv2.waitKey(0)
-
 def f():
     
-    from Webscraping import CONNECT, WEBDRIVER
+    from Webscraping import CONNECT
     from Webscraping.utils import PATH, get_tags, generate_tags
 
-    DRIVER = WEBDRIVER(profile=None)
     mysql = CONNECT()
-    SELECT = 'SELECT path FROM userdata.imagedata WHERE (tags=" qwd " OR tags=" qwd animated " OR tags=" animated qwd ") AND NOT ISNULL(path)'
+    SELECT = 'SELECT path FROM userdata.imagedata WHERE (tags=" qwd " OR tags=" qwd animated " OR tags=" animated qwd ")'
     UPDATE = 'UPDATE userdata.imagedata SET tags=%s, rating=%s WHERE path=%s'
     DELETE = 'DELETE FROM userdata.imagedata WHERE path=%s'
-    x = mysql.execute(SELECT, fetch=1)
+    
     for file, in mysql.execute(SELECT, fetch=1)[::-1]:
             
         file = PATH / file[0:2] / file[2:4] / file
-        if not file.exists(): mysql.execute(DELETE, (file.name,), commit=1)
+        
+        if not file.exists():
+            mysql.execute(DELETE, (file.name,), commit=1)
+            continue
 
         try:
             if len(file.read_bytes()) == 0:
                 if mysql.execute(DELETE, (file.name,)):
                     file.unlink()
                     mysql.commit()
+                    continue
         except FileNotFoundError:
             mysql.execute(DELETE, (file.name,), commit=1)
         
-        tags, rating = generate_tags(
-            general=get_tags(DRIVER, file, True), 
+        try:
+            tags, rating = generate_tags(
+            general=get_tags(file, True), 
             custom=True, rating=True, exif=False
             )
+        except ValueError: continue
+        except SyntaxError:
+            mysql.execute(DELETE, (file.name,), commit=1)
+            file.unlink()
+            continue
         
         mysql.execute(UPDATE, (f' {tags} ', rating, file.name), commit=1)
+
+def Download_Redgifs():
+    
+    import time, re
+    from Webscraping import WEBDRIVER, ActionChains
+    from Webscraping.utils import USER
+    
+    DRIVER = WEBDRIVER(0, profile=None)
+    path = USER / r'Downloads\Images\Generic\Errors.txt'
+    urls = path.read_text().split()
+    element = '//video[@src=true()]'
+        
+    for url in urls:
+        
+        if not re.search('redgif|gfycat', url): continue
+        
+        DRIVER.get(url, wait=3)
+        try:
+            Action = ActionChains(DRIVER.driver)
+            Action.move_to_element(DRIVER.find(element)) \
+                .context_click(DRIVER.find(element))  \
+                .perform()
+        except: pass
+
+        # if name.exists(): 
+
+        #     urls.remove(url)
+        #     path.write_text('\n'.join(urls))
+        
+        time.sleep(5)
+        urls.remove(url)
+        path.write_text('\n'.join(set(urls)))
+        
+    DRIVER.close()
     
 parser = argparse.ArgumentParser(
     prog='test', 
