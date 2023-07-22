@@ -165,12 +165,12 @@ def Prepare_Art_Files(project, parents=''):
     langs = [
         [
             f'Contents ({len(list(illus.iterdir()))} files in total):\n',
-            f'Contents (4 files in total):\n\tCSP\n\tPSD\n\tCSP ({clip} min)\n\tOBS ({obs_time} min)\n\n',
+            f'Contents (4 files in total):\n    CSP\n    PSD\n    CSP ({clip} min)\n    OBS ({obs_time} min)\n\n',
             '{} ({} files)'
             ],
         [
             f'【内容】（合計{len(list(illus.iterdir()))}ファイル):\n',
-            f'【内容】（合計4ファイル):\n\t・CSP\n\t・PSD\n\t・CSP ({clip}分)\n\t・OBS ({obs_time}分)',
+            f'【内容】（合計4ファイル):\n   ・CSP\n   ・PSD\n   ・CSP ({clip}分)\n   ・OBS ({obs_time}分)',
             '{} ({}ファイル)',
             ]
         ]    
@@ -243,7 +243,7 @@ def Splice_Images(folder, foreground, pattern='*'):
         
     print(f'{num} images spliced')
 
-def Convert_Images(folder, source='webp', target='png', ignore=' '):
+def Convert_Images(path, source='webp', target='png', ignore=' '):
     '''Convert all images with target extension to source, with optional ignoring'''
     
     import re
@@ -251,18 +251,29 @@ def Convert_Images(folder, source='webp', target='png', ignore=' '):
     from PIL import Image
 
     num = 0
-    folder = Path(folder)
+    path = Path(path)
     
-    for image in folder.glob(f'*{source}'):
+    if path.is_dir():
+        
+        for image in path.glob(f'*{source}'):
 
-        if re.search(ignore, image.suffix): continue
-        rename = image.with_suffix(f'.{target}')
-        new = Image.open(str(image)).convert('RGBA')
+            if re.search(ignore, image.suffix): continue
+            rename = image.with_suffix(f'.{target}')
+            new = Image.open(str(image)).convert('RGBA')
+            new.save(str(rename))
+            image.unlink()
+            
+            num += 1
+    else:
+
+        rename = path.with_suffix(f'.{target}')
+        new = Image.open(str(path)).convert('RGBA')
         new.save(str(rename))
-        image.unlink()
+        path.unlink()
         
         num += 1
-    
+        
+        
     print(f'{num} images converted')
 
 def Download_Nhentai():
