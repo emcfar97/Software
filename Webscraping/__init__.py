@@ -13,11 +13,12 @@ CREDENTIALS.read(r'Webscraping\credentials.ini')
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
 EXT = 'jpe?g|png|webp|gif|webm|mp4'
+TOKEN = CREDENTIALS.get('redgifs', 'token')
 
 SELECT = [
     'SELECT href FROM imagedata WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s',
-    'SELECT href FROM imagedata WHERE site=%s AND ISNULL(path)',
+    'SELECT href FROM temporary WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
     f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE {{}} AND NOT ISNULL(path)',
     f'''
@@ -28,7 +29,7 @@ SELECT = [
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
-    'INSERT INTO imagedata(href, site) VALUES(%s, %s)',
+    'INSERT INTO temporary(href, site) VALUES(%s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'REPLACE INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
@@ -47,6 +48,8 @@ DELETE = [
     'DELETE FROM favorites WHERE href=%s AND ISNULL(path)',
     'DELETE FROM favorites WHERE href LIKE "%s%" AND ISNULL(path)',
     'DELETE FROM favorites WHERE SUBSTRING_INDEX(path, ".", -1) IN ("zip", "pixiv", "ini", "lnk")',
+    'DELETE FROM temporary WHERE href=%s AND type=%s',
+    'DELETE FROM temporary WHERE href=%s'
     ]
 
 class CONNECT:
@@ -283,7 +286,7 @@ def get_starred(headless=True):
     
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless=headless)
-    UPDATE = 'UPDATE imagedata SET stars=4 WHERE path=%s AND stars=0'
+    UPDATE = 'UPDATE imagedata SET stars=3 WHERE path=%s AND stars=0'
     ADDRESS = '//button[@aria-label="Remove from Starred"]'
 
     DRIVER.get('https://www.dropbox.com/starred', wait=4)
@@ -300,115 +303,20 @@ def get_starred(headless=True):
 
     DRIVER.close()
 
-def extract_files(source, dest=None, headless=True):
+def get_token():
     
-    import re, bs4, pathlib, send2trash, subprocess
-    from urllib.parse import urlparse
-    from Webscraping.utils import USER, save_image
-        
-    def extract_errors(path, dest):
-        
-        if path.exists():
-            
-            images = path.read_text().split()
-            
-            for image in images:
-            
-                name = dest / image.split('/')[-1].split('?')[0]
-                
-                if name.suffix == '': name = name.with_suffix('.webm')
-                elif name.suffix == '.m3u8':
-                    name = dest / image.split('/')[3]
-                    name = name.with_suffix('.mp4')
-                    subprocess.run(['ffmpeg', '-y', '-i', image, str(name)])
-                    
-                if save_image(name, image): images.remove(image)
-                
-                path.write_text('\n'.join(images))
-            
-        else: path.touch()
+    import requests
     
-    if isinstance(source, str):
-        source = pathlib.Path(source)
-        if source.is_file(): iterator = [source]
-        else: iterator = source.glob('*json')
-        errors_txt = source.parent / 'Errors.txt'
-        
-    elif isinstance(source, list):
-        iterator = source
-        errors_txt = source / 'Errors.txt'
-        
-    elif isinstance(source, Path):
-        iterator = source.glob('*json')
-        errors_txt = source / 'Errors.txt'
-    
-    if dest is None: dest = source
-    else: dest = USER / dest
-    
-    extract_errors(errors_txt, dest)
-    errors = []
-        
-    driver = WEBDRIVER(headless=headless)
-    
-    for file in iterator:
-
-        for url in json_generator(file):
-            
-            path = urlparse(url['url']).path[1:]
-                
-            if re.match('https://www.reddit.com/r/.+', url['url']):
-                
-                driver.get(url['url'], wait=10)
-                html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-                try: image = html.find('source', src=True).get('src')
-                except AttributeError:
-                    errors.append(image)
-                    continue
-                
-            else:
-                try: image = (
-                        f'https://{url["title"]}'
-                        if url['url'] == 'about:blank' else 
-                        url['url']
-                        )
-                except KeyError: continue
-                
-            name = dest / path.split('/')[-1]
-            
-            if not name.suffix and 'imgur' in image:
-                
-                driver.get(image, wait=5)
-                html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
-                
-                try: 
-                    image = html.find('source', src=True).get('src')
-                    name = dest / image.split('/')[-1]
-                except: errors.append(image); continue
-                
-            elif not name.suffix and re.search('redgifs|gfycat', image):
-                
-                name = dest / image.split('/')[-1].split('?')[0]
-                name = name.with_suffix('.webm')
-               
-            if name.suffix == '.gifv':
-                        
-                name = name.with_suffix('.webm')
-                image = f'https://i.imgur.com/{name.stem}.mp4'
-                
-            if name.exists(): continue
-
-            elif not save_image(name, image): errors.append(image)
-            
-            elif name.suffix == '.gif' and b'MPEG' in name.read_bytes():
-                try: name.rename(name.with_suffix('.webm'))
-                except: name.unlink(missing_ok=1)
-        
-        errors_txt.write_text('\n'.join(errors))
-        send2trash.send2trash(str(file))
-        
+    response = requests.get('https://api.redgifs.com/v2/auth/temporary')
+    TOKEN = response.json()
+    CREDENTIALS.set('token', TOKEN)
+      
 def json_generator(path):
     
-    generator = json.load(open(path, encoding='utf-8'))
+    try: generator = json.load(open(path, encoding='utf-8'))
+    except: 
+        print(path)
+        return []
 
     for object in generator[0]['windows'].values():
 

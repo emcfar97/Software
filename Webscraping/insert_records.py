@@ -7,7 +7,7 @@ MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg
 
 def similarity(path):
 
-    if re.search(EXT[:9], path.suffix, re.IGNORECASE): 
+    if re.search(EXT[:14], path.suffix, re.IGNORECASE):
         match = MATCH[0]
         image = cv2.imread(str(path))
     else:
@@ -26,7 +26,7 @@ def similarity(path):
 def main(extract=True, add='', path=PATH):
     
     if isinstance(path, str): path = USER / path
-    if extract: extract_files(path / 'Generic', path)
+    if extract: extract_files.main(path / 'Generic', path)
     
     MYSQL = CONNECT()
         
@@ -40,27 +40,21 @@ def main(extract=True, add='', path=PATH):
         
         progress.next()
         try:
-            if (dest := get_name(file, 1)).exists():# or similarity(file):
+            if (dest := get_name(file, 1)).exists() or similarity(file):
                 send2trash.send2trash(str(file))
                 continue
             
             if not (hash_ := get_hash(file)): continue
-
-            if dest.suffix.lower() in ('.jpg', '.png', '.webp'):
-
-                tags, rating, exif = generate_tags(
-                    general=get_tags(file, True), 
-                    custom=True, rating=True, exif=True
-                    )
-                save_image(file, exif=exif)
-
-            elif dest.suffix.lower() in ('.gif', '.mp4', '.webm'):
-                
-                tags, rating = generate_tags(
-                    general=get_tags(file, True), 
-                    custom=True, rating=True, exif=False
-                    )
             
+            tags, rating = generate_tags(
+                general=get_tags(file, True), 
+                custom=True, rating=True
+                )
+
+            if dest.suffix.lower() not in ('.webp', '.webm'):
+
+                save_image(file)
+
             tags = tags.replace('aphorisms', '')
             
             if MYSQL.execute(INSERT[3], (
@@ -69,8 +63,19 @@ def main(extract=True, add='', path=PATH):
                 )):
                 if file.replace(dest): MYSQL.commit()
                 else: MYSQL.rollback()
-            
-        except Exception as error: print('\n', error, '\n')
+        
+        except SyntaxError:
+           
+           url = f'https://i.imgur.com/{file.stem}.mp4'
+           file.unlink()
+           save_image(file, url)
+           
+           tags, rating = generate_tags(
+                general=get_tags(file, True), 
+                custom=True, rating=True
+                ) 
+        
+        except Exception as error: print('\n', type(error), error, '\n')
     
     print('\nDone')
 
