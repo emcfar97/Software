@@ -9,7 +9,7 @@
         "screen_capture": "screencap"
         },
     "GENERAL": {
-        "age_difference": "age_difference|teenage_girl_and_younger_boy",
+        "age_difference": "age_difference OR teenage_girl_and_younger_boy OR (((loli AND NOT shota) OR (shota AND NOT loli)) AND sex)",
         "bottomless": "bottomless AND NOT (topless OR nude)", 
         "cowgirl_position": "(cowgirl_position OR reverse_cowgirl_position) AND sex", 
         "cum": "cum|precum|semen|cumdrip|cum_in_mouth|cum_in_container|cum_in_pussy|cum_in_ass|cum_in_nipple|cum_on_feet|cum_on_body|cum_on_upper_body|cum_on_breasts|semen",
@@ -52,7 +52,7 @@
         },
     "RATING": {
         "3": "sex|aftersex|hetero|vaginal|anal|anus|cum|penis|vagina|vulva|pussy_juice|vaginal_juices|spread_pussy|erection|clitoris|anus|oral|fellatio|fingering|handjob|masturbation|object_insertion", 
-        "2": "NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR vulva OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))",
+        "2": "NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR vulva OR pussy_juice OR vaginal_juices OR spread_pussy OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion) AND (nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR visible_nipples erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))",
         "1": "NOT (sex OR aftersex OR hetero OR vaginal OR anal OR anus OR cum OR penis OR vagina OR vulva OR pussy_juice OR vaginal_juices OR spread_vulva OR erection OR clitoris OR anus OR oral OR fellatio OR fingering OR handjob OR masturbation OR object_insertion OR nipples OR areola OR areolae OR covered_nipples OR cameltoe OR wedgie OR torn_clothes OR pubic_hair OR topless OR bottomless OR sexually_suggestive OR nude OR wet_panties OR no_panties OR spanking OR bondage OR vore OR bdsm OR open_clothes OR revealing_clothes OR breast_slip OR areoala_slip OR spread_ass OR orgasm OR vibrator OR sex_toy OR bulge OR lactation OR panty_pull OR panties_around_leg OR panties_removed OR partially_visible_vulva OR breast_sucking OR birth OR naked_clothes OR used_condom OR (suggestive AND (blush AND (spread_legs OR undressing OR erect_nipples OR ((miniskirt OR microskirt) AND underwear) OR (clothes_lift AND underwear)))))"
         },
     "ARTIST": {
@@ -94,6 +94,8 @@
         "iskra": ["iskra", 1],
         "ittla": ["ittla", 1],
         "kimjunho": ["jjanda", 0],
+        "uranjanda": ["jjanda", 0],
+        "iwbitu_sa": ["iwbitu", 1],
         "jjuneジュン": ["jjune", 0],
         "kajin": ["kajin_(kajinman)", 1],
         "kon_kit": ["konkitto", 0],
@@ -163,15 +165,15 @@
         "ぞんだ": ["zonda", 0]
         },
     "REMOVE": [
-        "3d", "photorealistic", "realistic", "photo", "photo_(medium)", "photo_inset", "photo_background", "realistic", "paint_(medium)", "traditional_media",
+        "3d", "photorealistic", "realistic", "photo", "photo_(medium)", "photo_inset", "photo_background", "realistic", "paint_(medium)", "traditional_media", "thighhighs", "bound", "bdsm",
         "cum", "cum_in_pussy", "pov", "solo",
         "blurry", "blurry_foreground", "blurry_background", "film_grain", "depth_of_field",
         "sex", "after_sex", "sex_from_behind", "vaginal", "anal",
         "doggystyle", "missionary", "cowgirl_position", "cowgirl", "boy_on_top",
         "mosaic_censoring", "censored", "uncensored",
-        "male_focus", "multiple_boys", "multiple_girls", 
-        "pantyhose", "no_humans", "scenery", "asian", "what",
-        "animal_ears", "slut", "hymen", "intact_hymen", "young"
+        "male_focus", "multiple_boys", "multiple_girls", "virtual_youtuber",
+        "pantyhose", "no_humans", "scenery", "asian", "what", "old",
+        "animal_ears", "slut", "hymen", "intact_hymen", "young", "secretly_loves_it", "hetero", "yuri", "yaoi"
         ],
     "REPLACE": {
         "3d": "3d_cg",
@@ -193,11 +195,13 @@
         "blowjob": "fellatio",
         "(female|male)_pubic_hair": "pubic_hair",
         "(female|male)_solo|solo_focus": "solo",
+        "hetero|yuri|yaoi": "sex",
         "insertion": "object_insertion",
         "kissing":"kiss",
         "legs_spread|legs_apart": "spread_legs",
         "female": "1girl",
         "male": "1boy",
+        "nudist":"casual_nudity",
         "presenting_self": "presenting",
         "realistic":"photorealistic",
         "mature_female|mature_woman|milf ": "mature",
@@ -210,9 +214,9 @@
         "oshiri": "ass",
         "pantsu": "panties",
         "plugsuit": "bodysuit",
-        "\\w*pointed_ears": "pointed_ears",
+        "\\w*pointed_ears|pointy_ears": "pointed_ears",
         "semen": "cum",
-        "see_through": "transparent",
+        "(see_through)\\w+": "transparent transparent_clothes",
         "shaking":"trembling",
         "squatting_cowgirl_position": "squatting cowgirl_position",
         "standing_sex": "standing sex",
@@ -220,6 +224,8 @@
         "vagina|pussy": "vulva",
         "spread_vagina|spread_pussy": "spread_vulva",
         "vaginal_object_insertion": "vaginal object_insertion",
-        "virgin|uncensored|nipples_visible_through_clothes|hetero|yuri|yaoi|excessive_.+|(fat|ugly|old)_man|object_insertion_from_behind|(rating|score):\\w+": ""
+        "viewed_(from_\\w+)": "\\1",
+        "virgin|uncensored|nipples_visible_through_clothes|hetero|yuri|yaoi|excessive_.+|(fat|ugly|old)_man|object_insertion_from_behind|(rating|score):\\w+": "",
+        "v": "v_sign"
         }
     }
