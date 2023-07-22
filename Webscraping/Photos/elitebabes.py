@@ -61,12 +61,12 @@ def page_handler(hrefs):
             if (name:=get_name(src)).exists(): continue
             if not save_image(name, src): break
 
-            tags, rating, exif = generate_tags(
+            tags, rating = generate_tags(
                 general=get_tags(name, True), 
-                custom=True, rating=True, exif=True
+                custom=True, rating=True
                 )
             
-            save_image(name, src, exif)
+            save_image(name, src)
             hash_ = get_hash(name)
 
             if not MYSQL.execute(INSERT[3],

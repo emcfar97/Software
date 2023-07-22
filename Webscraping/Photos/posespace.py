@@ -46,7 +46,7 @@ def page_handler(hrefs, url=f'https://www.{SITE}.com/img/contact/'):
 
                 tags, rating = generate_tags(
                     general=get_tags(image, True), 
-                    custom=True, rating=True, exif=False
+                    custom=True, rating=True
                     )
                 name = get_name(image)
                 hash_ = get_hash(image)

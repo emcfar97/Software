@@ -79,7 +79,7 @@ def page_handler(hrefs, mode):
         
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(name, filter=mode[1] == 1)
-        tags, rating, exif = generate_tags(
+        tags, rating = generate_tags(
             tags, metadata, True, artists, True
             )
         tags = tags.encode('ascii', 'ignore').decode()
@@ -94,7 +94,7 @@ def page_handler(hrefs, mode):
         if MYSQL.execute(INSERT[3], (
             name.name, artists, tags, rating, mode[1], hash_, image, SITE, href
             )):
-            if save_image(name, image, exif):
+            if save_image(name, image):
                 MYSQL.execute(DELETE[4], (href, mode[1]))
                 MYSQL.commit()
             else: MYSQL.rollback()

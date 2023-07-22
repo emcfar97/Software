@@ -81,12 +81,12 @@ def page_handler(hrefs, retry=2):
             save_image(name, image)
             hash_ = get_hash(name) 
 
-            tags, rating, exif = generate_tags(
+            tags, rating = generate_tags(
                 general=get_tags(name, True), 
-                custom=True, rating=True, exif=True
+                custom=True, rating=True
                 )
             if name.suffix.endswith(('jpg', 'png')): 
-                save_image(name, image, exif)
+                save_image(name, image)
 
             MYSQL.execute(INSERT[0], (
                 name.name, artist, tags, rating, 1, hash_, image, SITE, href),

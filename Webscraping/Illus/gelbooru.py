@@ -35,7 +35,8 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        page_source = requests.get(f'https://{SITE}.com/{href}')
+        try: page_source = requests.get(f'https://{SITE}.com/{href}')
+        except: continue
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
 
         metadata = ' '.join(
@@ -50,8 +51,10 @@ def page_handler(hrefs):
             '_'.join(artist.text.split(' ')[1:-1]) for artist in 
             html.findAll(class_='tag-type-artist')
             ]
+        
         try: image = html.find(href=True, text='Original image').get('href')
-        except:
+        except Exception as error:
+            print('\n', error)
             MYSQL.execute(DELETE[5], (href,), commit=1)
             continue
         
@@ -60,7 +63,7 @@ def page_handler(hrefs):
         type_ = 1 if 'photo_(medium)' in tags else 2
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(name)
-        tags, rating, exif = generate_tags(
+        tags, rating = generate_tags(
             tags, metadata, True, artists, True
             )
         for key, value in REPLACE.items():
@@ -73,7 +76,7 @@ def page_handler(hrefs):
             name.name, ' '.join(artists), tags, 
             rating, type_, hash_, image, SITE, href
             )):
-            if save_image(name, image, exif):
+            if save_image(name, image):
                 MYSQL.execute(DELETE[5], (href,))
                 MYSQL.commit()
             else: MYSQL.rollback()
@@ -84,16 +87,16 @@ def main(initial=True, headless=True):
     
     global MYSQL, DRIVER
     MYSQL = CONNECT()    
-    DRIVER = WEBDRIVER(headless)
         
     if initial:
 
+        DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
         hrefs = initialize(url)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        DRIVER.close()
     
     page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
-    DRIVER.close()
 
 if __name__ == '__main__':
 

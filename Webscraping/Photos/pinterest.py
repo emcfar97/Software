@@ -23,17 +23,17 @@ def page_handler(hrefs, section):
 
         if name.suffix in ('.jpg'):
 
-            tags, rating, exif = generate_tags(
+            tags, rating = generate_tags(
                 general=get_tags(name, True), 
-                custom=True, rating=True, exif=True
+                custom=True, rating=True
                 )
-            save_image(name, exif=exif)
+            save_image(name)
 
         elif name.suffix in ('.gif', '.webm', '.mp4'):
             
             tags, rating = generate_tags(
                 general=get_tags(name, True), 
-                custom=True, rating=True, exif=False
+                custom=True, rating=True
                 )
 
         if section not in tags: tags += f' {section}'

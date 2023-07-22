@@ -46,17 +46,17 @@ def page_handler(url, title):
 
         if name.suffix == 'webp':
             
-            tags, rating, exif = generate_tags(
+            tags, rating = generate_tags(
                 general=get_tags(name, True), 
-                custom=True, rating=True, exif=True
+                custom=True, rating=True
                 )
-            save_image(name, src, exif)
+            save_image(name, src)
 
         elif name.suffix in ('.gif', '.webm'):
             
             tags, rating = generate_tags(
                 general=get_tags(name, True), 
-                custom=True, rating=True, exif=False
+                custom=True, rating=True
                 )
         
         hash_ = get_hash(name)

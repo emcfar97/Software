@@ -1,6 +1,6 @@
-import argparse, json
+import argparse, bs4, json
 from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from .utils import bs4, re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
+from .utils import re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'nhentai'
 
@@ -36,6 +36,8 @@ def initialize(page='/favorites/?page=1', query=0):
     else: return hrefs
     
 def page_handler(hrefs):
+    
+    from hentai import Hentai, Format
 
     if not hrefs: return
     comic_records = json.load(open(r'Webscraping\comic_data.json'))
@@ -44,8 +46,10 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'https://{SITE}.net{href}')
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        
+        comic = Hentai(int(href.split('/')[2]))
+        # DRIVER.get(f'/https://{SITE}.net{href}')
+        # html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
         cover = None
         target = html.findAll(href=re.compile('/artist/.+'))
@@ -75,12 +79,12 @@ def page_handler(hrefs):
                 if not save_image(name, src):
                     break
             
-                tags, rating, exif = generate_tags(
-                    general=get_tags(DRIVER, name, True), 
-                    custom=True, rating=True, exif=True
+                tags, rating = generate_tags(
+                    general=get_tags(name, True), 
+                    custom=True, rating=True
                     )
                 
-                save_image(name, src, exif)
+                save_image(name, src)
                 hash_ = get_hash(name)
 
                 comic_records[cover.name]['imagedata'].append(
@@ -147,8 +151,8 @@ def file_handler(folders):
         for num, hash_, image, _ in images:
 
             tags, rating = generate_tags(
-                general=get_tags(DRIVER, image), 
-                custom=True, rating=True, exif=False
+                general=get_tags(image), 
+                custom=True, rating=True
                 )
             imagedata.append(
                 (image.name, artist, tags, rating, 

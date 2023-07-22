@@ -35,11 +35,11 @@ def page_handler(hrefs):
         progress.next()
         name = get_name(href)
         if not save_image(name, href): continue
-        tags, rating, exif = generate_tags(
+        tags, rating = generate_tags(
             get_tags(name, True) + ' casual_nudity',
-            custom=True, rating=True, exif=True
+            custom=True, rating=True
             )
-        save_image(name, href, exif)
+        save_image(name, href)
         hash_ = get_hash(name)
         
         MYSQL.execute(INSERT[3],
