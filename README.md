@@ -1,19 +1,20 @@
 # GUI
 This is a suite of files for a graphical user interface that navigates and selects from a gallery of images for the purposes of illustration reference and practice. Originally implemented in Tkinter and SQLite, the project is now coded in PyQt5 and MySQL.\
 Consists of six applications:
-### Machine Learning
+### [Machine Learning](https://github.com/users/emcfar97/projects/1)
 Experimental. App for GUI-ifying the machine learning process, a la PerceptiLabs.
-### Manage Database
+### [Manage Database](https://github.com/users/emcfar97/projects/4)
 Consists of a lefthand gallery of images and a righthand display for selected image. Allows deletion and updating of records, as well as a slideshow function that can display images and videos in fullscreen. 
 ### Gesture Draw
 App for easy gesture drawing (drawing the pose of a figure in a short amount of time). Allows user to select images and specify the amount of time for each gesture draw.
 ### Slideshow
 App for displaying images and video. Currently only works with Manage Database.
-### Video Splitter
+### [Video Splitter](https://github.com/users/emcfar97/projects/2)
 Experimental. App for splitting video into clips using the scenedetect module.
 # Machine Learning
 An exploratory dive into machine learning using Tensorflow and PyTorch. Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
 # Web Development
+## [MBTI Visualizer](https://github.com/users/emcfar97/projects/3)
 # Webscraping
 A group of functions for scraping images off of various imagehosting sites, which are then used for the GUI and Machine Learning projects.
 # School
