@@ -22,6 +22,7 @@ A set of projects that I've developed, either individually or as a team, over th
 [CS 349 Summer 2023](https://github.com/emcfar97/CS-349-Summer-2023)
 ## 2022
 [CS 451 Spring 2022](https://github.com/CS451-Commerce-Bank-Webpage/CommerceBankApp)
+
 [CS 303 Spring 2019](https://github.com/Rayos1/Morse-Code-Decoder)
 ## 2021
 [CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
