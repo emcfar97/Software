@@ -13,17 +13,19 @@ App for displaying images and video. Currently only works with Manage Database.
 Experimental. App for splitting video into clips using the scenedetect module.
 # Machine Learning
 An exploratory dive into machine learning using Tensorflow and PyTorch. Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
+# Web Development
 # Webscraping
 A group of functions for scraping images off of various imagehosting sites, which are then used for the GUI and Machine Learning projects.
 # School
 A set of projects that I've developed, either individually or as a team, over the course of my college career.
-## 2019
-[CS 303 Spring 2019](https://github.com/Rayos1/Library-Employees)
-
-[CS 303 Spring 2019](https://github.com/Rayos1/Morse-Code-Decoder)
-## 2020
-[CS 470 Fall 2020](https://github.com/Rayos1/CS-470-Fall-2020)
-## 2021
-[CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
+## 2023
+[CS 349 Summer 2023](https://github.com/emcfar97/CS-349-Summer-2023)
 ## 2022
 [CS 451 Spring 2022](https://github.com/CS451-Commerce-Bank-Webpage/CommerceBankApp)
+[CS 303 Spring 2019](https://github.com/Rayos1/Morse-Code-Decoder)
+## 2021
+[CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
+## 2020
+[CS 470 Fall 2020](https://github.com/Rayos1/CS-470-Fall-2020)
+## 2019
+[CS 303 Spring 2019](https://github.com/Rayos1/Library-Employees)
