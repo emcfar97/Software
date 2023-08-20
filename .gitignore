@@ -17,6 +17,7 @@ MachineLearning/Datasets
 MachineLearning/*/Checkpoints
 MachineLearning/*/Models
 MachineLearning/*/Logs
+MachineLearning/*.txt
 Music
 WebDev/Lib
 WebDev/Scripts
