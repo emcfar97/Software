@@ -18,6 +18,7 @@ MachineLearning/*/Logs
 Music
 Webscraping/pixivutil2
 Webscraping/comic_data.json
+Webscraping/errors.log
 WebDev/Lib
 WebDev/Scripts
 WebDev/pyvenv.cfg
