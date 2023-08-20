@@ -17,8 +17,8 @@ TOKEN = CREDENTIALS.get('redgifs', 'token')
 
 SELECT = [
     'SELECT href FROM imagedata WHERE site=%s',
-    'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM temporary WHERE site=%s',
+    'SELECT href FROM favorites WHERE site=%s',
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
     f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE {{}} AND NOT ISNULL(path)',
     f'''
@@ -29,7 +29,7 @@ SELECT = [
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
-    'INSERT INTO temporary(href, site) VALUES(%s, %s)',
+    'INSERT INTO temporary(href, site, type) VALUES(%s, %s, %s)',
     'INSERT INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'REPLACE INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
@@ -67,7 +67,7 @@ class CONNECT:
 
     def execute(self, statement, arguments=None, many=0, commit=0, fetch=0):
 
-        for _ in range(10):
+        for _ in range(3):
             try:
                 if many: self.CURSOR.executemany(statement, arguments)
                 else: self.CURSOR.execute(statement, arguments)
@@ -78,11 +78,11 @@ class CONNECT:
                 return 1
 
             except sql.errors.ProgrammingError:
-            
+                print('ProgrammingError')                        
                 break
 
             except sql.errors.IntegrityError:
-                
+                print('IntegrityError')                            
                 if statement.startswith('UPDATE'):
                     index = 0 if 'imaged' in statement else 1
                     self.execute(DELETE[index], (arguments[-1],), commit=1)
@@ -94,7 +94,7 @@ class CONNECT:
                 sql.errors.DatabaseError, 
                 sql.errors.InterfaceError
                 ):
-                
+                print('ElseError')
                 self.reconnect()
 
         return 0
@@ -112,7 +112,7 @@ class CONNECT:
 
     def rollback(self): self.DATAB.rollback()
 
-    def reconnect(self, attempts=5, time=15):
+    def reconnect(self, attempts=4, time=15):
 
         try: self.DATAB.reconnect(attempts, time)
         except sql.errors.InterfaceError: return 0
@@ -163,6 +163,7 @@ class WEBDRIVER:
             try: 
                 self.driver.get(url)
                 time.sleep(wait)
+                break
                 
             # except (
             #     exceptions.InvalidSessionIdException,
@@ -308,8 +309,10 @@ def get_token():
     import requests
     
     response = requests.get('https://api.redgifs.com/v2/auth/temporary')
-    TOKEN = response.json()
-    CREDENTIALS.set('token', TOKEN)
+    token = response.json()['token']
+    CREDENTIALS.set('redgifs', 'token', token)
+    
+    return TOKEN
       
 def json_generator(path):
     

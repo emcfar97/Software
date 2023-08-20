@@ -1,5 +1,5 @@
-import piexif, requests, re, tempfile, json
-from . import ROOT, USER
+import requests, re, tempfile, json, ffmpeg
+from . import ROOT, USER, TOKEN, get_token
 from math import log
 from io import BytesIO
 from hashlib import md5
@@ -14,6 +14,7 @@ from cv2 import VideoCapture, imencode, cvtColor, COLOR_BGR2RGB, CAP_PROP_FRAME_
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 PATH = USER / r'Dropbox\ん'
 RESIZE = [1320, 1000]
+TOKEN = TOKEN
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
@@ -31,7 +32,7 @@ ARTIST = data['ARTIST']
 REMOVE = set(data['REMOVE'])
 REPLACE = data['REPLACE']
 
-def save_image(name, image=None, exif=b''):
+def save_image(name, image=None):
     '''Save image to name (with optional exif metadata)'''
 
     try:
@@ -47,21 +48,30 @@ def save_image(name, image=None, exif=b''):
             
             name = name.with_suffix('.webp')
             img = img.convert('RGBA')
-            img.save(name, 'webp', exif=exif)
+            img.save(name, 'webp')
 
         elif re.search('gif|mp4|webm', name.suffix):
             
-            if 'gfycat' in image: download_gfycat(name, image)
+            if 'redgif' in str(image):
                 
-            elif 'redgif' in image: download_redgif(name, image)
+                name = download_redgif(name, image)
                 
-            else: 
-                if name.suffix == '.mp4':
-                    name = name.with_suffix('.webm')
+            elif 'gfycat' in str(image):
+                
+                name = download_gfycat(name, image)
+                
+            else:
                     
                 name.write_bytes(
                     requests.get(image, headers=HEADERS).content
                     )
+                    
+                if name.suffix != '.webm':
+                    
+                    webm = name.with_suffix('.webm')
+                    
+                    ffmpeg.input(str(name)).output(str(webm), loglevel="quiet").run(overwrite_output=True)
+                    name = name.replace(webm)
     
     except UnidentifiedImageError: return False
     except OSError as error:
@@ -73,30 +83,60 @@ def save_image(name, image=None, exif=b''):
     return name.exists()
 
 def download_redgif(name, url):
-    # Use redgif API to download a url's contents to the specified name
+    "Use redgif API to download a url's contents to the specified name"
     
+    token = TOKEN
     sess = requests.Session()
         
     image_ID = url.split('/')[-1].lower()
-    request = sess.get(f'https://api.redgifs.com/v2/gifs/{image_ID}')
-    
-    rawData = request.json()
-    hd_video_url = rawData['gif']['urls']['hd']
+    try:
+        request = sess.get(
+            f'https://api.redgifs.com/v2/gifs/{image_ID}',
+            headers={"Authorization": f"Bearer {token}"}
+            )
+        rawData = request.json()
+        # if 'error' in rawData: return name.parent
+        
+        hd_video_url = rawData['gif']['urls']['hd']
+        
+    except KeyError:
+        token = get_token()
+        request = sess.get(
+            f'https://api.redgifs.com/v2/gifs/{image_ID}',
+            headers={"Authorization": f"Bearer {token}"}
+            )
+        rawData = request.json()
+        hd_video_url = rawData['gif']['urls']['hd']
     
     name.write_bytes(sess.get(hd_video_url).content)
     
     return name
 
 def download_gfycat(name, url):
-    # Use gfycat API to download a url's contents to the specified name
+    "Use gfycat API to download a url's contents to the specified name"
     
+    token = TOKEN
     sess = requests.Session()
     
     image_ID = url.split('/')[-1].lower()
-    request = sess.get(f'https://api.gfycat.com/v1/gfycats/{image_ID}')
-    
-    rawData = request.json()
-    hd_video_url = rawData['gfyItem']['webmUrl']
+    try:
+        request = sess.get(
+            f'https://api.gfycat.com/v1/gfycats/{image_ID}',
+            headers={"Authorization": f"Bearer {token}"}
+            )
+        rawData = request.json()
+        # if 'error' in rawData: return name.parent
+        
+        hd_video_url = rawData['gfyItem']['webmUrl']
+        
+    except KeyError:
+        token = get_token()
+        request = sess.get(
+            f'https://api.gfycat.com/v1/gfycats/{image_ID}',
+            headers={"Authorization": f"Bearer {token}"}
+            )
+        rawData = request.json()
+        hd_video_url = rawData['gfyItem']['webmUrl']
     
     name.write_bytes(sess.get(hd_video_url).content)
     
@@ -109,7 +149,7 @@ def get_name(path, hasher=1):
     else: suffix = path.suffix
 
     if suffix in ('.jpg', '.jpeg', '.png', '.bmp'): suffix = '.webp'
-    elif suffix in ('.mp4'): suffix = '.webm'
+    elif suffix in ('.gif', '.mp4'): suffix = '.webm'
 
     if hasher:
         
@@ -187,10 +227,17 @@ def get_tags(path, filter=False):
         frames = []
         tags.add('animated')
         temp_dir = tempfile.TemporaryDirectory()
+        data = FFProbe(str(path)).streams
+        
+        try:
+            if float(data[0].duration) <= 180: tags.add('short_video')
+            elif 180 < float(data[0].duration) <= 600: tags.add('medium_video')
+            elif 600 < float(data[0].duration): tags.add('long_video')
+        except (TypeError, ValueError): pass
         
         if path.suffix in ('.webm', '.mp4'):
             try:
-                for stream in FFProbe(str(path)).streams:
+                for stream in data:
                     if stream.codec_type == 'audio':
                         tags.add('audio')
                         break
@@ -218,7 +265,7 @@ def get_tags(path, filter=False):
     
     return ' '.join(tags)
 
-def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
+def generate_tags(general, metadata=0, custom=0, artists=[], rating=0):
     
     tags = ['qwd']
 
@@ -246,32 +293,9 @@ def generate_tags(general, metadata=0, custom=0, artists=[], rating=0, exif=1):
                 )
             ]
     
-    if exif:
-        
-        custom = tags.copy()
-        custom.remove('qwd')
-        
-        zeroth_ifd = {
-            piexif.ImageIFD.XPKeywords: [
-                byte for char in '; '.join(custom) 
-                for byte in [ord(char), 0]
-                if 0 <= byte <= 255
-                ],
-            piexif.ImageIFD.XPAuthor: [
-                byte for char in '; '.join(artists) 
-                for byte in [ord(char), 0]
-                if 0 <= byte <= 255
-                ]
-            }
-        exif_ifd = {piexif.ExifIFD.DateTimeOriginal: u'2000:1:1 00:00:00'}
-        
-        exif = piexif.dump({"0th":zeroth_ifd, "Exif":exif_ifd})
-        rating.append(exif)
-    
-    tags = " ".join(tags)
+    tags = " ".join(tags).replace('-', '_')
     for key, value in REPLACE.items():
-        tags = tags.replace(f' {key} ', f' {value} ')
-    else: tags = tags.replace('-', '_')
+        tags = re.sub(f' {value} ', f' {key} ', tags)
 
     return [tags] + rating if rating else tags
 
