@@ -155,11 +155,12 @@ while True:
                         )
                     
                     ffmpeg.concat(*stream) \
+                        .filter('fps', fps=30, round='up') \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(temp), crf=CRF, preset=PRESET, vsync=VSYNC) \
+                        .output(str(temp), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate='100k') \
                         .run()
                     ffmpeg.input(str(temp)) \
-                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, vf='mpdecimate') \
+                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, vf='mpdecimate', bitrate='1k') \
                         .run()
                         
                 except Exception as error: print(error); continue
