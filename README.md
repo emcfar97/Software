@@ -14,7 +14,7 @@ Experimental. App for splitting video into clips using the scenedetect module.
 # Machine Learning
 An exploratory dive into machine learning using Tensorflow and PyTorch. Due to memory constraints, most of the important files (models, datasets, etc.) are not stored on GitHub.
 # Web Development
-## [MBTI Visualizer](https://github.com/users/emcfar97/projects/3)
+### [MBTI Visualizer](https://github.com/users/emcfar97/projects/3)
 # Webscraping
 A group of functions for scraping images off of various imagehosting sites, which are then used for the GUI and Machine Learning projects.
 # School
