@@ -1,28 +1,9 @@
-import argparse, cv2, re, send2trash
+import argparse, re, send2trash
 from . import USER, CONNECT, INSERT, EXT, extract_files
 from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
 
 PATH = USER / r'Downloads\Images'
-MATCH = cv2.imread(r'Webscraping\image.jpg'), cv2.imread(r'Webscraping\video.jpg')
 
-def similarity(path):
-
-    if re.search(EXT[:14], path.suffix, re.IGNORECASE):
-        match = MATCH[0]
-        image = cv2.imread(str(path))
-    else:
-        match = MATCH[1]
-        image = cv2.VideoCapture(str(path)).read()[-1]
-
-    try:
-        if divmod(*image.shape[:2])[0] == divmod(*match.shape[:2])[0]:
-
-            image = cv2.resize(image, match.shape[1::-1])
-            k = cv2.subtract(image, match)
-            return (k.min() + k.max()) < 20
-            
-    except: return True
-    
 def main(extract=True, add='', path=PATH):
     
     if isinstance(path, str): path = USER / path
@@ -40,7 +21,9 @@ def main(extract=True, add='', path=PATH):
         
         progress.next()
         try:
-            if (dest := get_name(file, 1)).exists() or similarity(file):
+            dest = get_name(file, 1)
+            
+            if dest.exists():
                 send2trash.send2trash(str(file))
                 continue
             
@@ -51,9 +34,15 @@ def main(extract=True, add='', path=PATH):
                 custom=True, rating=True
                 )
 
-            if dest.suffix.lower() not in ('.webp', '.webm'):
+            if dest.suffix in ('.jpg', '.png'):
 
-                save_image(file)
+                dest = dest.with_suffix('.webp')
+                dest = save_image(dest, file)
+            
+            elif dest.suffix in ('.gif', '.mp4'):
+
+                dest = dest.with_suffix('.webm')
+                dest = save_image(dest, file)
 
             tags = tags.replace('aphorisms', '')
             
@@ -63,18 +52,7 @@ def main(extract=True, add='', path=PATH):
                 )):
                 if file.replace(dest): MYSQL.commit()
                 else: MYSQL.rollback()
-        
-        except SyntaxError:
-           
-           url = f'https://i.imgur.com/{file.stem}.mp4'
-           file.unlink()
-           save_image(file, url)
-           
-           tags, rating = generate_tags(
-                general=get_tags(file, True), 
-                custom=True, rating=True
-                ) 
-        
+                
         except Exception as error: print('\n', type(error), error, '\n')
     
     print('\nDone')
