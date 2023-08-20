@@ -5,13 +5,12 @@ from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
 
-def initialize(url, limit=5, retry=0):
+def initialize(url, query, limit=5, retry=0):
 
     DRIVER.get(f'https://{SITE}.com/{url}/likes')
 
     while True:
         
-        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         try:
             target = html.find('section').contents[-1]
@@ -30,7 +29,9 @@ def initialize(url, limit=5, retry=0):
             else: break
         else: retry = 0
             
-        DRIVER.driver.execute_script("window.scrollTo(0, window.scrollY + 1080)")
+        DRIVER.driver.execute_script(
+            "window.scrollTo(0, window.scrollY + 1080)"
+            )
         time.sleep(2)
                 
     MYSQL.commit()
@@ -99,7 +100,8 @@ def main(initial=True, headless=True):
     
     if initial:
         url = DRIVER.login(SITE)
-        initialize(url)
+        query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+        initialize(url, query)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
     

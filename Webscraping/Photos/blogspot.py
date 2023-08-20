@@ -1,6 +1,6 @@
-import argparse
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
-from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, bs4, re, requests
+import argparse, bs4
+from .. import CONNECT, INSERT, SELECT, WEBDRIVER
+from ..utils import IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, re, requests
 
 SITE = 'blogspot'
 URL = [
@@ -8,19 +8,18 @@ URL = [
     ['https://ggulbest.blogspot.com/', ' asian']
     ]
 
-def initialize(url, query=0):
+def initialize(url, query):
     
     def next_page(page):
              
         try: return page.get('href')
         except AttributeError: return False
 
-    if not query: query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
 
     page_source = requests.get(url).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
     hrefs = [
-        (target.get('href'), SITE) for target in 
+        (target.get('href'), SITE, 1) for target in 
         html.findAll('a', href=re.compile('.+://\d.bp.blogspot.com+'))
         if (target.get('href'),) not in query
         ]
@@ -63,13 +62,14 @@ def main(index, headless=True):
     url = URL[index]
     page_source = requests.get(url[0]).content
     html = bs4.BeautifulSoup(page_source, 'lxml')
+    query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
     
     for page in html.findAll('li'):
-        try: initialize(page.contents[0].get('href'))
+        try: initialize(page.contents[0].get('href'), query)
         except:
             for page in page.findAll(class_='post-count-link'):
-                initialize(page.get('href'))
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1), url[1])
+                initialize(page.get('href'), query)
+    page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1), url[1])
         
     DRIVER.close()
 

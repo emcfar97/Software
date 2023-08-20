@@ -5,10 +5,8 @@ from selenium.webdriver.common.keys import Keys
 
 SITE = 'toplesspulp'
 
-def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
+def initialize(query, url='https://toplesspulp.com/category/', year=2020):
     
-    if not query: query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
-
     DRIVER.get(f'{url}{year}')
     for _ in range(10): 
         DRIVER.find('html', Keys.END, type_=6)
@@ -16,7 +14,7 @@ def initialize(url='https://toplesspulp.com/category/', year=2020, query=0):
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
     hrefs = [
-        (target.find(href=True).get('href'), SITE) 
+        (target.find(href=True).get('href'), SITE, 1) 
         for target in html.findAll('figure')
         if (target.find(href=True).get('href'),) not in query
         ]
@@ -55,8 +53,9 @@ def main(headless=True):
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
-    initialize()
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
+    initialize(query)
+    page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
         
     DRIVER.close()
 

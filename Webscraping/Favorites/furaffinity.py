@@ -4,17 +4,14 @@ from ..utils import PATH, IncrementalBar, re
 
 SITE = 'furaffinity'
 
-def initialize(url, query=0):
+def initialize(url):
     
     def next_page(pages):
         
         try: return pages.get('href')
         except AttributeError: return False
 
-    if not query:
-        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.get(f'https://www.{SITE}.net{url}')
-    
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, SITE) for href in {(target.get('href'),) for target in 
@@ -66,7 +63,8 @@ def main(initial=True, headless=True):
     
     if initial:
         url = DRIVER.login(SITE)
-        initialize(url)
+        query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+        initialize(url, query)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
 

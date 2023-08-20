@@ -13,16 +13,13 @@ def get_artist(text):
 
     return targets.replace('_)', ')')
 
-def initialize(page='/favorites/?page=1', query=0):
+def initialize(page='/favorites/?page=1', query=None):
     
     def next_page(pages):
 
         try: return pages.find(class_='next').get('href')
         except AttributeError: return False
 
-    if not query:
-        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
-        
     DRIVER.get(f'https://{SITE}.net{page}')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
@@ -186,10 +183,11 @@ def main(initial=1, headless=True, mode=1):
         DRIVER = WEBDRIVER(headless)
         
         if initial:
-            hrefs = initialize()
+            query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
+            hrefs = initialize(query=query)
             MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
                     
-        page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+        page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     
     else:
         

@@ -4,15 +4,13 @@ from ..utils import PATH, IncrementalBar, bs4, re
 
 SITE = 'deviantart'
 
-def initialize(url, query=0):
+def initialize(url, query):
     
     def next_page(page):
              
         try: return page.get('href')
         except IndexError: return False
 
-    if not query:
-        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.get(f'https://www.{SITE}.com/notifications/watch')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     artists = html.findAll('div', {'aria-label': re.compile('\d+ Deviations by .*')})
@@ -65,8 +63,9 @@ def main(initial=True, headless=True):
     
     if initial:
         url = DRIVER.login(SITE)
-        initialize(url)
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+        query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+        initialize(url, query)
+    page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
 
 if __name__ == '__main__':

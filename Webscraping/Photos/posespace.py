@@ -7,13 +7,11 @@ SITE = 'posespace'
 
 def initialize(url='/posetool/favs.aspx'):
 
-    query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
-
-    DRIVER.get(f'https://www.{SITE}.com{url}')
+    DRIVER.get(query, f'https://www.{SITE}.com{url}')
     time.sleep(1)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
-        (*href, SITE) for href in 
+        (*href, SITE, 1) for href in 
         {
             (target.text,) for target in 
             html.findAll(class_='emph')
@@ -129,8 +127,11 @@ def main(initial=True, headless=True):
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless, None)
     
-    if initial: initialize()
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    if initial:
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1)) 
+        initialize(query)
+        
+    page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.close()
 
 if __name__ == '__main__':

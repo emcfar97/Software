@@ -1,20 +1,21 @@
-import argparse
+import argparse, bs4
 import selenium.common.exceptions as exceptions
 from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
-from ..utils import PATH, IncrementalBar, bs4, re, save_image
+from ..utils import PATH, IncrementalBar, re, save_image
 
 SITE = 'foundry'
 
-def initialize(url, query=0):
+def initialize(url):
     
     def next_page(pages):
         
-        if 'hidden' in pages.get('class'): return
-        else: return pages.contents[0].get('href')
+        try:
+            if 'hidden' in pages.get('class'): return
+            else: return pages.contents[0].get('href')
+        except AttributeError: 
+            return 
 
     DRIVER.get(f'http://www.hentai-foundry.com{url}')
-    if not query:
-        query = set(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
         (*href, SITE) for href in 
@@ -47,10 +48,14 @@ def page_handler(hrefs):
             continue
             
         except: continue
-            
-        name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
-        name = PATH / 'Images' / SITE / name
-
+        
+        try:
+        
+            name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
+            name = PATH / 'Images' / SITE / name
+        
+        except AttributeError: continue
+        
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
         if error:
             save_image(name, image)
@@ -65,7 +70,8 @@ def main(initial=True, headless=True):
     
     if initial:
         url = DRIVER.login(SITE)
-        initialize(url)
+        query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+        initialize(url, query)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
     DRIVER.close()
 

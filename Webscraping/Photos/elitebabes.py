@@ -4,27 +4,24 @@ from ..utils import ARTIST, IncrementalBar, save_image, get_hash, get_name, get_
 
 SITE = 'elitebabes'
 
-def initialize(url, query=0):
+def initialize(url, query):
 
     def next_page(page):
                 
-        try: return page.get('href')[26:]
+        try: return page.find(href=True).get('href')
         except AttributeError: return False
 
-    if not query:
-        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
-
-    DRIVER.get(f'https://www.{SITE}.com{url}')
+    DRIVER.get(f'https://www.{SITE}.com{url}', wait=5)
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
-        (href, SITE) for target in
-        html.find(class_='gallery-a e').findAll(href=True)
+        (href, SITE, 1) for target in
+        html.find(class_='list-gallery').findAll(href=re.compile('https.+'))
         if (
             href := target.get('href').split('/')[-2],
             ) not in query
         ]
 
-    next = next_page(html.find(class_='next page-numbers'))
+    next = next_page(html.find(class_='next'))
     if hrefs and next: return hrefs + initialize(next, query)
     else: return hrefs
 
@@ -50,9 +47,7 @@ def page_handler(hrefs):
             except:continue
         
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
-        images = html.find(
-            class_=re.compile('list-(justified-container|gallery a css)')
-            )
+        images = html.find(class_=re.compile('list-gallery.+'))
         if images is None: continue
 
         for image in images.findAll('a'):
@@ -86,10 +81,11 @@ def main(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
 
     if initial:
-        hrefs = initialize(DRIVER.login(SITE))
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
+        hrefs = initialize(DRIVER.login(SITE), query)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
     
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.close()
 
 if __name__ == '__main__':

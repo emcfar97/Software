@@ -21,8 +21,11 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
         try:
             if src: DRIVER.find('//*[@id="url"]', src, fetch=1)
             else: DRIVER.find('//*[@id="file"]', path, fetch=1)
-        except exceptions.InvalidArgumentException:
-            MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
+        except exceptions.InvalidArgumentException as error:
+            if 'File not found' in error.msg:
+                MYSQL.execute(UPDATE[4], (1, 1, path), commit=1)
+            else:
+                MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
             continue
         DRIVER.find('//input[@type="submit"]', click=True)
         if re.search(EXT[-12:], path, re.IGNORECASE): time.sleep(25)
@@ -112,7 +115,7 @@ def upload_image(path, href, src, site):
         if 'comic' in tags: return False, 0
 
         general, rating = generate_tags(
-            general=tags, rating=True, exif=False
+            general=tags, rating=True
             )
         tags = ' '.join(set(tags.split() + general.split() + [artist])).replace('qwd', '')
         if tags.count(' ') < 10: tags + 'tagme'

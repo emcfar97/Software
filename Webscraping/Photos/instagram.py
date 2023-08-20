@@ -5,10 +5,9 @@ from selenium.webdriver.common.keys import Keys
 
 SITE = 'instagram'
 
-def initialize(url, retry=0):
+def initialize(url, query, retry=0):
     
     DRIVER.get(f'https://www.{SITE}.com{url}')
-    query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
     
     while True:
 
@@ -17,7 +16,7 @@ def initialize(url, retry=0):
 
         html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
         hrefs = [
-            (target.get('href'), SITE) for target in 
+            (target.get('href'), SITE, 1) for target in 
             html.findAll('a', href=re.compile('/p/.+'))
             if (target.get('href'),) not in query
             ]
@@ -102,9 +101,11 @@ def main(initial=True, headless=True):
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
-    url = DRIVER.login(SITE)
-    if initial: initialize(url)
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1)[10:])
+    if initial: 
+        url = DRIVER.login(SITE)
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
+        initialize(url, query)
+    page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1)[10:])
     DRIVER.close()
 
 if __name__ == '__main__':

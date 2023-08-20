@@ -8,27 +8,22 @@ MODE = [
     ['chan', 2]
     ]
 
-def initialize(mode, url, query=0):
+def initialize(mode, url, query):
     
     def next_page(page):
         try: return page.get('next-page-url')
         except: return False
 
-    if not query:
-        query = set(
-            MYSQL.execute(
-                f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1
-                )
-            )
     page_source = requests.get(
         f'https://{mode[0]}.sankakucomplex.com/{url}'
         )
     html = bs4.BeautifulSoup(page_source.content, 'lxml')
+    target = html.find('div', class_='content')
     try:
         hrefs = [
-            (target.get('href'), mode[1], SITE) for target in 
-            html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
-            if (target.get('href'),) not in query
+            (href.get('href'), SITE, mode[1]) for href in 
+            target.findAll('a', href=re.compile('/post/+'))
+            if (href.get('href'),) not in query
             ]
         
         next = next_page(html.find('div', {'next-page-url': True})) 
@@ -111,13 +106,15 @@ def main(initial=True, headless=True, mode=1):
     if initial:
         
         url = DRIVER.login(SITE)
-        hrefs = initialize(mode, url)
+        query = set(MYSQL.execute(
+            f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1
+            ))
+        hrefs = initialize(mode, url, query)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
 
-    page_handler(
-        MYSQL.execute(
-            f'{SELECT[2]} AND type=%s', (SITE, mode[1]), fetch=1
-            ), 
+    page_handler(MYSQL.execute(
+        f'{SELECT[1]} AND type=%s', (SITE, mode[1]), fetch=1
+        ), 
         mode
         )
     DRIVER.close()
