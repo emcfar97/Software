@@ -172,38 +172,6 @@ def Remove_Intro(path):
     path.write_bytes(temp.read_bytes())
     SQL.commit()
 
-def Extract_Sprite(path):
-    
-    import cv2, skimage
-    import numpy as np
-    from pathlib import Path
-
-    path = Path(path)
-
-    for file in path.glob('**/*.jpg'):
-        
-        image = cv2.imread(str(file))
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
-        gray = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
-        alpha = cv2.threshold(gray, 16, 255, cv2.THRESH_BINARY)[1]
-
-        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        # temp = cv2.morphologyEx(alpha, cv2.MORPH_CLOSE, kernel)
-        # temp = cv2.erode(temp, (3,3), iterations=3)
-        # temp = temp[:, :, 3]
-        # temp[np.all(temp[:, :, 0:3] == (0, 0, 0), 2)] = 0
-        # alpha
-        
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        alpha = cv2.morphologyEx(alpha, cv2.MORPH_CLOSE, kernel)
-        alpha = cv2.erode(alpha, (3,3), iterations=3)
-        
-        b, g, r, a = cv2.split(image)
-        rgba = [b, g, r, alpha]
-        image = cv2.merge(rgba, 4)
-        
-        cv2.imwrite(str(file.parent / file.with_suffix('.png').name), image)
-
 def Project_Stats():
 
     import re
@@ -229,7 +197,7 @@ def Project_Stats():
     closed = 'Closed Projects:\n'
     planned = 'Planned Projects:\n'
     
-    for projects in projects.glob('**/*.clip'):
+    for project in projects.glob('**/*.clip'):
         
         if len(project.parts[6:-1]) < 2: continue
         
@@ -265,8 +233,8 @@ def Project_Stats():
             planned += f'\t\t\t\t{project.stem}\n'
 
     print(open)
-    print(closed)
     print(planned)
+    print(closed)
         
 def unnamed(path):
 
@@ -383,7 +351,7 @@ def f():
         try:
             tags, rating = generate_tags(
             general=get_tags(file, True), 
-            custom=True, rating=True, exif=False
+            custom=True, rating=True
             )
         except ValueError: continue
         except SyntaxError:
@@ -393,40 +361,32 @@ def f():
         
         mysql.execute(UPDATE, (f' {tags} ', rating, file.name), commit=1)
 
-def Download_Redgifs():
-    
-    import time, re
-    from Webscraping import WEBDRIVER, ActionChains
-    from Webscraping.utils import USER
-    
-    DRIVER = WEBDRIVER(0, profile=None)
-    path = USER / r'Downloads\Images\Generic\Errors.txt'
-    urls = path.read_text().split()
-    element = '//video[@src=true()]'
-        
-    for url in urls:
-        
-        if not re.search('redgif|gfycat', url): continue
-        
-        DRIVER.get(url, wait=3)
-        try:
-            Action = ActionChains(DRIVER.driver)
-            Action.move_to_element(DRIVER.find(element)) \
-                .context_click(DRIVER.find(element))  \
-                .perform()
-        except: pass
+def QT_Undo():
 
-        # if name.exists(): 
+    from PyQt5.QtWidgets import QApplication, QUndoView, QUndoStack, QUndoCommand
 
-        #     urls.remove(url)
-        #     path.write_text('\n'.join(urls))
+    class HistoryItem(QUndoCommand):
         
-        time.sleep(5)
-        urls.remove(url)
-        path.write_text('\n'.join(set(urls)))
+        def __init__(self): pass
+            
+        def redo(self): pass
         
-    DRIVER.close()
+        def undo(self): pass
+
+    Qapp = QApplication([])
+
+    undo = QUndoView()
+    undoStack = QUndoStack()
+    undo.setStack(undoStack)
+    undoStack.push()
+    undo.show()
+
+    Qapp.exec()
+
+def ML_Test():
     
+    pass
+
 parser = argparse.ArgumentParser(
     prog='test', 
     description='Run test functions'
