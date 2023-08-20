@@ -5,6 +5,8 @@
 *.exe
 *.svg
 *.env
+*.log
+*.json
 __pycache__
 .vscode
 ffmpeg-20230330-4d216654ca-win64-static
@@ -16,9 +18,7 @@ MachineLearning/*/Checkpoints
 MachineLearning/*/Models
 MachineLearning/*/Logs
 Music
-Webscraping/pixivutil2
-Webscraping/comic_data.json
-Webscraping/errors.log
 WebDev/Lib
 WebDev/Scripts
 WebDev/pyvenv.cfg
+Webscraping/pixivutil2
