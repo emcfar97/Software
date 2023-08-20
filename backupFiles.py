@@ -52,10 +52,9 @@ def get_version(paths):
 
     latest = sorted(paths)[-1]
     version = int(*re.findall(' - (\d+)', latest.name))
-    modified = date.fromtimestamp(latest.stat().st_mtime)
-    difference = date.today() - modified
+    # modified = date.fromtimestamp(latest.stat().st_mtime)
+    # difference = date.today() - modified
 
-    if difference.days < 15: return False
     stem = re.sub(' - \d+', f' - {version + 1:02}', latest.stem)
 
     return latest.with_stem(stem)
@@ -67,9 +66,12 @@ for drive in get_drives():
 
     for root, dirs, files in path_walk(drive):
 
+        if 'Software' in root.parts: continue
+        
         targets = {}
         head = SOURCE / Path(*root.parts[1:])
         
+        # get all candidate files
         for path in root.glob('* - [0-9][0-9].*'):
             
             path = path.with_name(path.name.replace(' Backup', ''))
@@ -83,14 +85,11 @@ for drive in get_drives():
                 
                 targets[dropbox] = targets.get(dropbox, []) + [path]
 
+        # save recently updated files
         for key, val in targets.items():
             
             val = get_version(val)
             
-            if not val: continue
-            
             print(f'\t{val}')         
             if key.is_file(): copy(key, val)
             else: copytree(key, val)
-
-input('\nDone')

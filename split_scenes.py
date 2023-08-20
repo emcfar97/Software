@@ -64,7 +64,7 @@ def main(video):
     try:
         stream = FFProbe(str(video)).streams[0]
         start_time = get_time(stream.start_time)
-        framerate = stream.framerate
+        framerate = get_time(stream.framerate)
         duration = get_time(stream.duration_seconds())
         
     except:
