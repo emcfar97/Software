@@ -4,21 +4,18 @@ from ..utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_n
 
 SITE = 'gelbooru'
     
-def initialize(url, query=0):
+def initialize(url, query):
     
     def next_page(pages):
 
         try: return pages.find(alt="next").get('href')
         except AttributeError: return False
 
-    if not query:
-        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
-        
     DRIVER.get(f'https://{SITE}.com/index.php{url}')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
 
     hrefs = [
-        (target.get('href'), SITE) for target in 
+        (target.get('href'), SITE, 2) for target in 
         html.findAll('a', id=re.compile(r'p\d+'), href=True)
         if (target.get('href'),) not in query
         ]
@@ -38,7 +35,8 @@ def page_handler(hrefs):
         try: page_source = requests.get(f'https://{SITE}.com/{href}')
         except: continue
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
-
+        
+        # get tags
         metadata = ' '.join(
             '_'.join(tag.text.split(' ')[1:-1]) for tag in 
             html.findAll(class_='tag-type-metadata')
@@ -52,6 +50,7 @@ def page_handler(hrefs):
             html.findAll(class_='tag-type-artist')
             ]
         
+        # get image
         try: image = html.find(href=True, text='Original image').get('href')
         except Exception as error:
             print('\n', error)
@@ -60,18 +59,19 @@ def page_handler(hrefs):
         
         name = get_name(image.split('/')[-1], 0)
         
+        # check tags
         type_ = 1 if 'photo_(medium)' in tags else 2
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(name)
         tags, rating = generate_tags(
             tags, metadata, True, artists, True
             )
-        for key, value in REPLACE.items():
-            tags = re.sub(f' {key} ', f' {value} ', tags)
-            
+        
+        # get artist
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         hash_ = get_hash(image, 1)
         
+        # insert image
         if MYSQL.execute(INSERT[3], (
             name.name, ' '.join(artists), tags, 
             rating, type_, hash_, image, SITE, href
@@ -92,11 +92,12 @@ def main(initial=True, headless=True):
 
         DRIVER = WEBDRIVER(headless)
         url = DRIVER.login(SITE)
-        hrefs = initialize(url)
+        query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
+        hrefs = initialize(url, query)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
         DRIVER.close()
     
-    page_handler(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
+    page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
 
 if __name__ == '__main__':
 
