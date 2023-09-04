@@ -5,7 +5,7 @@ from ..utils import PATH, IncrementalBar, re, save_image
 
 SITE = 'foundry'
 
-def initialize(url):
+def initialize(url, query):
     
     def next_page(pages):
         
