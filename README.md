@@ -23,11 +23,16 @@ A set of projects that I've developed, either individually or as a team, over th
 [CS 349 Summer 2023](https://github.com/emcfar97/CS-349-Summer-2023)
 ## 2022
 [CS 451 Spring 2022](https://github.com/CS451-Commerce-Bank-Webpage/CommerceBankApp)
-
-[CS 303 Spring 2019](https://github.com/Rayos1/Morse-Code-Decoder)
 ## 2021
-[CS 449 Spring 2021](https://github.com/Rayos1/CS-449-Spring-2021)
+[CS 449 Spring 2021](https://github.com/emcfar97/CS-449-Spring-2021)
+[CS 431](https://github.com/emcfar97/CS-431-Fall-2021/)
 ## 2020
-[CS 470 Fall 2020](https://github.com/Rayos1/CS-470-Fall-2020)
+[CS 461](https://github.com/emcfar97/CS-461-Spring-2020/)
+[CS 470 Fall 2020](https://github.com/emcfar97/CS-470-Fall-2020)
 ## 2019
-[CS 303 Spring 2019](https://github.com/Rayos1/Library-Employees)
+[CS 303 Spring 2019](https://github.com/emcfar97/Library-Employees)
+## 2018
+[CS 101](https://github.com/emcfar97/CS-101-Spring-2018)
+[CS 201R](https://github.com/emcfar97/CS-201R-Fall-2018)
+## 2017
+[CS 101](https://github.com/emcfar97/CS-101-Fall-2017)
