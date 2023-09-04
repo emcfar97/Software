@@ -13,7 +13,7 @@ decorator==4.4.2
 demjson==2.2.4
 ffmpeg-python==0.2.0
 ffprobe-python==1.0.3
-future==0.18.2
+future==0.18.3
 h11==0.12.0
 html5lib==1.1
 idna==3.3
