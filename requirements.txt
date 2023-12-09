@@ -35,7 +35,7 @@ proglog==0.1.9
 progress==1.6
 protobuf==4.21.7
 pycparser==2.21
-pyinstaller==4.7
+pyinstaller==5.13.1
 pyinstaller-hooks-contrib==2021.3
 pyOpenSSL==21.0.0
 pyparsing==3.0.6
