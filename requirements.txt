@@ -16,7 +16,7 @@ ffprobe-python==1.0.3
 future==0.18.3
 h11==0.12.0
 html5lib==1.1
-idna==3.3
+idna==3.7
 ImageHash==4.2.1
 imageio==2.11.1
 imageio-ffmpeg==0.4.5
