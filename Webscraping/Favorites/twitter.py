@@ -4,10 +4,12 @@ from ..utils import PATH, IncrementalBar, re
 from selenium.webdriver.common.keys import Keys
 
 SITE = 'twitter'
+REMOVE = '(/(photo|video)/\d+)|(media_tags)|(analytics)|(people)'
 
 def initialize(url, query, limit=5, retry=0):
 
     DRIVER.get(f'https://{SITE}.com/{url}/likes')
+    last_pass = ()
 
     while True:
         
@@ -17,17 +19,19 @@ def initialize(url, query, limit=5, retry=0):
             hrefs = [
                 (*href, SITE) for href in
                 {
-                    (re.sub('/photo/\d+', '', href.get('href')),) for href in 
+                    (re.sub(REMOVE, '', href.get('href')),) for href in 
                     target.findAll(href=re.compile('/.+/status/.+'))
                     } - query
                 ]
             MYSQL.execute(INSERT[1], hrefs, many=1)
         except AttributeError: continue
         
-        if not hrefs:
+        if not hrefs or hrefs == last_pass:
             if retry < limit: retry += 1
             else: break
-        else: retry = 0
+        else: 
+            retry = 0
+        last_pass = hrefs
             
         DRIVER.driver.execute_script(
             "window.scrollTo(0, window.scrollY + 1080)"
@@ -84,7 +88,8 @@ def page_handler(hrefs):
         
         for image in images:
 
-            image = re.sub('(name)=.+', r'\1=large', image.get('src'))
+            try: image = re.sub('(name)=.+', r'\1=large', image.get('src'))
+            except: break; continue
             name = image.replace('?format=', '.').split('/')[-1]
             name = PATH / 'Images' / SITE / f'{artist} - {name.split("&")[0]}'
 
