@@ -1,4 +1,5 @@
-import os, time, json
+import time, json
+from os import path
 from pathlib import Path
 import mysql.connector as sql
 from configparser import ConfigParser
@@ -11,8 +12,7 @@ from selenium.webdriver.common.by import By
 CREDENTIALS = ConfigParser(delimiters='=') 
 CREDENTIALS.read(r'Webscraping\credentials.ini')
 ROOT = Path(Path().cwd().drive)
-USER = ROOT / os.path.expandvars(r'\Users\$USERNAME')
-EXT = 'jpe?g|png|webp|gif|webm|mp4'
+USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 TOKEN = CREDENTIALS.get('redgifs', 'token')
 
 SELECT = [
@@ -22,15 +22,15 @@ SELECT = [
     'SELECT href FROM favorites WHERE site=%s AND ISNULL(path)',
     f'SELECT REPLACE(path, "C:", "{ROOT}"), href, src, site FROM favorites WHERE {{}} AND NOT ISNULL(path)',
     f'''
-        SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id,'pixiv' FROM pixiv_master_image UNION
-        SELECT REPLACE(save_name, "{ROOT}", "C:"), '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
+        SELECT save_name, '/artworks/'||image_id, 'pixiv' FROM pixiv_master_image UNION
+        SELECT save_name, '/artworks/'||image_id, 'pixiv' FROM pixiv_manga_image
         WHERE SUBSTR(save_name, -3) IN ("gif", "jpg", "png")
         ''',
     f'SELECT * FROM imagedata WHERE path=%s'
     ]
 INSERT = [
-    'INSERT INTO temporary(href, site, type) VALUES(%s, %s, %s)',
-    'INSERT INTO favorites(href, site) VALUES(%s, %s)',
+    'INSERT IGNORE INTO temporary(href, site, type) VALUES(%s, %s, %s)',
+    'INSERT IGNORE INTO favorites(href, site) VALUES(%s, %s)',
     f'INSERT IGNORE INTO favorites(path, href, site) VALUES(REPLACE(%s, "{ROOT}", "C:"), %s, %s)',
     'REPLACE INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)',
     'REPLACE INTO comic(path, parent) VALUES(%s, %s)',
@@ -78,23 +78,23 @@ class CONNECT:
                 return 1
 
             except sql.errors.ProgrammingError:
-                print('ProgrammingError')                        
+                print('\nProgrammingError')                        
                 break
 
             except sql.errors.IntegrityError:
-                print('IntegrityError')                            
+                print('\nIntegrityError')                            
                 if statement.startswith('UPDATE'):
                     index = 0 if 'imaged' in statement else 1
                     self.execute(DELETE[index], (arguments[-1],), commit=1)
                     return 1
                 elif statement.startswith('INSERT'): return 1
 
-            except (
-                sql.errors.OperationalError, 
-                sql.errors.DatabaseError, 
-                sql.errors.InterfaceError
-                ):
-                print('ElseError')
+            except sql.errors.DatabaseError:
+                print('\nDatabaseError')
+                self.reconnect()
+                
+            except Exception as error:
+                print('\n', error)
                 self.reconnect()
 
         return 0
@@ -280,7 +280,13 @@ class WEBDRIVER:
         
         try: self.driver.close()
         except: pass
-        
+
+def get_credentials(section, *fields):
+    
+    return [
+        CREDENTIALS.get(section, option) for option in fields
+        ]
+    
 def get_starred(headless=True):
 
     import bs4
@@ -309,15 +315,20 @@ def get_token():
     import requests
     
     response = requests.get('https://api.redgifs.com/v2/auth/temporary')
-    token = response.json()['token']
-    CREDENTIALS.set('redgifs', 'token', token)
+    TOKEN = response.json()['token']
+    CREDENTIALS.set('redgifs', 'token', TOKEN)
+    
+    with open(r'Webscraping\credentials.ini', 'w') as configfile:
+        CREDENTIALS.write(configfile)
     
     return TOKEN
       
 def json_generator(path):
     
-    try: generator = json.load(open(path, encoding='utf-8'))
-    except: 
+    try: 
+        generator = json.load(open(path, encoding='utf-8'))
+        if len(generator) > 1: raise IndexError
+    except:
         print(path)
         return []
 
