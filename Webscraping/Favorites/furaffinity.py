@@ -4,7 +4,7 @@ from ..utils import PATH, IncrementalBar, re
 
 SITE = 'furaffinity'
 
-def initialize(url):
+def initialize(url, query):
     
     def next_page(pages):
         
@@ -39,17 +39,19 @@ def page_handler(hrefs):
             MYSQL.execute('DELETE FROM favorites WHERE href=%s', (href,), commit=1)
             continue      
                         
-        image = html.find('a', href=re.compile('//d.+')).get('href')
+        image = 'https:' + html.find(
+            'img', src=re.compile('//d.furaffinity.net/art/.+')
+            ).get('src')
         name = re.sub('.+\.(.+)_(.+)', r'\1 - \2', image)
         name = PATH / 'Images' / SITE / name
         
         if name.suffix == ' ':
-            artist = html.find(
-                'a', href=re.compile('/user/+(?!chairekakia)'), id=False
-                ).get('href').split('/')[2]
-            name = f'{artist} - {image.split("/")[-1]}png'
-            # continue
-        name = PATH / 'Images' / SITE / name
+            continue
+            target = html.find(class_='submission-id-sub-container')
+            artist = target.find('strong').text
+            title = target.find('p').text
+            name = f'{artist} - {title}.{ext}'
+            name = PATH / 'Images' / SITE / name
 
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
