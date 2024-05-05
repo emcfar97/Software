@@ -1,6 +1,6 @@
-import argparse, bs4, json
-from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from .utils import re, IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
+import argparse, bs4, re, json
+from . import CONNECT, WEBDRIVER, INSERT, SELECT, DELETE
+from .utils import IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'nhentai'
 
@@ -13,7 +13,7 @@ def get_artist(text):
 
     return targets.replace('_)', ')')
 
-def initialize(page='/favorites/?page=1', query=None):
+def initialize(query, page='/favorites/?page=1'):
     
     def next_page(pages):
 
@@ -23,19 +23,17 @@ def initialize(page='/favorites/?page=1', query=None):
     DRIVER.get(f'https://{SITE}.net{page}')
     html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     hrefs = [
-        (href, SITE) for target in 
+        (href, SITE, 3) for target in 
         html.findAll('a', class_='cover', href=True)
         if (href:=target.get('href'),) not in query
         ]
         
     next = next_page(html.find(class_='pagination'))
-    if hrefs and next: return hrefs + initialize(next, query)
+    if hrefs and next: return hrefs + initialize(query, next)
     else: return hrefs
     
 def page_handler(hrefs):
     
-    from hentai import Hentai, Format
-
     if not hrefs: return
     comic_records = json.load(open(r'Webscraping\comic_data.json'))
     progress = IncrementalBar(SITE, max=MYSQL.rowcount)
@@ -44,9 +42,8 @@ def page_handler(hrefs):
         
         progress.next()
         
-        comic = Hentai(int(href.split('/')[2]))
-        # DRIVER.get(f'/https://{SITE}.net{href}')
-        # html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        DRIVER.get(f'https://{SITE}.net{href}')
+        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
         
         cover = None
         target = html.findAll(href=re.compile('/artist/.+'))
@@ -67,21 +64,19 @@ def page_handler(hrefs):
                 src = image.find(src=re.compile('.+galleries.+')).get('src')
                 name = get_name(src)
 
-                if cover is None:
+                if cover is None: # if this is the first image
                     cover = name
                     comic_records[cover.name] = comic_records.get(
                         cover.name, {'imagedata': [], 'comics': []}
                         )
+                
                 if name.name in [i[0] for i in comic_records[cover.name]['comics']]: continue
-                if not save_image(name, src):
-                    break
+                if not save_image(name, src): break
             
                 tags, rating = generate_tags(
                     general=get_tags(name, True), 
                     custom=True, rating=True
                     )
-                
-                save_image(name, src)
                 hash_ = get_hash(name)
 
                 comic_records[cover.name]['imagedata'].append(
@@ -184,7 +179,7 @@ def main(initial=1, headless=True, mode=1):
         
         if initial:
             query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
-            hrefs = initialize(query=query)
+            hrefs = initialize(query)
             MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
                     
         page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
