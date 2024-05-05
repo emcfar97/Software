@@ -2,11 +2,11 @@ from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QStatusBar
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QIcon, QAction
 
-from GUI.machinelearning.designView import Design
-from GUI.machinelearning.datasetView import Dataset
-from GUI.machinelearning.trainView import Train
+from GUI.deeplearning.designView import Design
+from GUI.deeplearning.datasetView import Dataset
+from GUI.deeplearning.trainView import Train
 
-class MachineLearning(QMainWindow):
+class DeepLearning(QMainWindow):
 
     populateGallery = pyqtSignal()
     closedWindow = pyqtSignal(object)
@@ -14,7 +14,7 @@ class MachineLearning(QMainWindow):
     
     def __init__(self, parent=None):
         
-        super(MachineLearning, self).__init__()
+        super(DeepLearning, self).__init__()
         self.setWindowTitle('Machine Learning')
         self.parent = parent
         self.configure_gui()
