@@ -19,31 +19,29 @@ def Normalize_Database():
     
     MYSQL = CONNECT()
     DROPBOX = USER / r'Dropbox\ん'
-    RESERVE = r'Downloads\Reserve'
+    RESERVE = USER / r'Downloads\Reserve'
     parts = ", ".join([f"'{part}'" for part in DROPBOX.parts]).replace('\\', '')
-    SELECT = f'SELECT full_path(path, {parts}) FROM imagedata WHERE NOT ISNULL(path)'
+    SELECT = f'SELECT full_path(path, {parts}) FROM imagedata'
     select = 'SELECT src, href FROM imagedata WHERE path=%s'
     UPDATE = 'UPDATE imagedata SET path=NULL WHERE path=%s'
-    DELETE = 'DELETE FROM imagedata WHERE path=%s'
+    DELETE = 'DELETE FROM imagedata WHERE path=%s LIMIT 1'
 
-    database = set(
-        Path(path) for path, in MYSQL.execute(SELECT, fetch=1)
-        )
+    database = set(Path(path) for path, in MYSQL.execute(SELECT, fetch=1))
     windows = set(DROPBOX.glob('[0-9a-f][0-9a-f]/[0-9a-f][0-9a-f]/*.*'))
-    x, y = database - windows, windows - database
-        
-    print(f'{len(x)} not in files')
-    print(f'{len(y)} not in database')
+    rows, files = database - windows, windows - database
+    
+    print(f'{len(rows)} rows not in files')
+    print(f'{len(files)} files not in database')
     
     if not input('Go through with deletes? ').lower() in ('y', 'ye', 'yes'):
         
         return
     
-    for num, file in enumerate(x, 1):
-        if any(MYSQL.execute(select, (file.name,), fetch=1)):
-            MYSQL.execute(UPDATE, (file.name,))
+    for num, row in enumerate(rows, 1):
+        if any(MYSQL.execute(select, (row.name,), fetch=1)):
+            MYSQL.execute(UPDATE, (row.name,))
         else:
-            MYSQL.execute(DELETE, (file.name,))
+            MYSQL.execute(DELETE, (row.name,))
     else:
         try: print(f'{num} records deleted')
         except: print('0 records deleted')
@@ -51,7 +49,7 @@ def Normalize_Database():
 
     SELECT = 'SELECT path FROM imagedata WHERE hash=%s OR path=%s'
 
-    for num, file in enumerate(y, 1):
+    for num, file in enumerate(files, 1):
 
         if re.match('.+ \(.+\)\..+', file.name):
             clean = re.sub(' \(.+\)', '', file.name)
@@ -118,7 +116,7 @@ def Prepare_Art_Files(project, parents=''):
     videos = project_dir / 'Videos'
     videos.mkdir(exist_ok=True)
     
-    obs, = list((dropbox / 'Videos' / 'Captures').glob('*.mp4'))
+    obs = list((dropbox / 'Videos' / 'Captures').glob('*.mp4'))[0]
     clip_time = (head / project / project).with_suffix('.mp4')
     
     shutil.copy(clip_time, videos / clip_time.name)
@@ -131,9 +129,8 @@ def Prepare_Art_Files(project, parents=''):
     illus.mkdir(exist_ok=True)
     
     # downscale
-    try: shutil.copytree(head / project, illus, dirs_exist_ok=True)
-    except FileNotFoundError: shutil.copytree(head, illus, dirs_exist_ok=True)
-    downscaled = Resize_Images(illus, '**/*.*', inplace=True)
+    downscaled = shutil.copytree(head / project, illus, dirs_exist_ok=True)
+    downscaled = Resize_Images(downscaled, '**/*.*', inplace=True)
     downscaled = downscaled.rename('Downscaled')
     downscaled = shutil.move(downscaled, project_dir)
     
@@ -145,7 +142,9 @@ def Prepare_Art_Files(project, parents=''):
         illus:  ['Illustrations', 'CG'],
         }
     for name, langs in names.items():
+        
         for lang in langs:
+            
             if (downloads / (lang + 'zip')).exists(): continue
             folder = shutil.copytree(
                 str(name), str(downloads / lang), dirs_exist_ok=True
@@ -166,13 +165,18 @@ def Prepare_Art_Files(project, parents=''):
         [
             f'Contents ({len(list(illus.iterdir()))} files in total):\n',
             f'Contents (4 files in total):\n    CSP\n    PSD\n    CSP ({clip} min)\n    OBS ({obs_time} min)\n\n',
-            '{} ({} files)'
+            '{} ({} files)',
             ],
         [
             f'【内容】（合計{len(list(illus.iterdir()))}ファイル):\n',
             f'【内容】（合計4ファイル):\n   ・CSP\n   ・PSD\n   ・CSP ({clip}分)\n   ・OBS ({obs_time}分)',
             '{} ({}ファイル)',
-            ]
+            ],
+        # {
+        #     'Nude': '全裸 ',
+        #     'Lineart': 'ラインアート',
+        #     'Sketch': '落書き',                
+        # }
         ]    
     
     for lang in langs:
@@ -182,20 +186,27 @@ def Prepare_Art_Files(project, parents=''):
         
         # Add illustration files
         for dir in illus.glob('**/*.*'):
+
             if dir.is_dir():
+
                 text += lang[2].format(dir.stem, len(dir.iterdir()))
-            else: text += f'    ・{dir.stem}\n'.replace(f'{project} - ', '')
+
+            else:
+                
+                text += f'    ・{dir.stem}\n'.replace(f'{project} - ', '')
+            
         text += '\n'
             
         # Add files/timelapse segment
         text += lang[1]
     
-    else: project_struct.write_text(text, encoding="utf-8")
+    else: 
+        project_struct.write_text(text, encoding="utf-8")
              
     psd.unlink()
     obs.unlink()
 
-def Resize_Images(folder, pattern='*', size=[800, 1200], inplace=False):
+def Resize_Images(folder, pattern='*', size=[1200, 1200], inplace=False):
     '''Reisizes all images from folder matching the pattern to a given size'''
     
     from PIL import Image
@@ -204,26 +215,29 @@ def Resize_Images(folder, pattern='*', size=[800, 1200], inplace=False):
     
     num = 0
     folder = Path(folder)
-    dest = USER / 'Downloads' / f'{folder.parent.name} Downscaled'
-    dest.mkdir(exist_ok=True)
+    
+    if not inplace:
+        
+        dest = USER / 'Downloads' / f'{folder.parent.name} Downscaled'
 
-    for file in folder.glob(pattern):
-
-        image = Image.open(file)
-        if image.height >= image.width:
+    for root, dirs, files in pathwalk(folder):
+        
+        (dest / root.name).mkdir(exist_ok=True)
+        
+        for file in files:
+            
+            image = Image.open(file)
             image.thumbnail(size)
-        else:
-            image.thumbnail(size[::-1])
 
-        if inplace: image.save(file)
-        image.save(dest / file.name)
-        num += 1
+            if inplace: image.save(file)
+            else: image.save(dest / root.name / file.name)
+            num += 1
     
     print(f'{num} images resized')
     
     return dest
 
-def Splice_Images(folder, foreground, pattern='*'):
+def Splice_Images(folder, foreground, pattern='*.*'):
     '''Places a given foreground on all images matching the pattern in specified folder'''
 
     from pathlib import Path
@@ -235,6 +249,8 @@ def Splice_Images(folder, foreground, pattern='*'):
 
     for image in folder.glob(pattern):
 
+        if image == foreground: continue
+        
         background = Image.open(str(image))
         background.paste(foreground, (0, 0), foreground)
         
@@ -244,22 +260,30 @@ def Splice_Images(folder, foreground, pattern='*'):
     print(f'{num} images spliced')
 
 def Convert_Images(path, source='webp', target='png', ignore=' '):
-    '''Convert all images with target extension to source, with optional ignoring'''
+    '''Convert all images with source extension to target, with optional ignoring'''
     
     import re
     from pathlib import Path
     from PIL import Image
 
+    lookup = {
+        'png': 'RGBA',
+        'jpg': 'RGB',
+        'jpeg': 'RGB',
+        'webp': 'RGBA',
+        }
+    
     num = 0
     path = Path(path)
     
     if path.is_dir():
         
         for image in path.glob(f'*{source}'):
-
+            
             if re.search(ignore, image.suffix): continue
+            
             rename = image.with_suffix(f'.{target}')
-            new = Image.open(str(image)).convert('RGBA')
+            new = Image.open(str(image)).convert(lookup[target])
             new.save(str(rename))
             image.unlink()
             
@@ -267,12 +291,11 @@ def Convert_Images(path, source='webp', target='png', ignore=' '):
     else:
 
         rename = path.with_suffix(f'.{target}')
-        new = Image.open(str(path)).convert('RGBA')
+        new = Image.open(str(path)).convert(lookup[target])
         new.save(str(rename))
         path.unlink()
         
         num += 1
-        
         
     print(f'{num} images converted')
 
@@ -346,10 +369,9 @@ def Download_Ehentai(url, wait=2, folder='Games'):
         
     def is_page_end():
         
-        element = driver.find('//body/div[1]/div[1]/div[1]/div', fetch=1)
-        current, total = element.text.split(' / ')
+        current = driver.current_url().split('-')[-1]
         
-        return current == total
+        return current == length
     
     path = USER / r'Downloads\Images' / folder
     driver = WEBDRIVER(profile=None)
@@ -360,18 +382,18 @@ def Download_Ehentai(url, wait=2, folder='Games'):
     dest.mkdir(exist_ok=True)
     length = driver.find('//*[contains(text(),"pages")]').text.split()[0]
     progress = IncrementalBar('Images', max=int(length))
-    driver.find('/html/body/div[6]/div[1]/div/a', click=True)
+    driver.find(f'//img[@alt="{1:0{len(length)}d}"]', click=True)
     
     while not is_page_end():
 
-        src = driver.find('//*[@id="img"]').get_attribute('src')
+        src = driver.find('//img[@id="img"]', fetch=1).get_attribute('src')
         name = dest / src.split('/')[-1]
         if not name.exists():
             name.write_bytes(requests.get(src).content)
             
         driver.find('//*[@id="next"]', click=True)
-        progress.next()
         time.sleep(wait)
+        progress.next()
     
     driver.close()
     
