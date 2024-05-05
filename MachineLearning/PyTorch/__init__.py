@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from MachineLearning import HOME
+from DeepLearning import HOME
 
 MODELS = HOME / 'Pytorch' / 'Models'
 CHCKPNT = HOME / 'Pytorch' / 'Checkpoints'

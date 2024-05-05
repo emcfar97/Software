@@ -4,7 +4,7 @@ import keras
 from PIL import Image
 import tensorflow as tf
 from numpy import resize, array, argwhere, loadtxt
-from MachineLearning import HOME
+from DeepLearning import HOME
 
 MODELS = HOME / 'Tensorflow' / 'Models'
 CHCKPNT = HOME / 'Tensorflow' / 'Checkpoints'
