@@ -1,6 +1,6 @@
-import argparse, bs4
-from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from ..utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, requests, re 
+import argparse, requests, bs4, re
+from .. import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER, get_credentials
+from ..utils import ARTIST, HEADERS, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags 
 
 SITE = 'gelbooru'
     
@@ -32,28 +32,54 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        try: page_source = requests.get(f'https://{SITE}.com/{href}')
-        except: continue
+        try: 
+            page_source = requests.get(
+                f'https://{SITE}.com/{href}&api_key={API_KEY}&user_id={USER_ID}', 
+                headers=HEADERS, timeout=30
+                )
+            
+        except requests.exceptions.ReadTimeout:
+
+            print('\nReadTimeoutError')
+            page_source = requests.get(
+                f'https://{SITE}.com/{href}', headers=HEADERS, timeout=30
+                )
+        
+        except ConnectionResetError:
+
+            print('\nConnectionResetError')
+            continue
+        
+        except requests.exceptions.ConnectionError:
+            
+            print('\nConnectionError')
+            continue
+            
+        except Exception as error:
+
+            print('\n', error)
+            continue
+
         html = bs4.BeautifulSoup(page_source.content, 'lxml')
         
         # get tags
         metadata = ' '.join(
-            '_'.join(tag.text.split(' ')[1:-1]) for tag in 
-            html.findAll(class_='tag-type-metadata')
+            '_'.join(data.text.split()) for data in 
+            html.select('.tag-type-metadata > a')
             )
         tags = ' '.join(
-            '_'.join(tag.text.split(' ')[1:-1]) for tag in 
-            html.findAll(class_='tag-type-general')
+            '_'.join(tag.text.split()) for tag in 
+            html.select('.tag-type-general > a')
             )
         artists = [
-            '_'.join(artist.text.split(' ')[1:-1]) for artist in 
-            html.findAll(class_='tag-type-artist')
+            '_'.join(artist.text.split()) for artist in 
+            html.select('.tag-type-artist > a')
             ]
         
         # get image
         try: image = html.find(href=True, text='Original image').get('href')
-        except Exception as error:
-            print('\n', error)
+        except AttributeError:
+        
             MYSQL.execute(DELETE[5], (href,), commit=1)
             continue
         
@@ -63,9 +89,7 @@ def page_handler(hrefs):
         type_ = 1 if 'photo_(medium)' in tags else 2
         if len(tags.split()) < 10 and save_image(name, image):
             tags += ' ' + get_tags(name)
-        tags, rating = generate_tags(
-            tags, metadata, True, artists, True
-            )
+        tags, rating = generate_tags(tags, metadata, True, True)
         
         # get artist
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
@@ -85,13 +109,14 @@ def page_handler(hrefs):
 
 def main(initial=True, headless=True):
     
-    global MYSQL, DRIVER
-    MYSQL = CONNECT()    
+    global MYSQL, DRIVER, API_KEY, USER_ID
+    MYSQL = CONNECT()
+    API_KEY, USER_ID = get_credentials(SITE, 'api_key', 'userid')
         
     if initial:
 
         DRIVER = WEBDRIVER(headless)
-        url = DRIVER.login(SITE)
+        url = get_credentials(SITE, 'url')[0]
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
         hrefs = initialize(url, query)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
