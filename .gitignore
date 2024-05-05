@@ -13,10 +13,10 @@ __pycache__
 ffmpeg-20230330-4d216654ca-win64-static
 GUI/test*.*
 GUIold*
-MachineLearning/Datasets
-MachineLearning/*/Checkpoints
-MachineLearning/*/Models
-MachineLearning/*/Logs
+DeepLearning/Datasets
+DeepLearning/*/Checkpoints
+DeepLearning/*/Models
+DeepLearning/*/Logs
 Music
 WebDev/Lib
 WebDev/Scripts
