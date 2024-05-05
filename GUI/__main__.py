@@ -10,6 +10,11 @@ parser.add_argument(
     '-p', '--program', type=int,
     help='argument', default=None
     )
+parser.add_argument(
+    '-a', '--admin', type=bool,
+    help='Is admin',
+    default=0
+    )
 
 args = parser.parse_args()
 
@@ -17,7 +22,7 @@ match args.program:
     
     case 0: 
         
-        from GUI.machinelearning import __main__
+        from GUI.deeplearning import __main__
         
     case 1:
         
