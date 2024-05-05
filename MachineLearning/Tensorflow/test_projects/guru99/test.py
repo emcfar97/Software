@@ -13,9 +13,9 @@ FEATURES = [
     ]
 LABEL = "medv"
 FILES = [
-    r"MachineLearning\test_projects\guru99\boston_train.csv",
-    r"MachineLearning\test_projects\guru99\boston_test.csv",
-    r"MachineLearning\test_projects\guru99\boston_predict.csv"
+    r"DeepLearning\test_projects\guru99\boston_train.csv",
+    r"DeepLearning\test_projects\guru99\boston_test.csv",
+    r"DeepLearning\test_projects\guru99\boston_predict.csv"
     ]
 
 def get_input_fn(data_set, num_epochs=None, n_batch = 128, shuffle=True): 
