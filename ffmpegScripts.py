@@ -2,11 +2,11 @@ import ffmpeg
 from os import path
 from pathlib import Path
 from ffprobe import FFProbe
-from tempfile import gettempdir
 from send2trash import send2trash
 from re import search, sub, findall, IGNORECASE
 
 EXT = '\.(mp4|flv|mkv|avi|wmv|mov|mpg|mpeg|divx|rm|ram|vob|3gp)'
+TARGET = '.mp4'
 ROOT = Path(Path().cwd().drive)
 USER = ROOT / path.expandvars(r'\Users\$USERNAME')
 DOWN = USER / r'Downloads\Images'
@@ -15,10 +15,11 @@ DEST = USER / r'Dropbox\Videos\Captures'
 CRF = 15
 PRESET = 'fast'
 VSYNC = 2
+BITRATE = '1k'
 
 def get_stream(files, text):
         
-    new = DEST / files[0].with_suffix('.mp4').name
+    new = DEST / files[0].with_suffix(TARGET).name
 
     if text and text in ('y', 'ye', 'yes'):
 
@@ -53,18 +54,20 @@ def get_time(file, type):
 
     time = input(f'Enter {type} time (seconds or hh:mm:ss): ')
     
-    if search('\d{2}:\d{2}:\d{2}.+', time): return time
+    if search('([01]?\d|2[0-3]):[0-5]\d', time): return time
     
     if time == '':
         
         if type == 'end' or time == -1:
             
-            time = float(FFProbe(file).streams[0].duration)
+            try: time = float(FFProbe(file).streams[0].duration)
+            except ValueError:
+                time = FFProbe(file).streams[0]
         
         else:
         
-            time == '0'
-
+            time = '0'
+    
     min, sec = divmod(float(time), 60)
     hour, min = divmod(min, 60)
 
@@ -84,7 +87,7 @@ while True:
             files = [
                 (
                     SOURCE / file, 
-                    DEST / file.with_suffix('.mp4').name
+                    DEST / file.with_suffix(TARGET).name
                     )
                 for file in SOURCE.iterdir() if search(EXT, file.suffix, IGNORECASE)
                 ]
@@ -102,11 +105,11 @@ while True:
                             x=int(metadata.width) * .70, 
                             y=int(metadata.height) * .85,
                             shadowcolor='white', shadowx=2, shadowy=2
-                            ).output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, vcodec='copy').run()
+                            ).output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE).run()
 
                     else:
                         ffmpeg.input(str(file)) \
-                        .output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, vcodec='copy') \
+                        .output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE) \
                         .run()
 
                 except Exception as error: print(error); continue
@@ -127,7 +130,7 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                try: ffmpeg.concat(*stream).output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC).run()
+                try: ffmpeg.concat(*stream).output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE).run()
                 except Exception as error: print(error); continue
                 
                 for file in files: send2trash(str(file))
@@ -147,7 +150,6 @@ while True:
                         if search(EXT, file.suffix, IGNORECASE)
                         ]
                     new, stream = get_stream(files, text)
-                    temp = Path(gettempdir(), files[0].name)
                     
                     duration = sum(
                         float(FFProbe(file).streams[0].duration)
@@ -157,23 +159,18 @@ while True:
                     ffmpeg.concat(*stream) \
                         .filter('fps', fps=30, round='up') \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(temp), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate='100k') \
-                        .run()
-                    ffmpeg.input(str(temp)) \
-                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, vf='mpdecimate', bitrate='1k') \
+                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE) \
                         .run()
                         
                 except Exception as error: print(error); continue
                 
-                finally: temp.unlink()
-
                 for file in files: send2trash(str(file))
 
         elif user_input == '4': # split video
 
             file = Path(input('Enter filepath: ').strip((' \'"')))
             
-            latest = sorted(file.parent.glob(f'{file.stem} — Part [0-9][0-9]*'))
+            latest = sorted(file.parent.glob(f'{file.stem} - Part [0-9][0-9]*'))
             
             if latest:
                 
@@ -188,7 +185,7 @@ while True:
             end = get_time(file, 'end')
                        
             ffmpeg.input(str(file), ss=(start), to=(end)) \
-                .output(str(new), crf=CRF, preset=PRESET, acodec='copy',vcodec='copy') \
+                .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE, vcodec="copy", acodec="copy") \
                 .run()
 
         elif user_input == '5': # download m3u8
@@ -200,14 +197,14 @@ while True:
         elif user_input == '6': # adjust directories
 
             user_input = input(
-                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change CRF: {CRF}\n5 - Change preset: {PRESET}\n6 - Change vsync: {VSYNC}\n'
+                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change Extension: {TARGET} \n5 - Change CRF: {CRF}\n6 - Change preset: {PRESET}\n7 - Change vsync: {VSYNC}\n8 - Change bitrate: {BITRATE}\n'
                 )
 
             if   user_input == '1': # change root
 
                 path = Path(input('Enter path: '))
 
-                if path.exists(): 
+                if path.exists():
                     
                     ROOT = path if '\\' in path.drive else Path(f'{path}\\')
                     USER = Path(ROOT, *USER.parts[1:])
@@ -223,7 +220,7 @@ while True:
 
                 path = Path(input('Enter path: '))
 
-                if path.exists(): 
+                if path.exists():
 
                     SOURCE = path
                     print('Success\n')
@@ -234,25 +231,33 @@ while True:
 
                 path = Path(input('Enter path: '))
 
-                if path.exists(): 
+                if path.exists():
 
                     DEST = path
                     print('Success\n')
 
                 else: raise FileNotFoundError
             
-            elif user_input == '4': # change CRF
+            elif user_input == '4': # change extension
+                
+                TARGET = input('Enter extension (integer): ')
+                
+            elif user_input == '5': # change CRF
                 
                 CRF = int(input('Enter value (integer): '))
             
-            elif user_input == '5': # change preset
+            elif user_input == '6': # change preset
                 
                 PRESET = input('Enter value (veryfast, fast, slow, veryslow): ')
             
-            elif user_input == '6': # change vsync
+            elif user_input == '7': # change vsync
                 
                 VSYNC = int(input('Enter value (integer): '))
-
+            
+            elif user_input == '8': # change bitrate
+            
+                BITRATE = input('Enter value (ex. 100k): ')
+            
         elif user_input == '7': # check directories
             
             print(f'''
