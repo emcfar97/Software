@@ -1,7 +1,7 @@
 # GUI
 This is a suite of files for a graphical user interface that navigates and selects from a gallery of images for the purposes of illustration reference and practice. Originally implemented in Tkinter and SQLite, the project is now coded in PyQt5 and MySQL.\
 Consists of six applications:
-### [Machine Learning](https://github.com/users/emcfar97/projects/5)
+### [Deep Learning](https://github.com/users/emcfar97/projects/5)
 Experimental. App for GUI-ifying the machine learning process, a la PerceptiLabs.
 ### [Manage Database](https://github.com/users/emcfar97/projects/4)
 Consists of a lefthand gallery of images and a righthand display for selected image. Allows deletion and updating of records, as well as a slideshow function that can display images and videos in fullscreen. 
