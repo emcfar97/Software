@@ -1,23 +1,27 @@
-import argparse, bs4, time
+import argparse, bs4, re, time
 from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from .utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags, requests, re
+from .utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'sankaku'
 MODE = [
     ['idol', 1],
     ['chan', 2]
     ]
+EXCESSIVE = '(Too many requests)|(Please slow down)'
+DELETION = '(404: Page Not Found)|(This post was deleted)'
 
 def initialize(mode, url, query):
     
     def next_page(page):
-        try: return page.get('next-page-url')
+        try: 
+            next_url = page.get('next-page-url')
+            next_page, = re.findall('page=\d+', next_url)
+            return re.sub('page=\d+', next_page, url)
+        
         except: return False
 
-    page_source = requests.get(
-        f'https://{mode[0]}.sankakucomplex.com/{url}'
-        )
-    html = bs4.BeautifulSoup(page_source.content, 'lxml')
+    DRIVER.get(f'https://{mode[0]}.sankakucomplex.com/{url}', wait=2)
+    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
     target = html.find('div', class_='content')
     try:
         hrefs = [
@@ -26,66 +30,70 @@ def initialize(mode, url, query):
             if (href.get('href'),) not in query
             ]
         
-        next = next_page(html.find('div', {'next-page-url': True})) 
+        next = next_page(html.find('div', {'next-page-url': True}))
         if hrefs and next: return hrefs + initialize(mode, next, query)
         else: return hrefs
     except:
         time.sleep(60)   
-        initialize(mode, url, query)
+        return initialize(mode, url, query)
 
 def page_handler(hrefs, mode):
 
     if not hrefs: return
     progress = IncrementalBar(SITE, max=MYSQL.rowcount)
 
-    for href, in hrefs:
+    for href, in hrefs[::-1]:
         
         progress.next()
         DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')
         html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
-        while html.find(text=re.compile('(Too many requests)|(Please slow down)')):
+        
+        while html.find(text=re.compile(EXCESSIVE)):
             time.sleep(60)
-            page_source = requests.get(
-                f'https://{mode[0]}.sankakucomplex.com{href}'
-                ).content   
-            html = bs4.BeautifulSoup(page_source, 'lxml')
-        try: 
+            DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')  
+            html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+            
+        try:
             src = html.find(id="highres", href=True)
             image = f'https:{src.get("href")}'
         except AttributeError:
-            if html.find(text='404: Page Not Found'): 
-                MYSQL.execute(DELETE[0], (href,), commit=1)
+            if html.find(text=re.compile(DELETION)): 
+                MYSQL.execute(DELETE[4], (href, mode[1]), commit=1)
             continue
-            
+        
+        # get tags
         metadata = ' '.join(
-            '_'.join(tag.text.split()[:-2]) for tag in 
+            '_'.join(tag.find('a').text.split()) for tag in 
             html.findAll(class_='tag-type-medium')
             )
-        tags = ' '.join(
-            '_'.join(tag.text.split()[:-2]) for tag in 
+        try:tags = ' '.join(
+            tag.find('a').text for tag in 
             html.findAll(class_='tag-type-general')
             )
+        except TypeError: continue
         artists = [
-            '_'.join(artist.text.split()[:-2]) for artist in 
+            '_'.join(artist.find('a').text.split()) for artist in 
             html.findAll(class_=re.compile('tag-type-artist|idol|studio'))
             ]
 
         name = get_name(image.split('/')[-1].split('?e=')[0], 0)
         
+        # check tags
         if len(tags.split()) < 10 and save_image(name, image):
-            tags += ' ' + get_tags(name, filter=mode[1] == 1)
-        tags, rating = generate_tags(
-            tags, metadata, True, artists, True
-            )
+            try: tags += ' ' + get_tags(name, filter=(mode[1] == 1))
+            except AttributeError: continue
+        try: tags, rating = generate_tags(tags, metadata, True, True)
+        except: continue
         tags = tags.encode('ascii', 'ignore').decode()
         for key, value in REPLACE.items():
-            tags = re.sub(f' {key} ', f' {value} ', tags)
+            tags = re.sub(f' {value} ', f' {key} ', tags)
 
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
         artists = ' '.join(artists).encode('ascii', 'ignore').decode()
 
         hash_ = get_hash(image, 1)
 
+        # insert image
         if MYSQL.execute(INSERT[3], (
             name.name, artists, tags, rating, mode[1], hash_, image, SITE, href
             )):
