@@ -20,7 +20,7 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'
     }
 MODEL = DeepDanbooru(
-    tags_path=r'MachineLearning\general-tags.txt', threshold=0.475
+    tags_path=r'DeepLearning\general-tags.txt', threshold=0.475
     )
 EXT = 'jpe?g|png|webp|gif|mp4|webm'
 
