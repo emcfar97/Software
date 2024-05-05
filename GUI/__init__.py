@@ -6,7 +6,7 @@ from GUI.managedata import ManageData
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
 from GUI.managedata.ribbonView import Ribbon
-from GUI.machinelearning import MachineLearning
+from GUI.deeplearning import DeepLearning
 from GUI.videosplitter import VideoSplitter
 
 GESTURE = {
@@ -52,7 +52,7 @@ class App(QMainWindow):
         options = {
             'Manage Data': ManageData, 
             'Gesture Draw': GestureDraw, 
-            'Machine Learning': MachineLearning,
+            'Machine Learning': DeepLearning,
             'Video Splitter': VideoSplitter,
             }
             
@@ -104,7 +104,7 @@ class App(QMainWindow):
 
                 case Qt.Key.Key_2: self.select('Gesture Draw', GestureDraw)
 
-                case Qt.Key.Key_3: self.select('Machine Learning', MachineLearning)
+                case Qt.Key.Key_3: self.select('Machine Learning', DeepLearning)
                 
                 case Qt.Key.Key_4: self.select('Video Splitter', VideoSplitter)
 
@@ -224,7 +224,9 @@ class GestureDraw(QMainWindow):
     @pyqtSlot()
     def select_records(self):
         
-        worker = Worker(self.mysql.execute, self.ribbon.update_query())
+        worker = Worker(
+            self.mysql.execute, self.ribbon.update_query(1, 1000)
+        )
         self.threadpool.start(worker)
 
     def start_session(self, gallery, time):
@@ -236,14 +238,17 @@ class GestureDraw(QMainWindow):
             self.statusbar.hide()
 
             if ':' in time:
+                
                 min, sec = time.split(':')
                 time = (int(min) * 60) + int(sec)
+                
             else: time = int(time)
             
             self.stack.setCurrentIndex(1)
             self.timer.start(gallery, time)
         
         else:
+            
             QMessageBox.information(
                 self, '', 
                 'You are either missing images or a time',
