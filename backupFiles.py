@@ -1,4 +1,5 @@
 import re
+from os import path
 from pathlib import Path
 from datetime import date
 from shutil import copy, copytree
@@ -6,7 +7,8 @@ from win32con import DRIVE_REMOVABLE
 from win32.win32file import GetDriveType
 from win32.win32api import GetLogicalDriveStrings
 
-SOURCE = Path.home() / 'Dropbox'
+ROOT = Path(Path().cwd().drive)
+SOURCE = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox')
 
 def path_walk(top, topdown=False, followlinks=False):
     """
