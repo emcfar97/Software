@@ -1,6 +1,6 @@
-import argparse, bs4, re, json
-from . import CONNECT, WEBDRIVER, INSERT, SELECT, DELETE
-from .utils import IncrementalBar, USER, ARTIST, save_image, get_hash, get_name, get_tags, generate_tags
+import argparse, bs4, requests, threading, re, json, time
+from . import CONNECT, WEBDRIVER, INSERT, SELECT, DELETE, get_credentials
+from .utils import IncrementalBar, USER, ARTIST, HEADERS, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'nhentai'
 COMIC = json.load(open(r'Webscraping\comic_data.json'))
@@ -13,6 +13,22 @@ def get_artist(text):
     targets = '_'.join([i.replace(',', '') for i in targets])
 
     return targets.replace('_)', ')')
+
+def get_session():
+    
+    sess = requests.Session()
+    sess.headers.update(HEADERS)
+    
+    login_data = {
+        'username': get_credentials(SITE, 'username'),
+        'password': get_credentials(SITE, 'password'),
+        'crsf_token': get_credentials(SITE, 'csrf_token'),
+        'dest': 'https://www.nhentai.com',
+        }
+    
+    sess.post('https://nhentai.net/login/?next=/', data=login_data)
+    
+    return sess
 
 def initialize(query, page='/favorites/?page=1'):
     
@@ -33,18 +49,19 @@ def initialize(query, page='/favorites/?page=1'):
     if hrefs and next: return hrefs + initialize(query, next)
     else: return hrefs
     
-def page_handler(hrefs):
+def page_handler(hrefs, limit=30):
     
     if not hrefs: return
     progress = IncrementalBar(SITE, max=MYSQL.rowcount)
+    lock = threading.Lock()
 
     for href, in hrefs:
         
         progress.next()
         
-        cover = None
-        content = DRIVER.get(f'https://{SITE}.net{href}')
-        html = bs4.BeautifulSoup(content, 'lxml')
+        try: reponse = requests.get(f'https://{SITE}.net{href}')
+        except: continue
+        html = bs4.BeautifulSoup(reponse.content, 'lxml')
         
         if html.find(text=re.compile("404 – Not Found")):
             MYSQL.execute(DELETE[5], (href,), commit=1)
@@ -59,63 +76,37 @@ def page_handler(hrefs):
             ARTIST.get(artist, [artist])[0] for artist in artists
             ]
 
-        for image in html.findAll('a', class_='gallerythumb'):
-            
-            try:
-                content = DRIVER.get(f'https://{SITE}.net{image.get("href")}')
-                image = bs4.BeautifulSoup(content, 'lxml')
-                src = image.find(src=re.compile('.+galleries.+')).get('src')
-                name = get_name(src)
-
-                if cover is None: # if this is the first image
-                    cover = name
-                    COMIC[cover.name] = COMIC.get(
-                        cover.name, {'imagedata': [], 'comics': []}
-                        )
-                
-                if name.name in [i[0] for i in COMIC[cover.name]['comics']]: continue
-                if not save_image(name, src, 1): break
-            
-                tags, rating = generate_tags(
-                    general=get_tags(name, True), 
-                    custom=True, rating=True
-                    )
-                hash_ = get_hash(name)
-
-                COMIC[cover.name]['imagedata'].append(
-                    (name.name, ' '.join(artists), tags,
-                    rating, 3, hash_, src, SITE, href)
-                    )
-                COMIC[cover.name]['comics'].append(
-                    (name.name, cover.name)
-                    )
+        gallery = []
+        images = html.findAll('a', class_='gallerythumb')
+        step = len(images) // limit if len(images) > limit else 1
         
-            except Exception as error:
-                print('\n', error, href)
-                break
+        for images in [images[i::step] for i in range(step)]:
             
-        else:
-            if cover is None: break
-            imagedata = COMIC[cover.name]['imagedata']
-            comics = COMIC[cover.name]['comics']
-
-            if (
-                MYSQL.execute(INSERT[3], imagedata, many=1) and
-                MYSQL.execute(INSERT[4], comics, many=1)
-                ):
-                
-                del COMIC[cover.name]
-                MYSQL.execute(DELETE[5], (href,), commit=1)
-                
-            else:
-                MYSQL.rollback()
-                break
+            threads = [
+                threading.Thread(
+                    target=url_handler, 
+                    args=(lock, gallery, image, artists, href)
+                    ) 
+                for image in images
+                ]
             
-        json.dump(
-            COMIC, 
-            open(r'Webscraping\comic_data.json', 'w'),
-            indent=4
-            )
+            for thread in threads: thread.start()
+            for thread in threads: thread.join()
+            
+            if None in gallery: break; continue
+        
+        if not gallery or None in gallery: continue
+        gallery.sort(key=lambda x: int(*re.findall('.+/(\d+).jpg', x[6])))
+        comics = [(gallery[0][0], image[0]) for image in gallery]
+        
+        if (
+            MYSQL.execute(INSERT[3], gallery, many=1) and
+            MYSQL.execute(INSERT[4], comics, many=1)
+            ):
+            
+            MYSQL.execute(DELETE[5], (href,), commit=1)
+            
+        else: MYSQL.rollback(); break
 
     print()
 
@@ -169,18 +160,56 @@ def file_handler(folders):
 
         MYSQL.commit()
         send2trash.send2trash(str(folder))
+    
+def url_handler(lock, gallery, image, artists, href, backoff=1):
+
+    try:        
+        response = requests.get(f'https://{SITE}.net{image.get("href")}')
+        while response.status_code == 429: # Too many requests
+            backoff += backoff
+            time.sleep(backoff)
+            response = requests.get(f'https://{SITE}.net{image.get("href")}')
+        image = bs4.BeautifulSoup(response.content, 'lxml')
+        src = image.find(src=re.compile('.+galleries.+')).get('src')
+        name = get_name(src)
         
+        if not name.exists():
+            if not save_image(name, src, 1):
+                
+                lock.acquire()
+                gallery.append(None)
+                lock.release()
+    
+        tags, rating = generate_tags(
+            general=get_tags(name, True), 
+            custom=True, rating=True
+            )
+        hash_ = get_hash(name)
+
+        lock.acquire()
+        gallery.append(
+            (name.name, ' '.join(artists), tags, 
+            rating, 3, hash_, src, SITE, href)
+            )
+        lock.release()
+
+    except Exception as error:
+        
+        lock.acquire()
+        gallery.append(None)
+        lock.release()
+
 def main(initial=1, headless=True, mode=1):
     
     global MYSQL, DRIVER
 
     MYSQL = CONNECT()
-        
+    
     if mode == 1:
             
-        DRIVER = WEBDRIVER(headless)
-        
         if initial:
+            
+            DRIVER = WEBDRIVER(headless, profile=mode)
             query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
             hrefs = initialize(query)
             MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
@@ -189,8 +218,7 @@ def main(initial=1, headless=True, mode=1):
     
     elif mode == 0:
         
-        DRIVER = WEBDRIVER(headless, None)
-
+        DRIVER = WEBDRIVER(headless, profile=mode)
         path = USER / r'Downloads\Images\Comics'
         file_handler(list(path.iterdir()))
 
