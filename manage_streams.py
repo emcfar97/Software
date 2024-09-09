@@ -31,7 +31,7 @@ class Browser(WEBDRIVER):
         while True:
             
             try:
-                if re.match('.+lives/\d+$', self.current_url()):
+                if re.match('.+lives/\d+$', self.current_url):
 
                     if start: self.set_source(); start=0
 
@@ -56,7 +56,7 @@ class Browser(WEBDRIVER):
 
     def live_stream(self):
 
-        while 'lives' in self.current_url():
+        while 'lives' in self.current_url:
 
             try:
 
@@ -124,7 +124,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 threads = [
-    Thread(target=start) for _ in range(args.num)
+    Thread(target=main) for _ in range(args.num)
     ]
 for thread in threads: thread.start()
 for thread in threads: thread.join()
