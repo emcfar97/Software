@@ -1,6 +1,6 @@
 import argparse, bs4, re, time
-from . import CONNECT, INSERT, SELECT, DELETE, WEBDRIVER
-from .utils import ARTIST, REPLACE, IncrementalBar, save_image, get_hash, get_name, get_tags, generate_tags
+from . import CONNECT, WEBDRIVER, INSERT, SELECT, DELETE, get_credentials
+from .utils import ARTIST, REPLACE, IncrementalBar, remove_non_ascii, save_image, get_hash, get_name, get_tags, generate_tags
 
 SITE = 'sankaku'
 MODE = [
@@ -20,14 +20,14 @@ def initialize(mode, url, query):
         
         except: return False
 
-    DRIVER.get(f'https://{mode[0]}.sankakucomplex.com/{url}', wait=2)
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get(f'https://{mode[0]}.sankakucomplex.com/{url}', wait=2)
+    html = bs4.BeautifulSoup(content, 'lxml')
     target = html.find('div', class_='content')
     try:
         hrefs = [
-            (href.get('href'), SITE, mode[1]) for href in 
-            target.findAll('a', href=re.compile('/post/+'))
-            if (href.get('href'),) not in query
+            (href.get('href')[3:], SITE, mode[1]) for href in 
+            target.findAll('a', class_='post-preview-link')
+            if (href.get('href')[3:],) not in query
             ]
         
         next = next_page(html.find('div', {'next-page-url': True}))
@@ -45,13 +45,13 @@ def page_handler(hrefs, mode):
     for href, in hrefs[::-1]:
         
         progress.next()
-        DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        content = DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')
+        html = bs4.BeautifulSoup(content, 'lxml')
         
         while html.find(text=re.compile(EXCESSIVE)):
             time.sleep(60)
-            DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')  
-            html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+            content = DRIVER.get(f'https://{mode[0]}.sankakucomplex.com{href}')  
+            html = bs4.BeautifulSoup(content, 'lxml')
             
         try:
             src = html.find(id="highres", href=True)
@@ -66,30 +66,33 @@ def page_handler(hrefs, mode):
             '_'.join(tag.find('a').text.split()) for tag in 
             html.findAll(class_='tag-type-medium')
             )
-        try:tags = ' '.join(
+        tags = ' '.join(
             tag.find('a').text for tag in 
-            html.findAll(class_='tag-type-general')
+            html.findAll(class_=re.compile('tag-type-(general|fashion|pose|activity|role|object|setting)'))
             )
-        except TypeError: continue
         artists = [
             '_'.join(artist.find('a').text.split()) for artist in 
-            html.findAll(class_=re.compile('tag-type-artist|idol|studio'))
+            html.findAll(class_=re.compile('tag-type-(artist|idol|studio)'))
             ]
 
         name = get_name(image.split('/')[-1].split('?e=')[0], 0)
         
-        # check tags
+        # check tags and artist
         if len(tags.split()) < 10 and save_image(name, image):
             try: tags += ' ' + get_tags(name, filter=(mode[1] == 1))
             except AttributeError: continue
-        try: tags, rating = generate_tags(tags, metadata, True, True)
-        except: continue
-        tags = tags.encode('ascii', 'ignore').decode()
-        for key, value in REPLACE.items():
-            tags = re.sub(f' {value} ', f' {key} ', tags)
+        tags, rating = generate_tags(tags, metadata, True, True)
 
+        tags = remove_non_ascii(tags)
+        
+        for key, value in REPLACE.items():
+            
+            tags = re.sub(f' {value} ', f' {key} ', tags)
+        
         artists = [ARTIST.get(artist, [artist])[0] for artist in artists]
-        artists = ' '.join(artists).encode('ascii', 'ignore').decode()
+        artists = ' '.join(artists)
+
+        artists = remove_non_ascii(artists)
 
         hash_ = get_hash(image, 1)
 
@@ -113,7 +116,7 @@ def main(initial=True, headless=True, mode=1):
 
     if initial:
         
-        url = DRIVER.login(SITE)
+        url = get_credentials(SITE, 'url')
         query = set(MYSQL.execute(
             f'{SELECT[0]} AND type=%s', (SITE, mode[1]), fetch=1
             ))
@@ -128,7 +131,7 @@ def main(initial=True, headless=True, mode=1):
     DRIVER.close()
 
 if __name__ == '__main__':
-
+    
     parser = argparse.ArgumentParser(
         prog='sankaku', 
         )

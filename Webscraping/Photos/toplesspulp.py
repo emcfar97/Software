@@ -7,11 +7,11 @@ SITE = 'toplesspulp'
 
 def initialize(query, url='https://toplesspulp.com/category/', year=2020):
     
-    DRIVER.get(f'{url}{year}')
+    content = DRIVER.get(f'{url}{year}')
     for _ in range(10): 
         DRIVER.find('html', Keys.END, type_=6)
         time.sleep(1)
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    html = bs4.BeautifulSoup(content, 'lxml')
 
     hrefs = [
         (target.find(href=True).get('href'), SITE, 1) 

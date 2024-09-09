@@ -1,6 +1,6 @@
 import argparse, bs4, sqlite3, os, time, tempfile
-from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, EXT
-from ..utils import IncrementalBar, PATH, ARTIST, get_tags, generate_tags, requests, re
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
+from ..utils import IncrementalBar, PATH, ARTIST, EXT, get_tags, generate_tags, requests, re
 import selenium.common.exceptions as exceptions
 from pathlib import Path
 
@@ -14,28 +14,41 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
     if upload: limit = get_limit()
     progress = IncrementalBar('favorites', max=len(paths))
 
-    for (path, href, src, site,) in paths:
+    for (rowid, path, src, href, site,) in paths:
         
         progress.next()
-        DRIVER.get('http://iqdb.org/')
+
         try:
-            if src: DRIVER.find('//*[@id="url"]', src, fetch=1)
-            else: DRIVER.find('//*[@id="file"]', path, fetch=1)
+            if src:
+                data = {'url': (src,)}
+                request = requests.post('https://iqdb.org', data=data)
+                
+            elif os.path.exists(path): 
+                data = {'file': (path, open(path, 'rb'))}
+                request = requests.post('https://iqdb.org', files=data)
+            
+            else: raise FileNotFoundError(path)
+            
         except exceptions.InvalidArgumentException as error:
+            
             if 'File not found' in error.msg:
-                MYSQL.execute(UPDATE[4], (1, 1, path), commit=1)
+                MYSQL.execute(UPDATE[4], (1, 1, rowid), commit=1)
             else:
-                MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
+                MYSQL.execute(UPDATE[4], (1, 0, rowid), commit=1)
             continue
-        DRIVER.find('//input[@type="submit"]', click=True)
-        if re.search(EXT[-12:], path, re.IGNORECASE): time.sleep(25)
-        else: time.sleep(5)
         
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        except FileNotFoundError: continue
+        
+        except requests.exceptions.SSLError: continue
+        
+        html = bs4.BeautifulSoup(request.content, 'lxml')
         if html.find(text=re.compile(IGNORE)):
-            MYSQL.execute(UPDATE[4], (1, 0, path), commit=1)
+            
+            MYSQL.execute(UPDATE[4], (1, 0, rowid), commit=1)
             continue
+        
         try:
+            
             targets = [
             target.find(href=re.compile('/gelbooru|/chan.san')) 
             for target in html.find(id='pages').contents 
@@ -43,7 +56,10 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
             target.findAll(href=re.compile('/gelbooru|/chan.san')) and 
             target.findAll(text=re.compile('(Best)|(Additional) match'))
             ]
-        except: continue
+        except: 
+            
+            MYSQL.execute(UPDATE[4], (1, 0, rowid), commit=1)
+            continue
         
         if targets: saved = favorite(targets)
         elif upload and (sankaku < limit or gelbooru < 50):
@@ -52,8 +68,8 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
             elif type_ == 0: gelbooru += 1
         else: saved = False
                         
-        if saved and src is None: os.remove(path)
-        MYSQL.execute(UPDATE[4], (1, int(saved), path), commit=1)
+        if saved and os.path.isfile(path): os.remove(path)
+        MYSQL.execute(UPDATE[4], (1, int(saved), rowid), commit=1)
 
     print()
 
@@ -61,8 +77,10 @@ def favorite(targets, saved=False):
 
     for match in targets:
 
-        DRIVER.get(f'https:{match.get("href")}')
+        content = DRIVER.get(f'https:{match.get("href")}')
 
+        if DRIVER.current_url == 'https://gelbooru.com/index.php?page=post&s=list&tags=all':
+            return True
         if'gelbooru' in match.get('href'):
             try: DRIVER.find('//*[text()="Add to favorites"]', click=True)
             except: pass
@@ -142,8 +160,8 @@ def upload_image(path, href, src, site):
   
 def get_limit():
     
-    DRIVER.get('https://chan.sankakucomplex.com/user/upload_limit')
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get('https://chan.sankakucomplex.com/user/upload_limit')
+    html = bs4.BeautifulSoup(content, 'lxml')
     return int(html.find('strong').text)
 
 def edit(search, replace):
@@ -151,8 +169,8 @@ def edit(search, replace):
     address = '/html/body/div[4]/div/div[2]/div[8]/form/table/tfoot/tr/td/input'
     driver = WEBDRIVER(0, None, wait=30)
     driver.login('sankaku', 'chan')
-    driver.get(f'https://chan.sankakucomplex.com?tags={search}')
-    html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+    content = DRIVER.get(f'https://chan.sankakucomplex.com?tags={search}')
+    html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         target.get('href') for target in 
         html.findAll('a', {'onclick': True}, href=re.compile('/p+'))
@@ -160,9 +178,9 @@ def edit(search, replace):
 
     for href in hrefs:
 
-        driver.get(f'https://chan.sankakucomplex.com{href}')
+        content = DRIVER.get(f'https://chan.sankakucomplex.com{href}')
         time.sleep(6)
-        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        html = bs4.BeautifulSoup(content, 'lxml')
         tags = html.find('textarea').contents[0]
 
         text = re.sub(search.replace('*', '.*'), replace, tags)
@@ -193,10 +211,10 @@ def initialize():
 def main(initial=True, headless=True, depth=0, upload=0):
 
     global MYSQL, DRIVER
-    MYSQL = CONNECT('desktop')
-    DRIVER = WEBDRIVER(headless, wait=30)
-    
+    MYSQL = CONNECT()
+    DRIVER = WEBDRIVER(headless=headless)
     if initial: initialize()
+    
     page_handler(
         MYSQL.execute(SELECT[4].format(MODE[upload]), fetch=1)[-depth:], upload
         )

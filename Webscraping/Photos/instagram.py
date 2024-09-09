@@ -7,14 +7,14 @@ SITE = 'instagram'
 
 def initialize(url, query, retry=0):
     
-    DRIVER.get(f'https://www.{SITE}.com{url}')
+    content = DRIVER.get(f'https://www.{SITE}.com{url}')
     
     while True:
 
         DRIVER.find_element_by_tag_name('html').send_keys(Keys.PAGE_DOWN)
         time.sleep(2)
 
-        html = bs4.BeautifulSoup(DRIVER.page_source, 'lxml')
+        html = bs4.BeautifulSoup(content, 'lxml')
         hrefs = [
             (target.get('href'), SITE, 1) for target in 
             html.findAll('a', href=re.compile('/p/.+'))
@@ -39,17 +39,17 @@ def page_handler(hrefs, retry=2):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'https://www.{SITE}.com{href}')
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        content = DRIVER.get(f'https://www.{SITE}.com{href}')
+        html = bs4.BeautifulSoup(content, 'lxml')
         artist = html.find(
             alt=re.compile('.+ profile picture')
             ).get('alt').split("'")[0]
-        url = DRIVER.current_url()
+        url = DRIVER.current_url
 
-        DRIVER.get('https://www.w3toys.com/')
+        content = DRIVER.get('https://www.w3toys.com/')
         DRIVER.find('//*[@id="link"]', keys=url, enter=1)
         time.sleep(5)
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        html = bs4.BeautifulSoup(content, 'lxml')
         images = [
             'https://www.w3toys.com/' + target.get('href') 
             for target in html.findAll(
@@ -58,7 +58,7 @@ def page_handler(hrefs, retry=2):
             ]
         # while True:
             
-            # html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+            # html = bs4.BeautifulSoup(content, 'lxml')
             # target = html.find('div', role='presentation')
             # src = target.find('video', src=True).get('src')[5:]
             # if not src: src = target.find('img', src=True).get('src')

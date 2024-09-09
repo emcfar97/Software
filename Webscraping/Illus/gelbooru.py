@@ -11,8 +11,8 @@ def initialize(url, query):
         try: return pages.find(alt="next").get('href')
         except AttributeError: return False
 
-    DRIVER.get(f'https://{SITE}.com/index.php{url}')
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get(f'https://{SITE}.com/index.php{url}')
+    html = bs4.BeautifulSoup(content, 'lxml')
 
     hrefs = [
         (target.get('href'), SITE, 2) for target in 
@@ -126,8 +126,10 @@ def main(initial=True, headless=True):
 
 if __name__ == '__main__':
 
+    
+
     parser = argparse.ArgumentParser(
-        prog='twitter', 
+        prog='gelbooru', 
         )
     parser.add_argument(
         '-i', '--init', type=int,

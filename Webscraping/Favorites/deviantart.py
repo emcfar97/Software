@@ -11,8 +11,8 @@ def initialize(url, query):
         try: return page.get('href')
         except IndexError: return False
 
-    DRIVER.get(f'https://www.{SITE}.com/notifications/watch')
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get(f'https://www.{SITE}.com/notifications/watch')
+    html = bs4.BeautifulSoup(content, 'lxml')
     artists = html.findAll('div', {'aria-label': re.compile('\d+ Deviations by .*')})
 
     for artist in artists:
@@ -37,13 +37,13 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'http://www.{SITE}.com{href}')
+        content = DRIVER.get(f'http://www.{SITE}.com{href}')
         if element := DRIVER.find('//*[@id="frontPage"]', type_=1):
             element.click()
         DRIVER.find(
             '//body/main/div/section[1]/div[2]/img', click=True, type_=1
             )
-        try: html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        try: html = bs4.BeautifulSoup(content, 'lxml')
         except: continue
 
         artist = html.find(class_='breadcrumbs').text.split(' » ')[1]
@@ -62,7 +62,7 @@ def main(initial=True, headless=True):
     DRIVER = WEBDRIVER(headless)
     
     if initial:
-        url = DRIVER.login(SITE)
+        url = get_credentials(SITE)
         query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         initialize(url, query)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))

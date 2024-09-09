@@ -11,8 +11,8 @@ def initialize(url, query):
         try: return page.find(href=True).get('href')
         except AttributeError: return False
 
-    DRIVER.get(f'https://www.{SITE}.com{url}', wait=5)
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get(f'https://www.{SITE}.com{url}', wait=5)
+    html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         (href, SITE, 1) for target in
         html.find(class_='list-gallery').findAll(href=re.compile('https.+'))
@@ -33,8 +33,8 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        page_source = requests.get(f'https://www.{SITE}.com/{href}')
-        html = bs4.BeautifulSoup(page_source.content, 'lxml')
+        response = requests.get(f'https://www.{SITE}.com/{href}')
+        html = bs4.BeautifulSoup(response.content, 'lxml')
         try:
             artists = [
                 artist.get('href').split('/')[-2].replace('-', '_') 
@@ -78,17 +78,18 @@ def main(initial=True, headless=True):
         
     global MYSQL, DRIVER
     MYSQL = CONNECT()
-    DRIVER = WEBDRIVER(headless)
 
     if initial:
+        
+        DRIVER = WEBDRIVER(headless)
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
         hrefs = initialize(DRIVER.login(SITE), query)
         MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+        DRIVER.close()
     
     page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
-    DRIVER.close()
 
-if __name__ == '__main__':
+if __name__ == '__main__':   
 
     parser = argparse.ArgumentParser(
         prog='elitebabes', 

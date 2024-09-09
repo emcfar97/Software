@@ -1,6 +1,6 @@
 import argparse, bs4
 import selenium.common.exceptions as exceptions
-from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, get_credentials
 from ..utils import PATH, IncrementalBar, re, save_image
 
 SITE = 'foundry'
@@ -15,8 +15,8 @@ def initialize(url, query):
         except AttributeError: 
             return 
 
-    DRIVER.get(f'http://www.hentai-foundry.com{url}')
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get(f'http://www.hentai-foundry.com{url}')
+    html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         (*href, SITE) for href in 
         {(target.get('href'),) for target in 
@@ -37,7 +37,6 @@ def page_handler(hrefs):
         
         progress.next()
         DRIVER.get(f'http://www.hentai-foundry.com{href}')
-        artist = href.split('/')[3]
         try:
             image = DRIVER.find('//img[@class="center"]').get_attribute('src')
             error = 0
@@ -49,27 +48,34 @@ def page_handler(hrefs):
             
         except: continue
         
-        try:
-        
-            name = re.sub(f'({artist})-\d+', r'\1 - ', image.split('/')[-1])
-            name = PATH / 'Images' / SITE / name
-        
-        except AttributeError: continue
+        if 'thumbs' in image:
+            continue
+            artist = None
+            id = re.findall('.+pid=(\d+)&')[0]
+            name = f'{artist} - {id}.jpg'
+
+        elif 'pictures' in image:
+            name = re.findall('.+/\w/(\w+)/(\d+).+\.(.+)')
+            print(name)
+            continue
+        else: 
+            parts = image.split('/') + [image.split('.')[-1]]
+            name = f'{parts[4]} - {parts[5]}.{parts[-1]}'
+        name = PATH / 'Images' / SITE / name
         
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
-        if error:
-            save_image(name, image)
+        if error: save_image(name, image)
     
     print()
 
 def main(initial=True, headless=True):
     
     global MYSQL, DRIVER
-    MYSQL = CONNECT('desktop')
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial:
-        url = DRIVER.login(SITE)
+        url = get_credentials(SITE, 'url')
         query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         initialize(url, query)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))

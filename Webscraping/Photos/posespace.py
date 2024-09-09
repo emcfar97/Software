@@ -5,11 +5,11 @@ from ..utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags,
 
 SITE = 'posespace'
 
-def initialize(url='/posetool/favs.aspx'):
+def initialize(url, query):
 
-    DRIVER.get(query, f'https://www.{SITE}.com{url}')
+    content = DRIVER.get(query, f'https://www.{SITE}.com{url}')
     time.sleep(1)
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         (*href, SITE, 1) for href in 
         {
@@ -104,7 +104,7 @@ def make_gif(image):
 
     if len(total) < 3:
     
-        DRIVER.get('https://ezgif.com/maker')
+        content = DRIVER.get('https://ezgif.com/maker')
         for temp in temps[:24]:
             DRIVER.find('//input[@type="file"]', keys=str(temp))
         DRIVER.find('//input[@type="submit"]', click=True)
@@ -129,7 +129,7 @@ def main(initial=True, headless=True):
     
     if initial:
         query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1)) 
-        initialize(query)
+        initialize('/posetool/favs.aspx', query)
         
     page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     DRIVER.close()

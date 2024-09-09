@@ -1,5 +1,5 @@
 import argparse, bs4
-from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER
+from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER, get_credentials
 from ..utils import PATH, IncrementalBar, re
 
 SITE = 'furaffinity'
@@ -11,8 +11,8 @@ def initialize(url, query):
         try: return pages.get('href')
         except AttributeError: return False
 
-    DRIVER.get(f'https://www.{SITE}.net{url}')
-    html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+    content = DRIVER.get(f'https://www.{SITE}.net{url}')
+    html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         (*href, SITE) for href in {(target.get('href'),) for target in 
         html.findAll(href=re.compile('/view+'))} - query
@@ -31,8 +31,8 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'https://www.{SITE}.net{href}')
-        html = bs4.BeautifulSoup(DRIVER.page_source(), 'lxml')
+        content = DRIVER.get(f'https://www.{SITE}.net{href}')
+        html = bs4.BeautifulSoup(content, 'lxml')
         
         if html.find(text=re.compile('not in our database.+')):
             
@@ -42,29 +42,24 @@ def page_handler(hrefs):
         image = 'https:' + html.find(
             'img', src=re.compile('//d.furaffinity.net/art/.+')
             ).get('src')
-        name = re.sub('.+\.(.+)_(.+)', r'\1 - \2', image)
+        parts = image.split('/') + [image.split('.')[-1]]
+        name = f'{parts[4]} - {parts[5]}.{parts[-1]}'
         name = PATH / 'Images' / SITE / name
         
-        if name.suffix == ' ':
-            continue
-            target = html.find(class_='submission-id-sub-container')
-            artist = target.find('strong').text
-            title = target.find('p').text
-            name = f'{artist} - {title}.{ext}'
-            name = PATH / 'Images' / SITE / name
+        if name.suffix == ' ': name.with_suffix('.png')
 
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
     
     print()
 
 def main(initial=True, headless=True):
-    
+
     global MYSQL, DRIVER
-    MYSQL = CONNECT('desktop')
+    MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
     
     if initial:
-        url = DRIVER.login(SITE)
+        url = get_credentials(SITE, 'url')
         query = set(MYSQL.execute(SELECT[2], (SITE,), fetch=1))
         initialize(url, query)
     page_handler(MYSQL.execute(SELECT[3], (SITE,), fetch=1))
