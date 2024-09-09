@@ -1,5 +1,7 @@
 import argparse, threading
 
+from Webscraping import get_starred
+    
 parser = argparse.ArgumentParser(
     prog='Webscraping', 
     description='Command line interface for common webscraping operations and projects'
@@ -20,15 +22,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if args.arg == 0: # testing
-
-    # from Webscraping.Favorites import deviantart
-    from Webscraping.Photos import blogspot
-
-    # deviantart.main(1, 0)
-    blogspot.main(1, 0)
-
-elif args.arg == 1: # photos
+if args.arg == 1: # photos
 
     from Webscraping import Photos
     
@@ -57,13 +51,12 @@ elif args.arg == 3: # comics
     
 else: # webscraping
 
-    from Webscraping import get_starred
     from Webscraping import Photos, Illus, comics
     
     threads = [
         threading.Thread(target=Photos.main, args=(args.init,)),
         threading.Thread(target=Illus.main, args=(args.init, args.fav)),
-        # threading.Thread(target=comics.main, args=(args.init,))
+        threading.Thread(target=comics.main, args=(args.init,))
         ]
     for thread in threads: thread.start()
     for thread in threads: thread.join()

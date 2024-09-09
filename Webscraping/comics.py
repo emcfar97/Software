@@ -210,19 +210,23 @@ def main(initial=1, headless=True, mode=1):
         if initial:
             
             DRIVER = WEBDRIVER(headless, profile=mode)
+            
             query = set(MYSQL.execute(SELECT[0], (SITE,), fetch=1))
             hrefs = initialize(query)
             MYSQL.execute(INSERT[0], hrefs, many=1, commit=1)
+            
+            DRIVER.close()
                     
         page_handler(MYSQL.execute(SELECT[1], (SITE,), fetch=1))
     
     elif mode == 0:
         
         DRIVER = WEBDRIVER(headless, profile=mode)
+        
         path = USER / r'Downloads\Images\Comics'
         file_handler(list(path.iterdir()))
 
-    DRIVER.close()
+        DRIVER.close()
 
 if __name__ == '__main__':
 
