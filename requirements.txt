@@ -24,7 +24,7 @@ imutils==0.5.4
 lxml==4.9.1
 mechanize==0.4.7
 moviepy==1.0.3
-mysql-connector-python==8.0.27
+mysql-connector-python==9.1.0
 numpy==1.22.0
 opencv-python==4.8.1.78
 outcome==1.1.0
