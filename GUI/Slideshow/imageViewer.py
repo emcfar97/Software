@@ -1,8 +1,8 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel
-from PyQt6.QtGui import QImage, QPixmap, QTransform
+from PyQt6.QtGui import QPixmap, QTransform
 
-from GUI.slideshow.controls import Controls
+from GUI.utils import get_frame
 
 class imageViewer(QLabel):
     
@@ -14,14 +14,27 @@ class imageViewer(QLabel):
             int(self.parent().width() * .3), 
             int(self.parent().height() * .3)
             )
+        self.pixmap = QPixmap()
     
-    def update(self, pixmap):
+    def update(self, path):
         
-        if pixmap: self.setPixmap(pixmap)
-        else: self.setPixmap(QPixmap())
+        if path: 
+            
+            # read image/video file
+            if path.endswith('.webp'): self.pixmap.load(path)
+            else: self.pixmap = self.pixmap.fromImage(get_frame(path))
+            
+            self.setPixmap(self.pixmap.scaled(
+                self.size(), Qt.AspectRatioMode.KeepAspectRatio, 
+                transformMode=Qt.TransformationMode.SmoothTransformation
+                ))
+            
+        else: self.no_image()
 
     def no_image(self):
-
+    
+        self.pixmap.fill() 
+        self.setPixmap(self.pixmap)
         self.setText('There are no images')
         self.setStyleSheet(f'''
             background: white; 
@@ -42,10 +55,10 @@ class imageViewer(QLabel):
 
         if not parent.stack.currentIndex() and parent.model.gallery:
 
-            index = parent.model.gallery[parent.index]
-            image = QImage(index[1])
+            # index = parent.model.gallery[parent.index]
+            # image = QImage(str(get_path(index[1])))
                    
-            pixmap = QPixmap(image).scaled(
+            pixmap = self.pixmap.scaled(
                 event.size(), Qt.AspectRatioMode.KeepAspectRatio, 
                 transformMode=Qt.TransformationMode.SmoothTransformation
                 )

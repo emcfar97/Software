@@ -1,38 +1,42 @@
 from moviepy.editor import VideoFileClip
-from PyQt6.QtCore import QUrl
+from PyQt6.QtCore import QUrl, pyqtSignal
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 from PyQt6.QtWidgets import QMainWindow, QMessageBox
-from PyQt6.QtMultimedia import QMediaPlayer, QImageCapture, QAudioOutput
-
-from GUI.slideshow.controls import Controls
+from PyQt6.QtMultimedia import QMediaPlayer, QVideoSink, QAudioOutput
 
 class videoPlayer(QMainWindow):
 
+    playing = pyqtSignal()
+    
     def __init__(self, parent):
         
         super(videoPlayer, self).__init__(parent)
         self.player = QMediaPlayer(self)
-        self.audioOutput = QAudioOutput(self)
         self.videoOutput = QVideoWidget(self)
-        self.imageCapture = QImageCapture(self)
-        self.player.setAudioOutput(self.audioOutput)
+        self.videoSink = QVideoSink(self)
+        self.audioOutput = QAudioOutput(self)
+        
+        self.player.setLoops(QMediaPlayer.Loops.Infinite)
         self.player.setVideoOutput(self.videoOutput)
-        self.setCentralWidget(self.videoOutput)
+        self.player.setAudioOutput(self.audioOutput)
         
         self.audioOutput.setVolume(.5)
         
         self.player.mediaStatusChanged.connect(self.mediaStatusChanged)
-        # self.player.positionChanged.connect(self.positionChanged)
-        # self.audioOutput.volumeChanged.connect(self.positionChanged)
+        self.player.positionChanged.connect(self.positionChanged)
+        self.audioOutput.volumeChanged.connect(self.positionChanged)
+        
+        self.setCentralWidget(self.videoOutput)
         
     def update(self, path):
         
-        if path is None: return 
+        if path: 
             
+            path = QUrl.fromLocalFile(path)
+            self.player.setSource(path)
+            self.play()
             
-        path = QUrl.fromLocalFile(path)
-        self.player.setSource(path)
-        self.player.play()
+        else: self.stop()
 
     def capture(self): pass
     
@@ -41,13 +45,10 @@ class videoPlayer(QMainWindow):
         self.update(None)
         clip = VideoFileClip(path)
         clip.rotate(90 * sign)
-
-        if path.endswith(('gif')):
-            clip.write_gif(path)
-        else: 
-            clip.write_videofile(path)
-
+        clip.write_videofile(path)
         clip.close()
+
+    def play(self): self.player.play()
 
     def pause(self):
 
@@ -55,16 +56,15 @@ class videoPlayer(QMainWindow):
 
             case QMediaPlayer.PlaybackState.PlayingState: self.player.pause()
             case QMediaPlayer.PlaybackState.PausedState: self.player.play()
+            case QMediaPlayer.PlaybackState.StoppedState: self.player.play()
 
-    def stop(self): 
-        
-        self.player.stop()
+    def stop(self): self.player.stop()
 
-    def position(self, delta):
+    def set_position(self, delta):
 
         self.player.setPosition(self.player.position() + delta)
 
-    def volume(self, delta):
+    def set_volume(self, delta):
         
         if self.player.hasAudio(): 
 
@@ -76,6 +76,8 @@ class videoPlayer(QMainWindow):
     
             self.audioOutput.setMuted(not self.audioOutput.isMuted())
 
+    def get_duration(self): return self.player.duration()
+    
     def positionChanged(self, event): pass
     
     def volumeChanged(self, event): pass
@@ -84,17 +86,13 @@ class videoPlayer(QMainWindow):
         
         match status:
             
-            case QMediaPlayer.MediaStatus.EndOfMedia: self.player.play()
-        
-            case QMediaPlayer.MediaStatus.LoadedMedia:
-                
-                self.parent().setCurrentIndex(1)
-                
+            case QMediaPlayer.MediaStatus.BufferedMedia: self.playing.emit()
+            
             case QMediaPlayer.MediaStatus.InvalidMedia:
                 
                 message = QMessageBox()
                 message.setWindowTitle('Error')
-                message.setText('Invalid Media')
+                message.setText(f'Invalid Media: {self.source}')
                 
             # case _: print(status)
             

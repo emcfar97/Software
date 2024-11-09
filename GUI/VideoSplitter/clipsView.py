@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QWidget, QLabel
+from PyQt6.QtWidgets import QScrollArea, QSizePolicy
 
-class Clips(QLabel):
+class Clips(QScrollArea):
      
     def __init__(self, parent):
          

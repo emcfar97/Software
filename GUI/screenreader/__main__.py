@@ -1,10 +1,11 @@
 from PyQt6.QtWidgets import QApplication
 
-from GUI.videosplitter import VideoSplitter
+from GUI.screenreader.__init__ import ScreenReader
 
 Qapp = QApplication([])
 
-app = VideoSplitter()
+app = ScreenReader()
 Qapp.setStyleSheet("QMessageBox { messagebox-text-interaction-flags: 5; }")
 
-Qapp.exec()
+
+Qapp.exec_()
