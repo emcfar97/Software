@@ -14,8 +14,8 @@ SOURCE = USER / r'Videos\Captures'
 DEST = USER / r'Dropbox\Videos\Captures'
 CRF = 15
 PRESET = 'fast'
-VSYNC = 2
 BITRATE = '1k'
+FPS_MODE = 'vfr'
 
 def get_stream(files, text):
         
@@ -25,7 +25,7 @@ def get_stream(files, text):
 
         stream = [
             ffmpeg.input(str(file)).drawtext(
-                text=file.stem, fontsize=45, 
+                text=file.stem, fontsize=75, 
                 x=int(FFProbe(file).streams[0].width) * .66, 
                 y=int(FFProbe(file).streams[0].height) * .85,
                 shadowcolor='white', shadowx=2, shadowy=2
@@ -101,15 +101,15 @@ while True:
                         metadata = FFProbe(str(file)).streams[0]
 
                         ffmpeg.input(str(file)).drawtext(
-                            text=file.stem, fontsize=45, 
+                            text=file.stem, fontsize=75, 
                             x=int(metadata.width) * .70, 
                             y=int(metadata.height) * .85,
                             shadowcolor='white', shadowx=2, shadowy=2
-                            ).output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE).run()
+                            ).output(str(mp4), crf=CRF, preset=PRESET, fps_mode=FPS_MODE, bitrate=BITRATE).run()
 
                     else:
                         ffmpeg.input(str(file)) \
-                        .output(str(mp4), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE) \
+                        .output(str(mp4), crf=CRF, preset=PRESET, fps_mode=FPS_MODE, bitrate=BITRATE) \
                         .run()
 
                 except Exception as error: print(error); continue
@@ -130,7 +130,7 @@ while True:
                     ]
                 new, stream = get_stream(files, text)
                 
-                try: ffmpeg.concat(*stream).output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE).run()
+                try: ffmpeg.concat(*stream).output(str(new), crf=CRF, preset=PRESET, fps_mode=FPS_MODE, bitrate=BITRATE).run()
                 except Exception as error: print(error); continue
                 
                 for file in files: send2trash(str(file))
@@ -159,7 +159,7 @@ while True:
                     ffmpeg.concat(*stream) \
                         .filter('fps', fps=30, round='up') \
                         .setpts(f'{desired / duration:.4f}*PTS') \
-                        .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE) \
+                        .output(str(new), crf=CRF, preset=PRESET, fps_mode=FPS_MODE, bitrate=BITRATE) \
                         .run()
                         
                 except Exception as error: print(error); continue
@@ -185,7 +185,7 @@ while True:
             end = get_time(file, 'end')
                        
             ffmpeg.input(str(file), ss=(start), to=(end)) \
-                .output(str(new), crf=CRF, preset=PRESET, vsync=VSYNC, bitrate=BITRATE, vcodec="copy", acodec="copy") \
+                .output(str(new), crf=CRF, preset=PRESET, fps_mode=FPS_MODE, bitrate=BITRATE, vcodec='copy', acodec='copy') \
                 .run()
 
         elif user_input == '5': # download m3u8
@@ -197,7 +197,7 @@ while True:
         elif user_input == '6': # adjust directories
 
             user_input = input(
-                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change Extension: {TARGET} \n5 - Change CRF: {CRF}\n6 - Change preset: {PRESET}\n7 - Change vsync: {VSYNC}\n8 - Change bitrate: {BITRATE}\n'
+                f'\nChoose from:\n1 - Change root: {ROOT}\n2 - Change source: {SOURCE}\n3 - Change destination: {DEST}\n4 - Change Extension: {TARGET} \n5 - Change CRF: {CRF}\n6 - Change preset: {PRESET}\n7 - Change fps_mode: {FPS_MODE}\n8 - Change bitrate: {BITRATE}\n'
                 )
 
             if   user_input == '1': # change root
@@ -240,7 +240,9 @@ while True:
             
             elif user_input == '4': # change extension
                 
-                TARGET = input('Enter extension (integer): ')
+                target= input('Enter file extension: ')
+                if search(EXT, target): TARGET = target
+                else: print(f'target is not in {EXT}\n')
                 
             elif user_input == '5': # change CRF
                 
@@ -250,9 +252,9 @@ while True:
                 
                 PRESET = input('Enter value (veryfast, fast, slow, veryslow): ')
             
-            elif user_input == '7': # change vsync
+            elif user_input == '7': # change fps_mode
                 
-                VSYNC = int(input('Enter value (integer): '))
+                FPS_MODE = int(input('Enter value (integer): '))
             
             elif user_input == '8': # change bitrate
             
@@ -266,6 +268,7 @@ while True:
                 Down: {DOWN}
                 Source: {SOURCE}
                 Dest: {DEST}
+                Target: {TARGET}
                 ''')
 
             for file in SOURCE.iterdir():
