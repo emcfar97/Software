@@ -141,12 +141,12 @@ class WEBDRIVER:
         # self.profile = profile
         # self.wait = wait
         
-        if profile: firefox_profile = self.get_profile()
+        if profile: profile = self.get_profile()
         options = webdriver.firefox.options.Options()
         options.headless = headless
         
         self.driver = webdriver.Firefox(
-            firefox_profile, self.get_binary(),  
+            firefox_profile=profile, firefox_binary=self.get_binary(),  
             executable_path=str(WEBDRIVER.PATH / 'geckodriver.exe'),
             options=options, service_log_path='nul'
             )
@@ -189,6 +189,10 @@ class WEBDRIVER:
             
         return self.driver.page_source
     
+    def get_content(self):
+        
+        return self.driver.page_source
+        
     def current_url(self):
         
         return self.driver.current_url
@@ -214,10 +218,11 @@ class WEBDRIVER:
             #     self.__init__(self.headless, self.profile, self.wait)
 
             except Exception as error_:
+                
                 if fetch: 
                     
-                    self.lock.release()
                     raise error_
+                
                 error = error_
 
         if fetch: raise error
