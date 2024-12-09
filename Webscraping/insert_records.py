@@ -1,13 +1,12 @@
 import argparse, re, send2trash
-from . import USER, CONNECT, INSERT, EXT, extract_files
-from .utils import IncrementalBar, get_hash, get_name, get_tags, generate_tags, save_image
+from . import USER, CONNECT, INSERT
+from .utils import IncrementalBar, EXT, get_hash, get_name, get_tags, generate_tags, save_image
 
 PATH = USER / r'Downloads\Images'
 
-def main(extract=True, add='', path=PATH):
+def main(add='', path=PATH):
     
     if isinstance(path, str): path = USER / path
-    if extract: extract_files.main(path / 'Generic', path)
     
     MYSQL = CONNECT()
         
@@ -20,40 +19,29 @@ def main(extract=True, add='', path=PATH):
     for file in files:
         
         progress.next()
-        try:
-            dest = get_name(file, 1)
-            
-            if dest.exists():
-                send2trash.send2trash(str(file))
-                continue
-            
-            if not (hash_ := get_hash(file)): continue
-            
-            tags, rating = generate_tags(
-                general=get_tags(file, True), 
-                custom=True, rating=True
-                )
-
-            if dest.suffix in ('.jpg', '.png'):
-
-                dest = dest.with_suffix('.webp')
-                dest = save_image(dest, file)
-            
-            elif dest.suffix in ('.gif', '.mp4'):
-
-                dest = dest.with_suffix('.webm')
-                dest = save_image(dest, file)
-
-            tags = tags.replace('aphorisms', '')
-            
-            if MYSQL.execute(INSERT[3], (
-                dest.name, '', ' '.join((tags, add)), 
-                rating, 1, hash_, None, None, None
-                )):
-                if file.replace(dest): MYSQL.commit()
-                else: MYSQL.rollback()
                 
-        except Exception as error: print('\n', type(error), error, '\n')
+        if (dest := get_name(file, 1)).exists():
+            
+            send2trash.send2trash(str(file))
+            continue
+        
+        if not (hash_ := get_hash(file)): continue
+        
+        try:
+            tags, rating = generate_tags(
+            general=get_tags(file, True), 
+            custom=True, rating=True
+            )
+        except (SyntaxError, AttributeError): continue
+        
+        tags = tags.replace('aphorisms', '')
+        
+        if MYSQL.execute(INSERT[3], (
+            dest.name, '', ' '.join((tags, add)), 
+            rating, 1, hash_, '', '', None
+            )):
+            if save_image(dest, file): MYSQL.commit()
+            else: MYSQL.rollback()
     
     print('\nDone')
 
@@ -63,11 +51,6 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(
         prog='insert records', 
-        )
-    parser.add_argument(
-        '-e', '--extract', type=int,
-        help='Mode argument (default 1)',
-        default=1
         )
     parser.add_argument(
         '-a', '--add', type=str,
@@ -82,5 +65,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    main(args.extract, args.add, args.path)
+    main(args.add, args.path)
     get_starred()
