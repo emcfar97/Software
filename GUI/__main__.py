@@ -20,15 +20,17 @@ match args.program:
     
     case 0: 
         
-        from .deeplearning import __main__
+        from .deeplearning import DeepLearning
+        DeepLearning(admin=args.admin)
         
     case 1:
         
-        from .managedata import __main__
+        from .managedata import ManageData
+        ManageData(admin=args.admin)
         
     case 2:
         from . import GestureDraw
-        GestureDraw()
+        GestureDraw(admin=args.admin)
         
     case 3:
         
@@ -45,7 +47,7 @@ match args.program:
         
         Qapp = QApplication([])
 
-        app = App()
+        app = App(admin=args.admin  )
         Qapp.setQuitOnLastWindowClosed(False)
         Qapp.setStyleSheet(
             "QMessageBox { messagebox-text-interaction-flags: 5; }"
