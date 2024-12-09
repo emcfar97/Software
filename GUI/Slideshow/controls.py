@@ -1,6 +1,6 @@
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QSlider, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QWidget, QSlider, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt
 
 from GUI.utils import create_button
 
