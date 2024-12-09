@@ -19,14 +19,14 @@ def get_session():
     sess = requests.Session()
     sess.headers.update(HEADERS)
     
-    login_data = {
-        'username': get_credentials(SITE, 'username'),
+    payload = {
+        'username_or_email': get_credentials(SITE, 'username'),
         'password': get_credentials(SITE, 'password'),
-        'crsf_token': get_credentials(SITE, 'csrf_token'),
-        'dest': 'https://www.nhentai.com',
+        'csrfmiddlewaretoken': get_credentials(SITE, 'csrf_token'),
+        # 'dest': 'https://www.nhentai.com',
         }
     
-    sess.post('https://nhentai.net/login/?next=/', data=login_data)
+    sess.post('https://nhentai.net/login/?next=/', data=payload)
     
     return sess
 
@@ -38,6 +38,7 @@ def initialize(query, page='/favorites/?page=1'):
         except AttributeError: return False
 
     content = DRIVER.get(f'https://{SITE}.net{page}')
+    # response = SESSION.get(f'https://{SITE}.net{page}')
     html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         (href, SITE, 3) for target in 
@@ -120,10 +121,20 @@ def file_handler(folders):
     for folder in folders:
         
         progress.next()
-        artist = ' '.join(
-            ARTIST.get(artist, [artist])[0] for artist in 
-            [get_artist(folder.stem.lower())]
-            )
+        
+        if re.match('\d{6} - \w+ \[\d*-\d*\]', folder.stem):
+        
+            code, artist = re.findall('(\d{6}) - (\w+) \[\d*-\d*\]', folder.stem)[0]
+            href = f'/g/{code}/'
+        
+        else:
+            
+            href = None
+            artist = ' '.join(
+                ARTIST.get(artist, [artist])[0] for artist in 
+                [get_artist(folder.stem.lower())]
+                )
+            
         images = [
             (
                 num, get_hash(file), name:=get_name(file),
@@ -142,7 +153,7 @@ def file_handler(folders):
                 )
             imagedata.append(
                 (image.name, artist, tags, rating, 
-                3, hash_, None, None, None)
+                3, hash_, None, None, href)
                 )
             comics.append((image.name, cover.name))
             
@@ -158,12 +169,11 @@ def file_handler(folders):
                 MYSQL.rollback()
                 break
 
-        MYSQL.commit()
         send2trash.send2trash(str(folder))
-    
+
 def url_handler(lock, gallery, image, artists, href, backoff=1):
 
-    try:        
+    try:
         response = requests.get(f'https://{SITE}.net{image.get("href")}')
         while response.status_code == 429: # Too many requests
             backoff += backoff
@@ -201,9 +211,10 @@ def url_handler(lock, gallery, image, artists, href, backoff=1):
 
 def main(initial=1, headless=True, mode=1):
     
-    global MYSQL, DRIVER
+    global MYSQL, DRIVER, SESSION
 
     MYSQL = CONNECT()
+    # SESSION = get_session()
     
     if mode == 1:
             
@@ -221,12 +232,12 @@ def main(initial=1, headless=True, mode=1):
     
     elif mode == 0:
         
-        DRIVER = WEBDRIVER(headless, profile=mode)
+        from utils import Download_Nhentai
+        
+        Download_Nhentai()
         
         path = USER / r'Downloads\Images\Comics'
         file_handler(list(path.iterdir()))
-
-        DRIVER.close()
 
 if __name__ == '__main__':
 
