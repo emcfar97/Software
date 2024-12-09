@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt, QThreadPool, pyqtSignal
 from PyQt6.QtGui import QCursor, QGuiApplication
 from PyQt6.QtWidgets import QMainWindow, QItemDelegate, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 
-from GUI.utils import AUTOCOMPLETE, Worker, Completer, get_path
+from GUI.utils import AUTOCOMPLETE, Completer
 
 # class Properties(QItemDelegate):
 class Properties(QMainWindow):
@@ -63,6 +63,7 @@ class Properties(QMainWindow):
         
         self.threadpool = QThreadPool()
         self.modified = {}
+        
         # with open(AUTOCOMPLETE) as file:
         with open(AUTOCOMPLETE, encoding='utf8') as file:
             artist, tags = file.readlines()
@@ -142,17 +143,25 @@ class Properties(QMainWindow):
     def populate(self, indexes):
 
         indexes = [index.data(Qt.ItemDataRole.EditRole) for index in indexes]
-        rowid, path, tags, artist, stars, rating, type, site, date_used, hash, href, src = (
+        rowid, path, tags, artist, stars, rating, type_, site, date_used, hash, href, src = (
             set.intersection(*column) for column in zip(*indexes)
             )
         
         if path: self.path.setText(path.pop())
-        if tags:  self.tags.setText(' '.join(sorted(tags)))
+        if tags: self.tags.setText(' '.join(sorted(tags)))
         if artist: self.artist.setText(' '.join(artist))
         if stars: self.stars.setCurrentIndex(stars.pop())
-        if rating: self.rating.setCurrentText(rating.pop())
-        if type:  self.type.setCurrentText(type.pop())
-        if site:  self.site.setText(site.pop())
+        if rating:
+            rating = rating.pop()
+            if type(rating) == int:
+                self.rating.setCurrentIndex(rating)
+            else: self.rating.setCurrentText(rating)
+        if type_: 
+            type_ = type_.pop()
+            if type(type_) == int:
+                self.type.setCurrentIndex(type_)
+            else: self.type.setCurrentText(type_)
+        if site: self.site.setText(site.pop())
 
         if rowid: self.rowid.setText(str(rowid.pop()))
         if date_used: self.date_used.setText(str(date_used.pop()))
