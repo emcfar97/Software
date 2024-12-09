@@ -375,31 +375,34 @@ class Model(QSqlRelationalTableModel):
 
     def columnCount(self, parent=None): return COLUMNS
     
-    # def canFetchMore(self, index):
+    def canFetchMore(self, index):
         
-        # if index.isValid():
-        #     return False
+        if index.isValid():
+            
+            return False
 
-        # mysql = self.parent().parent().parent().mysql
-        # return mysql.rowcount() > len(self.images)
-
-    # def fetchMore(self, index, fetch=BATCH):
-
-        # mysql = self.parent().parent().parent().mysql
-        # start = len(self.images)
-        # remainder = mysql.rowcount() - start
-        # items_to_fetch = min(fetch, remainder)
-
-        # if items_to_fetch <= 0:
-        #     return
+        mysql = self.parent().parent().parent().mysql
         
-        # self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
+        return mysql.rowcount() > len(self.images)
 
-        # self.images += mysql.CURSOR.fetchmany(fetch)
+    def fetchMore(self, index, fetch=BATCH):
 
-        # self.endInsertRows()
+        mysql = self.parent().parent().parent().mysql
+        start = len(self.images)
+        remainder = mysql.rowcount() - start
+        items_to_fetch = min(fetch, remainder)
+
+        if items_to_fetch <= 0:
+            
+            return
         
-        # self.number_populated.emit(items_to_fetch)
+        self.beginInsertRows(QModelIndex(), start, start + items_to_fetch)
+
+        self.images += mysql.CURSOR.fetchmany(fetch)
+
+        self.endInsertRows()
+        
+        self.number_populated.emit(items_to_fetch)
     
     def data(self, index, role):
         
