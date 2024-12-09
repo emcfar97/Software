@@ -1,13 +1,14 @@
 import sys, tempfile, traceback, re
-from PIL import Image, ImageGrab
+from json import load
 from pathlib import Path
 from imagehash import dhash
-from mysql.connector import pooling
+from PIL import Image, ImageGrab
 from os import path, getenv, startfile
-from dotenv import load_dotenv, set_key, find_dotenv
+from mysql.connector import pooling, errors
+from dotenv import load_dotenv, find_dotenv, set_key
 from cv2 import VideoCapture, cvtColor, COLOR_BGR2RGB
 
-from Webscraping.utils import get_hash, get_name, get_tags, generate_tags
+# from Webscraping.utils import get_hash, get_name, get_tags, generate_tags
 
 from PyQt6.QtGui import QAction, QActionGroup, QImage, QIcon
 from PyQt6.QtCore import Qt, QRunnable, QObject, QTimer, pyqtSignal, pyqtSlot
@@ -82,6 +83,7 @@ class CONNECT(QObject):
         self.current = ''
         self.transactions = {
                 'SELECT': None,
+                'INSERT': [],
                 'UPDATE': [],
                 'DELETE': []
                 }
@@ -126,6 +128,7 @@ class CONNECT(QObject):
             self.parent().setCursor(Qt.CursorShape.ArrowCursor)
             
             if   type == 'SELECT':
+                
                 self.transactions['SELECT'] = None
                 
                 if fetch:
@@ -141,6 +144,8 @@ class CONNECT(QObject):
                 cursor.close()
                 conn.close()
                 return
+                
+            elif type == 'INSERT': pass
                 
             elif type == 'UPDATE':
                 
@@ -175,7 +180,10 @@ class CONNECT(QObject):
 
     def rollback(self): self.DATAB.rollback()
 
-    def rowcount(self): return self.CURSOR.rowcount
+    def rowcount(self):
+        
+        try: return self.CURSOR.rowcount
+        except AttributeError: return 0
 
     def commit(self): self.DATAB.commit()
     
@@ -194,7 +202,7 @@ class Authenticate(QDialog):
                 }
             return CONNECT(cred)
 
-        except (sql.errors.InterfaceError, sql.errors.ProgrammingError, UnicodeError):
+        except (errors.InterfaceError, errors.ProgrammingError, UnicodeError):
             self.start()
     
     def start(self):
@@ -508,23 +516,19 @@ def get_frame(path):
 
 def get_path(name): return PATH / name[0:2] / name[2:4] / name
 
-def get_values(path):
+# def get_values(path):
 
-    name = get_name(path)
-    tags, rating = generate_tags(
-        general=get_tags(path, True), 
-        custom=True, rating=True
-        )
+#     name = get_name(path)
+#     tags, rating = generate_tags(
+#         general=get_tags(path, True), 
+#         custom=True, rating=True
+#         )
     
-    return (name.name, '', ' '.join((tags)), rating, 1, get_hash(path))
+#     return (name.name, '', ' '.join((tags)), rating, 1, get_hash(path))
 
-def update_autocomplete():
+def update_autocomplete(mysql):
 
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()
-    
-    artist, tags = MYSQL.execute(
+    artist, tags = mysql.execute(
         '''SELECT 
         GROUP_CONCAT(DISTINCT artist SEPARATOR ""), 
         GROUP_CONCAT(DISTINCT tags SEPARATOR "") 
@@ -535,25 +539,22 @@ def update_autocomplete():
         ' '.join(sorted(set(tags.split())))
         )
     text = '\n'.join(text).lower()
+    
     with open(AUTOCOMPLETE, 'w', encoding='utf8') as file:
+        
         file.write(text)
     
-    MYSQL.close()
+def remove_redundancies(mysql):
 
-def remove_redundancies():
-
-    import json
-    from Webscraping import CONNECT
-
-    data = json.load(open(r'Webscraping\constants.json', encoding='utf-8'))
+    data = load(open(r'Webscraping\constants.json', encoding='utf-8'))
     REPLACE = data['REPLACE']
-    MYSQL = CONNECT()  
     SELECT = 'SELECT path, artist, tags FROM imagedata'
     UPDATE = 'UPDATE imagedata SET artist=%s, tags=%s WHERE path=%s'
 
-    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
+    for (path, artist, tags,) in mysql.execute(SELECT, fetch=1):
 
-        artist = f' {" ".join(set(artist.lower().split()))} '.replace('-', '_').replace('__', '_')
+        artist = set(artist.lower().split())
+        artist = re.sub('-|__', '_', f' {" ".join(artist)} ')
             
         for key, value in REPLACE.items():
             
@@ -561,38 +562,25 @@ def remove_redundancies():
             
         tags = list(set(tags.split()))
         tags = [tag for tag in tags if len(tag) >= 3]
-        tags = f' {" ".join(tags)} '.replace('-', '_').replace('__', '_')
+        tags = re.sub('-|__', '_', f' {" ".join(tags)} ')
         
-        MYSQL.execute(UPDATE, (artist, tags, path), commit=1)
-
-    MYSQL.close()
+        mysql.execute(UPDATE, (artist, tags, path), commit=1, emit=0)
 
 def copy_path(paths):
-    
-    temp_dir = tempfile.gettempdir()
     
     for num, index in enumerate(paths):
         
         path = index.data(Qt.ItemDataRole.DecorationRole)
         
-        if path.suffix == '.webp':
-            
-            temp = ROOT.parent / temp_dir / path.name
-            temp = temp.with_suffix('.png')
-            image = Image.open(str(path)).convert('RGBA')
-            image.save(str(temp))
-            paths[num] = temp
-            
-        elif path.suffix == '.webm':
-            
-            # paths[num] = path
-            # continue
+        if path.suffix == '.webm':
 
             paths[num] = tempfile.mktemp(suffix='.png')
             image = ImageGrab.grab(
                 # (0, 0, self.width(),self.height())
                 )
             image.save(paths[num])
+        
+        else: paths[num] = path
 
     paths = ', '.join(f'"{path}"' for path in paths)
     
@@ -618,14 +606,7 @@ def copy_to(widget, images):
     for path in paths:
     
         name = folder / path.name
-    
-        if path.suffix == '.webp':
-            
-            name = name.with_suffix('.png')
-            image = Image.open(str(path)).convert('RGBA')
-            image.save(str(name))
-        
-        else: name.write_bytes(path.read_bytes())
+        name.write_bytes(path.read_bytes())
             
     set_key(r'GUI\.env', 'COPY_DIR', str(folder))
     load_dotenv(r'GUI\.env', override=True)
