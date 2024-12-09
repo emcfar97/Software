@@ -62,13 +62,9 @@ class Slideshow(QMainWindow):
         self.video.playing.connect(lambda: self.stack.setCurrentIndex(1))
         self.slideshow = QTimer()
         self.slideshow.timeout.connect(lambda: self.move(+1))
-        
-        if parent is not None:
-            
-            self.parent.closedWindow.connect(self.close())
 
     def create_menu(self):
-
+        
         # menubar
         self.menubar = self.menuBar()
         self.menubar.triggered.connect(self.menuPressEvent)
@@ -291,9 +287,9 @@ class Slideshow(QMainWindow):
                     if ctrl: self.video.set_position(sign * 50)
                     else: self.video.set_position(sign * 5000)
                 
-                case (Qt.Key.Key_Up|Qt.Key.Key_Down):
+                case (Qt.Key.Key_Up|Qt.Key.Key_Down|Qt.Key.Key_W|Qt.Key.Key_S):
 
-                    sign = 1 if key_press == Qt.Key.Key_Up else -1
+                    sign = 1 if key_press in (Qt.Key.Key_Up, Qt.Key.Key_W) else -1
                     if ctrl: self.video.set_volume(sign * .1)
                     else: self.video.set_volume(sign * .10)
                 
