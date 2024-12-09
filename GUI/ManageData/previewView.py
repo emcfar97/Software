@@ -95,7 +95,7 @@ class Preview(QScrollArea):
 
         if self.verticalScrollBar().isEnabled() or self.horizontalScrollBar().isEnabled():
         
-            pixmap = QPixmap(self.path)
+            pixmap = QPixmap(str(self.path))
             
             if pixmap.height() != self.height():
                 
