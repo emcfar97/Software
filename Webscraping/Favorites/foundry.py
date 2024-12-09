@@ -1,9 +1,30 @@
-import argparse, bs4
+import argparse, bs4, requests
 import selenium.common.exceptions as exceptions
 from .. import CONNECT, INSERT, SELECT, UPDATE, DELETE, WEBDRIVER, get_credentials
-from ..utils import PATH, IncrementalBar, re, save_image
+from ..utils import PATH, HEADERS, IncrementalBar, re, save_image
 
 SITE = 'foundry'
+
+def get_session():
+    
+    sess = requests.Session()
+    sess.headers.update(HEADERS)
+    
+    payload = {
+        'username': get_credentials(SITE, 'username'),
+        'password': get_credentials(SITE, 'password'),
+        'YII_CSRF_TOKEN': get_credentials(SITE, 'csrf_token'),
+        'dest': 'www.hentai-foundry.com',
+        }
+    
+    response = sess.get('https://www.hentai-foundry.com/site/login')
+    cookies = dict(response.cookies)
+    response = sess.post(
+        'https://www.hentai-foundry.com/site/login', 
+        data=payload, cookies=cookies
+        )
+    
+    return sess
 
 def initialize(url, query):
     
@@ -16,6 +37,7 @@ def initialize(url, query):
             return 
 
     content = DRIVER.get(f'http://www.hentai-foundry.com{url}')
+    # response = SESSION.get(f'http://www.hentai-foundry.com{url}')
     html = bs4.BeautifulSoup(content, 'lxml')
     hrefs = [
         (*href, SITE) for href in 
@@ -36,12 +58,15 @@ def page_handler(hrefs):
     for href, in hrefs:
         
         progress.next()
-        DRIVER.get(f'http://www.hentai-foundry.com{href}')
+
+        try: DRIVER.get(f'http://www.hentai-foundry.com{href}')
+        except exceptions.UnexpectedAlertPresentException: pass
+
         try:
-            image = DRIVER.find('//img[@class="center"]').get_attribute('src')
+            image = DRIVER.find('//img[@class="center"]', fetch=1).get_attribute('src')
             error = 0
             
-        except exceptions.NoSuchElementException: 
+        except exceptions.NoSuchElementException:
             error = DRIVER.find('//*[@id="errorBox"]')
             MYSQL.execute(DELETE[1], (href,), commit=1)
             continue
@@ -49,18 +74,21 @@ def page_handler(hrefs):
         except: continue
         
         if 'thumbs' in image:
-            continue
-            artist = None
-            id = re.findall('.+pid=(\d+)&')[0]
+            
+            artist = href.split('/')[3]
+            id = re.findall('.+pid=(\d+)&', image)[0]
             name = f'{artist} - {id}.jpg'
 
         elif 'pictures' in image:
-            name = re.findall('.+/\w/(\w+)/(\d+).+\.(.+)')
-            print(name)
-            continue
+
+            artist, id_, suffix = re.findall('.+/\w/([\w-]+)/(\d+).+\.(.+)', image)[0]
+            name = f'{artist} - {id_}.{suffix}'
+
         else: 
+
             parts = image.split('/') + [image.split('.')[-1]]
             name = f'{parts[4]} - {parts[5]}.{parts[-1]}'
+
         name = PATH / 'Images' / SITE / name
         
         MYSQL.execute(UPDATE[2], (str(name), image, href), commit=1)
@@ -70,9 +98,10 @@ def page_handler(hrefs):
 
 def main(initial=True, headless=True):
     
-    global MYSQL, DRIVER
+    global MYSQL, DRIVER, SESSION
     MYSQL = CONNECT()
     DRIVER = WEBDRIVER(headless)
+    # SESSION = get_session()
     
     if initial:
         url = get_credentials(SITE, 'url')
