@@ -172,7 +172,7 @@ rsa==4.9
 scenedetect==0.6.0.3
 schedule==1.2.2
 scikit-image==0.20.0
-scikit-learn==1.1.2
+scikit-learn==1.5.0
 scipy==1.10.1
 selenium==3.141.0
 Send2Trash==1.8.0
