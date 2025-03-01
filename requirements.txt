@@ -74,7 +74,7 @@ instabot==0.117.0
 instaloader==4.9.5
 interfax==1.0.0
 Jinja2==3.1.5
-joblib==1.1.0
+joblib==1.2.0
 keras==2.14.0
 Keras-Preprocessing==1.1.2
 langcodes==3.3.0
