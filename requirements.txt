@@ -100,7 +100,7 @@ numpy==1.24.2
 oauthlib==3.2.2
 onnx==1.17.0
 onnxruntime==1.14.1
-opencv-python==4.5.4.58
+opencv-python==4.8.1.78
 opt-einsum==3.3.0
 outcome==1.1.0
 packaging==24.1
