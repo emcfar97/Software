@@ -18,7 +18,7 @@ bs4==0.0.1
 cached-property==1.5.2
 cachetools==5.2.0
 catalogue==2.0.7
-certifi==2021.10.8
+certifi==2024.7.4
 cffi==1.15.0
 chardet==5.2.0
 charset-normalizer==2.0.7
