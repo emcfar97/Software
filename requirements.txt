@@ -127,7 +127,7 @@ pyasn1-modules==0.2.8
 PyAutoGUI==0.9.53
 pycparser==2.21
 pycryptodomex==3.20.0
-pydantic==1.8.2
+pydantic==1.10.13
 pydantic_core==2.14.6
 PyGetWindow==0.0.9
 pyinstaller==6.11.1
