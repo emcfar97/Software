@@ -1,26 +1,30 @@
-from PyQt5.QtWidgets import QDockWidget, QWidget, QVBoxLayout, QTabWidget, QTreeWidget, QSizePolicy
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QMainWindow, QWidget, QLabel, QDockWidget, QVBoxLayout, QTreeWidget, QSizePolicy
+from PyQt6.QtCore import Qt, pyqtSignal
 from random import randint
 
-class Design(QTabWidget):
+class Design(QMainWindow):
 
-    def __init__(self, parent):
+    key_pressed = pyqtSignal(object)
+    
+    def __init__(self, parent=None):
         
         super(Design, self).__init__(parent)
-        self.setTabsClosable(True)
-        self.setMovable(True)
-        self.tabCloseRequested.connect(lambda index: self.removeTab(index))
+        self.configure_gui()
         self.create_widgets()
 
-        for i in range(3): self.addTab(Model(self), f'Model{i}')
-
+    def configure_gui(self):
+        
+        self.model = Model(self)
+        self.setCentralWidget(self.model)
+    
     def create_widgets(self):
         
+        return
         self.palettes = Palettes(self)
         self.inspector = Inspector(self)
 
-        self.parent().addDockWidget(Qt.LeftDockWidgetArea, self.palettes)
-        self.parent().addDockWidget(Qt.RightDockWidgetArea, self.inspector)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.palettes)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.inspector)
     
     def keyPressEvent(self, event):
     
@@ -28,19 +32,24 @@ class Design(QTabWidget):
 
         if False: pass
 
-        else: self.parent().keyPressEvent(event)
+        else: self.Key.key_pressed.emit(event)
 
 class Model(QWidget):
     
-    def __init__(self, parent): 
+    def __init__(self, parent):
         
         super(Model, self).__init__(parent)
         self.configure_gui()
         self.create_widgets()
 
-    def configure_gui(self): pass
+    def configure_gui(self): 
         
-    def create_widgets(self): pass
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        
+    def create_widgets(self):
+        
+        self.label = QLabel(self)
+        self.label.setStyleSheet('background: green')
     
     def keyPressEvent(self, event):
     
@@ -48,7 +57,7 @@ class Model(QWidget):
 
         if False: pass
 
-        else: self.parent().keyPressEvent(event)
+        else: self.key_pressed.emit(event)
         
 class Palettes(QDockWidget):
     
@@ -82,7 +91,7 @@ class Palettes(QDockWidget):
 
         if False: pass
 
-        else: self.parent().keyPressEvent(event)
+        else: self.key_pressed.emit(event)
 
 class Inspector(QDockWidget):
     
@@ -114,7 +123,7 @@ class Inspector(QDockWidget):
 
         if False: pass
 
-        else: self.parent().keyPressEvent(event)
+        else: self.key_pressed.emit(event)
 
 class Layer(QWidget):
     

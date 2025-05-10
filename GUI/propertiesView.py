@@ -1,18 +1,22 @@
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QThreadPool, pyqtSignal
 from PyQt6.QtGui import QCursor, QGuiApplication
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox, QCompleter
+from PyQt6.QtWidgets import QMainWindow, QItemDelegate, QTabWidget, QWidget, QFormLayout, QHBoxLayout, QVBoxLayout, QPushButton, QLineEdit, QComboBox
 
-from GUI.utils import AUTOCOMPLETE
+from GUI.utils import AUTOCOMPLETE, Completer
 
+# class Properties(QItemDelegate):
 class Properties(QMainWindow):
 
-    update = pyqtSignal(object, object, object)
+    properties_updated = pyqtSignal(object, object, object)
+    set_data = pyqtSignal(object, object)
 
-    def __init__(self, parent, indexes):
+    def __init__(self, parent, model, indexes):
         
         super(Properties, self).__init__()
         self.setWindowTitle('Properties')
         self.parent = parent
+        self.model = model
+        self.indexes = indexes
         self.configure_gui()
         self.create_widgets()
         self.populate(indexes)
@@ -57,25 +61,12 @@ class Properties(QMainWindow):
         
     def create_widgets(self):
         
+        self.threadpool = QThreadPool()
         self.modified = {}
-        artist, tags = open(AUTOCOMPLETE).readlines()
-
-        # self.main = {
-        #     'Path': QLineEdit(self),
-        #     'Tags': LineEdit(self),
-        #     'Artist': LineEdit(self),
-        #     'Stars': ComboBox(self),
-        #     'Rating': ComboBox(self),
-        #     'Type': ComboBox(self),
-        #     'Site': LineEdit(self, True),
-        # }
         
-        # self.main['path'].setReadOnly(True)
-        # self.main['tags'].setCompleter(Completer(tags.split()))
-        # self.main['artist'].setCompleter(Completer(artist.split()))
-        # self.main['stars'].addItems(['', '1', '2', '3', '4', '5'])
-        # self.main['rating'].addItems(['', 'Safe', 'Questionable', 'Explicit'])
-        # self.main['type'].addItems(['', 'Photograph', 'Illustration', 'Comic'])
+        # with open(AUTOCOMPLETE) as file:
+        with open(AUTOCOMPLETE, encoding='utf8') as file:
+            artist, tags = file.readlines()
 
         self.path = QLineEdit(self)
         self.tags = LineEdit(self)
@@ -86,25 +77,27 @@ class Properties(QMainWindow):
         self.site = LineEdit(self, True)
         
         self.path.setReadOnly(True)
-        self.tags.setCompleter(QCompleter(tags.split()))
-        self.artist.setCompleter(QCompleter(artist.split()))
+        self.tags.setCompleter(Completer(tags.split()))
+        self.artist.setCompleter(Completer(artist.split()))
         self.stars.addItems(['', '1', '2', '3', '4', '5'])
-        self.rating.addItems(['', 'Safe', 'Questionable', 'Explicit'])
+        self.rating.addItems(['', 'General', 'Sensitive', 'Questionable', 'Explicit', 'Restricted'])
+        self.rating.view().setRowHidden(5, True)
         self.type.addItems(['', 'Photograph', 'Illustration', 'Comic'])
         
-        self.form = QFormLayout()
-        self.form.addRow('Path', self.path)
-        self.form.addRow('Tags',  self.tags)
-        self.form.addRow('Artist',  self.artist)
-        self.form.addRow('Stars',  self.stars)
-        self.form.addRow('Rating',  self.rating)
-        self.form.addRow('Type',  self.type)
-        self.form.addRow('Site',  self.site)
-        self.prop_layout.addLayout(self.form)
+        self.prop_form = QFormLayout()
+        self.prop_form.addRow('Path', self.path)
+        self.prop_form.addRow('Tags',  self.tags)
+        self.prop_form.addRow('Artist',  self.artist)
+        self.prop_form.addRow('Stars',  self.stars)
+        self.prop_form.addRow('Rating',  self.rating)
+        self.prop_form.addRow('Type',  self.type)
+        self.prop_form.addRow('Site',  self.site)
+        self.prop_layout.addLayout(self.prop_form)
 
-        horizontal = QHBoxLayout()
-        horizontal.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.prop_layout.addLayout(horizontal)
+
+        inputs = QHBoxLayout()
+        inputs.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.prop_layout.addLayout(inputs)
         
         for text in ['OK', 'Cancel', 'Apply']:
             
@@ -116,7 +109,7 @@ class Properties(QMainWindow):
             
             else: option.clicked.connect(self.close)
             
-            horizontal.addWidget(option)
+            inputs.addWidget(option)
             
         else: option.setEnabled(False)
     
@@ -126,23 +119,59 @@ class Properties(QMainWindow):
         self.rating.activated.connect(lambda: option.setEnabled(True))
         self.type.activated.connect(lambda: option.setEnabled(True))
         self.site.textEdited.connect(lambda: option.setEnabled(True))
+        
+        self.rowid = QLineEdit(self)
+        self.date_used = QLineEdit(self)
+        self.hash = QLineEdit(self)
+        self.href = QLineEdit(self)
+        self.src = QLineEdit(self)
+            
+        self.rowid.setReadOnly(True)
+        self.date_used.setReadOnly(True)
+        self.hash.setReadOnly(True)
+        self.href.setReadOnly(True)
+        self.src.setReadOnly(True)
+
+        self.stat_form = QFormLayout()
+        self.stat_form.addRow('Rowid:', self.rowid)
+        self.stat_form.addRow('Date Used:', self.date_used)
+        self.stat_form.addRow('Hash:', self.hash)
+        self.stat_form.addRow('Href:', self.href)
+        self.stat_form.addRow('Src:', self.src)
+        self.stat_layout.addLayout(self.stat_form)
     
     def populate(self, indexes):
-        
-        path, tags, artist, stars, rating, type, site = (
+
+        indexes = [index.data(Qt.ItemDataRole.EditRole) for index in indexes]
+        rowid, path, tags, artist, stars, rating, type_, site, date_used, hash, href, src = (
             set.intersection(*column) for column in zip(*indexes)
             )
         
         if path: self.path.setText(path.pop())
-        if tags:  self.tags.setText(' '.join(sorted(tags)))
+        if tags: self.tags.setText(' '.join(sorted(tags)))
         if artist: self.artist.setText(' '.join(artist))
         if stars: self.stars.setCurrentIndex(stars.pop())
-        if rating: self.rating.setCurrentText(rating.pop())
-        if type:  self.type.setCurrentText(type.pop())
-        if site:  self.site.setText(site.pop())
+        if rating:
+            rating = rating.pop()
+            if type(rating) == int:
+                self.rating.setCurrentIndex(rating)
+            else: self.rating.setCurrentText(rating)
+        if type_: 
+            type_ = type_.pop()
+            if type(type_) == int:
+                self.type.setCurrentIndex(type_)
+            else: self.type.setCurrentText(type_)
+        if site: self.site.setText(site.pop())
 
-        self.paths = [(row[0].pop(),) for row in indexes]
-        self.update.connect(self.parent.update_records)
+        if rowid: self.rowid.setText(str(rowid.pop()))
+        if date_used: self.date_used.setText(str(date_used.pop()))
+        if hash: self.hash.setText(hash.pop())
+        if href: self.href.setText(href.pop())
+        if src: self.src.setText(src.pop())
+        
+        self.paths = [(*row[1],) for row in indexes]
+        self.properties_updated.connect(self.parent.update_records)
+        self.set_data.connect(self.model.setData)
         self.parent.windows.add(self)
         self.tags.setFocus()
         self.show()
@@ -150,14 +179,20 @@ class Properties(QMainWindow):
     def output(self, event=None):
         
         modified = {
-            self.form.itemAt(i, QFormLayout.ItemRole.LabelRole).widget().text(): 
-            self.form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget().text()
-            for i in range(1, self.form.rowCount())
-            if self.form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget().text()
+            self.prop_form.itemAt(i, QFormLayout.ItemRole.LabelRole).widget().text(): 
+            self.prop_form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget().get_text()
+            for i in range(1, self.prop_form.rowCount())
+            if self.prop_form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget().get_text()
             }
         
-        self.update.emit(self, self.paths, modified)
-        
+        self.properties_updated.emit(self, self.paths, modified)
+
+        if len(self.indexes) < 100:
+
+            for index in self.indexes:
+
+                self.set_data.emit(index, modified)
+
     def keyPressEvent(self, event):
         
         match event.key():
@@ -183,7 +218,7 @@ class LineEdit(QLineEdit):
 
             return super().setText(text)
     
-    def text(self):
+    def get_text(self):
         
         new = set(super().text().split())
         add, remove = new - self.initial, self.initial - new
@@ -202,6 +237,6 @@ class ComboBox(QComboBox):
         self.activated.connect(self.modify)
         self.modified = None
   
-    def text(self): return self.modified
+    def get_text(self): return self.modified
 
     def modify(self, change): self.modified = change

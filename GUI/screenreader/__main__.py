@@ -1,10 +1,11 @@
 from PyQt6.QtWidgets import QApplication
 
-from GUI.deeplearning import DeepLearning
+from GUI.screenreader.__init__ import ScreenReader
 
 Qapp = QApplication([])
 
-app = DeepLearning()
+app = ScreenReader()
 Qapp.setStyleSheet("QMessageBox { messagebox-text-interaction-flags: 5; }")
 
-Qapp.exec()
+
+Qapp.exec_()

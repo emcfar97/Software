@@ -126,13 +126,12 @@ def Prepare_Art_Files(project, parents=''):
     print('Illustrations')
     head = dropbox / 'Pictures' / 'Artwork' / parents
     illus = project_dir / 'Illustrations'
-    illus.mkdir(exist_ok=True)
+    shutil.copytree(head / project, illus, dirs_exist_ok=True)
     
     # downscale
-    downscaled = shutil.copytree(head / project, illus, dirs_exist_ok=True)
+    downscaled = project_dir / 'Downscaled'
+    downscaled = shutil.copytree(illus, downscaled, dirs_exist_ok=True)
     downscaled = Resize_Images(downscaled, '**/*.*', inplace=True)
-    downscaled = downscaled.rename('Downscaled')
-    downscaled = shutil.move(downscaled, project_dir)
     
     # zips
     print('Zip')
@@ -168,18 +167,18 @@ def Prepare_Art_Files(project, parents=''):
             '{} ({} files)',
             ],
         [
-            f'【内容】（合計{len(list(illus.iterdir()))}ファイル):\n',
-            f'【内容】（合計4ファイル):\n   ・CSP\n   ・PSD\n   ・CSP ({clip}分)\n   ・OBS ({obs_time}分)',
-            '{} ({}ファイル)',
+            f'【内容】（合計{len(list(illus.iterdir()))}ファイル）:\n',
+            f'【内容】（合計4ファイル）:\n    ・CSP\n    ・PSD\n    ・CSP （{clip}分）\n    ・OBS（{obs_time}分）',
+            '{} （{}ファイル）',
             ],
-        # {
-        #     'Nude': '全裸 ',
-        #     'Lineart': 'ラインアート',
-        #     'Sketch': '落書き',                
-        # }
+        {
+            'Nude': '全裸 ',
+            'Lineart': 'ラインアート',
+            'Sketch': '落書き',                
+        }
         ]    
     
-    for lang in langs:
+    for lang in langs[:2]:
         
         # Add illustration segment
         text += lang[0]
@@ -194,19 +193,20 @@ def Prepare_Art_Files(project, parents=''):
             else:
                 
                 text += f'    ・{dir.stem}\n'.replace(f'{project} - ', '')
+                for eng, jap in langs[2].items(): text.replace(eng, jap)
             
         text += '\n'
             
         # Add files/timelapse segment
         text += lang[1]
     
-    else: 
+    else:
         project_struct.write_text(text, encoding="utf-8")
              
     psd.unlink()
     obs.unlink()
 
-def Resize_Images(folder, pattern='*', size=[1200, 1200], inplace=False):
+def Resize_Images(folder, pattern='*', size=[1280, 1280], inplace=False):
     '''Reisizes all images from folder matching the pattern to a given size'''
     
     from PIL import Image
@@ -216,27 +216,86 @@ def Resize_Images(folder, pattern='*', size=[1200, 1200], inplace=False):
     num = 0
     folder = Path(folder)
     
-    if not inplace:
+    if inplace: dest = folder
+    
+    else: 
         
-        dest = USER / 'Downloads' / f'{folder.parent.name} Downscaled'
-
+        dest = USER / 'Downloads' / f'{folder.name} Downscaled'
+        dest.mkdir(exist_ok=True)
+    
     for root, dirs, files in pathwalk(folder):
         
-        (dest / root.name).mkdir(exist_ok=True)
+        if not inplace: (dest / root.name).mkdir(exist_ok=True)
         
         for file in files:
             
-            image = Image.open(file)
+            try: image = Image.open(file)
+            except: continue
             image.thumbnail(size)
 
             if inplace: image.save(file)
             else: image.save(dest / root.name / file.name)
             num += 1
-    
+        
     print(f'{num} images resized')
     
     return dest
 
+def Resize_Videos(folder, pattern='*', size=[1920, 1080], inplace=False):
+    
+    import ffmpeg
+    from ffprobe import FFProbe
+    from pathlib import Path
+    from Webscraping.utils import USER
+    
+    num = 0
+    folder = Path(folder)
+    
+    if inplace: dest = folder
+    
+    else: 
+        
+        dest = USER / 'Downloads' / f'{folder.name} Resized'
+        dest.mkdir(exist_ok=True)
+    
+    for root, dirs, files in pathwalk(folder):
+        
+        if not inplace: (dest / root.name).mkdir(exist_ok=True)
+        
+        for file in files:
+            
+            stream = FFProbe(file).streams[0]
+            
+            if int(stream.width) == size[0] and int(stream.height) == size[1]:
+            
+                continue
+            
+            if inplace:
+                
+                temp = dest.parent / file.name
+                
+                ffmpeg.input(str(file)) \
+                .filter('scale', width=size[0], height=size[1]) \
+                .filter('setsar', sar='1/1') \
+                .output(str(temp)) \
+                .run(overwrite_output=True)
+                
+                temp.replace(file)
+                
+            else:
+
+                ffmpeg.input(str(file)) \
+                .filter('scale', width=size[0], height=size[1], setsar='1') \
+                .filter('setsar', sar='1/1') \
+                .output(str(dest / root.name / file.name)) \
+                .run()
+                
+            num += 1
+        
+    print(f'{num} videos resized')
+    
+    return dest
+    
 def Splice_Images(folder, foreground, pattern='*.*'):
     '''Places a given foreground on all images matching the pattern in specified folder'''
 
@@ -262,7 +321,7 @@ def Splice_Images(folder, foreground, pattern='*.*'):
 def Convert_Images(path, source='webp', target='png', ignore=' '):
     '''Convert all images with source extension to target, with optional ignoring'''
     
-    import re
+    import re, pillow_avif
     from pathlib import Path
     from PIL import Image
 
@@ -270,18 +329,18 @@ def Convert_Images(path, source='webp', target='png', ignore=' '):
         'png': 'RGBA',
         'jpg': 'RGB',
         'jpeg': 'RGB',
+        'avif': 'RGB',
         'webp': 'RGBA',
         }
     
     num = 0
     path = Path(path)
-    
+
     if path.is_dir():
         
         for image in path.glob(f'*{source}'):
             
             if re.search(ignore, image.suffix): continue
-            
             rename = image.with_suffix(f'.{target}')
             new = Image.open(str(image)).convert(lookup[target])
             new.save(str(rename))
@@ -301,35 +360,95 @@ def Convert_Images(path, source='webp', target='png', ignore=' '):
 
 def Download_Nhentai():
     '''Code, artist, range'''
+        
+    import bs4, re, json, threading, requests, time
+    from Webscraping import USER
+    from Webscraping.utils import IncrementalBar, save_image
     
-    import bs4, re, json
-    from Webscraping import USER, WEBDRIVER
-    from Webscraping.utils import save_image
+    def url_handler(gallery, folder, image, backoff=1):
+        
+        response = requests.get(f'https://nhentai.net{image.get("href")}')
+        
+        # too many requests or server error
+        while response.status_code in (429, 500):
+            
+            backoff += backoff
+            time.sleep(backoff)
+            response = requests.get(f'https://nhentai.net{image.get("href")}')
+            
+        image = bs4.BeautifulSoup(response.content, 'lxml')
+        src = image.find(src=re.compile('.+galleries.+')).get('src')
+        
+        name = folder / src.split('/')[-1]
+        name = name.with_suffix('.webp')
+        
+        if name.exists(): 
+            
+            lock.acquire()
+            gallery.append(True)
+            lock.release()
+            return
+        
+        image = save_image(name, src)
+        lock.acquire()
+        gallery.append(image)
+        lock.release()
 
-    driver = WEBDRIVER()
+    lock = threading.Lock()
     path = USER / r'Downloads\Images\Comics'
     comic = USER / r'Dropbox\Software\Webscraping\comics.json'
+    comic_json = json.load(open(comic))
     
-    for code, artist, range_ in json.load(open(comic)):
+    progress = IncrementalBar('Images', max=len(comic_json))
+    
+    for code, data in list(comic_json.items())[::-1]:
         
-        comic = path / f'[{artist}] {range_[0]}-{range_[1]}'
-        comic.mkdir(exist_ok=True)
+        if not code: continue
+            
+        response = requests.get(f'https://nhentai.net/g/{code}')
 
-        driver.get(f'https://nhentai.net/g/{code}')
-        html = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
+        if response.status_code == 404:
+
+            del comic_json[code]
+            with open(comic, 'w') as file:
+                json.dump(comic_json, file, indent=2)
+                continue
+
+        html = bs4.BeautifulSoup(response.content, 'lxml')
         pages = html.findAll('a', class_='gallerythumb')
-        
-        for page in pages[range_[0] - 1:range_[1]]:
+    
+        for key, range_ in list(data.items()):
 
-            page = driver.get(f'https://nhentai.net{page.get("href")}')
-            image = bs4.BeautifulSoup(driver.page_source(5), 'lxml')
-            src = image.find(src=re.compile('.+galleries.+')).get('src')       
-            name = comic / src.split('/')[-1]
-            if name.exists(): continue
-            save_image(name, src)
+            gallery = []
+            artist = '_'.join(key.lower().split())
+            comic_folder = path / f'{code} - {artist} [{range_[0]}-{range_[1]}]'
+            comic_folder.mkdir(exist_ok=True)
+                
+            threads = [
+                threading.Thread(
+                    target=url_handler, 
+                    args=(gallery, comic_folder, page)
+                    )
+                for page in pages[range_[0] - 1:range_[1]]
+                ]
             
-    driver.close()
+            for thread in threads: thread.start()
+            for thread in threads: thread.join()
             
+            if all(gallery):
+                
+                del comic_json[code][key]
+                with open(comic, 'w') as file:
+                    json.dump(comic_json, file, indent=2)
+        
+        if all(gallery):
+            
+            del comic_json[code]
+            with open(comic, 'w') as file:
+                json.dump(comic_json, file, indent=2)
+        
+        progress.next()
+        
 def Download_Xhamster():
     ''''''
     
@@ -348,18 +467,16 @@ def Download_Xhamster():
     
     for i in xhamster.read_text().split():
         
-        driver.get(url + i)
+        content = DRIVER.get(url + i)
         content = requests.get(url + i).content
         time.sleep(5)
-        html = bs4.BeautifulSoup(driver.page_source(), 'lxml')
+        html = bs4.BeautifulSoup(content, 'lxml')
         target = html.find('div', class_=re.compile('mb-\d mt-\d text-center'))
         option = max(target.contents[1:], key=lambda x: return_quality(x))
         href = option.find(href=True).get('href')
         name = path.parent / (href.split('=')[-1] + '.mp4')
         if not name.exists(): requests.get(href)
         
-    input('Finished?')
-
 def Download_Ehentai(url, wait=2, folder='Games'):
     ''''''
     
@@ -369,14 +486,14 @@ def Download_Ehentai(url, wait=2, folder='Games'):
         
     def is_page_end():
         
-        current = driver.current_url().split('-')[-1]
+        current = driver.current_url.split('-')[-1]
         
         return current == length
     
     path = USER / r'Downloads\Images' / folder
     driver = WEBDRIVER(profile=None)
     
-    driver.get(url)
+    content = DRIVER.get(url)
     title = driver.find('//*[@id="gn"]').text
     dest = path / re.sub('[/\:*?"<>]', ' ', title)
     dest.mkdir(exist_ok=True)
@@ -395,42 +512,83 @@ def Download_Ehentai(url, wait=2, folder='Games'):
         time.sleep(wait)
         progress.next()
     
-    driver.close()
+    DRIVER.close()
+
+def Download_Redgif(url, dest):
     
+    import requests
+    from pathlib import Path
+    from Webscraping.utils import get_redgif
+    
+    name = Path(dest) / f'{url}.mp4'
+    response = requests.get(get_redgif(url))
+    name.write_bytes(response.content)
+    
+    print(f'Video at {name.parent}')
+
 def Extract_Frames(source, fps=1, dest=None):
     '''Extracts frames from a given source animation, with optional fps and destination'''
     
-    from Webscraping import USER
+    import ffmpeg
     from pathlib import Path
-    from cv2 import VideoCapture, imencode, CAP_PROP_POS_FRAMES
+    from Webscraping import USER
     
     path = Path(source)
     
     if dest is None:
         dest = USER / 'Pictures' / 'Screenshots' / path.stem
         
-    if dest.exists():
-        for file in dest.iterdir():
-            file.unlink()
-        
-    dest.mkdir(exist_ok=1)
-        
-    vidcap = VideoCapture(source)
-    success, frame = vidcap.read()
-
-    while success:
-        
-        if ((vidcap.get(CAP_PROP_POS_FRAMES) % fps) - 1) in (-1, 0):
-            
-            image = dest / f'{vidcap.get(CAP_PROP_POS_FRAMES)}.jpg'
-            image.write_bytes(imencode('.jpg', frame)[-1])
-        
-        success, frame = vidcap.read()
-        
-    else: vidcap.release()
+    if dest.exists(): 
+        for file in dest.iterdir(): file.unlink()
+        else: dest.rmdir()
     
-    print(f'Extracted frames can be found at {dest}')
+    dest.mkdir(exist_ok=1)
+    dest = dest / '%03d.jpg'
+        
+    ffmpeg.input(str(source)).filter('select', f'not(mod(n, {fps}))').output(str(dest), vsync=2, loglevel="error").run()
+    
+    # print(f'Extracted frames can be found at {dest}')
+    return dest.parent
 
+def Extract_Files(source, dest=None):
+
+    from pathlib import Path
+    from urllib.parse import urlparse
+    from send2trash import send2trash
+    from Webscraping import json_generator
+    from Webscraping.utils import save_image
+    
+    source = Path(source)
+    
+    if source.is_file():
+        
+        if dest is None: dest = source.parent
+            
+        for url in json_generator(source):
+            
+            url = url['url']
+            name = dest / url.split('/')[-1]
+            save_image(name, url, False)
+            
+        send2trash(source)
+    
+    elif source.is_dir():
+        
+        if dest is None: dest = source
+        
+        for file in source.glob('*.json'):
+            
+            for url in json_generator(file):
+                
+                src = urlparse(url['url'])
+                if '/' in src.path:
+                    name = dest / src.path.split('/')[-1]
+                else: name = dest / src.path
+                
+                save_image(name, url['url'], False)
+                
+            send2trash(file)
+        
 def Remove_Emoji():
 
     import sqlite3, emoji, re
@@ -467,6 +625,35 @@ def Remove_Emoji():
         
     print(f'{files} files cleaned')
 
+def Get_Tags(path, suffix='.jpg'):
+    
+    import tempfile, requests
+    from deepdanbooru_onnx import DeepDanbooru
+    from pathlib import Path
+    
+    MODEL = DeepDanbooru(
+        tags_path=r'DeepLearning\general-tags.txt', threshold=0.475
+        )
+    
+    try: 
+        file = Path(path)
+        
+        if not file.exists(): 
+        
+            content = requests.get(path).content
+            path = Path(tempfile.TemporaryFile().name).with_suffix(suffix)
+            path.write_bytes(content)
+        
+    except FileNotFoundError: 
+        
+        content = requests.get(path).content
+        path = Path(tempfile.TemporaryFile().name).with_suffix(suffix)
+        path.write_bytes(content)  
+        
+    tags = set(MODEL(str(path)))
+    
+    print(' '.join(tags))
+
 def pathwalk(top, topdown=False, followlinks=False):
     """
     See Python docs for os.walk, exact same behavior but it yields Path() instances instead
@@ -487,18 +674,20 @@ def pathwalk(top, topdown=False, followlinks=False):
     if topdown is not True:
         yield top, dirs, nondirs
 
-parser = argparse.ArgumentParser(
-    prog='utils', 
-    description='Run utility functions'
-    )
-parser.add_argument(
-    '-f', '--func', type=str,
-    help='Name of function'
-    )
-parser.add_argument(
-    '-a', '--args', type=str,
-    help='Arguments of function',
-    default=''
-    )
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(
+        prog='utils', 
+        description='Run utility functions'
+        )
+    parser.add_argument(
+        '-f', '--func', type=str,
+        help='Name of function'
+        )
+    parser.add_argument(
+        '-a', '--args', type=str,
+        help='Arguments of function',
+        default=''
+        )
 
-run()
+    run()

@@ -68,7 +68,11 @@ def page_handler(paths, upload, sankaku=0, gelbooru=0):
             elif type_ == 0: gelbooru += 1
         else: saved = False
                         
-        if saved and os.path.isfile(path): os.remove(path)
+        if saved and os.path.isfile(path): 
+            
+            try: os.remove(path)
+            except PermissionError: continue
+
         MYSQL.execute(UPDATE[4], (1, int(saved), rowid), commit=1)
 
     print()

@@ -1,8 +1,24 @@
-import argparse, bs4
+import argparse, bs4, requests
 from .. import CONNECT, INSERT, SELECT, UPDATE, WEBDRIVER, get_credentials
-from ..utils import PATH, IncrementalBar, re
+from ..utils import PATH, HEADERS, IncrementalBar, re
 
 SITE = 'furaffinity'
+
+def get_session():
+    
+    sess = requests.Session()
+    sess.headers.update(HEADERS)
+    
+    payload = {
+        'name': get_credentials(SITE, 'username'),
+        'pass': get_credentials(SITE, 'password'),
+        'action': 'login',
+        'dest': 'www.furaffinity.net',
+        }
+    
+    sess.post('https://www.furaffinity.net/login/', data=payload)
+    
+    return sess
 
 def initialize(url, query):
     

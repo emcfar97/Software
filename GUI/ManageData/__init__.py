@@ -2,24 +2,23 @@
 Consists of a lefthand gallery of images and a righthand display for selected image. Allows deletion and updating of records, as well as a slideshow function that can display images and videos in fullscreen.
 '''
 import re
-from PyQt6.QtGui import QAction
-from PyQt6.QtCore import Qt, QThreadPool, QEvent, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView, QCompleter
+from PyQt6.QtCore import Qt, QThreadPool, pyqtSignal
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox, QStatusBar, QAbstractItemView
 
-from GUI.utils import ROOT, UPDATE, DELETE, COMIC, AUTOCOMPLETE, Worker, Authenticate, update_autocomplete, remove_redundancies, copy_to
+from GUI.utils import INSERT, UPDATE, DELETE, COMIC, AUTOCOMPLETE, ENUM, Authenticate, Completer, Worker, update_autocomplete, remove_redundancies, get_path, get_values, copy_to, find_match
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
-# from GUI.managedata.ribbonView_copy import Ribbon
 from GUI.managedata.ribbonView import Ribbon
 from GUI.slideshow import Slideshow
 
 class ManageData(QMainWindow):
 
-    populateGallery = pyqtSignal()
     closedWindow = pyqtSignal(object)
     key_pressed = pyqtSignal(object)
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, admin=0):
+    
+        if admin: ENUM['Explicit'] = ''
 
         super(ManageData, self).__init__()
         self.setWindowTitle('Manage Data')
@@ -33,13 +32,29 @@ class ManageData(QMainWindow):
         self.mysql = authenticator.success()
         self.mysql.setParent(self)
         self.mysql.finishedTransaction.connect(self.select_records)
-        self.mysql.finishedSelect.connect(lambda x: self.preview.update(None))
+        self.mysql.finishedTransaction.connect(self.update_statusbar)
+        self.mysql.errorTransaction.connect(
+            lambda error: QMessageBox.warning(None, 'Error', str(error))
+            )
         self.mysql.finishedSelect.connect(self.gallery.clearSelection)
-        self.mysql.finishedSelect.connect(self.gallery.update)
+        self.mysql.finishedSelect.connect(self.gallery.update_gallery)
         self.mysql.finishedSelect.connect(self.update_statusbar)
-        self.mysql.finishedUpdate.connect(lambda x: self.windows.discard(x))
+        self.mysql.finishedSelect.connect(lambda: self.preview.update(None))
+        self.mysql.finishedUpdate.connect(self.close_properties)
         self.mysql.finishedDelete.connect(self.delete_records)
-
+        
+        if admin:
+            
+            self.gallery.rating.actions()[0].setChecked(True)
+            self.gallery.order[0].actions()[6].setChecked(True)
+            self.ribbon.order = {
+                'sort': 'ORDER BY RAND()',
+                'column': {
+                    'rating': 'Explicit',
+                    'type': 'All',
+                    }
+                }
+        
     def configure_gui(self):
         
         self.center = QWidget(self)
@@ -54,6 +69,7 @@ class ManageData(QMainWindow):
 
         self.windows = set()
         self.threadpool = QThreadPool()
+        self.query = None
 
         self.gallery = Gallery(self)
         self.preview = Preview(self)
@@ -63,13 +79,14 @@ class ManageData(QMainWindow):
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(30)
-        self.installEventFilter(self)
 
-        self.gallery.selection.connect(self.update_preview)
+        self.gallery.selection.connect(self.update_gallery)
         self.gallery.selection.connect(self.update_statusbar)
         self.gallery.delete.connect(self.delete_records)
         self.gallery.load_comic.connect(self.read_comic)
         self.gallery.find_artist.connect(self.find_by_artist)
+        
+        # self.installEventFilter(self)
 
     def create_menu(self):
         
@@ -82,14 +99,23 @@ class ManageData(QMainWindow):
         self.menubar.triggered.connect(self.menuPressEvent)
         self.toolbar.actionTriggered.connect(self.menuPressEvent)
         self.ribbon.selection_mode.connect(self.setSelectionMode)
+        self.ribbon.query_updated.connect(self.select_records)
+        self.gallery.order_updated.connect(self.update_query)
         self.ribbon.tags.setFocus()
 
         # File
         file = self.menubar.addMenu('File')
         file.addAction('Add image(s)')
-        file.addAction('Copy to', lambda: copy_to(self, self.gallery.selectedIndexes()))#, shortcut='CTRL+SHIFT+C')
+        file.addAction(
+            'Copy Images to', 'CTRL+SHIFT+C', 
+            lambda: copy_to(self, self.gallery.selectedIndexes())
+            )
+        file.addAction(
+            'Find Image', 'CTRL+SHIFT+F', 
+            lambda: self.select_records(find_match(self))
+            )
         file.addSeparator()
-        file.addAction('Exit', self.close)#, shortcut='CTRL+W')
+        file.addAction('Exit', 'CTRL+W', self.close)
         
         # database
         database = self.menubar.addMenu('Database')
@@ -104,14 +130,20 @@ class ManageData(QMainWindow):
         # Help
         help = self.menubar.addMenu('Help')
     
-    @pyqtSlot()
-    def select_records(self):
+    def select_records(self, query=None):
         
-        worker = Worker(self.mysql.execute, self.ribbon.update_query())
+        if type(query) == str: self.query = query
+        
+        worker = Worker(self.mysql.execute, self.query)
         self.threadpool.start(worker)
-
-    def insert_records(self): pass
         
+        self.preview.update()
+
+    def insert_records(self, indexes):
+        
+        worker = Worker(self.mysql.execute, INSERT, indexes, many=1)
+        self.threadpool.start(worker)
+    
     def update_records(self, source, indexes, kwargs):
         
         parameters = []
@@ -121,7 +153,7 @@ class ManageData(QMainWindow):
             key = key.lower()
             
             if isinstance(vals, tuple):
-                
+                                
                 for val in vals[0]:
 
                     parameters.append(f'{key}=CONCAT({key.lower()}, " {val} ")')
@@ -131,7 +163,7 @@ class ManageData(QMainWindow):
                     parameters.append(f'{key}=REPLACE({key}, " {val.lower()} ", " ")')
                 
             else: parameters.append(f'{key}={vals}')
-
+        
         worker = Worker(
             self.mysql.execute, 
             UPDATE.format(', '.join(parameters)), 
@@ -141,9 +173,12 @@ class ManageData(QMainWindow):
         
     def delete_records(self, indexes):
 
+        if not indexes: return
+        
         if isinstance(indexes[0], tuple):
 
-            for path, in indexes: (ROOT / path).unlink(True)
+            for path, in indexes: 
+                get_path(path).unlink(True)
             self.mysql.cursor.close
             self.mysql.conn.commit()
             self.mysql.conn.close()
@@ -152,7 +187,7 @@ class ManageData(QMainWindow):
         paths = [
             (index.data(Qt.ItemDataRole.UserRole)[1],) 
             for index in indexes
-            if index.data(300) is not None
+            if index.data(Qt.ItemDataRole.FontRole) is not None
             ]
             
         message = QMessageBox.question(
@@ -165,25 +200,36 @@ class ManageData(QMainWindow):
             
             worker = Worker(self.mysql.execute, DELETE, paths, many=1)
             self.threadpool.start(worker)
-
+            
+        return 1
+            
     def start_slideshow(self, index=None):
         
         if not self.gallery.total(): return
 
         indexes = self.gallery.table.images
         index = index if index else self.gallery.currentIndex()
-        index = sum(index.data(100))
-        slideshow = Slideshow(self, indexes, index)
+        # slideshow = Slideshow(self, indexes, index.data(Qt.ItemDataRole.FontRole))
         
-        self.windows.add(slideshow)
+        # self.windows.add(slideshow)
+        
+        worker = Worker(Slideshow, (self, indexes, index.data(Qt.ItemDataRole.FontRole)))
+        self.threadpool.start(worker)
 
-    def update_preview(self, select, deselect):
+    def update_query(self, order):
+        
+        self.ribbon.order = self.gallery.update_order(1)
+            
+        self.ribbon.update_query()
+         
+    def update_gallery(self, select, deselect):
         
         if self.gallery.total():
             
             if select := select.indexes(): image = select[0]
             
-            elif indexes := self.gallery.selectedIndexes(): image = min(indexes)
+            elif indexes := self.gallery.selectedIndexes():
+                image = min(indexes)
             
             else: image = None
 
@@ -214,7 +260,7 @@ class ManageData(QMainWindow):
     
     def find_by_artist(self, index):
 
-        artist = index.data(Qt.UserRole)[2]
+        artist = index.data(Qt.ItemDataRole.UserRole)[2]
         
         if artist:
             
@@ -226,14 +272,27 @@ class ManageData(QMainWindow):
 
     def read_comic(self, event=None):
         
-        if re.search('type=.comic', self.ribbon.query) and not re.search('comic=.+', self.ribbon.text()):
+        if event[1] == 1 or (
+            re.search('type=.comic', self.query) and 
+            not re.search('comic=.+', self.ribbon.text())
+            ):
             
             path = event[0].data(Qt.ItemDataRole.UserRole)[1]
-            parent_, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
-            self.ribbon.setText(f'comic={parent_}')
+
+            try: 
+                
+                parent, = self.mysql.execute(COMIC, (path,), fetch=1)[0]
+                self.ribbon.setText(f'comic={parent}')
+                self.gallery.rating.actions()[0].trigger()
+                self.gallery.order[0].actions()[0].trigger()
             
-            self.gallery.enums['rating'].actions()[0].trigger()
-            self.gallery.enums['order'][0].actions()[0].trigger()
+            except IndexError: 
+            
+                QMessageBox.information(
+                    self, 'Comic not found', 
+                    f'Path "{path}" returned nothing'
+                    )
+                
         
         else: self.start_slideshow()
     
@@ -252,6 +311,10 @@ class ManageData(QMainWindow):
                 )
             self.gallery.clearSelection()
     
+    def close_properties(self, property):
+        
+        if property is not None: property.close()        
+        
     def menuPressEvent(self, event=None):
 
         match event.text():
@@ -260,8 +323,11 @@ class ManageData(QMainWindow):
             case 'Add image(s)':
                 
                 QMessageBox.information(
-                    self, 'Non existant function', 'That function does not exist'
+                    self, 'Non-existant function',
+                    'That function does not exist'
                     )
+                return
+                self.insert_records(records)
             
             case 'Exit': self.close()
             
@@ -276,7 +342,7 @@ class ManageData(QMainWindow):
             case 'Current statement':
                 
                 QMessageBox.information(
-                    self, 'Current Statement', self.ribbon.query
+                    self, 'Current Statement', self.query
                     )
                 
             case 'Update Autocomplete':
@@ -284,15 +350,29 @@ class ManageData(QMainWindow):
                 worker = Worker(update_autocomplete)
                 self.threadpool.start(worker)
 
-                self.ribbon.tags.setCompleter(
-                    QCompleter(open(AUTOCOMPLETE).read().split())
-                    )
-
+                with open(AUTOCOMPLETE, encoding='utf8') as file:
+                    
+                    self.ribbon.tags.setCompleter(
+                        Completer(file.read().split())
+                        )
+                    
             case 'Remove Redundancies':
                 
                 worker = Worker(remove_redundancies)
                 self.threadpool.start(worker)
+                
+    def mousePressEvent(self, event):
         
+        button_press = event.button()
+        
+        if button_press == Qt.MouseButton.XButton1:
+            
+            self.ribbon.go_back()
+            
+        elif button_press == Qt.MouseButton.XButton2:
+            
+            self.ribbon.go_forward()
+               
     def keyPressEvent(self, event):
 
         key_press = event.key()
@@ -328,26 +408,25 @@ class ManageData(QMainWindow):
                 self.gallery.keyPressEvent(event)
 
             case _: self.key_pressed.emit(event)
+     
+    def dragEnterEvent(self, event):
         
+        if event.mimeData().hasUrls():
+            
+            event.accept()
+        
+        else: event.ignore()
+   
+    def dropEvent(self, event):
+        
+        values = (get_values(file) for file in event.mimeData.urls())
+        
+        return
+        self.insert_records()
+            
     def closeEvent(self, event):
         
         self.mysql.close()
         self.threadpool.clear()
         for window in self.windows: window.close()
         self.closedWindow.emit(self)
-        
-    # def eventFilter(self, source, event):
-
-    #     print(event.type())
-    #     if event.type() == QEvent.MouseButtonPress and source is self.gallery:
-            
-    #         # keyEvent = QKeyEvent(event)
-            
-    #         if event.button() in (Qt.MouseButton.ExtraButton1, Qt.MouseButton.ExtraButton2):
-    #             print()
-    #             # Special tab handling
-    #             return True
-    #         else:
-    #             return False
-
-    #     return False

@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QStatusBar
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QStatusBar
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QIcon, QAction
 
@@ -15,7 +15,7 @@ class DeepLearning(QMainWindow):
     def __init__(self, parent=None):
         
         super(DeepLearning, self).__init__()
-        self.setWindowTitle('Machine Learning')
+        self.setWindowTitle('Deep Learning')
         self.parent = parent
         self.configure_gui()
         self.create_menu()
@@ -24,9 +24,13 @@ class DeepLearning(QMainWindow):
 
     def configure_gui(self):
         
-        self.stack = QStackedWidget(self)
-        self.setCentralWidget(self.stack)  
-        self.stack.setContentsMargins(0, 0, 5, 0)
+        self.tab_widget = QTabWidget(self)
+        self.tab_widget.setTabsClosable(False)
+        self.tab_widget.setStyleSheet('''
+            QTabWidget::tab-bar {alignment: center;}
+            ''')
+        self.tab_widget.setContentsMargins(0, 0, 5, 0)
+        self.setCentralWidget(self.tab_widget)
 
     def create_widgets(self):
         
@@ -34,9 +38,9 @@ class DeepLearning(QMainWindow):
         self.dataset = Dataset(self)
         self.train = Train(self)
         
-        self.stack.addWidget(self.design)
-        self.stack.addWidget(self.dataset)
-        self.stack.addWidget(self.train)
+        self.tab_widget.addTab(self.design, 'Design')
+        self.tab_widget.addTab(self.dataset, 'Dataset')
+        self.tab_widget.addTab(self.train, 'Train')
 
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
@@ -60,44 +64,41 @@ class DeepLearning(QMainWindow):
         self.create_action(
             file, ['Save', 'Save project to file'], self.menuPressEvent, 'Ctrl+S'
             )
-        file.addAction('Save As...', self.menuPressEvent, shortcut='Ctrl+Shift+S')
+        file.addAction('Save As...', 'Ctrl+Shift+S', self.menuPressEvent)
         file.addAction('Save a Copy...', self.menuPressEvent)
         file.addAction('Save Selection...', self.menuPressEvent)
         file.addAction('Export...', self.menuPressEvent)
         file.addSeparator()
-        file.addAction('Close', self.menuPressEvent, shortcut='Ctrl+F4')
+        file.addAction('Close', 'Ctrl+F4', self.menuPressEvent)
         file.addSeparator()
         file.addAction('Properties', self.menuPressEvent)
         file.addSeparator()
-        file.addAction('Quit', self.menuPressEvent, shortcut='Ctrl+Q')
+        file.addAction('Quit', 'Ctrl+Q', self.menuPressEvent)
 
         # Edit
         edit = self.menubar.addMenu('Edit')
-        edit.addAction('Undo', self.menuPressEvent, shortcut='Ctrl+Z')
-        edit.addAction('Redo', self.menuPressEvent, shortcut='Ctrl+Y')
+        edit.addAction('Undo', 'Ctrl+Z', self.menuPressEvent)
+        edit.addAction('Redo', 'Ctrl+Y', self.menuPressEvent)
         edit.addSeparator()
-        edit.addAction('Cut', self.menuPressEvent, shortcut='Ctrl+X')
-        edit.addAction('Copy', self.menuPressEvent, shortcut='Ctrl+C')
-        edit.addAction('Paste', self.menuPressEvent, shortcut='Ctrl+V')
-        edit.addAction('Delete', self.menuPressEvent, shortcut='Del')
+        edit.addAction('Cut', 'Ctrl+X', self.menuPressEvent)
+        edit.addAction('Copy', 'Ctrl+C', self.menuPressEvent)
+        edit.addAction('Paste', 'Ctrl+V', self.menuPressEvent)
+        edit.addAction('Delete', 'Del', self.menuPressEvent)
         edit.addSeparator()
-        edit.addAction('Select All', self.menuPressEvent, shortcut='Ctrl+A')
-        edit.addAction('Find', self.menuPressEvent, shortcut='Ctrl+F')
+        edit.addAction('Select All', 'Ctrl+A', self.menuPressEvent)
+        edit.addAction('Find', 'Ctrl+F', self.menuPressEvent)
         edit.addSeparator()
         edit.addAction('Preferences', self.menuPressEvent)
 
         # View
         view = self.menubar.addMenu('View')
-        view.addAction('Palettes', self.menuPressEvent, shortcut='F9')
-        view.addAction('Inspector', self.menuPressEvent, shortcut='F8')
+        view.addAction('Palettes', 'F9', self.menuPressEvent)
+        view.addAction('Inspector', 'F8', self.menuPressEvent)
         view.addSeparator()
-        view.addAction('Zoom in', self.menuPressEvent, shortcut='Ctrl++')
-        view.addAction('Zoom out', self.menuPressEvent, shortcut='Ctrl+-')
+        view.addAction('Zoom in', 'Ctrl++', self.menuPressEvent)
+        view.addAction('Zoom out', 'Ctrl+-', self.menuPressEvent)
         view.addSeparator()
-        view.addAction('Fulscreen', self.menuPressEvent, shortcut='F11')
-
-        # Layer
-        layer = self.menubar.addMenu('Layer')
+        view.addAction('Fulscreen', 'F11', self.menuPressEvent)
 
         # Tools
         tools = self.menubar.addMenu('Tools')
@@ -108,12 +109,13 @@ class DeepLearning(QMainWindow):
     def create_action(self, menu, text, slot, shortcut):
         
         if isinstance(text, list): 
-            menu.addAction(text[0], self.menuPressEvent, shortcut=shortcut)
+            
+            menu.addAction(text[0], shortcut, self.menuPressEvent)
             self.tooblar.addAction(
                 QAction(QIcon.fromTheme('new.bmp'), f'{text[1]} ({shortcut})', self)
                 )
         else:
-            menu.addAction(text, self.menuPressEvent, shortcut=shortcut)
+            menu.addAction(text, shortcut, self.menuPressEvent)
 
     def menuPressEvent(self, event=None):
         
@@ -124,7 +126,7 @@ class DeepLearning(QMainWindow):
         
         key_press = event.key()
                 
-        if key_press == Qt.Key_Escape: self.close()
+        if key_press == Qt.Key.Key_Escape: self.close()
         
         else: self.key_pressed.emit(event)
             

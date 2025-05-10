@@ -1,6 +1,8 @@
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QSlider, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QWidget, QSlider, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt
+
+from GUI.utils import create_button
 
 class Controls(QWidget):
     
@@ -43,16 +45,6 @@ class Controls(QWidget):
         self.volume.setFixedWidth(50)
         self.volume.valueChanged.connect(self.volumeChanged)
         self.options.addWidget(self.volume)
-        
-    def create_button(self, icon, slot, lamb=None):
-
-        button = QPushButton(self)
-        if lamb: button.clicked.connect(lambda: slot(lamb))
-        else: button.clicked.connect(slot)
-        button.setIcon(QIcon(icon))
-        self.options.addWidget(button)
-
-        return button
 
     def duration(self, event):
         
@@ -75,7 +67,7 @@ class Controls(QWidget):
     
     def skip(self, event):
 
-        if event: self.parent().move(1)
+        if event: self.parent().move(+1)
         else: self.parent().move(-1)
     
     def mute(self, op=['SP_MediaVolumeMuted', 'SP_MediaVolume']):

@@ -1,7 +1,7 @@
-from PyQt6.QtCore import Qt, QThreadPool, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import Qt, QThreadPool, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QStackedWidget, QMessageBox, QStatusBar, QGroupBox, QPushButton, QInputDialog, QSizePolicy, QAbstractItemView
 
-from GUI.utils import ROOT, AUTOCOMPLETE, Worker, Timer, Authenticate, update_autocomplete, remove_redundancies, copy_to
+from GUI.utils import AUTOCOMPLETE, Worker, Timer, Authenticate, update_autocomplete, remove_redundancies, copy_to, create_submenu
 from GUI.managedata import ManageData
 from GUI.managedata.galleryView import Gallery
 from GUI.managedata.previewView import Preview
@@ -120,11 +120,10 @@ class App(QMainWindow):
 
 class GestureDraw(QMainWindow):
 
-    populateGallery = pyqtSignal()
     closedWindow = pyqtSignal(object)
     key_pressed = pyqtSignal(object)
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args):
         
         super(App, self).__init__()
         self.setWindowTitle('Gesture Draw')
@@ -132,18 +131,28 @@ class GestureDraw(QMainWindow):
         self.configure_gui()
         self.create_widgets()
         self.create_menu()
-        self.order[0].actions()[-1].trigger()
+        self.ribbon.order = {
+            'sort': 'ORDER BY RAND()',
+            'column': {
+                'rating': 'Explicit',
+                'type': 'All',
+                }
+            }
         self.show()
 
         authenticator = Authenticate()
         self.mysql = authenticator.success()
         self.mysql.finishedTransaction.connect(self.select_records)
-        self.mysql.finishedSelect.connect(lambda x: self.preview.update(None))
-        self.mysql.finishedSelect.connect(self.gallery.clearSelection)
-        self.mysql.finishedSelect.connect(self.gallery.update)
+        self.mysql.finishedTransaction.connect(self.update_statusbar)
+        self.mysql.errorTransaction.connect(
+            lambda error: QMessageBox.warning(None, 'Error', str(error))
+            )
         self.mysql.finishedSelect.connect(self.update_statusbar)
-        self.mysql.finishedUpdate.connect(lambda x: self.windows.discard(x))
-        self.mysql.finishedDelete.connect(self.delete_records)
+        self.mysql.finishedSelect.connect(self.gallery.clearSelection)
+        self.mysql.finishedSelect.connect(self.gallery.update_gallery)
+        self.mysql.finishedSelect.connect(lambda: self.preview.update(None))
+        
+        self.ribbon.refresh.click()
         
     def configure_gui(self):
 
@@ -158,6 +167,7 @@ class GestureDraw(QMainWindow):
 
         self.windows = set()
         self.threadpool = QThreadPool()
+        self.query = None
 
         self.gallery = Gallery(self)
         self.preview = Preview(self)
@@ -169,11 +179,11 @@ class GestureDraw(QMainWindow):
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
         self.statusbar.setFixedHeight(30)
-        self.installEventFilter(self)
+        # self.installEventFilter(self)
 
         self.gallery.selection.connect(self.update_statusbar)
         self.gallery.find_artist.connect(self.find_by_artist)
-        self.gallery.setContentsMargins(5, 0, 5, 0)
+        self.gallery.setContentsMargins(5, 0, 0, 0)
         
         for action in self.gallery.menu.actions():
             
@@ -194,19 +204,23 @@ class GestureDraw(QMainWindow):
         self.menubar.triggered.connect(self.menuPressEvent)
         self.toolbar.actionTriggered.connect(self.menuPressEvent)
         self.ribbon.selection_mode.connect(self.setSelectionMode)
+        self.ribbon.query_updated.connect(self.select_records)
+        self.gallery.order_updated.connect(self.update_query)
         self.ribbon.multi.click()
         self.ribbon.tags.setFocus()
 
         # File
         file = self.menubar.addMenu('File')
-        file.addAction('Add image(s)')
-        file.addAction('Copy to', lambda: copy_to(self, self.gallery.selectedIndexes()), shortcut='CTRL+SHIFT+C')
-        self.gesture_menu = create_submenu_(
-            self, 'Gesture Draw', GESTURE.keys(), check=False
-            )[0]
+        file.addAction(
+            'Copy Images to', 'CTRL+SHIFT+C', 
+            lambda: copy_to(self, self.gallery.selectedIndexes())
+            )
+        self.gesture_menu = create_submenu(
+            file, 'Gesture Draw', GESTURE.keys(), check=False, get_menu=True
+            )[1]
         file.addMenu(self.gesture_menu)
         file.addSeparator()
-        file.addAction('Exit', self.close, shortcut='CTRL+W')
+        file.addAction('Exit', 'CTRL+W', self.close)
         
         # database
         database = self.menubar.addMenu('Database')
@@ -221,13 +235,14 @@ class GestureDraw(QMainWindow):
         # Help
         help = self.menubar.addMenu('Help')
     
-    @pyqtSlot()
     def select_records(self):
         
-        worker = Worker(
-            self.mysql.execute, self.ribbon.update_query(1, 1000)
-        )
+        if type(query) == str: self.query = query
+        
+        worker = Worker(self.mysql.execute, self.query)
         self.threadpool.start(worker)
+        
+        self.preview.update()
 
     def start_session(self, gallery, time):
         
@@ -252,9 +267,28 @@ class GestureDraw(QMainWindow):
             QMessageBox.information(
                 self, '', 
                 'You are either missing images or a time',
-                QMessageBox.Ok
+                QMessageBox.StandardButton.Ok
                 )
 
+    def update_query(self, order):
+        
+        self.ribbon.order = self.gallery.update_order(mode=1)
+            
+        self.ribbon.update_query(gesture=True)
+         
+    def update(self, select, deselect):
+        
+        if self.gallery.total():
+            
+            if select := select.indexes(): image = select[0]
+            
+            elif indexes := self.gallery.selectedIndexes():
+                image = min(indexes)
+            
+            else: image = None
+
+            self.preview.update(image)
+            
     def update_statusbar(self):
         
         total = self.gallery.total()
@@ -280,7 +314,7 @@ class GestureDraw(QMainWindow):
     
     def find_by_artist(self, index):
 
-        artist = index.data(Qt.UserRole)[2]
+        artist = index.data(Qt.ItemDataRole.UserRole)[2]
         
         if artist:
             
@@ -310,21 +344,13 @@ class GestureDraw(QMainWindow):
         match event.text():
         
             # File
-            case 'Add image(s)':
-                
-                QMessageBox.information(
-                    self, 'Non existant function', 'That function does not exist'
-                    )
-            
-            case 'Copy to':
-            
-                copy_to(self, self.gallery.selectedIndexes())
-                
             case GESTURE.keys():
                 
                 if event.text() == 'Custom Time':
                     
-                    time, ok = QInputDialog.getText(self, "Dialog", "Enter time:")
+                    time, ok = QInputDialog.getText(
+                        self, "Dialog", "Enter time:"
+                        )
                 
                     if ok:
                         
@@ -349,7 +375,7 @@ class GestureDraw(QMainWindow):
             case 'Current statement':
                 
                 QMessageBox.information(
-                    self, 'Current Statement', self.ribbon.query
+                    self, 'Current Statement', self.query
                     )
                 
             case 'Update Autocomplete':

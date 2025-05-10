@@ -1,33 +1,36 @@
 import re
 from PyQt6.QtGui import QAction, QUndoStack
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QCompleter
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QCheckBox, QStyle, QMenu, QUndoView
 
-from GUI.utils import BASE, AUTOCOMPLETE, LIMIT
-
-ENUM = {
-    'All': '',
-    'Photo': "type='photograph'",
-    'Illus': "type='illustration'",
-    'Comic': "type='comic'",
-    'Explicit': '',
-    'Questionable': 'rating<3',
-    'Safe': 'rating=1',
-    }
+from GUI.utils import SELECT, AUTOCOMPLETE, LIMIT, ENUM, Completer
 
 class Ribbon(QWidget):
      
     selection_mode = pyqtSignal(bool)
+    query_updated = pyqtSignal(object)
 
-    def __init__(self, parent):
+    def __init__(self, parent, test=False):
          
         super(Ribbon, self).__init__(parent)
         self.configure_gui()
         self.create_widgets()
         
+        if not test:
+            
+            self.tags.returnPressed.connect(self.update_query)
+            self.timer.timeout.connect(self.update_query)
+            self.refresh.clicked.connect(self.update_query)
+        
     def configure_gui(self):
         
-        self.query = ''
+        self.order = {
+            'sort': 'ORDER BY rowid ASC',
+            'column': {
+                'rating': 'General',
+                'type': 'All',
+                }
+            }
         self.undo = ['']
         self.redo = []
         
@@ -39,6 +42,7 @@ class Ribbon(QWidget):
         # History navigation
         self.history = QHBoxLayout()
         self.layout.addLayout(self.history)
+        self.undoStack = QUndoStack(self)
 
         self.back = QPushButton()
         self.forward = QPushButton()
@@ -59,20 +63,16 @@ class Ribbon(QWidget):
         # Search function
         self.tags = QLineEdit(self)
         self.tags.setPlaceholderText('Enter tags')
-        self.tags.setCompleter(
-            QCompleter(open(AUTOCOMPLETE).read().split())
-            )
-        self.tags.returnPressed.connect(self.parent().select_records)
+        with open(AUTOCOMPLETE, encoding='utf8') as file:
+            self.tags.setCompleter(Completer(file.read().split()))
                 
         self.timer = QTimer(self.tags)
         self.timer.setSingleShot(True)
-        self.timer.timeout.connect(self.parent().select_records)
         self.tags.textChanged.connect(lambda: self.timer.start(1000))
         
         self.refresh = QPushButton(self)
         pixmap = getattr(QStyle.StandardPixmap, 'SP_BrowserReload')
         self.refresh.setIcon(self.style().standardIcon(pixmap))
-        self.refresh.clicked.connect(self.parent().select_records)
                 
         self.multi = QCheckBox('Multi-selection', self)
         self.multi.clicked.connect(self.selection_mode.emit)
@@ -80,19 +80,21 @@ class Ribbon(QWidget):
         self.layout.addWidget(self.tags)
         self.layout.addWidget(self.refresh)
         self.layout.addWidget(self.multi)
+        self.tags.setFocus()
         
-    def update_query(self, event=None, op='[<>=!]=?'):
+    def update_query(self, gesture=False, limit=LIMIT, op='[<>=!]=?'):
         
         query = {}
         join = ''
-        order = self.get_order()
+        where = ''
+        having = ''
         string = self.tags.text()
         if string: self.update_history(string)
-        if event: query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
-        enums = self.parent().parent().gallery.enums
+        if gesture: query['gesture'] = ['date_used <= Now() - INTERVAL 2 MONTH']
+        order = self.order['sort']
         
         # query parsing
-        for token in re.findall(f'\w+{op}[\w\*\.]+', string):
+        for token in re.findall(f'\w+{op}[\w\*\.\-\(\)/]+', string):
             
             string = string.replace(token, '')
             col, val = re.split(op, token)
@@ -106,11 +108,20 @@ class Ribbon(QWidget):
 
                 order = f'ORDER BY {val}'
                 continue
-
+            
+            elif col == 'limit':
+                
+                limit = val
+                
+            elif col in ('date', 'date_used'):
+                
+                operator = token.replace(col, '').replace(val, '')
+                token = f'date_used{operator}"{val}"'
+             
             elif re.search('\*', val):
                 
                 token = f'{col} LIKE "{val.replace("*", "%")}"'
-
+            
             elif val == 'NULL':
                 
                 neg = 'NOT ' if '!' in token else ''
@@ -118,16 +129,18 @@ class Ribbon(QWidget):
 
             elif re.search('\D', val):
 
-                token = re.sub(f'(\w+{op})(\w+)', r'\1"\2"', token)
-
+                token = re.sub(f'(\w+{op})([/\w]+)', r'\1"\2"', token)
+            
             query[col] = query.get(col, []) + [token]
         
         # menu parsing
-        for text, col in zip(['type', 'rating'], [enums['type'], enums['rating']]):
-
-            if (val:=ENUM[col.checkedAction().text()]) and text not in query:
-                query[text] = [val]
-            if text == 'type' and 'comic' not in query and 'comic' in query.get(text, [''])[0]:
+        for col, val in self.order['column'].items():
+            
+            if col not in query and val in ENUM: 
+                
+                if ENUM[val]: query[col] = [ENUM[val]]
+            
+            if col == 'type' and 'comic' not in query and 'comic' in query.get(col, [''])[0]:
 
                 join = 'JOIN comic ON comic.path=imagedata.path'
                 query['comic'] = ['comic.parent=imagedata.path']
@@ -139,48 +152,34 @@ class Ribbon(QWidget):
                 f'MATCH(tags, artist) AGAINST("{self.tag_parser(string)}" IN BOOLEAN MODE)'
                 ]
         
-        # remove null paths
-        if not any(query) or 'type' in query:
-            
-            query[''] = ['NOT ISNULL(imagedata.path)']
-
-        filter = " AND ".join(
-            f'({" OR ".join(val)})' for val in query.values() if val
-            )
+        if query:
+            where = 'WHERE ' + ' AND '.join(
+                f'({" OR ".join(val)})' for val in query.values() if val
+                )
         
-        self.query = f'{BASE} {join} WHERE {filter} {order} LIMIT {LIMIT}'
+        query = f'{SELECT} {join} {where} {having} {order} LIMIT {limit}'
 
-        return self.query
+        self.query_updated.emit(query)
     
     def tag_parser(self, string):
     
         # string = re.sub('([-*]?\w+( OR [-*]?\w+)+)', r'(\1)', string)
 
         string = re.sub('([-*]?\w+( OR [-*]?\w+)+\*)', r'(\1)', string)
+        # replace NOT with '-' char
         string = re.sub('NOT ', '-', string.strip())
+        # add '+' char
         string = re.sub('([*]?\w+|\([^()]*\))', r'+\1', string)
         string = re.sub('(\+AND|OR) ', '', string)
         string = re.sub('-\+', '-', string)
-        if not re.search('\+(\w+|\*|\()', string): string += ' qwd'
+        if not re.search('\+[\w+\*\(]', string): string += ' qwd'
         
         string = string.replace('++', '+')
+        string = string.replace('_+(', '_(')
 
         return string
     
-    def get_order(self, ORDER={'Ascending':'ASC','Descending':'DESC'}):
-        
-        enums = self.parent().parent().gallery.enums
-        column = enums['order'][0].checkedAction().text()
-        
-        if column:
-            
-            column = 'RAND()' if column == 'Random' else column
-            column = 'date_used' if column == 'Date' else column
-            order = enums['order'][1].checkedAction().text()
-            
-            return f'ORDER BY {column} {ORDER[order]}'
-
-        return ''
+    def update_order(self, data):  self.order = data
             
     def update_history(self, string='', check=1):
 
@@ -220,12 +219,14 @@ class Ribbon(QWidget):
     def go_back(self, event=None, update=True):
         
         if len(self.undo) > 1:
+            
             self.redo.append(self.undo.pop())
             if update: self.update_history()
 
     def go_forward(self, event=None, update=True):
         
         if self.redo:
+            
             self.undo.append(self.redo.pop())
             if update: self.update_history()
     

@@ -1,15 +1,18 @@
-import tempfile, traceback
-from PIL import Image
+import sys, tempfile, traceback, re
+from json import load
 from pathlib import Path
-from os import path, getenv
-import mysql.connector as sql
-from mysql.connector import pooling
-from dotenv import load_dotenv, set_key, find_dotenv
+from imagehash import dhash
+from PIL import Image, ImageGrab
+from os import path, getenv, startfile
+from mysql.connector import pooling, errors
+from dotenv import load_dotenv, find_dotenv, set_key
 from cv2 import VideoCapture, cvtColor, COLOR_BGR2RGB
 
-from PyQt6.QtGui import QGuiApplication, QAction, QActionGroup, QImage, QPixmap
+# from Webscraping.utils import get_hash, get_name, get_tags, generate_tags
+
+from PyQt6.QtGui import QAction, QActionGroup, QImage, QIcon
 from PyQt6.QtCore import Qt, QRunnable, QObject, QTimer, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QFormLayout, QLabel, QMenu, QLineEdit, QDialog, QDialogButtonBox, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QApplication, QFormLayout, QCompleter, QLabel, QPushButton, QMenu, QLineEdit, QDialog, QDialogButtonBox, QStyle, QFileDialog, QMessageBox
 
 load_dotenv(r'GUI\.env')
 LIMIT = getenv('LIMIT', '100000')
@@ -19,11 +22,49 @@ AUTOCOMPLETE = r'GUI\managedata\autocomplete.txt'
 
 ROOT = Path(Path().cwd().drive)
 PATH = ROOT / path.expandvars(r'\Users\$USERNAME\Dropbox\ん')
-parts = ", ".join([f"'{part}'" for part in PATH.parts]).replace('\\', '')
-BASE = f'SELECT imagedata.rowid, full_path(imagedata.path, {parts}), imagedata.artist, imagedata.tags, imagedata.rating, imagedata.stars, imagedata.type, imagedata.site, imagedata.date_used, imagedata.hash, imagedata.href, imagedata.src FROM userdata.imagedata'
-COMIC = 'SELECT parent FROM comic WHERE path=get_name(%s)'
-UPDATE = 'UPDATE imagedata SET {} WHERE path=get_name(%s)'
-DELETE = 'DELETE FROM imagedata WHERE path=get_name(%s)'
+SELECT = f'SELECT * FROM imagedata'
+INSERT = 'INSERT INTO imagedata(path, artist, tags, rating, type, hash, src, site, href) VALUES(%s, CONCAT(" ", %s, " "), CONCAT(" ", %s, " "), %s, %s, %s, %s, %s, %s)'
+UPDATE = 'UPDATE imagedata SET {} WHERE path=%s'
+DELETE = 'DELETE FROM imagedata WHERE path=%s'
+COMIC = 'SELECT parent FROM comic WHERE path=%s'
+
+ENUM = {
+    'All': '',
+    'Photo': "type='photograph'",
+    'Illus': "type='illustration'",
+    'Comic': "type='comic'",
+    'Explicit': 'rating<=4',
+    'Questionable': 'rating<=3',
+    'Sensitive': 'rating<=2',
+    'General': 'rating=1',
+    }
+CONSTANTS = {
+    'Sort': ['Rowid', 'Path', 'Artist', 'Stars', 'Hash', 'Date', 'Random'],
+    'Order': ['Ascending', 'Descending'],
+    'Rating': ['Explicit', 'Questionable', 'Sensitive', 'General'],
+    'Type': ['All', 'Photo', 'Illus', 'Comic']
+    }
+MODEL = {
+    'Rowid': 0,
+    'Path': 1,
+    'Artist': 2,
+    'Tags': 3,
+    'Rating': 4,
+    'Stars': 5,
+    'Type': 6,
+    'Site': 7,
+    'Date used': 8,
+    'Hash': 9,
+    'Href': 10,
+    'Src': 11,
+    }
+GESTURE = {
+    '30 seconds': '30', 
+    '1 minute': '60', 
+    '2 minutes': '120', 
+    '5 minutes': '300', 
+    'Custom Time': None
+    }
 
 class CONNECT(QObject):
     
@@ -31,17 +72,18 @@ class CONNECT(QObject):
     finishedSelect = pyqtSignal(object)
     finishedUpdate = pyqtSignal(object)
     finishedDelete = pyqtSignal(object)
+    errorTransaction = pyqtSignal(object)
 
     def __init__(self, credentials):
 
         super(CONNECT, self).__init__()
         self.DATAB = pooling.MySQLConnectionPool(
-            pool_name="mypool", pool_size=10,
-            pool_reset_session=True, **credentials
+            pool_name="mypool", pool_size=10, **credentials
             )
         self.current = ''
         self.transactions = {
                 'SELECT': None,
+                'INSERT': [],
                 'UPDATE': [],
                 'DELETE': []
                 }
@@ -64,6 +106,7 @@ class CONNECT(QObject):
         try:
             
             self.parent().setCursor(Qt.CursorShape.BusyCursor)
+            
             conn = self.DATAB.get_connection()
             cursor = conn.cursor()
             
@@ -72,7 +115,12 @@ class CONNECT(QObject):
 
         except Exception as error:
             
-            print('Error:', error)
+            emit = source = None
+            
+            if arguments is None: error = f'{error}\n {statement}'
+            else: error = f'{error}\n {statement} {arguments[0]}'
+            
+            self.errorTransaction.emit(error)
             
         finally:
             
@@ -80,6 +128,7 @@ class CONNECT(QObject):
             self.parent().setCursor(Qt.CursorShape.ArrowCursor)
             
             if   type == 'SELECT':
+                
                 self.transactions['SELECT'] = None
                 
                 if fetch:
@@ -96,6 +145,8 @@ class CONNECT(QObject):
                 conn.close()
                 return
                 
+            elif type == 'INSERT': pass
+                
             elif type == 'UPDATE':
                 
                 try:
@@ -111,10 +162,10 @@ class CONNECT(QObject):
                 
             elif type == 'DELETE':
                 
-                # try
-                index = self.transactions[type].index(arguments)
-                del self.transactions[type][index]
-                # except ValueError: pass
+                try:
+                    index = self.transactions[type].index(arguments)
+                    del self.transactions[type][index]
+                except ValueError: pass
 
                 self.finishedDelete.emit(arguments)
                 
@@ -129,7 +180,10 @@ class CONNECT(QObject):
 
     def rollback(self): self.DATAB.rollback()
 
-    def rowcount(self): return self.CURSOR.rowcount
+    def rowcount(self):
+        
+        try: return self.CURSOR.rowcount
+        except AttributeError: return 0
 
     def commit(self): self.DATAB.commit()
     
@@ -148,7 +202,7 @@ class Authenticate(QDialog):
                 }
             return CONNECT(cred)
 
-        except (sql.errors.InterfaceError, sql.errors.ProgrammingError, UnicodeError):
+        except (errors.InterfaceError, errors.ProgrammingError, UnicodeError):
             self.start()
     
     def start(self):
@@ -205,16 +259,80 @@ class Authenticate(QDialog):
                 if message == QMessageBox.StandardButton.Ok:
                     self.start()
 
+class Worker(QRunnable):
+    '''
+    Worker thread
+
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        if 'callback' in self.kwargs:
+            
+            self.kwargs['callback'] = self.signals.progress
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try: result = self.fn(*self.args, **self.kwargs)
+        except:
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else: self.signals.result.emit(result)
+        finally: self.signals.finished.emit()
+         
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        tuple (exctype, value, traceback.format_exc() )
+
+    result
+        object data returned from processing, anything
+
+    progress
+        int indicating % progress
+
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(int)
+
 class Timer(QLabel):
     
     def __init__(self, parent, toplevel):
         
         super(QLabel, self).__init__(parent)
-        
         self.toplevel = toplevel
         self.timer = QTimer()
         self.timer.timeout.connect(self.countdown)
-        self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def start(self, gallery,  time):
         
@@ -234,20 +352,22 @@ class Timer(QLabel):
         self.updateText()
         self.timer.start(1000)
 
-    def updateText(self):
+    def pause(self):
 
-        self.current = (self.current - 1) % self.time
+        if self.timer.isActive(): self.timer.stop()
+        else: self.timer.start(1000)
+    
+    def reset(self): self.timer.start(1000)
+           
+    def updateText(self, delta=1):
+
+        self.current = (self.current - delta) % self.time
         self.setText('{}:{:02}'.format(*divmod(self.current, 60)))
         self.setStyleSheet(f'''
             background: white; font: 20px;
             color: {"red" if self.current <= 5 else "black"}
             ''')
         
-    def pause(self):
-
-        if self.timer.isActive(): self.timer.stop()
-        else: self.timer.start(1000)
-           
     def countdown(self):
         
         if self.current: self.updateText()
@@ -257,7 +377,7 @@ class Timer(QLabel):
             worker = Worker(
                 self.toplevel.mysql.execute, 
                 UPDATE.format(f'date_used=CURDATE()'),
-                [self.image.data(Qt.ItemDataRole.UserRole)[0]],
+                (self.image.data(Qt.ItemDataRole.DecorationRole),),
                 emit=0
                 )
             self.toplevel.threadpool.start(worker)
@@ -281,38 +401,42 @@ class Timer(QLabel):
                         125, 75
                         )
 
-class Worker(QRunnable):
-    '''
-    Worker thread
+class Completer(QCompleter):
 
-    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+    def __init__(self, model, parent=None):
 
-    :param callback: The function callback to run on this worker thread. Supplied args and kwargs will be passed through to the runner.
-    :type callback: function
-    :param args: Arguments to pass to the callback function
-    :param kwargs: Keywords to pass to the callback function
-    '''
+        super(Completer, self).__init__(model, parent)
 
-    def __init__(self, fn, *args, **kwargs):
+        self.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        self.setWrapAround(False)
+
+    # Add texts instead of replace
+    def pathFromIndex(self, index):
         
-        super(Worker, self).__init__()
+        path = QCompleter.pathFromIndex(self, index)
+        text = self.widget().text()
+        
+        if path in text: return text
+        
+        cursor = self.widget().cursorPosition()
+        left = text[:cursor].split(' ')[:-1]
+        right = text[cursor:].split(' ')
+        
+        return ' '.join(left + [path] + right)
 
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-
-    @pyqtSlot()
-    def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-
-        # Retrieve args/kwargs here; and fire processing using them
-        try: result = self.fn(*self.args, **self.kwargs)
-        except: traceback.print_exc()
-         
-def create_submenu(parent, name, items, trigger, check=None, get_menu=False):
+    # Add operator to separate between texts
+    def splitPath(self, path):
+        
+        cursor = self.widget().cursorPosition()
+        path = str(path[:cursor].split(' ')[-1]).lstrip(' ')
+        
+        # prevents single space from being matched
+        if len(path) == 0: return ['~|~']
+        
+        return [path]
+        
+def create_submenu(parent, name, items, trigger=None, check=None, get_menu=False):
     '''Create submenu based on parent widget, name, items'''
         
     if name is None: menu = parent
@@ -323,12 +447,12 @@ def create_submenu(parent, name, items, trigger, check=None, get_menu=False):
         
         action = QAction(item, menu, checkable=True)
         if num == check: action.setChecked(True)
-        action.triggered.connect(trigger)
         action_group.addAction(action)
         menu.addAction(action)
 
     else:
         if name is not None: parent.addMenu(menu)
+        if trigger: action_group.triggered.connect(trigger)
         action_group.setExclusive(True)
     
     if get_menu: return action_group, menu
@@ -363,119 +487,169 @@ def create_submenu_(parent, name, items, trigger=None, check=None):
 
     return menu, action_group
 
+def create_button(parent, icon, slot, lamb=None):
+
+    button = QPushButton(parent)
+    if lamb: button.clicked.connect(lambda: slot(lamb))
+    else: button.clicked.connect(slot)
+    
+    pixmap = getattr(QStyle, icon)
+    button.setIcon(QIcon(button.style().standardIcon(pixmap)))
+    button.setToolTip(re.sub('SP_Media', '', icon))
+    
+    return button
+
 def get_frame(path):
 
-    image = VideoCapture(path).read()[-1]
-    if image is None: return QPixmap()
+    capture = VideoCapture(path)
+    image = capture.read()[-1]
+    capture.release()
     
-    image = cvtColor(image, COLOR_BGR2RGB)
-    h, w, ch = image.shape
-    bytes_per_line = ch * w
-    image = QImage(
-        image.data, w, h, bytes_per_line, 
-        QImage.Format.Format_RGB888
+    if image is None: return QImage()
+    
+    height, width, channel = image.shape
+    bytesPerLine = 3 * width
+    
+    return QImage(
+        image.data, width, height, bytesPerLine, QImage.Format.Format_BGR888
         )
+
+def get_path(name): return PATH / name[0:2] / name[2:4] / name
+
+# def get_values(path):
+
+#     name = get_name(path)
+#     tags, rating = generate_tags(
+#         general=get_tags(path, True), 
+#         custom=True, rating=True
+#         )
     
-    return QPixmap.fromImage(image)
+#     return (name.name, '', ' '.join((tags)), rating, 1, get_hash(path))
 
-def update_autocomplete():
+def update_autocomplete(mysql):
 
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()
-    
-    artist, tags = MYSQL.execute(
+    artist, tags = mysql.execute(
         '''SELECT 
-        GROUP_CONCAT(DISTINCT artist ORDER BY artist SEPARATOR ""), 
-        GROUP_CONCAT(DISTINCT tags ORDER BY tags SEPARATOR "") 
+        GROUP_CONCAT(DISTINCT artist SEPARATOR ""), 
+        GROUP_CONCAT(DISTINCT tags SEPARATOR "") 
         FROM imagedata''',
         fetch=1)[0]
     text = (
         ' '.join(sorted(set(artist.split()))), 
         ' '.join(sorted(set(tags.split())))
         )
-    text = ('\n'.join(text)).encode('ascii', 'ignore')
-    Path(AUTOCOMPLETE).write_text(text.decode())
+    text = '\n'.join(text).lower()
     
-    MYSQL.close()
+    with open(AUTOCOMPLETE, 'w', encoding='utf8') as file:
+        
+        file.write(text)
+    
+def remove_redundancies(mysql):
 
-def remove_redundancies():
-
-    from Webscraping import CONNECT
-
-    MYSQL = CONNECT()  
-    SELECT = 'SELECT path, artist, tags FROM imagedata WHERE NOT ISNULL(path)'
+    data = load(open(r'Webscraping\constants.json', encoding='utf-8'))
+    REPLACE = data['REPLACE']
+    SELECT = 'SELECT path, artist, tags FROM imagedata'
     UPDATE = 'UPDATE imagedata SET artist=%s, tags=%s WHERE path=%s'
 
-    for (path, artist, tags,) in MYSQL.execute(SELECT, fetch=1):
+    for (path, artist, tags,) in mysql.execute(SELECT, fetch=1):
 
-        artist = f' {" ".join(set(artist.split()))} '.replace('-', '_')
-        tags = f' {" ".join(set(tags.split()))} '.replace('-', '_')
-        MYSQL.execute(UPDATE, (artist, tags, path))
-
-    MYSQL.commit()
-    MYSQL.close()
+        artist = set(artist.lower().split())
+        artist = re.sub('-|__', '_', f' {" ".join(artist)} ')
+            
+        for key, value in REPLACE.items():
+            
+            tags = re.sub(f' {value} ', f' {key} ', tags.lower())
+            
+        tags = list(set(tags.split()))
+        tags = [tag for tag in tags if len(tag) >= 3]
+        tags = re.sub('-|__', '_', f' {" ".join(tags)} ')
+        
+        mysql.execute(UPDATE, (artist, tags, path), commit=1, emit=0)
 
 def copy_path(paths):
     
-    temp_dir = tempfile.gettempdir()
-    
     for num, index in enumerate(paths):
         
-        path = index.data(Qt.ItemDataRole.UserRole)[1]
+        path = index.data(Qt.ItemDataRole.DecorationRole)
         
-        if path.endswith('.webp'):
-            
-            path = Path(index.data(Qt.ItemDataRole.UserRole)[1])
-            temp = ROOT.parent / temp_dir / path.name
-            temp = temp.with_suffix('.png')
-            image = Image.open(str(path)).convert('RGBA')
-            image.save(str(temp))
-            paths[num] = temp
-            
-        elif path.endswith(('.gif', '.mp4', '.webm')):
-            
-            paths[num] = path
-            continue
+        if path.suffix == '.webm':
 
-            path = mktemp(suffix='.png')
+            paths[num] = tempfile.mktemp(suffix='.png')
             image = ImageGrab.grab(
-                (0, 0, self.width(),self.height())
+                # (0, 0, self.width(),self.height())
                 )
-            image.save(path)
+            image.save(paths[num])
+        
+        else: paths[num] = path
 
     paths = ', '.join(f'"{path}"' for path in paths)
     
-    cb = QGuiApplication.clipboard()
+    cb = QApplication.clipboard()
     cb.clear(mode=cb.Mode.Clipboard)
     cb.setText(paths, mode=cb.Mode.Clipboard)
 
 def copy_to(widget, images):
-
+    
+    copy_dir = ROOT / getenv('COPY_DIR', '*')
+    folder = QFileDialog.getExistingDirectory(
+        widget, 'Open Directory', str(copy_dir)
+        )
+    if not folder or folder == ('', ''): return
+    else: folder = Path(folder)
+    
     paths = [
-        Path(index.data(Qt.ItemDataRole.UserRole)[1])
+        index.data(Qt.ItemDataRole.DecorationRole)
         for index in images
-        if index.data(300) is not None
+        if index.data(Qt.ItemDataRole.FontRole) is not None
         ]
     
-    folder = Path(QFileDialog.getExistingDirectory(
-        widget, 'Open Directory', getenv('COPY_DIR', '*')
-        ))
+    for path in paths:
     
-    if folder:
-        
-        for path in paths:
-        
-            name = folder / path.name
+        name = folder / path.name
+        name.write_bytes(path.read_bytes())
             
-            if name.suffix == '.webp': 
-                name = name.with_suffix('.png')
-        
-                image = Image.open(str(path)).convert('RGBA')
-                image.save(str(name))
-            
-            else:
-                name.write_bytes(path.read_bytes())
-                
     set_key(r'GUI\.env', 'COPY_DIR', str(folder))
-    load_dotenv(r'GUI\.env')
+    load_dotenv(r'GUI\.env', override=True)
+
+def open_file(index):
+ 
+    name = index.data(Qt.ItemDataRole.DecorationRole)
+    # folder = PATH / name[0:2] / name [2:4]
+    startfile(name.parent)
+    
+def find_match(widget):
+    
+    filename = Path(QFileDialog.getOpenFileName(
+        widget, 'Open File', directory='', 
+        filter='''
+            Image Files (*.png *.jpg *.webp);;
+            Video Files (*.gif *.mp4 *.webm);;
+            All Files (*)
+            ''',
+        initialFilter='Image Files (*.png *.jpg *.webp)'
+        )[0])
+    
+    try:
+        
+        if re.search('jp.*g|png|webp|gif', filename.suffix, re.IGNORECASE):
+            
+            image = Image.open(filename)
+
+        elif re.search('webm|mp4', filename.suffix, re.IGNORECASE):
+            
+            video_capture = VideoCapture(str(filename)).read()[-1]
+            image = cvtColor(video_capture, COLOR_BGR2RGB)
+            image = Image.fromarray(image)
+        
+        else: 
+            
+            raise TypeError(f'The extension *{filename.suffix} is not supported')
+    
+    except Exception as error: 
+        
+        QMessageBox.information(widget, 'Find Matching Image', str(error))
+    
+    image.thumbnail([32, 32])
+    image = image.convert('L')
+
+    return f'{SELECT} HAVING BIT_COUNT("{dhash(image)}" ^ hash) < 5'
