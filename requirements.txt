@@ -81,7 +81,7 @@ langcodes==3.3.0
 lazy_loader==0.1
 libclang==14.0.6
 libipld==1.2.2
-lxml==4.6.5
+lxml==4.9.1
 Markdown==3.4.1
 MarkupSafe==2.1.1
 mechanize==0.4.7
