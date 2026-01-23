@@ -75,7 +75,7 @@ instaloader==4.9.5
 interfax==1.0.0
 Jinja2==3.1.6
 joblib==1.2.0
-keras==3.11.3
+keras==3.13.1
 Keras-Preprocessing==1.1.2
 langcodes==3.3.0
 lazy_loader==0.1
