@@ -223,4 +223,4 @@ wrapt==1.14.1
 wsproto==1.0.0
 yarl==1.8.2
 youtube-dl==2021.12.17
-yt-dlp==2024.8.6
+yt-dlp==2026.2.21
