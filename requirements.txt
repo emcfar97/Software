@@ -150,7 +150,7 @@ PyScreeze==0.1.28
 pysftp==0.2.9
 PySocks==1.7.1
 pytesseract==0.3.10
-pytest==8.2.2
+pytest==9.0.3
 python-dateutil==2.8.2
 python-dotenv==0.20.0
 python-magic==0.4.27
